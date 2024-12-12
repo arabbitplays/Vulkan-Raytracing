@@ -24,6 +24,9 @@
 #include "PipelineBuilder.hpp"
 #include "DescriptorAllocator.hpp"
 
+#include "shader.vert.spv.h"
+#include "shader.frag.spv.h"
+
 //#define VERBOSE
 
 const std::vector<const char*> validationLayers = {
@@ -63,8 +66,8 @@ const uint32_t HEIGHT = 600;
 
 const int MAX_FRAMES_IN_FLIGHT = 2;
 
-const std::string MODEL_PATH = "models/viking_room.obj";
-const std::string TEXTURE_PATH = "textures/viking_room.png";
+const std::string MODEL_PATH = "../ressources/models/viking_room.obj";
+const std::string TEXTURE_PATH = "../ressources/textures/viking_room.png";
 
 struct UniformBufferObject {
     glm::mat4 model;
@@ -677,11 +680,11 @@ private:
     }
 
     void createGraphicsPipeline() {
-        auto vertShaderCode = readFile("shaders/vert.spv");
-        auto fragShaderCode = readFile("shaders/frag.spv");
+        //auto vertShaderCode = readFile("shaders/vert.spv.c");
+        //auto fragShaderCode = readFile("shaders/frag.spv.c");
 
-        VkShaderModule vertShaderModule = createShaderModule(vertShaderCode);
-        VkShaderModule fragShaderModule = createShaderModule(fragShaderCode);
+        VkShaderModule vertShaderModule = createShaderModule(oschd_shader_vert_spv_size(), oschd_shader_vert_spv());
+        VkShaderModule fragShaderModule = createShaderModule(oschd_shader_frag_spv_size(), oschd_shader_frag_spv());
 
         PipelineBuilder pipelineBuilder{};
         pipelineBuilder.setShaders(vertShaderModule, fragShaderModule);
@@ -700,11 +703,12 @@ private:
         vkDestroyShaderModule(device, fragShaderModule, nullptr);
     }
 
-    VkShaderModule createShaderModule(const std::vector<char>& code) {
+    VkShaderModule createShaderModule(const std::size_t spv_size,
+                 const uint32_t spv[]) {
         VkShaderModuleCreateInfo createInfo{};
         createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-        createInfo.codeSize = code.size();
-        createInfo.pCode = reinterpret_cast<const uint32_t*>(code.data());
+        createInfo.codeSize = spv_size;
+        createInfo.pCode = spv;
 
         VkShaderModule shaderModule;
         if (vkCreateShaderModule(device, &createInfo, nullptr, &shaderModule) != VK_SUCCESS) {
