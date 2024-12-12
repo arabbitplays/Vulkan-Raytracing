@@ -7,9 +7,19 @@
 
 #include <cstring>
 
+VkDeviceAddress GetBufferDeviceAddressKHR(VkDevice device, const VkBufferDeviceAddressInfoKHR* address_info) {
+    auto func = (PFN_vkGetBufferDeviceAddressKHR) vkGetDeviceProcAddr(device, "vkGetBufferDeviceAddressKHR");
+    if (func != nullptr) {
+        return func(device, address_info);
+    }
+    else {
+        return 0;
+    }
+}
+
 RessourceBuilder::RessourceBuilder(VkPhysicalDevice physicalDevice, VkDevice device, CommandManager commandManager) {
-    this->physicalDevice = physicalDevice;
     this->device = device;
+    this->physicalDevice = physicalDevice;
     this->commandManager = commandManager;
 }
 
@@ -19,16 +29,16 @@ AllocatedBuffer RessourceBuilder::createBuffer(VkDeviceSize size, VkBufferUsageF
     VkBufferCreateInfo bufferInfo{};
     bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
     bufferInfo.size = size;
-    bufferInfo.usage = usage;
+    bufferInfo.usage = usage | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
     bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
     bufferInfo.flags = 0;
 
-    if (vkCreateBuffer(device, &bufferInfo, nullptr, &allocatedBuffer.buffer) != VK_SUCCESS) {
+    if (vkCreateBuffer(device, &bufferInfo, nullptr, &allocatedBuffer.handle) != VK_SUCCESS) {
         throw std::runtime_error("failed to create vertex buffer!");
     }
 
     VkMemoryRequirements memRequirements{};
-    vkGetBufferMemoryRequirements(device, allocatedBuffer.buffer, &memRequirements);
+    vkGetBufferMemoryRequirements(device, allocatedBuffer.handle, &memRequirements);
 
     VkMemoryAllocateInfo allocInfo{};
     allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
@@ -39,7 +49,12 @@ AllocatedBuffer RessourceBuilder::createBuffer(VkDeviceSize size, VkBufferUsageF
         throw std::runtime_error("failed to allocate vertex buffer memory!");
     }
 
-    vkBindBufferMemory(device, allocatedBuffer.buffer, allocatedBuffer.bufferMemory, 0);
+    vkBindBufferMemory(device, allocatedBuffer.handle, allocatedBuffer.bufferMemory, 0);
+
+    VkBufferDeviceAddressInfoKHR buffer_device_address_info{};
+    buffer_device_address_info.sType  = VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO;
+    buffer_device_address_info.buffer = allocatedBuffer.handle;
+    allocatedBuffer.deviceAddress = GetBufferDeviceAddressKHR(device, &buffer_device_address_info);
 
     return allocatedBuffer;
 }
@@ -62,13 +77,13 @@ void RessourceBuilder::copyBuffer(AllocatedBuffer src, AllocatedBuffer dst, VkDe
 
     VkBufferCopy copyRegion{};
     copyRegion.size = size;
-    vkCmdCopyBuffer(commandBuffer, src.buffer, dst.buffer, 1, &copyRegion);
+    vkCmdCopyBuffer(commandBuffer, src.handle, dst.handle, 1, &copyRegion);
 
     commandManager.endSingleTimeCommand(commandBuffer);
 }
 
 void RessourceBuilder::destroyBuffer(AllocatedBuffer buffer) {
-    vkDestroyBuffer(device, buffer.buffer, nullptr);
+    vkDestroyBuffer(device, buffer.handle, nullptr);
     vkFreeMemory(device, buffer.bufferMemory, nullptr);
 }
 
@@ -139,7 +154,7 @@ AllocatedImage RessourceBuilder::createImage(void* data, VkExtent3D extent, VkFo
     transitionImageLayout(image.image, format,
                           VK_IMAGE_LAYOUT_UNDEFINED,
                           VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-    copyBufferToImage(stagingBuffer.buffer, image.image, extent);
+    copyBufferToImage(stagingBuffer.handle, image.image, extent);
     transitionImageLayout(image.image, format,
                           VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                           VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);

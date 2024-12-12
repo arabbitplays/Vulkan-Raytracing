@@ -10,8 +10,9 @@
 #include "../rendering/engine/CommandManager.hpp"
 
 struct AllocatedBuffer {
-    VkBuffer buffer;
+    VkBuffer handle;
     VkDeviceMemory bufferMemory;
+    uint64_t deviceAddress;
 };
 
 struct AllocatedImage {
@@ -39,8 +40,7 @@ public:
 
 private:
     uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
-
-        VkPhysicalDevice physicalDevice;
+    VkPhysicalDevice physicalDevice;
     VkDevice device;
     CommandManager commandManager;
 

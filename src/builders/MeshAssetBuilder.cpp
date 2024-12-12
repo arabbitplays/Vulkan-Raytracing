@@ -91,7 +91,7 @@ AllocatedBuffer MeshAssetBuilder::createVertexBuffer(std::vector<Vertex>& vertic
     memcpy(data, vertices.data(), (size_t) size);
     vkUnmapMemory(device, stagingBuffer.bufferMemory);
 
-    AllocatedBuffer vertexBuffer = bufferBuilder.createBuffer(size, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+    AllocatedBuffer vertexBuffer = bufferBuilder.createBuffer(size, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
                  VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
     bufferBuilder.copyBuffer(stagingBuffer, vertexBuffer, size);
@@ -111,7 +111,7 @@ AllocatedBuffer MeshAssetBuilder::createIndexBuffer(std::vector<uint32_t>& indic
     memcpy(data, indices.data(), (size_t) size);
     vkUnmapMemory(device, stagingBuffer.bufferMemory);
 
-    AllocatedBuffer indexBuffer = bufferBuilder.createBuffer(size, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
+    AllocatedBuffer indexBuffer = bufferBuilder.createBuffer(size, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
                  VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
     bufferBuilder.copyBuffer(stagingBuffer, indexBuffer, size);

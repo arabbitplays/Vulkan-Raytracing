@@ -41,6 +41,33 @@ void DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT
     }
 }
 
+void GetAccelerationStructureBuildSizesKHR(VkDevice device,
+            VkAccelerationStructureBuildTypeKHR buildType,
+            const VkAccelerationStructureBuildGeometryInfoKHR* pBuildInfo,
+            const uint32_t* pMaxPrimitiveCounts,
+            VkAccelerationStructureBuildSizesInfoKHR* pSizeInfo) {
+    auto func = (PFN_vkGetAccelerationStructureBuildSizesKHR) vkGetDeviceProcAddr(device, "vkGetAccelerationStructureBuildSizesKHR");
+    if (func != nullptr) {
+        return func(device, buildType, pBuildInfo, pMaxPrimitiveCounts, pSizeInfo);
+    }
+}
+
+VkResult CreateAccelerationStructureKHR(VkDevice device, const VkAccelerationStructureCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkAccelerationStructureKHR* pAccelerationStructure) {
+    auto func = (PFN_vkCreateAccelerationStructureKHR) vkGetDeviceProcAddr(device, "vkCreateAccelerationStructureKHR");
+    if (func != nullptr) {
+        return func(device, pCreateInfo, pAllocator, pAccelerationStructure);
+    } else {
+        return VK_ERROR_EXTENSION_NOT_PRESENT;
+    }
+}
+
+void DestroyAccelerationStructureKHR(VkDevice device, VkAccelerationStructureKHR accelerationStructure, const VkAllocationCallbacks* pAllocator) {
+    auto func = (PFN_vkDestroyAccelerationStructureKHR) vkGetDeviceProcAddr(device, "vkDestroyAccelerationStructureKHR");
+    if (func != nullptr) {
+        return func(device, accelerationStructure, pAllocator);
+    }
+}
+
 const uint32_t WIDTH = 800;
 const uint32_t HEIGHT = 600;
 
@@ -55,7 +82,7 @@ struct UniformBufferObject {
 void VulkanEngine::run() {
     initWindow();
     initVulkan();
-    mainLoop();
+    //mainLoop();
     cleanup();
 }
 
@@ -95,12 +122,12 @@ void VulkanEngine::initVulkan() {
     initDefaultResources();
 
     loadMeshes();
-    createUniformBuffers();
+    /*createUniformBuffers();
     createDescriptorSets();
 
     createFrameBuffers();
     createCommandBuffers();
-    createSyncObjects();
+    createSyncObjects();*/
 }
 
 void VulkanEngine::createInstance() {
@@ -273,6 +300,7 @@ bool VulkanEngine::isDeviceSuitable(VkPhysicalDevice device) {
         swapChainAdequate = !swapChainSupport.formats.empty() && !swapChainSupport.presentModes.empty();
     }
 
+    // TODO check for raytracing features
     return extensionsSupported && indices.isComplete() && swapChainAdequate && deviceFeatures.samplerAnisotropy;
 }
 
@@ -362,6 +390,14 @@ void VulkanEngine::createLogicalDevice() {
     VkPhysicalDeviceFeatures deviceFeatures{};
     deviceFeatures.samplerAnisotropy = VK_TRUE;
 
+    VkPhysicalDeviceAccelerationStructureFeaturesKHR accelerationStructureFeatures{};
+    accelerationStructureFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_FEATURES_KHR;
+    accelerationStructureFeatures.accelerationStructure = VK_TRUE;
+
+    VkPhysicalDeviceRayTracingPipelineFeaturesKHR rayTracingPipelineFeatures{};
+    rayTracingPipelineFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_FEATURES_KHR;
+    rayTracingPipelineFeatures.pNext = &accelerationStructureFeatures;
+
     VkDeviceCreateInfo createInfo{};
     createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
     createInfo.queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size());
@@ -375,6 +411,7 @@ void VulkanEngine::createLogicalDevice() {
     } else {
         createInfo.enabledLayerCount = 0;
     }
+    createInfo.pNext = &rayTracingPipelineFeatures;
 
     if (vkCreateDevice(physicalDevice, &createInfo, nullptr, &device) != VK_SUCCESS) {
         throw std::runtime_error("failed to create logical device!");
@@ -571,6 +608,7 @@ void VulkanEngine::createCommandManager() {
 }
 
 void VulkanEngine::createRessourceBuilder() {
+    // TODO context soll überall genutzt werden
     auto pRessourceBuilder = new RessourceBuilder(physicalDevice, device, commandManager);
     ressourceBuilder = *pRessourceBuilder;
 }
@@ -721,7 +759,7 @@ MaterialInstance VulkanEngine::createMetalRoughMaterial(float metallic, float ro
     memcpy(data, &constants, bufferSize);
     vkUnmapMemory(device, materialBuffer.bufferMemory);
 
-    resources.dataBuffer = materialBuffer.buffer;
+    resources.dataBuffer = materialBuffer.handle;
     resources.bufferOffset = 0;
 
     return metalRoughMaterial.writeMaterial(device, MaterialPass::MainColor, resources, descriptorAllocator);
@@ -739,6 +777,8 @@ void VulkanEngine::loadMeshes() {
             meshAssetBuilder.destroyMeshAsset(meshAsset);
         });
     }
+
+    meshToBLAS(meshAsset);
 
     std::shared_ptr<Node> parentNode = std::make_shared<Node>();
     parentNode->localTransform = glm::mat4{1.0f};
@@ -764,6 +804,67 @@ void VulkanEngine::loadMeshes() {
 
         loadedNodes["Spheres"]->refreshTransform(glm::mat4(1.0f));
     }
+}
+
+void VulkanEngine::meshToBLAS(MeshAsset mesh) {
+    VkDeviceOrHostAddressConstKHR vertexDeviceAddress{};
+    VkDeviceOrHostAddressConstKHR indexDeviceAddress{};
+    vertexDeviceAddress.deviceAddress = mesh.meshBuffers.vertexBuffer.deviceAddress;
+    indexDeviceAddress.deviceAddress = mesh.meshBuffers.indexBuffer.deviceAddress;
+
+    VkAccelerationStructureGeometryKHR accelerationStructureGeometry{};
+    accelerationStructureGeometry.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_KHR;
+    accelerationStructureGeometry.geometryType = VK_GEOMETRY_TYPE_TRIANGLES_KHR;
+    accelerationStructureGeometry.flags = VK_GEOMETRY_OPAQUE_BIT_KHR;
+    accelerationStructureGeometry.geometry.triangles.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_TRIANGLES_DATA_KHR;
+    accelerationStructureGeometry.geometry.triangles.vertexFormat = VK_FORMAT_R32G32B32_SFLOAT;
+    accelerationStructureGeometry.geometry.triangles.vertexData = vertexDeviceAddress;
+    accelerationStructureGeometry.geometry.triangles.maxVertex = mesh.surfaces[0].count;
+    accelerationStructureGeometry.geometry.triangles.vertexStride = sizeof(Vertex);
+    accelerationStructureGeometry.geometry.triangles.indexType = VK_INDEX_TYPE_UINT32;
+    accelerationStructureGeometry.geometry.triangles.indexData = indexDeviceAddress;
+
+    // get information on the requirements for buffers involved in the as build process
+    VkAccelerationStructureBuildGeometryInfoKHR accelerationStructureBuildGeometryInfo{};
+    accelerationStructureBuildGeometryInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_GEOMETRY_INFO_KHR;
+    accelerationStructureBuildGeometryInfo.type = VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_KHR;
+    accelerationStructureBuildGeometryInfo.flags = VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR;
+    accelerationStructureBuildGeometryInfo.geometryCount = 1;
+    accelerationStructureBuildGeometryInfo.pGeometries = &accelerationStructureGeometry;
+
+    uint32_t primitiveCount = mesh.surfaces[0].count / 3; // TODO verallgemeinern
+    VkAccelerationStructureBuildSizesInfoKHR accelerationStructureBuildSizesInfo{};
+    accelerationStructureBuildSizesInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_SIZES_INFO_KHR;
+    GetAccelerationStructureBuildSizesKHR(
+        device,
+        VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR,
+        &accelerationStructureBuildGeometryInfo,
+        &primitiveCount,
+        &accelerationStructureBuildSizesInfo);
+
+    bottomLevelAccelerationStructure.buffer = ressourceBuilder.createBuffer(
+        accelerationStructureBuildSizesInfo.accelerationStructureSize,
+        VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
+        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
+        );
+
+    mainDeletionQueue.pushFunction([&]() {
+        ressourceBuilder.destroyBuffer(bottomLevelAccelerationStructure.buffer);
+    });
+
+    VkAccelerationStructureCreateInfoKHR accelerationStructureCreateInfo{};
+    accelerationStructureCreateInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_CREATE_INFO_KHR;
+    accelerationStructureCreateInfo.buffer = bottomLevelAccelerationStructure.buffer.handle;
+    accelerationStructureCreateInfo.size = accelerationStructureBuildSizesInfo.accelerationStructureSize;
+    accelerationStructureCreateInfo.type = VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_KHR;
+    if (CreateAccelerationStructureKHR(device, &accelerationStructureCreateInfo, nullptr, &bottomLevelAccelerationStructure.handle) != VK_SUCCESS) {
+        throw std::runtime_error("failed to create bl acceleration structure!");
+    }
+
+    mainDeletionQueue.pushFunction([&]() {
+        DestroyAccelerationStructureKHR(device, bottomLevelAccelerationStructure.handle, nullptr);
+    });
+
 }
 
 void VulkanEngine::createUniformBuffers() {
@@ -805,7 +906,7 @@ void VulkanEngine::createDescriptorSets() {
 
     for (size_t i = 0; i < sceneDescriptorSets.size(); i++) {
         descriptorAllocator.clearWrites();
-        descriptorAllocator.writeBuffer(0, sceneUniformBuffers[i].buffer, sizeof(SceneData),
+        descriptorAllocator.writeBuffer(0, sceneUniformBuffers[i].handle, sizeof(SceneData),
                                         0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
         descriptorAllocator.updateSet(device, sceneDescriptorSets[i]);
     }

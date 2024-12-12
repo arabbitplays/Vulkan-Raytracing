@@ -11,8 +11,8 @@ void MeshNode::draw(const glm::mat4 &topMatrix, DrawContext &ctx) {
         RenderObject renderObject;
         renderObject.indexCount = surface.count;
         renderObject.firstIndex = surface.startIndex;
-        renderObject.vertexBuffer = meshAsset->meshBuffers.vertexBuffer.buffer;
-        renderObject.indexBuffer = meshAsset->meshBuffers.indexBuffer.buffer;
+        renderObject.vertexBuffer = meshAsset->meshBuffers.vertexBuffer.handle;
+        renderObject.indexBuffer = meshAsset->meshBuffers.indexBuffer.handle;
         renderObject.material = &material->instance;
 
         renderObject.transform = nodeMatrix;

@@ -88,6 +88,12 @@ struct ObjectData {
     glm::mat4 model;
 };
 
+struct AccelerationStructure {
+    VkAccelerationStructureKHR handle;
+    uint64_t deviceAddress;
+    AllocatedBuffer buffer;
+};
+
 class VulkanEngine {
 public:
     VkDevice device;
@@ -127,6 +133,9 @@ private:
     std::vector<MeshAsset> meshAssets;
     std::unordered_map<std::string, std::shared_ptr<Node>> loadedNodes;
     DrawContext mainDrawContext;
+
+    AccelerationStructure bottomLevelAccelerationStructure;
+    AccelerationStructure topLevelAccelerationStructure;
 
     AllocatedImage whiteImage;
     AllocatedImage greyImage;
@@ -197,6 +206,9 @@ private:
     void createDefaultSamplers();
     void createDefaultMaterials();
     void loadMeshes();
+
+    void meshToBLAS(MeshAsset mesh);
+
     void createUniformBuffers();
     void createDescriptorAllocator();
     void createDescriptorSets();
