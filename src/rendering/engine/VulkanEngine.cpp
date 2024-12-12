@@ -15,6 +15,7 @@ const std::vector<const char*> deviceExtensions = {
     VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME,
     VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME,
     VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME,
+    VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME,
 };
 
 #ifdef NDEBUG
@@ -68,6 +69,34 @@ void DestroyAccelerationStructureKHR(VkDevice device, VkAccelerationStructureKHR
     }
 }
 
+VkDeviceAddress GetAccelerationStructureDeviceAddressKHR( VkDevice device, const VkAccelerationStructureDeviceAddressInfoKHR* pInfo) {
+    auto func = (PFN_vkGetAccelerationStructureDeviceAddressKHR) vkGetDeviceProcAddr(device, "vkGetAccelerationStructureDeviceAddressKHR");
+    if (func != nullptr) {
+        return func(device, pInfo);
+    } else {
+        return 0;
+    }
+}
+
+void CmdBuildAccelerationStructuresKHR(VkDevice device, VkCommandBuffer commandBuffer, uint32_t infoCount,
+    const VkAccelerationStructureBuildGeometryInfoKHR* pInfos,
+    const VkAccelerationStructureBuildRangeInfoKHR* const* ppBuildRangeInfos) {
+
+    auto func = (PFN_vkCmdBuildAccelerationStructuresKHR) vkGetDeviceProcAddr(device, "vkCmdBuildAccelerationStructuresKHR");
+    if (func != nullptr) {
+        return func(commandBuffer, infoCount, pInfos, ppBuildRangeInfos);
+    }
+}
+
+VkResult GetRayTracingShaderGroupHandlesKHR(VkDevice device, VkPipeline pipeline, uint32_t firstGroup, uint32_t groupCount, size_t dataSize, void* pData) {
+    auto func = (PFN_vkGetRayTracingShaderGroupHandlesKHR) vkGetDeviceProcAddr(device, "vkGetRayTracingShaderGroupHandlesKHR");
+    if (func != nullptr) {
+        return func(device, pipeline, firstGroup, groupCount, dataSize, pData);
+    } else {
+        return VK_ERROR_EXTENSION_NOT_PRESENT;
+    }
+}
+
 const uint32_t WIDTH = 800;
 const uint32_t HEIGHT = 600;
 
@@ -109,19 +138,23 @@ void VulkanEngine::initVulkan() {
     pickPhysicalDevice();
     createLogicalDevice();
 
+
     createCommandManager();
     createRessourceBuilder();
     createDescriptorAllocator();
 
     createSwapChain();
-    createImageViews();
-    createDescriptorSetLayout();
+    /*createDescriptorSetLayout();
     initPipelines();
 
     createDepthResources();
-    initDefaultResources();
+    initDefaultResources();*/
 
     loadMeshes();
+    rt_createPipeline();
+    createShaderBindingTables();
+    rt_createDescriptorSets();
+
     /*createUniformBuffers();
     createDescriptorSets();
 
@@ -281,6 +314,11 @@ void VulkanEngine::pickPhysicalDevice() {
     if (physicalDevice == VK_NULL_HANDLE) {
         throw std::runtime_error("failed to find suitable GPU!");
     }
+
+    VkPhysicalDeviceProperties2 physicalDeviceProperties;
+    physicalDeviceProperties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
+    physicalDeviceProperties.pNext = &raytracingProperties;
+    vkGetPhysicalDeviceProperties2(physicalDevice, &physicalDeviceProperties);
 }
 
 bool VulkanEngine::isDeviceSuitable(VkPhysicalDevice device) {
@@ -398,6 +436,11 @@ void VulkanEngine::createLogicalDevice() {
     rayTracingPipelineFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_FEATURES_KHR;
     rayTracingPipelineFeatures.pNext = &accelerationStructureFeatures;
 
+    VkPhysicalDeviceBufferDeviceAddressFeatures deviceAddressFeatures{};
+    deviceAddressFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_BUFFER_DEVICE_ADDRESS_FEATURES;
+    deviceAddressFeatures.bufferDeviceAddress = VK_TRUE;
+    deviceAddressFeatures.pNext = &rayTracingPipelineFeatures;
+
     VkDeviceCreateInfo createInfo{};
     createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
     createInfo.queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size());
@@ -411,7 +454,7 @@ void VulkanEngine::createLogicalDevice() {
     } else {
         createInfo.enabledLayerCount = 0;
     }
-    createInfo.pNext = &rayTracingPipelineFeatures;
+    createInfo.pNext = &deviceAddressFeatures;
 
     if (vkCreateDevice(physicalDevice, &createInfo, nullptr, &device) != VK_SUCCESS) {
         throw std::runtime_error("failed to create logical device!");
@@ -437,7 +480,6 @@ void VulkanEngine::recreateSwapChain() {
     cleanupSwapChain();
 
     createSwapChain();
-    createImageViews();
     createDepthResources();
     createFrameBuffers();
 }
@@ -492,6 +534,11 @@ void VulkanEngine::createSwapChain() {
 
     swapChainImageFormat = surfaceFormat.format;
     swapChainExtent = extent;
+
+    createImageViews();
+    mainDeletionQueue.pushFunction([&]() {
+        cleanupSwapChain();
+    });
 }
 
 VkSurfaceFormatKHR VulkanEngine::chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats) {
@@ -592,10 +639,6 @@ void VulkanEngine::createFrameBuffers() {
             throw std::runtime_error("failed to create framebuffer!");
         }
     }
-
-    mainDeletionQueue.pushFunction([&]() {
-        cleanupSwapChain();
-    });
 }
 
 void VulkanEngine::createCommandManager() {
@@ -765,6 +808,18 @@ MaterialInstance VulkanEngine::createMetalRoughMaterial(float metallic, float ro
     return metalRoughMaterial.writeMaterial(device, MaterialPass::MainColor, resources, descriptorAllocator);
 }
 
+void VulkanEngine::createStorageImage() {
+    storageImage = ressourceBuilder.createImage(
+        VkExtent3D{swapChainExtent.width, swapChainExtent.height, 1},
+        VK_FORMAT_B8G8R8A8_UNORM, VK_IMAGE_TILING_OPTIMAL,
+        VK_IMAGE_LAYOUT_GENERAL,
+        VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_STORAGE_BIT,
+        VK_IMAGE_ASPECT_COLOR_BIT);
+    mainDeletionQueue.pushFunction([&]() {
+        ressourceBuilder.destroyImage(storageImage);
+    });
+}
+
 void VulkanEngine::loadMeshes() {
     auto pMeshAssetBuilder = new MeshAssetBuilder(device, ressourceBuilder);
     meshAssetBuilder = *pMeshAssetBuilder;
@@ -779,8 +834,9 @@ void VulkanEngine::loadMeshes() {
     }
 
     meshToBLAS(meshAsset);
+    createTLAS();
 
-    std::shared_ptr<Node> parentNode = std::make_shared<Node>();
+    /*std::shared_ptr<Node> parentNode = std::make_shared<Node>();
     parentNode->localTransform = glm::mat4{1.0f};
     parentNode->worldTransform = glm::mat4{1.0f};
     parentNode->children = {};
@@ -803,7 +859,7 @@ void VulkanEngine::loadMeshes() {
         }
 
         loadedNodes["Spheres"]->refreshTransform(glm::mat4(1.0f));
-    }
+    }*/
 }
 
 void VulkanEngine::meshToBLAS(MeshAsset mesh) {
@@ -832,7 +888,8 @@ void VulkanEngine::meshToBLAS(MeshAsset mesh) {
     accelerationStructureBuildGeometryInfo.geometryCount = 1;
     accelerationStructureBuildGeometryInfo.pGeometries = &accelerationStructureGeometry;
 
-    uint32_t primitiveCount = mesh.surfaces[0].count / 3; // TODO verallgemeinern
+    //uint32_t primitiveCount = mesh.surfaces[0].count / 3; // TODO verallgemeinern
+    uint32_t primitiveCount = 1;
     VkAccelerationStructureBuildSizesInfoKHR accelerationStructureBuildSizesInfo{};
     accelerationStructureBuildSizesInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_SIZES_INFO_KHR;
     GetAccelerationStructureBuildSizesKHR(
@@ -865,7 +922,216 @@ void VulkanEngine::meshToBLAS(MeshAsset mesh) {
         DestroyAccelerationStructureKHR(device, bottomLevelAccelerationStructure.handle, nullptr);
     });
 
+    AllocatedBuffer scratchBuffer = ressourceBuilder.createBuffer(
+        accelerationStructureBuildSizesInfo.buildScratchSize,
+        VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+
+    VkAccelerationStructureBuildGeometryInfoKHR accelerationBuildGeometryInfo{};
+    accelerationBuildGeometryInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_GEOMETRY_INFO_KHR;
+    accelerationBuildGeometryInfo.type = VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_KHR;
+    accelerationBuildGeometryInfo.flags = VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR;
+    accelerationBuildGeometryInfo.mode = VK_BUILD_ACCELERATION_STRUCTURE_MODE_BUILD_KHR;
+    accelerationBuildGeometryInfo.dstAccelerationStructure = bottomLevelAccelerationStructure.handle;
+    accelerationBuildGeometryInfo.geometryCount = 1;
+    accelerationBuildGeometryInfo.pGeometries = &accelerationStructureGeometry;
+    accelerationBuildGeometryInfo.scratchData.deviceAddress = scratchBuffer.deviceAddress;
+
+    VkAccelerationStructureBuildRangeInfoKHR accelerationBuildRangeInfo{};
+    accelerationBuildRangeInfo.primitiveCount = primitiveCount;
+    accelerationBuildRangeInfo.primitiveOffset = 0;
+    accelerationBuildRangeInfo.firstVertex = 0;
+    accelerationBuildRangeInfo.transformOffset = 0;
+    std::vector<VkAccelerationStructureBuildRangeInfoKHR*> accelerationBuildRangeInfos = {&accelerationBuildRangeInfo};
+
+    VkCommandBuffer cmdBuffer = commandManager.beginSingleTimeCommands();
+    CmdBuildAccelerationStructuresKHR(
+        device,
+        cmdBuffer,
+        1,
+        &accelerationBuildGeometryInfo,
+        accelerationBuildRangeInfos.data()
+        );
+    commandManager.endSingleTimeCommand(cmdBuffer);
+
+    ressourceBuilder.destroyBuffer(scratchBuffer);
+
+    VkAccelerationStructureDeviceAddressInfoKHR accelerationStructureDeviceAddressInfo{};
+    accelerationStructureDeviceAddressInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_DEVICE_ADDRESS_INFO_KHR;
+    accelerationStructureDeviceAddressInfo.accelerationStructure = bottomLevelAccelerationStructure.handle;
+    bottomLevelAccelerationStructure.deviceAddress = GetAccelerationStructureDeviceAddressKHR(device, &accelerationStructureDeviceAddressInfo);
 }
+
+void VulkanEngine::createTLAS() {
+    VkTransformMatrixKHR transform_matrix = {
+        1.0f, 0.0f, 0.0f, 0.0f,
+        0.0f, 1.0f, 0.0f, 0.0f,
+        0.0f, 0.0f, 1.0f, 0.0f};
+
+    VkAccelerationStructureInstanceKHR accelerationStructureInstance{};
+    accelerationStructureInstance.transform = transform_matrix;
+    accelerationStructureInstance.instanceCustomIndex = 0;
+    accelerationStructureInstance.mask = 0xFF;
+    accelerationStructureInstance.instanceShaderBindingTableRecordOffset = 0;
+    accelerationStructureInstance.flags = VK_GEOMETRY_INSTANCE_TRIANGLE_FACING_CULL_DISABLE_BIT_KHR;
+    accelerationStructureInstance.accelerationStructureReference = bottomLevelAccelerationStructure.deviceAddress;
+
+    AllocatedBuffer instanceBuffer = ressourceBuilder.createBuffer(
+        sizeof(VkAccelerationStructureInstanceKHR),
+        VK_BUFFER_USAGE_2_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR,
+        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+    instanceBuffer.update(device, &accelerationStructureInstance, sizeof(VkAccelerationStructureInstanceKHR));
+
+    VkDeviceOrHostAddressConstKHR instanceDataDeviceAddress{};
+    instanceDataDeviceAddress.deviceAddress = instanceBuffer.deviceAddress;
+
+    VkAccelerationStructureGeometryKHR accelerationStructureGeometry{};
+    accelerationStructureGeometry.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_KHR;
+    accelerationStructureGeometry.geometryType = VK_GEOMETRY_TYPE_INSTANCES_KHR;
+    accelerationStructureGeometry.flags = VK_GEOMETRY_OPAQUE_BIT_KHR;
+    accelerationStructureGeometry.geometry.instances.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_INSTANCES_DATA_KHR;
+    accelerationStructureGeometry.geometry.instances.arrayOfPointers = VK_FALSE;
+    accelerationStructureGeometry.geometry.instances.data = instanceDataDeviceAddress;
+
+    VkAccelerationStructureBuildGeometryInfoKHR accelerationStructureBuildGeometryInfo{};
+    accelerationStructureBuildGeometryInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_GEOMETRY_INFO_KHR;
+    accelerationStructureBuildGeometryInfo.type = VK_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL_KHR;
+    accelerationStructureBuildGeometryInfo.flags = VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR;
+    accelerationStructureBuildGeometryInfo.geometryCount = 1;
+    accelerationStructureBuildGeometryInfo.pGeometries = &accelerationStructureGeometry;
+
+    uint32_t primitiveCount = 1;
+    VkAccelerationStructureBuildSizesInfoKHR accelerationStructureBuildSizesInfo{};
+    accelerationStructureBuildSizesInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_SIZES_INFO_KHR;
+    GetAccelerationStructureBuildSizesKHR(
+        device,
+        VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR,
+        &accelerationStructureBuildGeometryInfo,
+        &primitiveCount,
+        &accelerationStructureBuildSizesInfo);
+
+    topLevelAccelerationStructure.buffer = ressourceBuilder.createBuffer(
+        accelerationStructureBuildSizesInfo.accelerationStructureSize,
+        VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR,
+        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
+        );
+
+    mainDeletionQueue.pushFunction([&]() {
+        ressourceBuilder.destroyBuffer(topLevelAccelerationStructure.buffer);
+    });
+
+    VkAccelerationStructureCreateInfoKHR accelerationStructureCreateInfo{};
+    accelerationStructureCreateInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_CREATE_INFO_KHR;
+    accelerationStructureCreateInfo.buffer = topLevelAccelerationStructure.buffer.handle;
+    accelerationStructureCreateInfo.size = accelerationStructureBuildSizesInfo.accelerationStructureSize;
+    accelerationStructureCreateInfo.type = VK_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL_KHR;
+    if (CreateAccelerationStructureKHR(device, &accelerationStructureCreateInfo, nullptr, &topLevelAccelerationStructure.handle) != VK_SUCCESS) {
+        throw std::runtime_error("failed to create bl acceleration structure!");
+    }
+
+    mainDeletionQueue.pushFunction([&]() {
+        DestroyAccelerationStructureKHR(device, topLevelAccelerationStructure.handle, nullptr);
+    });
+
+    AllocatedBuffer scratchBuffer = ressourceBuilder.createBuffer(
+        accelerationStructureBuildSizesInfo.buildScratchSize,
+        VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+
+    VkAccelerationStructureBuildGeometryInfoKHR accelerationBuildGeometryInfo{};
+    accelerationBuildGeometryInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_GEOMETRY_INFO_KHR;
+    accelerationBuildGeometryInfo.type = VK_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL_KHR;
+    accelerationBuildGeometryInfo.flags = VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR;
+    accelerationBuildGeometryInfo.mode = VK_BUILD_ACCELERATION_STRUCTURE_MODE_BUILD_KHR;
+    accelerationBuildGeometryInfo.dstAccelerationStructure = topLevelAccelerationStructure.handle;
+    accelerationBuildGeometryInfo.geometryCount = 1;
+    accelerationBuildGeometryInfo.pGeometries = &accelerationStructureGeometry;
+    accelerationBuildGeometryInfo.scratchData.deviceAddress = scratchBuffer.deviceAddress;
+
+    VkAccelerationStructureBuildRangeInfoKHR accelerationBuildRangeInfo{};
+    accelerationBuildRangeInfo.primitiveCount = 1;
+    accelerationBuildRangeInfo.primitiveOffset = 0;
+    accelerationBuildRangeInfo.firstVertex = 0;
+    accelerationBuildRangeInfo.transformOffset = 0;
+    std::vector<VkAccelerationStructureBuildRangeInfoKHR*> accelerationBuildRangeInfos = {&accelerationBuildRangeInfo};
+
+    VkCommandBuffer cmdBuffer = commandManager.beginSingleTimeCommands();
+    CmdBuildAccelerationStructuresKHR(
+        device,
+        cmdBuffer,
+        1,
+        &accelerationBuildGeometryInfo,
+        accelerationBuildRangeInfos.data()
+        );
+    commandManager.endSingleTimeCommand(cmdBuffer);
+
+    ressourceBuilder.destroyBuffer(scratchBuffer);
+
+    VkAccelerationStructureDeviceAddressInfoKHR accelerationStructureDeviceAddressInfo{};
+    accelerationStructureDeviceAddressInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_DEVICE_ADDRESS_INFO_KHR;
+    accelerationStructureDeviceAddressInfo.accelerationStructure = topLevelAccelerationStructure.handle;
+    topLevelAccelerationStructure.deviceAddress = GetAccelerationStructureDeviceAddressKHR(device, &accelerationStructureDeviceAddressInfo);
+
+    ressourceBuilder.destroyBuffer(instanceBuffer); // TODO maybe sus
+}
+
+inline uint32_t alignedSize(uint32_t value, uint32_t alignment) {
+    return (value + (alignment - 1)) & ~(alignment - 1);
+}
+
+void VulkanEngine::createShaderBindingTables() {
+    const uint32_t handleSize = raytracingProperties.shaderGroupHandleSize;
+    const uint32_t handleAlignment = raytracingProperties.shaderGroupHandleAlignment;
+    const uint32_t handleSizeAligned = alignedSize(handleSize, handleAlignment);
+    const uint32_t groupCount = static_cast<uint32_t>(shaderGroups.size());
+    const uint32_t sbt_size = groupCount * handleSizeAligned;
+    const uint32_t sbtUsageFlags = VK_BUFFER_USAGE_SHADER_BINDING_TABLE_BIT_KHR | VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+    const uint32_t sbtMemoryPropertyFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+
+    raygenShaderBindingTable = ressourceBuilder.createBuffer(handleSize, sbtUsageFlags, sbtMemoryPropertyFlags);
+    missShaderBindingTable = ressourceBuilder.createBuffer(handleSize, sbtUsageFlags, sbtMemoryPropertyFlags);
+    hitShaderBindingTable = ressourceBuilder.createBuffer(handleSize, sbtUsageFlags, sbtMemoryPropertyFlags);
+    mainDeletionQueue.pushFunction([&]() {
+        ressourceBuilder.destroyBuffer(raygenShaderBindingTable);
+        ressourceBuilder.destroyBuffer(missShaderBindingTable);
+        ressourceBuilder.destroyBuffer(hitShaderBindingTable);
+    });
+
+    std::vector<uint8_t> shaderHandleStorage(sbt_size);
+    if (GetRayTracingShaderGroupHandlesKHR(device, rt_pipeline, 0, groupCount, sbt_size, shaderHandleStorage.data()) != VK_SUCCESS) {
+        throw std::runtime_error("failed to get shader group handles!");
+    }
+
+    raygenShaderBindingTable.update(device, shaderHandleStorage.data(), handleSize);
+    missShaderBindingTable.update(device, shaderHandleStorage.data() + handleSizeAligned, handleSize);
+    hitShaderBindingTable.update(device, shaderHandleStorage.data() + 2* handleSizeAligned, handleSize);
+}
+
+void VulkanEngine::rt_createDescriptorSets() {
+    rt_descriptorSet = descriptorAllocator.allocate(device, rt_descriptorSetLayout);
+    descriptorAllocator.writeAccelerationStructure(0, topLevelAccelerationStructure.handle, VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR);
+    descriptorAllocator.writeImage(1, storageImage.imageView, VK_NULL_HANDLE, VK_IMAGE_LAYOUT_GENERAL, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
+    descriptorAllocator.writeBuffer(2, sceneUniformBuffers[0].handle, sizeof(SceneData), 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+    descriptorAllocator.updateSet(device, rt_descriptorSet);
+}
+
+void VulkanEngine::rt_createPipeline() {
+    DescriptorLayoutBuilder layoutBuilder;
+
+    layoutBuilder.addBinding(0, VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR);
+    layoutBuilder.addBinding(1, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
+    layoutBuilder.addBinding(2, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+    rt_descriptorSetLayout = layoutBuilder.build(device, VK_SHADER_STAGE_RAYGEN_BIT_KHR);
+
+    VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
+    pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+    pipelineLayoutInfo.setLayoutCount = 1;
+    pipelineLayoutInfo.pSetLayouts = &rt_descriptorSetLayout;
+    if (vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &rt_pipelineLayout) != VK_SUCCESS) {
+        throw std::runtime_error("failed to create pipeline layout!");
+    }
+}
+
 
 void VulkanEngine::createUniformBuffers() {
     VkDeviceSize size = sizeof(SceneData);
@@ -889,6 +1155,8 @@ void VulkanEngine::createDescriptorAllocator() {
     std::vector<DescriptorAllocator::PoolSizeRatio> poolRatios = {
             { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1 },
             { VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1 },
+            { VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1 },
+            { VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, 1 },
     };
     descriptorAllocator.init(device, 4, poolRatios);
 

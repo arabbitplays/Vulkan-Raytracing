@@ -87,7 +87,6 @@ void DescriptorAllocator::destroyPools(VkDevice device) {
 VkDescriptorSet DescriptorAllocator::allocate(VkDevice device, VkDescriptorSetLayout layout, void *pNext) {
     VkDescriptorPool poolToUse = getPool(device);
 
-    VkDescriptorSetLayout layouts[] = {layout};
     VkDescriptorSetAllocateInfo allocInfo{};
     allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
     allocInfo.pNext = pNext;
@@ -149,6 +148,23 @@ void DescriptorAllocator::writeImage(uint32_t binding, VkImageView imageView,
 
     writes.push_back(write);
 }
+
+void DescriptorAllocator::writeAccelerationStructure(uint32_t binding, VkAccelerationStructureKHR accelerationStructure, VkDescriptorType type) {
+    VkWriteDescriptorSetAccelerationStructureKHR descriptorSetAccelerationStructure{};
+    descriptorSetAccelerationStructure.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_ACCELERATION_STRUCTURE_KHR;
+    descriptorSetAccelerationStructure.accelerationStructureCount = 1;
+    descriptorSetAccelerationStructure.pAccelerationStructures = &accelerationStructure;
+
+    VkWriteDescriptorSet write{};
+    write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    write.dstBinding = binding;
+    write.descriptorCount = 1;
+    write.descriptorType = type;
+    write.pNext = &descriptorSetAccelerationStructure;
+
+    writes.push_back(write);
+}
+
 
 void DescriptorAllocator::updateSet(VkDevice& device, VkDescriptorSet& set) {
     for (auto& write : writes) {

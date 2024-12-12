@@ -13,7 +13,7 @@ VkDeviceAddress GetBufferDeviceAddressKHR(VkDevice device, const VkBufferDeviceA
         return func(device, address_info);
     }
     else {
-        return 0;
+        throw std::runtime_error("Failed to get buffer device address");
     }
 }
 
@@ -40,10 +40,15 @@ AllocatedBuffer RessourceBuilder::createBuffer(VkDeviceSize size, VkBufferUsageF
     VkMemoryRequirements memRequirements{};
     vkGetBufferMemoryRequirements(device, allocatedBuffer.handle, &memRequirements);
 
+    VkMemoryAllocateFlagsInfo allocateFlagsInfo{};
+    allocateFlagsInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_FLAGS_INFO;
+    allocateFlagsInfo.flags = VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT_KHR;
+
     VkMemoryAllocateInfo allocInfo{};
     allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
     allocInfo.allocationSize = memRequirements.size;
     allocInfo.memoryTypeIndex = findMemoryType(memRequirements.memoryTypeBits, properties);
+    allocInfo.pNext = &allocateFlagsInfo;
 
     if (vkAllocateMemory(device, &allocInfo, nullptr, &allocatedBuffer.bufferMemory) != VK_SUCCESS) {
         throw std::runtime_error("failed to allocate vertex buffer memory!");
@@ -87,7 +92,7 @@ void RessourceBuilder::destroyBuffer(AllocatedBuffer buffer) {
     vkFreeMemory(device, buffer.bufferMemory, nullptr);
 }
 
-AllocatedImage RessourceBuilder::createImage(VkExtent3D extent, VkFormat format, VkImageTiling tiling,
+AllocatedImage RessourceBuilder::createImage(VkExtent3D extent, VkFormat format, VkImageTiling tiling, VkImageLayout initialLayout,
                                              VkImageUsageFlags usage, VkImageAspectFlags aspectFlags) {
     AllocatedImage image{};
     image.imageExtent = extent;
@@ -101,7 +106,7 @@ AllocatedImage RessourceBuilder::createImage(VkExtent3D extent, VkFormat format,
     imageInfo.arrayLayers = 1;
     imageInfo.format = format;
     imageInfo.tiling = tiling;
-    imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    imageInfo.initialLayout = initialLayout;
     imageInfo.usage = usage;
     imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
     imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
@@ -128,6 +133,11 @@ AllocatedImage RessourceBuilder::createImage(VkExtent3D extent, VkFormat format,
     image.imageView = createImageView(image.image, format, aspectFlags);
 
     return image;
+}
+
+AllocatedImage RessourceBuilder::createImage(VkExtent3D extent, VkFormat format, VkImageTiling tiling,
+                                             VkImageUsageFlags usage, VkImageAspectFlags aspectFlags) {
+    createImage(extent, format, tiling, VK_IMAGE_LAYOUT_UNDEFINED, usage, aspectFlags);
 }
 
 AllocatedImage RessourceBuilder::createImage(void* data, VkExtent3D extent, VkFormat format, VkImageTiling tiling,

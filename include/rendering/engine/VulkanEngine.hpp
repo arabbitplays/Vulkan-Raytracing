@@ -134,8 +134,22 @@ private:
     std::unordered_map<std::string, std::shared_ptr<Node>> loadedNodes;
     DrawContext mainDrawContext;
 
+    VkPhysicalDeviceRayTracingPipelinePropertiesKHR raytracingProperties{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_PROPERTIES_KHR};
+    std::vector<VkRayTracingShaderGroupCreateInfoKHR> shaderGroups{};
+
+    AllocatedImage storageImage;
+
     AccelerationStructure bottomLevelAccelerationStructure;
     AccelerationStructure topLevelAccelerationStructure;
+
+    VkPipeline rt_pipeline;
+    VkPipelineLayout rt_pipelineLayout;
+    VkDescriptorSet rt_descriptorSet;
+    VkDescriptorSetLayout rt_descriptorSetLayout;
+
+    AllocatedBuffer raygenShaderBindingTable;
+    AllocatedBuffer missShaderBindingTable;
+    AllocatedBuffer hitShaderBindingTable;
 
     AllocatedImage whiteImage;
     AllocatedImage greyImage;
@@ -208,6 +222,12 @@ private:
     void loadMeshes();
 
     void meshToBLAS(MeshAsset mesh);
+    void createTLAS();
+    void createShaderBindingTables();
+
+    void rt_createDescriptorSets();
+
+    void rt_createPipeline();
 
     void createUniformBuffers();
     void createDescriptorAllocator();
@@ -231,6 +251,8 @@ private:
     }
 
     MaterialInstance createMetalRoughMaterial(float metallic, float roughness, glm::vec3 albedo);
+
+    void createStorageImage();
 };
 
 #endif //BASICS_VULKANENGINE_HPP

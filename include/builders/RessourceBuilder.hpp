@@ -6,6 +6,7 @@
 #define BASICS_RESSOURCEBUILDER_HPP
 
 
+#include <cstring>
 #include <vulkan/vulkan_core.h>
 #include "../rendering/engine/CommandManager.hpp"
 
@@ -13,6 +14,13 @@ struct AllocatedBuffer {
     VkBuffer handle;
     VkDeviceMemory bufferMemory;
     uint64_t deviceAddress;
+
+    void update(VkDevice device, void* data, size_t size) {
+        void* mapped_data;
+        vkMapMemory(device, bufferMemory, 0, size, 0, &mapped_data);
+        memcpy(mapped_data, data, size);
+        vkUnmapMemory(device, bufferMemory);
+    }
 };
 
 struct AllocatedImage {
@@ -31,6 +39,8 @@ public:
     void copyBuffer(AllocatedBuffer src, AllocatedBuffer dst, VkDeviceSize size);
     void destroyBuffer(AllocatedBuffer buffer);
 
+    AllocatedImage createImage(VkExtent3D extent, VkFormat format, VkImageTiling tiling, VkImageLayout initialLayout,
+                                VkImageUsageFlags usage, VkImageAspectFlags aspectFlags);
     AllocatedImage createImage(VkExtent3D extent, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage,
                                VkImageAspectFlags aspectFlags);
     AllocatedImage createImage(void *data, VkExtent3D extent, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage,
