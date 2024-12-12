@@ -6,7 +6,13 @@ project('Raytracing',
         ],
 )
 
-incdir = include_directories('include')
+incdirs = [
+    include_directories('include'),
+    include_directories('include/builders'),
+    include_directories('include/rendering/engine'),
+    include_directories('include/rendering/nodes'),
+    include_directories('include/rendering'),
+]
 
 vulkan = dependency('vulkan', version: ['>=1.3.0'], required: false)
 if not vulkan.found()
@@ -70,6 +76,6 @@ exe = executable(
         tol,
         vulkan,
     ],
-    include_directories: incdir,
+    include_directories: incdirs,
     install : true
 )
