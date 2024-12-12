@@ -5,6 +5,9 @@
 
 #include "shader.vert.spv.h"
 #include "shader.frag.spv.h"
+#include "miss.rmiss.spv.h"
+#include "closesthit.rchit.spv.h"
+#include "raygen.rgen.spv.h"
 
 const std::vector<const char*> validationLayers = {
         "VK_LAYER_KHRONOS_validation"
@@ -78,6 +81,17 @@ VkDeviceAddress GetAccelerationStructureDeviceAddressKHR( VkDevice device, const
     }
 }
 
+VkResult CreateRayTracingPipelinesKHR(VkDevice device, VkDeferredOperationKHR deferredOperation, VkPipelineCache pipelineCache, uint32_t createInfoCount,
+    const VkRayTracingPipelineCreateInfoKHR* pCreateInfos, const VkAllocationCallbacks* pAllocator, VkPipeline* pPipelines) {
+
+    auto func = (PFN_vkCreateRayTracingPipelinesKHR) vkGetDeviceProcAddr(device, "vkCreateRayTracingPipelinesKHR");
+    if (func != nullptr) {
+        return func(device, deferredOperation, pipelineCache, createInfoCount, pCreateInfos, pAllocator, pPipelines);
+    } else {
+        return VK_ERROR_EXTENSION_NOT_PRESENT;
+    }
+}
+
 void CmdBuildAccelerationStructuresKHR(VkDevice device, VkCommandBuffer commandBuffer, uint32_t infoCount,
     const VkAccelerationStructureBuildGeometryInfoKHR* pInfos,
     const VkAccelerationStructureBuildRangeInfoKHR* const* ppBuildRangeInfos) {
@@ -101,12 +115,6 @@ const uint32_t WIDTH = 800;
 const uint32_t HEIGHT = 600;
 
 const int MAX_FRAMES_IN_FLIGHT = 2;
-
-struct UniformBufferObject {
-    glm::mat4 model;
-    glm::mat4 view;
-    glm::mat4 proj;
-};
 
 void VulkanEngine::run() {
     initWindow();
@@ -151,12 +159,13 @@ void VulkanEngine::initVulkan() {
     initDefaultResources();*/
 
     loadMeshes();
+    createUniformBuffers();
+
     rt_createPipeline();
     createShaderBindingTables();
     rt_createDescriptorSets();
 
-    /*createUniformBuffers();
-    createDescriptorSets();
+    /*createDescriptorSets();
 
     createFrameBuffers();
     createCommandBuffers();
@@ -327,6 +336,14 @@ bool VulkanEngine::isDeviceSuitable(VkPhysicalDevice device) {
     vkGetPhysicalDeviceProperties(device, &deviceProperties);
     vkGetPhysicalDeviceFeatures(device, &deviceFeatures);
 
+    VkPhysicalDeviceRayTracingPipelineFeaturesKHR raytracingPipelineFeatures {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_FEATURES_KHR};
+    VkPhysicalDeviceAccelerationStructureFeaturesKHR accelerationStructureFeatures {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_FEATURES_KHR};
+    raytracingPipelineFeatures.pNext = &accelerationStructureFeatures;
+    VkPhysicalDeviceFeatures2 deviceFeatures2;
+    deviceFeatures2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+    deviceFeatures2.pNext = &raytracingPipelineFeatures;
+    vkGetPhysicalDeviceFeatures2(device, &deviceFeatures2);
+
     // implement device checks here
 
     bool extensionsSupported = checkDeviceExtensionSupport(device);
@@ -339,7 +356,9 @@ bool VulkanEngine::isDeviceSuitable(VkPhysicalDevice device) {
     }
 
     // TODO check for raytracing features
-    return extensionsSupported && indices.isComplete() && swapChainAdequate && deviceFeatures.samplerAnisotropy;
+    return extensionsSupported && indices.isComplete() && swapChainAdequate
+        && deviceFeatures.samplerAnisotropy
+        && raytracingPipelineFeatures.rayTracingPipeline && accelerationStructureFeatures.accelerationStructure;
 }
 
 bool VulkanEngine::checkDeviceExtensionSupport(VkPhysicalDevice device) {
@@ -434,6 +453,7 @@ void VulkanEngine::createLogicalDevice() {
 
     VkPhysicalDeviceRayTracingPipelineFeaturesKHR rayTracingPipelineFeatures{};
     rayTracingPipelineFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_FEATURES_KHR;
+    rayTracingPipelineFeatures.rayTracingPipeline = VK_TRUE;
     rayTracingPipelineFeatures.pNext = &accelerationStructureFeatures;
 
     VkPhysicalDeviceBufferDeviceAddressFeatures deviceAddressFeatures{};
@@ -863,10 +883,36 @@ void VulkanEngine::loadMeshes() {
 }
 
 void VulkanEngine::meshToBLAS(MeshAsset mesh) {
+    struct Vertex
+    {
+        float pos[3];
+    };
+    std::vector<Vertex> vertices = {
+        {{1.0f, 1.0f, 0.0f}},
+        {{-1.0f, 1.0f, 0.0f}},
+        {{0.0f, -1.0f, 0.0f}}};
+    std::vector<uint32_t> indices = {0, 1, 2};
+
+    auto vertex_buffer_size = vertices.size() * sizeof(Vertex);
+    auto index_buffer_size  = indices.size() * sizeof(uint32_t);
+
+    // Create buffers for the bottom level geometry
+    // For the sake of simplicity we won't stage the vertex data to the GPU memory
+
+    // Note that the buffer usage flags for buffers consumed by the bottom level acceleration structure require special flags
+    const VkBufferUsageFlags buffer_usage_flags = VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
+    const VkMemoryPropertyFlags propertyFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+
+    rt_vertexBuffer = ressourceBuilder.createBuffer(vertex_buffer_size, buffer_usage_flags, propertyFlags);
+    rt_vertexBuffer.update(device, vertices.data(), vertex_buffer_size);
+
+    rt_IndexBuffer = ressourceBuilder.createBuffer(index_buffer_size, buffer_usage_flags, propertyFlags);
+    rt_IndexBuffer.update(device, indices.data(), index_buffer_size);
+
     VkDeviceOrHostAddressConstKHR vertexDeviceAddress{};
     VkDeviceOrHostAddressConstKHR indexDeviceAddress{};
-    vertexDeviceAddress.deviceAddress = mesh.meshBuffers.vertexBuffer.deviceAddress;
-    indexDeviceAddress.deviceAddress = mesh.meshBuffers.indexBuffer.deviceAddress;
+    vertexDeviceAddress.deviceAddress = rt_vertexBuffer.deviceAddress;
+    indexDeviceAddress.deviceAddress = rt_IndexBuffer.deviceAddress;
 
     VkAccelerationStructureGeometryKHR accelerationStructureGeometry{};
     accelerationStructureGeometry.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_KHR;
@@ -1122,6 +1168,9 @@ void VulkanEngine::rt_createPipeline() {
     layoutBuilder.addBinding(1, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
     layoutBuilder.addBinding(2, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
     rt_descriptorSetLayout = layoutBuilder.build(device, VK_SHADER_STAGE_RAYGEN_BIT_KHR);
+    mainDeletionQueue.pushFunction([&]() {
+        vkDestroyDescriptorSetLayout(device, rt_descriptorSetLayout, nullptr);
+    });
 
     VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
     pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
@@ -1130,6 +1179,80 @@ void VulkanEngine::rt_createPipeline() {
     if (vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &rt_pipelineLayout) != VK_SUCCESS) {
         throw std::runtime_error("failed to create pipeline layout!");
     }
+    mainDeletionQueue.pushFunction([&]() {
+        vkDestroyPipelineLayout(device, rt_pipelineLayout, nullptr);
+    });
+
+    std::vector<VkPipelineShaderStageCreateInfo> shader_stages;
+    {
+        VkShaderModule raygenShaderModule = VulkanUtil::createShaderModule(device, oschd_raygen_rgen_spv_size(), oschd_raygen_rgen_spv());
+        VkPipelineShaderStageCreateInfo raygenShaderStageInfo{};
+        raygenShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+        raygenShaderStageInfo.stage = VK_SHADER_STAGE_RAYGEN_BIT_KHR;
+        raygenShaderStageInfo.module = raygenShaderModule;
+        raygenShaderStageInfo.pName = "main";
+        shader_stages.push_back(raygenShaderStageInfo);
+
+        VkRayTracingShaderGroupCreateInfoKHR raygenShaderGroupInfo{};
+        raygenShaderGroupInfo.sType = VK_STRUCTURE_TYPE_RAY_TRACING_SHADER_GROUP_CREATE_INFO_KHR;
+        raygenShaderGroupInfo.type = VK_RAY_TRACING_SHADER_GROUP_TYPE_GENERAL_KHR; // TODO what are the alternatives?
+        raygenShaderGroupInfo.generalShader = static_cast<uint32_t>(shader_stages.size()) - 1;
+        raygenShaderGroupInfo.closestHitShader = VK_SHADER_UNUSED_KHR;
+        raygenShaderGroupInfo.anyHitShader = VK_SHADER_UNUSED_KHR;
+        raygenShaderGroupInfo.intersectionShader = VK_SHADER_UNUSED_KHR;
+        shaderGroups.push_back(raygenShaderGroupInfo);
+    }
+    {
+        VkShaderModule missShaderModule = VulkanUtil::createShaderModule(device, oschd_miss_rmiss_spv_size(), oschd_miss_rmiss_spv());
+        VkPipelineShaderStageCreateInfo missShaderStageInfo{};
+        missShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+        missShaderStageInfo.stage = VK_SHADER_STAGE_MISS_BIT_KHR;
+        missShaderStageInfo.module = missShaderModule;
+        missShaderStageInfo.pName = "main";
+        shader_stages.push_back(missShaderStageInfo);
+
+        VkRayTracingShaderGroupCreateInfoKHR missShaderGroupInfo{};
+        missShaderGroupInfo.sType = VK_STRUCTURE_TYPE_RAY_TRACING_SHADER_GROUP_CREATE_INFO_KHR;
+        missShaderGroupInfo.type = VK_RAY_TRACING_SHADER_GROUP_TYPE_GENERAL_KHR; // TODO what are the alternatives?
+        missShaderGroupInfo.generalShader = static_cast<uint32_t>(shader_stages.size()) - 1;
+        missShaderGroupInfo.closestHitShader = VK_SHADER_UNUSED_KHR;
+        missShaderGroupInfo.anyHitShader = VK_SHADER_UNUSED_KHR;
+        missShaderGroupInfo.intersectionShader = VK_SHADER_UNUSED_KHR;
+        shaderGroups.push_back(missShaderGroupInfo);
+    }
+    {
+        VkShaderModule closestHitShaderModule = VulkanUtil::createShaderModule(device, oschd_closesthit_rchit_spv_size(), oschd_closesthit_rchit_spv());
+        VkPipelineShaderStageCreateInfo closestHitShaderStageInfo{};
+        closestHitShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+        closestHitShaderStageInfo.stage = VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR;
+        closestHitShaderStageInfo.module = closestHitShaderModule;
+        closestHitShaderStageInfo.pName = "main";
+        shader_stages.push_back(closestHitShaderStageInfo);
+
+        VkRayTracingShaderGroupCreateInfoKHR clostestHitShaderGroupInfo{};
+        clostestHitShaderGroupInfo.sType = VK_STRUCTURE_TYPE_RAY_TRACING_SHADER_GROUP_CREATE_INFO_KHR;
+        clostestHitShaderGroupInfo.type = VK_RAY_TRACING_SHADER_GROUP_TYPE_TRIANGLES_HIT_GROUP_KHR; // TODO what are the alternatives?
+        clostestHitShaderGroupInfo.generalShader = VK_SHADER_UNUSED_KHR;
+        clostestHitShaderGroupInfo.closestHitShader = static_cast<uint32_t>(shader_stages.size()) - 1;
+        clostestHitShaderGroupInfo.anyHitShader = VK_SHADER_UNUSED_KHR;
+        clostestHitShaderGroupInfo.intersectionShader = VK_SHADER_UNUSED_KHR;
+        shaderGroups.push_back(clostestHitShaderGroupInfo);
+    }
+
+    VkRayTracingPipelineCreateInfoKHR pipelineInfo{};
+    pipelineInfo.sType = VK_STRUCTURE_TYPE_RAY_TRACING_PIPELINE_CREATE_INFO_KHR;
+    pipelineInfo.stageCount = static_cast<uint32_t>(shader_stages.size());
+    pipelineInfo.pStages = shader_stages.data();
+    pipelineInfo.groupCount = static_cast<uint32_t>(shaderGroups.size());
+    pipelineInfo.pGroups = shaderGroups.data();
+    pipelineInfo.maxPipelineRayRecursionDepth = 1;
+    pipelineInfo.layout = rt_pipelineLayout;
+    if (CreateRayTracingPipelinesKHR(device, VK_NULL_HANDLE, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &rt_pipeline) != VK_SUCCESS) {
+        throw std::runtime_error("failed to create ray tracing pipeline!");
+    }
+    mainDeletionQueue.pushFunction([&]() {
+        vkDestroyPipeline(device, rt_pipeline, nullptr);
+    });
 }
 
 

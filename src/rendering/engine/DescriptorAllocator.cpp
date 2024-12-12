@@ -154,6 +154,8 @@ void DescriptorAllocator::writeAccelerationStructure(uint32_t binding, VkAcceler
     descriptorSetAccelerationStructure.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_ACCELERATION_STRUCTURE_KHR;
     descriptorSetAccelerationStructure.accelerationStructureCount = 1;
     descriptorSetAccelerationStructure.pAccelerationStructures = &accelerationStructure;
+    descriptorSetAccelerationStructure.pNext = nullptr;
+    accelerationStructureInfos.push_back(descriptorSetAccelerationStructure);
 
     VkWriteDescriptorSet write{};
     write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
@@ -172,11 +174,12 @@ void DescriptorAllocator::updateSet(VkDevice& device, VkDescriptorSet& set) {
     }
 
     vkUpdateDescriptorSets(device, static_cast<uint32_t>(writes.size()),
-                           writes.data(), 0, nullptr);
+                           writes.data(), 0, VK_NULL_HANDLE);
 }
 
 void DescriptorAllocator::clearWrites() {
     bufferInfos.clear();
     imageInfos.clear();
+    accelerationStructureInfos.clear();
     writes.clear();
 }

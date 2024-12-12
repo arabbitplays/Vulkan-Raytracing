@@ -40,6 +40,7 @@ private:
 
     std::deque<VkDescriptorImageInfo> imageInfos;
     std::deque<VkDescriptorBufferInfo> bufferInfos;
+    std::deque<VkWriteDescriptorSetAccelerationStructureKHR> accelerationStructureInfos;
     std::vector<VkWriteDescriptorSet> writes;
 
     const uint32_t GROW_RATIO = 2;

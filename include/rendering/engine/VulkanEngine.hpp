@@ -138,6 +138,7 @@ private:
     std::vector<VkRayTracingShaderGroupCreateInfoKHR> shaderGroups{};
 
     AllocatedImage storageImage;
+    AllocatedBuffer rt_vertexBuffer, rt_IndexBuffer;
 
     AccelerationStructure bottomLevelAccelerationStructure;
     AccelerationStructure topLevelAccelerationStructure;

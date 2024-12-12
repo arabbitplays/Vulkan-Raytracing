@@ -5,6 +5,9 @@ subdir('rendering/nodes')
 shaders = [
     'shaders/shader.frag',
     'shaders/shader.vert',
+    'shaders/miss.rmiss',
+    'shaders/closesthit.rchit',
+    'shaders/raygen.rgen',
 ]
 
 foreach s : shaders
