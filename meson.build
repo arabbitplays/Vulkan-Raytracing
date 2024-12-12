@@ -39,7 +39,7 @@ else
 endif
 
 spv_compile_script = [meson.project_source_root() + '/scripts/compile_shader.py', '--glslc_path', glslc_path]
-glslc_args = ['--target-env', 'vulkan1.0']
+glslc_args = ['--target-env', 'vulkan1.3']
 glslc_args += ['-I' + meson.project_source_root()]
 glslc_args += ['-I' + join_paths(project_root, 'src')]
 glslc_args += ['-I' + join_paths(project_root, 'include')]

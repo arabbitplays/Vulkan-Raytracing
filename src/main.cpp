@@ -34,7 +34,10 @@ const std::vector<const char*> validationLayers = {
 };
 
 const std::vector<const char*> deviceExtensions = {
-        VK_KHR_SWAPCHAIN_EXTENSION_NAME
+        VK_KHR_SWAPCHAIN_EXTENSION_NAME,
+        VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME,
+        VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME,
+        VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME,
 };
 
 #ifdef NDEBUG
@@ -92,6 +95,7 @@ private:
     VkDebugUtilsMessengerEXT debugMessenger;
 
     VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
+    VkPhysicalDeviceRayTracingPipelinePropertiesKHR rtProperites {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_PROPERTIES_KHR};
     VkDevice device;
     VkQueue graphicsQueue, presentQueue;
 
@@ -161,6 +165,7 @@ private:
         createSurface();
         pickPhysicalDevice();
         createLogicalDevice();
+        initRaytracing();
 
         createSwapChain();
         createImageViews();
@@ -197,24 +202,32 @@ private:
         appInfo.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
         appInfo.pEngineName = "No Engine";
         appInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);
-        appInfo.apiVersion = VK_API_VERSION_1_0;
+        appInfo.apiVersion = VK_API_VERSION_1_3;
 
         VkInstanceCreateInfo createInfo{};
         createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
         createInfo.pApplicationInfo = &appInfo;
+        createInfo.flags = VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR;
+
 
         uint32_t extensionCount = 0;
         vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, nullptr);
         std::vector<VkExtensionProperties> extensions(extensionCount);
         vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, extensions.data());
-        std::cout << "available extensions:\n";
+        std::cout << "available instance extensions:\n";
         for (const auto& extension : extensions) {
             std::cout << "\t" << extension.extensionName << "\n";
         }
 
+        std::vector<const char*> requiredExtensions;
         std::vector<const char*> glfwExtensions = getRequiredExtensions();
-        createInfo.enabledExtensionCount = static_cast<uint32_t>(glfwExtensions.size());
-        createInfo.ppEnabledExtensionNames = glfwExtensions.data();
+        for (int i = 0; i < glfwExtensions.size(); ++i) {
+            requiredExtensions.emplace_back(glfwExtensions[i]);
+        }
+        requiredExtensions.emplace_back(VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME);
+
+        createInfo.enabledExtensionCount = static_cast<uint32_t>(requiredExtensions.size());
+        createInfo.ppEnabledExtensionNames = requiredExtensions.data();
 
         // Add an extra debug messenger for the create and destroy instance calls
         VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo{};
@@ -330,6 +343,17 @@ private:
 
         if (physicalDevice == VK_NULL_HANDLE) {
             throw std::runtime_error("failed to find suitable GPU!");
+        } else {
+            uint32_t extensionCount = 0;
+            vkEnumerateDeviceExtensionProperties(physicalDevice, nullptr, &extensionCount, nullptr);
+            std::vector<VkExtensionProperties> availableExtensions(extensionCount);
+            vkEnumerateDeviceExtensionProperties(physicalDevice, nullptr, &extensionCount, availableExtensions.data());
+
+            std::cout << "available device extensions:\n";
+            for (const auto& extension : availableExtensions) {
+                std::cout << "\t" << extension.extensionName << "\n";
+
+            }
         }
     }
 
@@ -473,6 +497,12 @@ private:
         }
         vkGetDeviceQueue(device, indices.graphicsFamily.value(), 0, &graphicsQueue);
         vkGetDeviceQueue(device, indices.presentFamily.value(), 0, &presentQueue);
+    }
+
+    void initRaytracing() {
+        VkPhysicalDeviceProperties2 prop2 {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2};
+        prop2.pNext = &rtProperites;
+        vkGetPhysicalDeviceProperties2(physicalDevice, &prop2);
     }
 
     void recreateSwapChain() {
