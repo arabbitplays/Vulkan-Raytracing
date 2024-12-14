@@ -48,16 +48,7 @@ void DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT
     }
 }
 
-VkResult CreateRayTracingPipelinesKHR(VkDevice device, VkDeferredOperationKHR deferredOperation, VkPipelineCache pipelineCache, uint32_t createInfoCount,
-    const VkRayTracingPipelineCreateInfoKHR* pCreateInfos, const VkAllocationCallbacks* pAllocator, VkPipeline* pPipelines) {
 
-    auto func = (PFN_vkCreateRayTracingPipelinesKHR) vkGetDeviceProcAddr(device, "vkCreateRayTracingPipelinesKHR");
-    if (func != nullptr) {
-        return func(device, deferredOperation, pipelineCache, createInfoCount, pCreateInfos, pAllocator, pPipelines);
-    } else {
-        return VK_ERROR_EXTENSION_NOT_PRESENT;
-    }
-}
 
 VkResult GetRayTracingShaderGroupHandlesKHR(VkDevice device, VkPipeline pipeline, uint32_t firstGroup, uint32_t groupCount, size_t dataSize, void* pData) {
     auto func = (PFN_vkGetRayTracingShaderGroupHandlesKHR) vkGetDeviceProcAddr(device, "vkGetRayTracingShaderGroupHandlesKHR");
@@ -113,13 +104,17 @@ void VulkanEngine::initVulkan() {
     pickPhysicalDevice();
     createLogicalDevice();
 
-
     createCommandManager();
     createRessourceBuilder();
     createDescriptorAllocator();
     createAccelerationStructureBuilder();
 
     createSwapChain();
+    createStorageImage();
+
+    mainDeletionQueue.pushFunction([&]() {
+        cleanupSwapChain();
+    });
     /*createDescriptorSetLayout();
     initPipelines();
 
@@ -128,7 +123,6 @@ void VulkanEngine::initVulkan() {
 
     loadMeshes();
     createUniformBuffers();
-    createStorageImage();
 
     rt_createPipeline();
     createShaderBindingTables();
@@ -469,8 +463,12 @@ void VulkanEngine::recreateSwapChain() {
     cleanupSwapChain();
 
     createSwapChain();
-    createDepthResources();
-    createFrameBuffers();
+    //createDepthResources();
+    //createFrameBuffers();
+    createStorageImage();
+    descriptorAllocator.writeImage(1, storageImage.imageView, VK_NULL_HANDLE, VK_IMAGE_LAYOUT_GENERAL, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
+    descriptorAllocator.updateSet(device, rt_descriptorSet);
+    descriptorAllocator.clearWrites();
 }
 
 void VulkanEngine::createSwapChain() {
@@ -525,9 +523,6 @@ void VulkanEngine::createSwapChain() {
     swapChainExtent = extent;
 
     createImageViews();
-    mainDeletionQueue.pushFunction([&]() {
-        cleanupSwapChain();
-    });
 }
 
 VkSurfaceFormatKHR VulkanEngine::chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats) {
@@ -642,6 +637,20 @@ void VulkanEngine::createCommandManager() {
 void VulkanEngine::createRessourceBuilder() {
     auto pRessourceBuilder = new RessourceBuilder(physicalDevice, device, commandManager);
     ressourceBuilder = *pRessourceBuilder;
+}
+
+void VulkanEngine::createDescriptorAllocator() {
+    std::vector<DescriptorAllocator::PoolSizeRatio> poolRatios = {
+        { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1 },
+        { VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1 },
+        { VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1 },
+        { VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, 1 },
+};
+    descriptorAllocator.init(device, 4, poolRatios);
+
+    mainDeletionQueue.pushFunction([&]() {
+        descriptorAllocator.destroyPools(device);
+    });
 }
 
 void VulkanEngine::createAccelerationStructureBuilder() {
@@ -807,9 +816,6 @@ void VulkanEngine::createStorageImage() {
         VK_FORMAT_B8G8R8A8_UNORM, VK_IMAGE_TILING_OPTIMAL,
         VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_STORAGE_BIT,
         VK_IMAGE_ASPECT_COLOR_BIT);
-    mainDeletionQueue.pushFunction([&]() {
-        ressourceBuilder.destroyImage(storageImage);
-    });
 
     ressourceBuilder.transitionImageLayout(storageImage.image, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
         VK_ACCESS_NONE, VK_ACCESS_NONE, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
@@ -905,6 +911,7 @@ void VulkanEngine::rt_createDescriptorSets() {
     descriptorAllocator.writeImage(1, storageImage.imageView, VK_NULL_HANDLE, VK_IMAGE_LAYOUT_GENERAL, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
     descriptorAllocator.writeBuffer(2, sceneUniformBuffers[0].handle, sizeof(SceneData), 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
     descriptorAllocator.updateSet(device, rt_descriptorSet);
+    descriptorAllocator.clearWrites();
 }
 
 void VulkanEngine::rt_createPipeline() {
@@ -919,16 +926,8 @@ void VulkanEngine::rt_createPipeline() {
         vkDestroyDescriptorSetLayout(device, rt_descriptorSetLayout, nullptr);
     });
 
-    VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
-    pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-    pipelineLayoutInfo.setLayoutCount = 1;
-    pipelineLayoutInfo.pSetLayouts = &rt_descriptorSetLayout;
-    if (vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &rt_pipelineLayout) != VK_SUCCESS) {
-        throw std::runtime_error("failed to create pipeline layout!");
-    }
-    mainDeletionQueue.pushFunction([&]() {
-        vkDestroyPipelineLayout(device, rt_pipelineLayout, nullptr);
-    });
+    std::vector<VkDescriptorSetLayout> descriptorSetLayouts{rt_descriptorSetLayout};
+    raytracingPipelineBuilder.setDescriptorSetLayouts(descriptorSetLayouts);
 
     VkShaderModule raygenShaderModule = VulkanUtil::createShaderModule(device, oschd_raygen_rgen_spv_size(), oschd_raygen_rgen_spv());
     VkShaderModule missShaderModule = VulkanUtil::createShaderModule(device, oschd_miss_rmiss_spv_size(), oschd_miss_rmiss_spv());
@@ -938,18 +937,10 @@ void VulkanEngine::rt_createPipeline() {
     raytracingPipelineBuilder.addShaderStage(missShaderModule, VK_SHADER_STAGE_MISS_BIT_KHR, VK_RAY_TRACING_SHADER_GROUP_TYPE_GENERAL_KHR);
     raytracingPipelineBuilder.addShaderStage(closestHitShaderModule, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR, VK_RAY_TRACING_SHADER_GROUP_TYPE_TRIANGLES_HIT_GROUP_KHR);
 
-    VkRayTracingPipelineCreateInfoKHR pipelineInfo{};
-    pipelineInfo.sType = VK_STRUCTURE_TYPE_RAY_TRACING_PIPELINE_CREATE_INFO_KHR;
-    pipelineInfo.stageCount = static_cast<uint32_t>(raytracingPipelineBuilder.shader_stages.size());
-    pipelineInfo.pStages = raytracingPipelineBuilder.shader_stages.data();
-    pipelineInfo.groupCount = static_cast<uint32_t>(raytracingPipelineBuilder.shaderGroups.size());
-    pipelineInfo.pGroups = raytracingPipelineBuilder.shaderGroups.data();
-    pipelineInfo.maxPipelineRayRecursionDepth = 1;
-    pipelineInfo.layout = rt_pipelineLayout;
-    if (CreateRayTracingPipelinesKHR(device, VK_NULL_HANDLE, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &rt_pipeline) != VK_SUCCESS) {
-        throw std::runtime_error("failed to create ray tracing pipeline!");
-    }
+    raytracingPipelineBuilder.buildPipeline(device, &rt_pipeline, &rt_pipelineLayout);
+
     mainDeletionQueue.pushFunction([&]() {
+        vkDestroyPipelineLayout(device, rt_pipelineLayout, nullptr);
         vkDestroyPipeline(device, rt_pipeline, nullptr);
     });
 
@@ -975,20 +966,6 @@ void VulkanEngine::createUniformBuffers() {
             ressourceBuilder.destroyBuffer(sceneUniformBuffers[i]);
         });
     }
-}
-
-void VulkanEngine::createDescriptorAllocator() {
-    std::vector<DescriptorAllocator::PoolSizeRatio> poolRatios = {
-            { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1 },
-            { VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1 },
-            { VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1 },
-            { VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, 1 },
-    };
-    descriptorAllocator.init(device, 4, poolRatios);
-
-    mainDeletionQueue.pushFunction([&]() {
-        descriptorAllocator.destroyPools(device);
-    });
 }
 
 void VulkanEngine::createDescriptorSets() {
@@ -1304,13 +1281,15 @@ void VulkanEngine::cleanup() {
 }
 
 void VulkanEngine::cleanupSwapChain() {
-    for (auto framebuffer : swapChainFrameBuffers) {
+    /*for (auto framebuffer : swapChainFrameBuffers) {
         vkDestroyFramebuffer(device, framebuffer, nullptr);
-    }
+    }*/
     for (auto imageView : swapChainImageViews) {
         vkDestroyImageView(device, imageView, nullptr);
     }
     vkDestroySwapchainKHR(device, swapChain, nullptr);
+
+    ressourceBuilder.destroyImage(storageImage);
 }
 
 VkFormat VulkanEngine::getColorAttachmentFormat() {

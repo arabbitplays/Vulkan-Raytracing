@@ -12,13 +12,19 @@
 
 class RaytracingPipelineBuilder {
   public:
-    RaytracingPipelineBuilder() = default;
+    RaytracingPipelineBuilder() { clear(); }
 
+    void buildPipeline(VkDevice& device, VkPipeline* pipeline, VkPipelineLayout* layout);
     void addShaderStage(VkShaderModule shaderModule, VkShaderStageFlagBits shaderStage, VkRayTracingShaderGroupTypeKHR shaderGroup);
-    std::vector<VkRayTracingShaderGroupCreateInfoKHR> shaderGroups{};
+    void setDescriptorSetLayouts(std::vector<VkDescriptorSetLayout>& descriptorSetLayouts);
+    void clear();
+    void destroyPipeline(VkDevice device, VkPipeline &pipeline, VkPipelineLayout &layout);
+
+private:
+    VkPipelineLayoutCreateInfo pipelineLayoutInfo;
+    std::vector<VkRayTracingShaderGroupCreateInfoKHR> shader_groups{};
     std::vector<VkPipelineShaderStageCreateInfo> shader_stages{};
 
-    private:
 };
 
 
