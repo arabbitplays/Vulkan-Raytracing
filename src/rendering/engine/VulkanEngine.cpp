@@ -45,42 +45,6 @@ void DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT
     }
 }
 
-void GetAccelerationStructureBuildSizesKHR2(VkDevice device,
-            VkAccelerationStructureBuildTypeKHR buildType,
-            const VkAccelerationStructureBuildGeometryInfoKHR* pBuildInfo,
-            const uint32_t* pMaxPrimitiveCounts,
-            VkAccelerationStructureBuildSizesInfoKHR* pSizeInfo) {
-    auto func = (PFN_vkGetAccelerationStructureBuildSizesKHR) vkGetDeviceProcAddr(device, "vkGetAccelerationStructureBuildSizesKHR");
-    if (func != nullptr) {
-        return func(device, buildType, pBuildInfo, pMaxPrimitiveCounts, pSizeInfo);
-    }
-}
-
-VkResult CreateAccelerationStructureKHR2(VkDevice device, const VkAccelerationStructureCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkAccelerationStructureKHR* pAccelerationStructure) {
-    auto func = (PFN_vkCreateAccelerationStructureKHR) vkGetDeviceProcAddr(device, "vkCreateAccelerationStructureKHR");
-    if (func != nullptr) {
-        return func(device, pCreateInfo, pAllocator, pAccelerationStructure);
-    } else {
-        return VK_ERROR_EXTENSION_NOT_PRESENT;
-    }
-}
-
-void DestroyAccelerationStructureKHR2(VkDevice device, VkAccelerationStructureKHR accelerationStructure, const VkAllocationCallbacks* pAllocator) {
-    auto func = (PFN_vkDestroyAccelerationStructureKHR) vkGetDeviceProcAddr(device, "vkDestroyAccelerationStructureKHR");
-    if (func != nullptr) {
-        return func(device, accelerationStructure, pAllocator);
-    }
-}
-
-VkDeviceAddress GetAccelerationStructureDeviceAddressKHR2( VkDevice device, const VkAccelerationStructureDeviceAddressInfoKHR* pInfo) {
-    auto func = (PFN_vkGetAccelerationStructureDeviceAddressKHR) vkGetDeviceProcAddr(device, "vkGetAccelerationStructureDeviceAddressKHR");
-    if (func != nullptr) {
-        return func(device, pInfo);
-    } else {
-        return 0;
-    }
-}
-
 VkResult CreateRayTracingPipelinesKHR(VkDevice device, VkDeferredOperationKHR deferredOperation, VkPipelineCache pipelineCache, uint32_t createInfoCount,
     const VkRayTracingPipelineCreateInfoKHR* pCreateInfos, const VkAllocationCallbacks* pAllocator, VkPipeline* pPipelines) {
 
@@ -89,16 +53,6 @@ VkResult CreateRayTracingPipelinesKHR(VkDevice device, VkDeferredOperationKHR de
         return func(device, deferredOperation, pipelineCache, createInfoCount, pCreateInfos, pAllocator, pPipelines);
     } else {
         return VK_ERROR_EXTENSION_NOT_PRESENT;
-    }
-}
-
-void CmdBuildAccelerationStructuresKHR2(VkDevice device, VkCommandBuffer commandBuffer, uint32_t infoCount,
-    const VkAccelerationStructureBuildGeometryInfoKHR* pInfos,
-    const VkAccelerationStructureBuildRangeInfoKHR* const* ppBuildRangeInfos) {
-
-    auto func = (PFN_vkCmdBuildAccelerationStructuresKHR) vkGetDeviceProcAddr(device, "vkCmdBuildAccelerationStructuresKHR");
-    if (func != nullptr) {
-        return func(commandBuffer, infoCount, pInfos, ppBuildRangeInfos);
     }
 }
 
@@ -688,7 +642,7 @@ void VulkanEngine::createRessourceBuilder() {
 }
 
 void VulkanEngine::createAccelerationStructureBuilder() {
-    auto pAsBuilder = new AccelerationStructureBuilder(device, ressourceBuilder, commandManager);
+    auto pAsBuilder = new AccelerationStructureBuilder(device, ressourceBuilder, commandManager, mainDeletionQueue);
     acceleration_structure_builder = *pAsBuilder;
 }
 

@@ -5,6 +5,7 @@
 #ifndef ACCELERATIONSTRUCTUREBUILDER_HPP
 #define ACCELERATIONSTRUCTUREBUILDER_HPP
 
+#include <DeletionQueue.hpp>
 #include <vulkan/vulkan_core.h>
 #include <vector>
 #include "MeshAssetBuilder.hpp"
@@ -18,7 +19,7 @@ struct AccelerationStructure {
 class AccelerationStructureBuilder {
 public:
     AccelerationStructureBuilder() = default;
-    AccelerationStructureBuilder(VkDevice device, RessourceBuilder ressource_builder, CommandManager command_manager);
+    AccelerationStructureBuilder(VkDevice& device, RessourceBuilder& ressource_builder, CommandManager& command_manager, DeletionQueue& deletion_queue);
 
     AccelerationStructure buildBlasFromMesh(const MeshAsset& mesh);
     AccelerationStructure buildTlasFromMesh(std::vector<AccelerationStructure>& blas);
@@ -31,6 +32,7 @@ private:
     VkDevice device;
     RessourceBuilder ressource_builder;
     CommandManager command_manager;
+    DeletionQueue deletion_queue;
 };
 
 #endif //ACCELERATIONSTRUCTUREBUILDER_HPP
