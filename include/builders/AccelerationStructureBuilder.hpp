@@ -12,27 +12,31 @@
 
 struct AccelerationStructure {
     VkAccelerationStructureKHR handle;
-    uint64_t deviceAddress;
+    uint64_t deviceAddress = 0;
     AllocatedBuffer buffer;
+};
+
+struct Geometry {
+    VkAccelerationStructureGeometryKHR handle;
+    uint32_t primitiveCount;
 };
 
 class AccelerationStructureBuilder {
 public:
     AccelerationStructureBuilder() = default;
-    AccelerationStructureBuilder(VkDevice& device, RessourceBuilder& ressource_builder, CommandManager& command_manager, DeletionQueue& deletion_queue);
+    AccelerationStructureBuilder(VkDevice& device, RessourceBuilder& ressource_builder, CommandManager& command_manager);
 
-    AccelerationStructure buildBlasFromMesh(const MeshAsset& mesh);
-    AccelerationStructure buildTlasFromMesh(std::vector<AccelerationStructure>& blas);
-    AccelerationStructure buildAccelerationStructure(VkAccelerationStructureTypeKHR type, uint32_t primitiveCount,
-                                                    std::vector<VkAccelerationStructureGeometryKHR>& geometries);
+    AccelerationStructure buildAccelerationStructure(VkAccelerationStructureTypeKHR type);
 
     void destroyAccelerationStructure(AccelerationStructure &accelerationStructure);
 
-private:
+protected:
     VkDevice device;
     RessourceBuilder ressource_builder;
     CommandManager command_manager;
-    DeletionQueue deletion_queue;
+    std::vector<AllocatedBuffer> instanceBuffers{};
+    std::vector<Geometry> geometries{};
+
 };
 
 #endif //ACCELERATIONSTRUCTUREBUILDER_HPP

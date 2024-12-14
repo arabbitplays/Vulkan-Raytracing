@@ -654,8 +654,10 @@ void VulkanEngine::createDescriptorAllocator() {
 }
 
 void VulkanEngine::createAccelerationStructureBuilder() {
-    auto pAsBuilder = new AccelerationStructureBuilder(device, ressourceBuilder, commandManager, mainDeletionQueue);
-    acceleration_structure_builder = *pAsBuilder;
+    auto pBlasBuilder = new BottomLevelAccelerationStructureBuilder(device, ressourceBuilder, commandManager);
+    blas_structure_builder = *pBlasBuilder;
+    auto pTlasBuilder = new TopLevelAccelerationStructureBuilder(device, ressourceBuilder, commandManager);
+    tlas_structure_builder = *pTlasBuilder;
 }
 
 void VulkanEngine::createDepthResources() {
@@ -863,12 +865,25 @@ void VulkanEngine::loadMeshes() {
 }
 
 void VulkanEngine::createAccelerationStructures(MeshAsset mesh) {
-    bottomLevelAccelerationStructure = acceleration_structure_builder.buildBlasFromMesh(mesh);
-    std::vector<AccelerationStructure> blas{bottomLevelAccelerationStructure};
-    topLevelAccelerationStructure = acceleration_structure_builder.buildTlasFromMesh(blas);
+    blas_structure_builder.addTriangleGeometry(mesh);
+    bottomLevelAccelerationStructure = blas_structure_builder.buildAccelerationStructure(VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_KHR);
+
+    glm::mat4 translation = glm::translate(glm::mat4(1.0f), glm::vec3(1.f, 0.0f, 0.0f));
+    glm::mat4 scale = glm::scale(glm::mat4(1.0f), glm::vec3(0.5f, 0.5f, 0.5f));
+    tlas_structure_builder.addInstance(bottomLevelAccelerationStructure, scale * translation);
+
+    translation = glm::translate(glm::mat4(1.0f), glm::vec3(-1.f, 0.0f, 0.0f));
+    tlas_structure_builder.addInstance(bottomLevelAccelerationStructure, scale * translation);
+
+    if (topLevelAccelerationStructure.deviceAddress == 0) {
+        tlas_structure_builder.addInstanceGeometry();
+    } else {
+        tlas_structure_builder.update_instance_geometry(0);
+    }
+    topLevelAccelerationStructure = tlas_structure_builder.buildAccelerationStructure(VK_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL_KHR);
     mainDeletionQueue.pushFunction([&]() {
-        acceleration_structure_builder.destroyAccelerationStructure(bottomLevelAccelerationStructure);
-        acceleration_structure_builder.destroyAccelerationStructure(topLevelAccelerationStructure);
+        blas_structure_builder.destroyAccelerationStructure(bottomLevelAccelerationStructure);
+        tlas_structure_builder.destroyAccelerationStructure(topLevelAccelerationStructure);
     });
 }
 

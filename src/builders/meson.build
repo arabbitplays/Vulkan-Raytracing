@@ -5,5 +5,7 @@ src += files(
     'RenderPassBuilder.cpp',
     'RessourceBuilder.cpp',
     'AccelerationStructureBuilder.cpp',
+    'BottomLevelAccelerationStructureBuilder.cpp',
+    'TopLevelAccelerationStructureBuilder.cpp',
     'RaytracingPipelineBuilder.cpp',
 )

@@ -25,6 +25,8 @@
 #include <stb_image.h>
 #define TINYOBJLOADER_IMPLEMENTATION
 #include <AccelerationStructureBuilder.hpp>
+#include <BottomLevelAccelerationStructureBuilder.hpp>
+#include <TopLevelAccelerationStructureBuilder.hpp>
 #include <unordered_map>
 #include "../Vertex.hpp"
 #include "RasterizerPipelineBuilder.hpp"
@@ -95,7 +97,8 @@ public:
     CommandManager commandManager;
     RessourceBuilder ressourceBuilder;
     MeshAssetBuilder meshAssetBuilder;
-    AccelerationStructureBuilder acceleration_structure_builder;
+    BottomLevelAccelerationStructureBuilder blas_structure_builder;
+    TopLevelAccelerationStructureBuilder tlas_structure_builder;
 
     VkDescriptorSetLayout sceneDataDescriptorLayout;
     VkPushConstantRange objectDataCostantRange;
