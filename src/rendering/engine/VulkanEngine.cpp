@@ -111,6 +111,16 @@ VkResult GetRayTracingShaderGroupHandlesKHR(VkDevice device, VkPipeline pipeline
     }
 }
 
+void CmdTraceRaysKHR(VkDevice device, VkCommandBuffer commandBuffer, const VkStridedDeviceAddressRegionKHR* pRaygenShaderBindingTable,
+    const VkStridedDeviceAddressRegionKHR* pMissShaderBindingTable, const VkStridedDeviceAddressRegionKHR* pHitShaderBindingTable,
+    const VkStridedDeviceAddressRegionKHR* pCallableShaderBindingTable, uint32_t width, uint32_t height, uint32_t depth) {
+    auto func = (PFN_vkCmdTraceRaysKHR) vkGetDeviceProcAddr(device, "vkCmdTraceRaysKHR");
+    if (func != nullptr) {
+        return func(commandBuffer, pRaygenShaderBindingTable, pMissShaderBindingTable,
+            pHitShaderBindingTable, pCallableShaderBindingTable, width, height, depth);
+    }
+}
+
 const uint32_t WIDTH = 800;
 const uint32_t HEIGHT = 600;
 
@@ -119,7 +129,7 @@ const int MAX_FRAMES_IN_FLIGHT = 2;
 void VulkanEngine::run() {
     initWindow();
     initVulkan();
-    //mainLoop();
+    mainLoop();
     cleanup();
 }
 
@@ -160,16 +170,17 @@ void VulkanEngine::initVulkan() {
 
     loadMeshes();
     createUniformBuffers();
+    createStorageImage();
 
     rt_createPipeline();
     createShaderBindingTables();
     rt_createDescriptorSets();
 
-    /*createDescriptorSets();
+    //createDescriptorSets();
 
-    createFrameBuffers();
+    //createFrameBuffers();
     createCommandBuffers();
-    createSyncObjects();*/
+    createSyncObjects();
 }
 
 void VulkanEngine::createInstance() {
@@ -525,7 +536,7 @@ void VulkanEngine::createSwapChain() {
     createInfo.imageColorSpace = surfaceFormat.colorSpace;
     createInfo.imageExtent = extent;
     createInfo.imageArrayLayers = 1;
-    createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+    createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
 
     QueueFamilyIndices indices = findQueueFamilies(physicalDevice);
     uint32_t queueFamilyIndices[] = {indices.graphicsFamily.value(), indices.presentFamily.value()};
@@ -832,12 +843,14 @@ void VulkanEngine::createStorageImage() {
     storageImage = ressourceBuilder.createImage(
         VkExtent3D{swapChainExtent.width, swapChainExtent.height, 1},
         VK_FORMAT_B8G8R8A8_UNORM, VK_IMAGE_TILING_OPTIMAL,
-        VK_IMAGE_LAYOUT_GENERAL,
         VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_STORAGE_BIT,
         VK_IMAGE_ASPECT_COLOR_BIT);
     mainDeletionQueue.pushFunction([&]() {
         ressourceBuilder.destroyImage(storageImage);
     });
+
+    ressourceBuilder.transitionImageLayout(storageImage.image, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
+        VK_ACCESS_NONE, VK_ACCESS_NONE, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
 }
 
 void VulkanEngine::loadMeshes() {
@@ -909,6 +922,11 @@ void VulkanEngine::meshToBLAS(MeshAsset mesh) {
     rt_IndexBuffer = ressourceBuilder.createBuffer(index_buffer_size, buffer_usage_flags, propertyFlags);
     rt_IndexBuffer.update(device, indices.data(), index_buffer_size);
 
+    mainDeletionQueue.pushFunction([&]() {
+        ressourceBuilder.destroyBuffer(rt_vertexBuffer);
+        ressourceBuilder.destroyBuffer(rt_IndexBuffer);
+    });
+
     VkDeviceOrHostAddressConstKHR vertexDeviceAddress{};
     VkDeviceOrHostAddressConstKHR indexDeviceAddress{};
     vertexDeviceAddress.deviceAddress = rt_vertexBuffer.deviceAddress;
@@ -951,10 +969,6 @@ void VulkanEngine::meshToBLAS(MeshAsset mesh) {
         VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
         );
 
-    mainDeletionQueue.pushFunction([&]() {
-        ressourceBuilder.destroyBuffer(bottomLevelAccelerationStructure.buffer);
-    });
-
     VkAccelerationStructureCreateInfoKHR accelerationStructureCreateInfo{};
     accelerationStructureCreateInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_CREATE_INFO_KHR;
     accelerationStructureCreateInfo.buffer = bottomLevelAccelerationStructure.buffer.handle;
@@ -965,7 +979,7 @@ void VulkanEngine::meshToBLAS(MeshAsset mesh) {
     }
 
     mainDeletionQueue.pushFunction([&]() {
-        DestroyAccelerationStructureKHR(device, bottomLevelAccelerationStructure.handle, nullptr);
+        destroyAccelerationStructure(bottomLevelAccelerationStructure);
     });
 
     AllocatedBuffer scratchBuffer = ressourceBuilder.createBuffer(
@@ -1062,10 +1076,6 @@ void VulkanEngine::createTLAS() {
         VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
         );
 
-    mainDeletionQueue.pushFunction([&]() {
-        ressourceBuilder.destroyBuffer(topLevelAccelerationStructure.buffer);
-    });
-
     VkAccelerationStructureCreateInfoKHR accelerationStructureCreateInfo{};
     accelerationStructureCreateInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_CREATE_INFO_KHR;
     accelerationStructureCreateInfo.buffer = topLevelAccelerationStructure.buffer.handle;
@@ -1076,7 +1086,7 @@ void VulkanEngine::createTLAS() {
     }
 
     mainDeletionQueue.pushFunction([&]() {
-        DestroyAccelerationStructureKHR(device, topLevelAccelerationStructure.handle, nullptr);
+        destroyAccelerationStructure(topLevelAccelerationStructure);
     });
 
     AllocatedBuffer scratchBuffer = ressourceBuilder.createBuffer(
@@ -1183,9 +1193,12 @@ void VulkanEngine::rt_createPipeline() {
         vkDestroyPipelineLayout(device, rt_pipelineLayout, nullptr);
     });
 
+    VkShaderModule raygenShaderModule = VulkanUtil::createShaderModule(device, oschd_raygen_rgen_spv_size(), oschd_raygen_rgen_spv());
+    VkShaderModule missShaderModule = VulkanUtil::createShaderModule(device, oschd_miss_rmiss_spv_size(), oschd_miss_rmiss_spv());
+    VkShaderModule closestHitShaderModule = VulkanUtil::createShaderModule(device, oschd_closesthit_rchit_spv_size(), oschd_closesthit_rchit_spv());
+
     std::vector<VkPipelineShaderStageCreateInfo> shader_stages;
     {
-        VkShaderModule raygenShaderModule = VulkanUtil::createShaderModule(device, oschd_raygen_rgen_spv_size(), oschd_raygen_rgen_spv());
         VkPipelineShaderStageCreateInfo raygenShaderStageInfo{};
         raygenShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
         raygenShaderStageInfo.stage = VK_SHADER_STAGE_RAYGEN_BIT_KHR;
@@ -1203,7 +1216,6 @@ void VulkanEngine::rt_createPipeline() {
         shaderGroups.push_back(raygenShaderGroupInfo);
     }
     {
-        VkShaderModule missShaderModule = VulkanUtil::createShaderModule(device, oschd_miss_rmiss_spv_size(), oschd_miss_rmiss_spv());
         VkPipelineShaderStageCreateInfo missShaderStageInfo{};
         missShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
         missShaderStageInfo.stage = VK_SHADER_STAGE_MISS_BIT_KHR;
@@ -1221,7 +1233,6 @@ void VulkanEngine::rt_createPipeline() {
         shaderGroups.push_back(missShaderGroupInfo);
     }
     {
-        VkShaderModule closestHitShaderModule = VulkanUtil::createShaderModule(device, oschd_closesthit_rchit_spv_size(), oschd_closesthit_rchit_spv());
         VkPipelineShaderStageCreateInfo closestHitShaderStageInfo{};
         closestHitShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
         closestHitShaderStageInfo.stage = VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR;
@@ -1253,6 +1264,10 @@ void VulkanEngine::rt_createPipeline() {
     mainDeletionQueue.pushFunction([&]() {
         vkDestroyPipeline(device, rt_pipeline, nullptr);
     });
+
+    vkDestroyShaderModule(device, raygenShaderModule, nullptr);
+    vkDestroyShaderModule(device, missShaderModule, nullptr);
+    vkDestroyShaderModule(device, closestHitShaderModule, nullptr);
 }
 
 
@@ -1373,7 +1388,7 @@ void VulkanEngine::drawFrame() {
     updateScene(currentFrame);
 
     vkResetCommandBuffer(commandBuffers[currentFrame], 0);
-    recordCommandBuffer(commandBuffers[currentFrame], imageIndex);
+    rt_recordCommandBuffer(commandBuffers[currentFrame], imageIndex);
 
     VkSubmitInfo submitInfo{};
     submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -1420,21 +1435,21 @@ void VulkanEngine::updateScene(uint32_t currentImage) {
     auto currentTime = std::chrono::high_resolution_clock::now();
     float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
     glm::mat4 rotation = glm::rotate(glm::mat4{1.0f}, time * glm::radians(45.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-    loadedNodes["Spheres"]->refreshTransform(rotation);
+    /*loadedNodes["Spheres"]->refreshTransform(rotation);
 
     mainDrawContext.opaqueSurfaces.clear();
     for (auto& pair : loadedNodes) {
         pair.second->draw(glm::mat4(1.0f), mainDrawContext);
-    }
+    }*/
 
     SceneData sceneData{};
-    sceneData.view = glm::translate(glm::mat4(1.0f), glm::vec3{ 0,0,-6 });
+    sceneData.view = glm::translate(glm::mat4(1.0f), glm::vec3{ 0,0,-2.5f });
     /*sceneData.view = glm::lookAt(glm::vec3(4.0f, 4.0f, 4.0f),
                            glm::vec3(0.0f, 0.0f, 0.0f),
                            glm::vec3(0.0f, 0.0f, 1.0f));*/
-    sceneData.proj = glm::perspective(glm::radians(45.0f),
+    sceneData.proj = glm::perspective(glm::radians(60.0f),
                                 swapChainExtent.width / (float) swapChainExtent.height,
-                                0.1f, 10.0f);
+                                0.1f, 512.0f);
     sceneData.proj[1][1] *= -1; // flip y-axis because glm is for openGL
     sceneData.viewProj = sceneData.view * sceneData.proj;
 
@@ -1449,6 +1464,81 @@ void VulkanEngine::updateScene(uint32_t currentImage) {
     sceneData.sunlightDirection = glm::vec4(-1,1,2,1.f);
 
     memcpy(sceneUniformBuffersMapped[currentImage], &sceneData, sizeof(SceneData));
+}
+
+void VulkanEngine::rt_recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex) {
+// TODO fix storage image if it has not the right dims
+
+    VkCommandBufferBeginInfo beginInfo{};
+    beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+
+    if (vkBeginCommandBuffer(commandBuffer, &beginInfo) != VK_SUCCESS) {
+        throw std::runtime_error("failed to begin record command buffer!");
+    }
+
+    const uint32_t handleSizeAligned = alignedSize(raytracingProperties.shaderGroupHandleSize, raytracingProperties.shaderGroupHandleAlignment);
+
+    VkStridedDeviceAddressRegionKHR raygenShaderSbtEntry{};
+    raygenShaderSbtEntry.deviceAddress = raygenShaderBindingTable.deviceAddress;
+    raygenShaderSbtEntry.stride = handleSizeAligned;
+    raygenShaderSbtEntry.size = handleSizeAligned;
+
+    VkStridedDeviceAddressRegionKHR missShaderSbtEntry{};
+    missShaderSbtEntry.deviceAddress = missShaderBindingTable.deviceAddress;
+    missShaderSbtEntry.stride = handleSizeAligned;
+    missShaderSbtEntry.size = handleSizeAligned;
+
+    VkStridedDeviceAddressRegionKHR closestHitShaderSbtEntry{};
+    closestHitShaderSbtEntry.deviceAddress = hitShaderBindingTable.deviceAddress;
+    closestHitShaderSbtEntry.stride = handleSizeAligned;
+    closestHitShaderSbtEntry.size = handleSizeAligned;
+
+    VkStridedDeviceAddressRegionKHR callableShaderSbtEntry{};
+
+    vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, rt_pipeline);
+    vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, rt_pipelineLayout, 0, 1, &rt_descriptorSet, 0, nullptr);
+
+    CmdTraceRaysKHR(
+        device,
+        commandBuffer,
+        &raygenShaderSbtEntry,
+        &missShaderSbtEntry,
+        &closestHitShaderSbtEntry,
+        &callableShaderSbtEntry,
+        swapChainExtent.width,
+        swapChainExtent.height,
+        1);
+
+    ressourceBuilder.transitionImageLayout(commandBuffer, swapChainImages[imageIndex],
+        VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
+        VK_ACCESS_NONE, VK_ACCESS_NONE,
+        VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+
+    ressourceBuilder.transitionImageLayout(commandBuffer, storageImage.image, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+        VK_ACCESS_NONE, VK_ACCESS_TRANSFER_READ_BIT, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+
+    VkImageCopy copyRegion{};
+    copyRegion.srcSubresource = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1};
+    copyRegion.srcOffset = {0, 0, 0};
+    copyRegion.dstSubresource = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1};
+    copyRegion.dstOffset = {0, 0, 0};
+    copyRegion.extent = {swapChainExtent.width, swapChainExtent.height, 1};
+    vkCmdCopyImage(commandBuffer, storageImage.image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+        swapChainImages[imageIndex], VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copyRegion);
+
+    ressourceBuilder.transitionImageLayout(commandBuffer, swapChainImages[imageIndex],
+        VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
+        VK_ACCESS_NONE, VK_ACCESS_NONE,
+        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
+
+    ressourceBuilder.transitionImageLayout(commandBuffer, storageImage.image,
+        VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+        VK_ACCESS_TRANSFER_READ_BIT, VK_ACCESS_NONE,
+        VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL);
+
+    if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS) {
+        throw std::runtime_error("failed to record command buffer!");
+    }
 }
 
 void VulkanEngine::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex) {
@@ -1516,6 +1606,13 @@ void VulkanEngine::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t i
     vkCmdEndRenderPass(commandBuffer);
     if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS) {
         throw std::runtime_error("failed to record command buffer!");
+    }
+}
+
+void VulkanEngine::destroyAccelerationStructure(AccelerationStructure& accelerationStructure) {
+    if (accelerationStructure.handle) {
+        ressourceBuilder.destroyBuffer(accelerationStructure.buffer);
+        DestroyAccelerationStructureKHR(device, accelerationStructure.handle, nullptr);
     }
 }
 

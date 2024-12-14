@@ -149,13 +149,14 @@ void DescriptorAllocator::writeImage(uint32_t binding, VkImageView imageView,
     writes.push_back(write);
 }
 
-void DescriptorAllocator::writeAccelerationStructure(uint32_t binding, VkAccelerationStructureKHR accelerationStructure, VkDescriptorType type) {
-    VkWriteDescriptorSetAccelerationStructureKHR descriptorSetAccelerationStructure{};
-    descriptorSetAccelerationStructure.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_ACCELERATION_STRUCTURE_KHR;
-    descriptorSetAccelerationStructure.accelerationStructureCount = 1;
-    descriptorSetAccelerationStructure.pAccelerationStructures = &accelerationStructure;
-    descriptorSetAccelerationStructure.pNext = nullptr;
-    accelerationStructureInfos.push_back(descriptorSetAccelerationStructure);
+void DescriptorAllocator::writeAccelerationStructure(uint32_t binding, VkAccelerationStructureKHR& accelerationStructure, VkDescriptorType type) {
+    VkWriteDescriptorSetAccelerationStructureKHR& descriptorSetAccelerationStructure = accelerationStructureInfos.emplace_back(VkWriteDescriptorSetAccelerationStructureKHR{
+        .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_ACCELERATION_STRUCTURE_KHR,
+        .pNext = nullptr,
+        .accelerationStructureCount = 1,
+        .pAccelerationStructures = &accelerationStructure,
+    });
+
 
     VkWriteDescriptorSet write{};
     write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;

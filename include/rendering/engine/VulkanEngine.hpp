@@ -238,7 +238,12 @@ private:
     void drawFrame();
     void cleanupSwapChain();
     void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
+
+    void destroyAccelerationStructure(AccelerationStructure &accelerationStructure);
+
     void updateScene(uint32_t currentImage);
+
+    void rt_recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
 
     static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
             VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,

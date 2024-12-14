@@ -39,13 +39,21 @@ public:
     void copyBuffer(AllocatedBuffer src, AllocatedBuffer dst, VkDeviceSize size);
     void destroyBuffer(AllocatedBuffer buffer);
 
-    AllocatedImage createImage(VkExtent3D extent, VkFormat format, VkImageTiling tiling, VkImageLayout initialLayout,
-                                VkImageUsageFlags usage, VkImageAspectFlags aspectFlags);
     AllocatedImage createImage(VkExtent3D extent, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage,
                                VkImageAspectFlags aspectFlags);
     AllocatedImage createImage(void *data, VkExtent3D extent, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage,
                                VkImageAspectFlags aspectFlags);
     VkImageView createImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags);
+
+    void transitionImageLayout(VkCommandBuffer commandBuffer, VkImage image,
+        VkPipelineStageFlags srcStage, VkPipelineStageFlags dstStage,
+        VkAccessFlags srcAccessMask, VkAccessFlags dstAccessMask,
+        VkImageLayout oldLayout, VkImageLayout newLayout);
+    void transitionImageLayout(VkImage image,
+        VkPipelineStageFlags srcStage, VkPipelineStageFlags dstStage,
+        VkAccessFlags srcAccessMask, VkAccessFlags dstAccessMask,
+        VkImageLayout oldLayout, VkImageLayout newLayout);
+
     void destroyImage(AllocatedImage image);
 
 private:
@@ -54,7 +62,6 @@ private:
     VkDevice device;
     CommandManager commandManager;
 
-    void transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout);
     void copyBufferToImage(VkBuffer buffer, VkImage image, VkExtent3D extent);
 
 };

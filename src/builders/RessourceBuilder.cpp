@@ -92,7 +92,7 @@ void RessourceBuilder::destroyBuffer(AllocatedBuffer buffer) {
     vkFreeMemory(device, buffer.bufferMemory, nullptr);
 }
 
-AllocatedImage RessourceBuilder::createImage(VkExtent3D extent, VkFormat format, VkImageTiling tiling, VkImageLayout initialLayout,
+AllocatedImage RessourceBuilder::createImage(VkExtent3D extent, VkFormat format, VkImageTiling tiling,
                                              VkImageUsageFlags usage, VkImageAspectFlags aspectFlags) {
     AllocatedImage image{};
     image.imageExtent = extent;
@@ -106,7 +106,7 @@ AllocatedImage RessourceBuilder::createImage(VkExtent3D extent, VkFormat format,
     imageInfo.arrayLayers = 1;
     imageInfo.format = format;
     imageInfo.tiling = tiling;
-    imageInfo.initialLayout = initialLayout;
+    imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
     imageInfo.usage = usage;
     imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
     imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
@@ -132,13 +132,7 @@ AllocatedImage RessourceBuilder::createImage(VkExtent3D extent, VkFormat format,
 
     image.imageView = createImageView(image.image, format, aspectFlags);
 
-    return image;
-}
-
-AllocatedImage RessourceBuilder::createImage(VkExtent3D extent, VkFormat format, VkImageTiling tiling,
-                                             VkImageUsageFlags usage, VkImageAspectFlags aspectFlags) {
-    createImage(extent, format, tiling, VK_IMAGE_LAYOUT_UNDEFINED, usage, aspectFlags);
-}
+    return image;}
 
 AllocatedImage RessourceBuilder::createImage(void* data, VkExtent3D extent, VkFormat format, VkImageTiling tiling,
                                              VkImageUsageFlags usage, VkImageAspectFlags aspectFlags) {
@@ -161,21 +155,20 @@ AllocatedImage RessourceBuilder::createImage(void* data, VkExtent3D extent, VkFo
 
     AllocatedImage image = createImage(extent, format, tiling, VK_BUFFER_USAGE_2_TRANSFER_DST_BIT_KHR | usage, aspectFlags);
 
-    transitionImageLayout(image.image, format,
-                          VK_IMAGE_LAYOUT_UNDEFINED,
-                          VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+    transitionImageLayout(image.image, VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+        VK_ACCESS_NONE, VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
     copyBufferToImage(stagingBuffer.handle, image.image, extent);
-    transitionImageLayout(image.image, format,
-                          VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                          VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+    transitionImageLayout(image.image, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+        VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
     destroyBuffer(stagingBuffer);
     return image;
 }
 
-void RessourceBuilder::transitionImageLayout(VkImage image, VkFormat format,
-                                             VkImageLayout oldLayout, VkImageLayout newLayout) {
-    VkCommandBuffer commandBuffer = commandManager.beginSingleTimeCommands();
+void RessourceBuilder::transitionImageLayout(VkCommandBuffer commandBuffer, VkImage image,
+        VkPipelineStageFlags srcStage, VkPipelineStageFlags dstStage,
+        VkAccessFlags srcAccessMask, VkAccessFlags dstAccessMask,
+        VkImageLayout oldLayout, VkImageLayout newLayout) {
 
     VkImageMemoryBarrier barrier{};
     barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
@@ -189,31 +182,26 @@ void RessourceBuilder::transitionImageLayout(VkImage image, VkFormat format,
     barrier.subresourceRange.levelCount = 1;
     barrier.subresourceRange.baseArrayLayer = 0;
     barrier.subresourceRange.layerCount = 1;
+    barrier.srcAccessMask = srcAccessMask;
+    barrier.dstAccessMask = dstAccessMask;
 
-    VkPipelineStageFlags sourceStage;
-    VkPipelineStageFlags destinationStage;
-
-    if (oldLayout == VK_IMAGE_LAYOUT_UNDEFINED && newLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL) {
-        barrier.srcAccessMask = 0;
-        barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-
-        sourceStage = VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT;
-        destinationStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
-    } else if (oldLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL && newLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL) {
-        barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-        barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
-
-        sourceStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
-        destinationStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
-    } else {
-        throw std::invalid_argument("unsupported layout transition!");
-    }
-
-    vkCmdPipelineBarrier(commandBuffer, sourceStage, destinationStage, 0,
+    vkCmdPipelineBarrier(commandBuffer, srcStage, dstStage, 0,
                          0, nullptr,
                          0, nullptr,
                          1, &barrier);
+}
 
+
+void RessourceBuilder::transitionImageLayout(VkImage image,
+        VkPipelineStageFlags srcStage, VkPipelineStageFlags dstStage,
+        VkAccessFlags srcAccessMask, VkAccessFlags dstAccessMask,
+        VkImageLayout oldLayout, VkImageLayout newLayout) {
+
+    VkCommandBuffer commandBuffer = commandManager.beginSingleTimeCommands();
+    transitionImageLayout(commandBuffer, image,
+        srcStage, dstStage,
+        srcAccessMask, dstAccessMask,
+        oldLayout, newLayout);
     commandManager.endSingleTimeCommand(commandBuffer);
 }
 

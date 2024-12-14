@@ -25,7 +25,7 @@ public:
 
     void writeBuffer(uint32_t binding, VkBuffer buffer, uint32_t size, uint32_t offset, VkDescriptorType type);
     void writeImage(uint32_t binding, VkImageView imageView, VkSampler sampler, VkImageLayout layout, VkDescriptorType type);
-    void writeAccelerationStructure(uint32_t binding, VkAccelerationStructureKHR accelerationStructure, VkDescriptorType type);
+    void writeAccelerationStructure(uint32_t binding, VkAccelerationStructureKHR& accelerationStructure, VkDescriptorType type);
     void updateSet(VkDevice& device, VkDescriptorSet& set);
     void clearWrites();
 
