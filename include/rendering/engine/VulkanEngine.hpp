@@ -24,6 +24,7 @@
 #include <chrono>
 #include <stb_image.h>
 #define TINYOBJLOADER_IMPLEMENTATION
+#include <AccelerationStructureBuilder.hpp>
 #include <unordered_map>
 #include "../Vertex.hpp"
 #include "../../builders/PipelineBuilder.hpp"
@@ -88,18 +89,13 @@ struct ObjectData {
     glm::mat4 model;
 };
 
-struct AccelerationStructure {
-    VkAccelerationStructureKHR handle;
-    uint64_t deviceAddress;
-    AllocatedBuffer buffer;
-};
-
 class VulkanEngine {
 public:
     VkDevice device;
     CommandManager commandManager;
     RessourceBuilder ressourceBuilder;
     MeshAssetBuilder meshAssetBuilder;
+    AccelerationStructureBuilder acceleration_structure_builder;
 
     VkDescriptorSetLayout sceneDataDescriptorLayout;
     VkPushConstantRange objectDataCostantRange;
@@ -208,8 +204,11 @@ private:
     void createDescriptorSetLayout();
     void initPipelines();
     void createFrameBuffers();
+
     void createCommandManager();
     void createRessourceBuilder();
+    void createAccelerationStructureBuilder();
+
     void createDepthResources();
     VkFormat findDepthFormat();
     VkFormat findSupportedFormat(const std::vector<VkFormat> candidates, VkImageTiling tiling,
@@ -222,8 +221,7 @@ private:
     void createDefaultMaterials();
     void loadMeshes();
 
-    void meshToBLAS(MeshAsset mesh);
-    void createTLAS();
+    void createAccelerationStructures(MeshAsset mesh);
     void createShaderBindingTables();
 
     void rt_createDescriptorSets();
@@ -238,8 +236,6 @@ private:
     void drawFrame();
     void cleanupSwapChain();
     void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
-
-    void destroyAccelerationStructure(AccelerationStructure &accelerationStructure);
 
     void updateScene(uint32_t currentImage);
 

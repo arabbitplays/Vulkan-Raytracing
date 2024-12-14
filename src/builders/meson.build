@@ -4,4 +4,5 @@ src += files(
     'PipelineBuilder.cpp',
     'RenderPassBuilder.cpp',
     'RessourceBuilder.cpp',
+    'AccelerationStructureBuilder.cpp',
 )
