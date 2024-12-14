@@ -1,5 +1,8 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "rendering/engine/VulkanEngine.hpp"
+
+#include <RaytracingPipelineBuilder.hpp>
+
 #include "../nodes/MeshNode.hpp"
 #include "../../Analytics.hpp"
 
@@ -871,7 +874,8 @@ void VulkanEngine::createShaderBindingTables() {
     const uint32_t handleSize = raytracingProperties.shaderGroupHandleSize;
     const uint32_t handleAlignment = raytracingProperties.shaderGroupHandleAlignment;
     const uint32_t handleSizeAligned = alignedSize(handleSize, handleAlignment);
-    const uint32_t groupCount = static_cast<uint32_t>(shaderGroups.size());
+    //const uint32_t groupCount = static_cast<uint32_t>(shaderGroups.size()); TODO Fix this
+    const uint32_t groupCount = static_cast<uint32_t>(3);
     const uint32_t sbt_size = groupCount * handleSizeAligned;
     const uint32_t sbtUsageFlags = VK_BUFFER_USAGE_SHADER_BINDING_TABLE_BIT_KHR | VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
     const uint32_t sbtMemoryPropertyFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
@@ -905,6 +909,7 @@ void VulkanEngine::rt_createDescriptorSets() {
 
 void VulkanEngine::rt_createPipeline() {
     DescriptorLayoutBuilder layoutBuilder;
+    RaytracingPipelineBuilder raytracingPipelineBuilder;
 
     layoutBuilder.addBinding(0, VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR);
     layoutBuilder.addBinding(1, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
@@ -929,65 +934,16 @@ void VulkanEngine::rt_createPipeline() {
     VkShaderModule missShaderModule = VulkanUtil::createShaderModule(device, oschd_miss_rmiss_spv_size(), oschd_miss_rmiss_spv());
     VkShaderModule closestHitShaderModule = VulkanUtil::createShaderModule(device, oschd_closesthit_rchit_spv_size(), oschd_closesthit_rchit_spv());
 
-    std::vector<VkPipelineShaderStageCreateInfo> shader_stages;
-    {
-        VkPipelineShaderStageCreateInfo raygenShaderStageInfo{};
-        raygenShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-        raygenShaderStageInfo.stage = VK_SHADER_STAGE_RAYGEN_BIT_KHR;
-        raygenShaderStageInfo.module = raygenShaderModule;
-        raygenShaderStageInfo.pName = "main";
-        shader_stages.push_back(raygenShaderStageInfo);
-
-        VkRayTracingShaderGroupCreateInfoKHR raygenShaderGroupInfo{};
-        raygenShaderGroupInfo.sType = VK_STRUCTURE_TYPE_RAY_TRACING_SHADER_GROUP_CREATE_INFO_KHR;
-        raygenShaderGroupInfo.type = VK_RAY_TRACING_SHADER_GROUP_TYPE_GENERAL_KHR; // TODO what are the alternatives?
-        raygenShaderGroupInfo.generalShader = static_cast<uint32_t>(shader_stages.size()) - 1;
-        raygenShaderGroupInfo.closestHitShader = VK_SHADER_UNUSED_KHR;
-        raygenShaderGroupInfo.anyHitShader = VK_SHADER_UNUSED_KHR;
-        raygenShaderGroupInfo.intersectionShader = VK_SHADER_UNUSED_KHR;
-        shaderGroups.push_back(raygenShaderGroupInfo);
-    }
-    {
-        VkPipelineShaderStageCreateInfo missShaderStageInfo{};
-        missShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-        missShaderStageInfo.stage = VK_SHADER_STAGE_MISS_BIT_KHR;
-        missShaderStageInfo.module = missShaderModule;
-        missShaderStageInfo.pName = "main";
-        shader_stages.push_back(missShaderStageInfo);
-
-        VkRayTracingShaderGroupCreateInfoKHR missShaderGroupInfo{};
-        missShaderGroupInfo.sType = VK_STRUCTURE_TYPE_RAY_TRACING_SHADER_GROUP_CREATE_INFO_KHR;
-        missShaderGroupInfo.type = VK_RAY_TRACING_SHADER_GROUP_TYPE_GENERAL_KHR; // TODO what are the alternatives?
-        missShaderGroupInfo.generalShader = static_cast<uint32_t>(shader_stages.size()) - 1;
-        missShaderGroupInfo.closestHitShader = VK_SHADER_UNUSED_KHR;
-        missShaderGroupInfo.anyHitShader = VK_SHADER_UNUSED_KHR;
-        missShaderGroupInfo.intersectionShader = VK_SHADER_UNUSED_KHR;
-        shaderGroups.push_back(missShaderGroupInfo);
-    }
-    {
-        VkPipelineShaderStageCreateInfo closestHitShaderStageInfo{};
-        closestHitShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-        closestHitShaderStageInfo.stage = VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR;
-        closestHitShaderStageInfo.module = closestHitShaderModule;
-        closestHitShaderStageInfo.pName = "main";
-        shader_stages.push_back(closestHitShaderStageInfo);
-
-        VkRayTracingShaderGroupCreateInfoKHR clostestHitShaderGroupInfo{};
-        clostestHitShaderGroupInfo.sType = VK_STRUCTURE_TYPE_RAY_TRACING_SHADER_GROUP_CREATE_INFO_KHR;
-        clostestHitShaderGroupInfo.type = VK_RAY_TRACING_SHADER_GROUP_TYPE_TRIANGLES_HIT_GROUP_KHR; // TODO what are the alternatives?
-        clostestHitShaderGroupInfo.generalShader = VK_SHADER_UNUSED_KHR;
-        clostestHitShaderGroupInfo.closestHitShader = static_cast<uint32_t>(shader_stages.size()) - 1;
-        clostestHitShaderGroupInfo.anyHitShader = VK_SHADER_UNUSED_KHR;
-        clostestHitShaderGroupInfo.intersectionShader = VK_SHADER_UNUSED_KHR;
-        shaderGroups.push_back(clostestHitShaderGroupInfo);
-    }
+    raytracingPipelineBuilder.addShaderStage(raygenShaderModule, VK_SHADER_STAGE_RAYGEN_BIT_KHR, VK_RAY_TRACING_SHADER_GROUP_TYPE_GENERAL_KHR);
+    raytracingPipelineBuilder.addShaderStage(missShaderModule, VK_SHADER_STAGE_MISS_BIT_KHR, VK_RAY_TRACING_SHADER_GROUP_TYPE_GENERAL_KHR);
+    raytracingPipelineBuilder.addShaderStage(closestHitShaderModule, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR, VK_RAY_TRACING_SHADER_GROUP_TYPE_TRIANGLES_HIT_GROUP_KHR);
 
     VkRayTracingPipelineCreateInfoKHR pipelineInfo{};
     pipelineInfo.sType = VK_STRUCTURE_TYPE_RAY_TRACING_PIPELINE_CREATE_INFO_KHR;
-    pipelineInfo.stageCount = static_cast<uint32_t>(shader_stages.size());
-    pipelineInfo.pStages = shader_stages.data();
-    pipelineInfo.groupCount = static_cast<uint32_t>(shaderGroups.size());
-    pipelineInfo.pGroups = shaderGroups.data();
+    pipelineInfo.stageCount = static_cast<uint32_t>(raytracingPipelineBuilder.shader_stages.size());
+    pipelineInfo.pStages = raytracingPipelineBuilder.shader_stages.data();
+    pipelineInfo.groupCount = static_cast<uint32_t>(raytracingPipelineBuilder.shaderGroups.size());
+    pipelineInfo.pGroups = raytracingPipelineBuilder.shaderGroups.data();
     pipelineInfo.maxPipelineRayRecursionDepth = 1;
     pipelineInfo.layout = rt_pipelineLayout;
     if (CreateRayTracingPipelinesKHR(device, VK_NULL_HANDLE, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &rt_pipeline) != VK_SUCCESS) {
@@ -1424,7 +1380,7 @@ void MetallicRoughness::buildPipelines(VulkanEngine* engine) {
     opaquePipeline.renderPass = renderPassBuilder.createRenderPass(engine->device);
     transparentPipeline.renderPass = renderPassBuilder.createRenderPass(engine->device);
 
-    PipelineBuilder pipelineBuilder;
+    RasterizerPipelineBuilder pipelineBuilder;
     pipelineBuilder.setDescriptorSetLayouts(layouts);
     pipelineBuilder.setPushConstantRanges(ranges);
     pipelineBuilder.setShaders(vertShader, fragShader);

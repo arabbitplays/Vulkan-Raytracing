@@ -6,7 +6,7 @@
 #include <stdexcept>
 #include <fstream>
 
-class PipelineBuilder {
+class RasterizerPipelineBuilder {
 public:
     std::vector<VkPipelineShaderStageCreateInfo> shaderStages;
 
@@ -17,7 +17,7 @@ public:
     VkPipelineLayoutCreateInfo pipelineLayoutInfo;
     VkPipelineDepthStencilStateCreateInfo depthStencilInfo;
 
-    PipelineBuilder() { clear(); }
+    RasterizerPipelineBuilder() { clear(); }
 
     void clear();
 

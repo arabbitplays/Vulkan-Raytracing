@@ -27,7 +27,7 @@
 #include <AccelerationStructureBuilder.hpp>
 #include <unordered_map>
 #include "../Vertex.hpp"
-#include "../../builders/PipelineBuilder.hpp"
+#include "RasterizerPipelineBuilder.hpp"
 #include "DescriptorAllocator.hpp"
 #include "CommandManager.hpp"
 #include "../../builders/MeshAssetBuilder.hpp"
@@ -131,10 +131,8 @@ private:
     DrawContext mainDrawContext;
 
     VkPhysicalDeviceRayTracingPipelinePropertiesKHR raytracingProperties{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_PROPERTIES_KHR};
-    std::vector<VkRayTracingShaderGroupCreateInfoKHR> shaderGroups{};
 
     AllocatedImage storageImage;
-    AllocatedBuffer rt_vertexBuffer, rt_IndexBuffer;
 
     AccelerationStructure bottomLevelAccelerationStructure;
     AccelerationStructure topLevelAccelerationStructure;

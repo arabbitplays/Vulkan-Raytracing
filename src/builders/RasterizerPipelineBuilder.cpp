@@ -1,8 +1,9 @@
 #include <string>
-#include "PipelineBuilder.hpp"
+#include <RasterizerPipelineBuilder.hpp>
+
 #include "../rendering/Vertex.hpp"
 
-void PipelineBuilder::buildPipeline(VkDevice& device, VkRenderPass& renderPass, VkPipeline* pipeline, VkPipelineLayout& pipelineLayout) {
+void RasterizerPipelineBuilder::buildPipeline(VkDevice& device, VkRenderPass& renderPass, VkPipeline* pipeline, VkPipelineLayout& pipelineLayout) {
 
     std::vector<VkDynamicState> dynamicStates = {
             VK_DYNAMIC_STATE_VIEWPORT,
@@ -66,13 +67,13 @@ void PipelineBuilder::buildPipeline(VkDevice& device, VkRenderPass& renderPass, 
     }
 }
 
-void PipelineBuilder::buildPipelineLayout(VkDevice& device, VkPipelineLayout* pipelineLayout) {
+void RasterizerPipelineBuilder::buildPipelineLayout(VkDevice& device, VkPipelineLayout* pipelineLayout) {
     if (vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, pipelineLayout) != VK_SUCCESS) {
         throw std::runtime_error("failed to create pipeline layout!");
     }
 }
 
-void PipelineBuilder::setShaders(VkShaderModule vertShaderModule, VkShaderModule fragShaderModule) {
+void RasterizerPipelineBuilder::setShaders(VkShaderModule vertShaderModule, VkShaderModule fragShaderModule) {
     VkPipelineShaderStageCreateInfo vertShaderStageInfo{};
     vertShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
     vertShaderStageInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
@@ -89,39 +90,39 @@ void PipelineBuilder::setShaders(VkShaderModule vertShaderModule, VkShaderModule
     shaderStages.push_back(fragShaderStageInfo);
 }
 
-void PipelineBuilder::setInputTopology(VkPrimitiveTopology topology) {
+void RasterizerPipelineBuilder::setInputTopology(VkPrimitiveTopology topology) {
     inputAssemblyInfo.topology = topology;
 }
 
-void PipelineBuilder::setPolygonMode(VkPolygonMode polygonMode) {
+void RasterizerPipelineBuilder::setPolygonMode(VkPolygonMode polygonMode) {
     rasterizerInfo.polygonMode = polygonMode;
     rasterizerInfo.lineWidth = 1.0f;
 }
 
-void PipelineBuilder::setCullMode(VkCullModeFlags cullMode, VkFrontFace frontFace) {
+void RasterizerPipelineBuilder::setCullMode(VkCullModeFlags cullMode, VkFrontFace frontFace) {
     rasterizerInfo.cullMode = cullMode;
     rasterizerInfo.frontFace = frontFace;
 }
 
-void PipelineBuilder::setMultisamplingNone() {
+void RasterizerPipelineBuilder::setMultisamplingNone() {
     multisamplingInfo.sampleShadingEnable = VK_FALSE;
     multisamplingInfo.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
 }
 
-void PipelineBuilder::enableDepthTest(VkBool32 enabled, VkCompareOp compareOp) {
+void RasterizerPipelineBuilder::enableDepthTest(VkBool32 enabled, VkCompareOp compareOp) {
     depthStencilInfo.depthTestEnable = enabled;
     depthStencilInfo.depthWriteEnable = enabled;
     depthStencilInfo.depthCompareOp = compareOp;
     depthStencilInfo.depthBoundsTestEnable = VK_FALSE;
 }
 
-void PipelineBuilder::disableColorBlending() {
+void RasterizerPipelineBuilder::disableColorBlending() {
     colorBlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT
                                           | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
     colorBlendAttachment.blendEnable = VK_FALSE;
 }
 
-void PipelineBuilder::enableAdditiveBlending() {
+void RasterizerPipelineBuilder::enableAdditiveBlending() {
     colorBlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT
                                           | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
     colorBlendAttachment.blendEnable = VK_TRUE;
@@ -134,17 +135,17 @@ void PipelineBuilder::enableAdditiveBlending() {
     colorBlendAttachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
 }
 
-void PipelineBuilder::setDescriptorSetLayouts(std::vector<VkDescriptorSetLayout>& descriptorSetLayouts) {
+void RasterizerPipelineBuilder::setDescriptorSetLayouts(std::vector<VkDescriptorSetLayout>& descriptorSetLayouts) {
     pipelineLayoutInfo.setLayoutCount = static_cast<uint32_t>(descriptorSetLayouts.size());
     pipelineLayoutInfo.pSetLayouts = descriptorSetLayouts.data();
 }
 
-void PipelineBuilder::setPushConstantRanges(std::vector<VkPushConstantRange> &ranges) {
+void RasterizerPipelineBuilder::setPushConstantRanges(std::vector<VkPushConstantRange> &ranges) {
     pipelineLayoutInfo.pushConstantRangeCount = static_cast<uint32_t>(ranges.size());
     pipelineLayoutInfo.pPushConstantRanges = ranges.data();
 }
 
-void PipelineBuilder::clear() {
+void RasterizerPipelineBuilder::clear() {
     inputAssemblyInfo = { .sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO };
     rasterizerInfo = { .sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO };
     multisamplingInfo = { .sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO };

@@ -1,8 +1,9 @@
 src += files(
     'DescriptorLayoutBuilder.cpp',
     'MeshAssetBuilder.cpp',
-    'PipelineBuilder.cpp',
+    'RasterizerPipelineBuilder.cpp',
     'RenderPassBuilder.cpp',
     'RessourceBuilder.cpp',
     'AccelerationStructureBuilder.cpp',
+    'RaytracingPipelineBuilder.cpp',
 )
