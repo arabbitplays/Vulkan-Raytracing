@@ -60,6 +60,8 @@ void TopLevelAccelerationStructureBuilder::addInstanceGeometry() {
     geometry.handle = accelerationStructureGeometry;
     geometry.primitiveCount = static_cast<uint32_t>(instances.size());
     geometries.push_back(geometry);
+
+    instances.clear();
 }
 
 void TopLevelAccelerationStructureBuilder::update_instance_geometry(uint32_t index) {
@@ -78,4 +80,6 @@ void TopLevelAccelerationStructureBuilder::update_instance_geometry(uint32_t ind
 
     geometries[index].primitiveCount = static_cast<uint32_t>(instances.size());
     geometries[index].updated = true;
+
+    instances.clear();
 }

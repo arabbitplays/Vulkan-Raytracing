@@ -14,6 +14,7 @@ struct AllocatedBuffer {
     VkBuffer handle = VK_NULL_HANDLE;
     VkDeviceMemory bufferMemory;
     uint64_t deviceAddress;
+    size_t size;
 
     void update(VkDevice device, void* data, size_t size) {
         void* mapped_data;

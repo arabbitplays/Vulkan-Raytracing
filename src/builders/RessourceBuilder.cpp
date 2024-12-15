@@ -6,6 +6,7 @@
 #include "RessourceBuilder.hpp"
 
 #include <cstring>
+#include <glm/vector_relational.hpp>
 
 VkDeviceAddress GetBufferDeviceAddressKHR(VkDevice device, const VkBufferDeviceAddressInfoKHR* address_info) {
     auto func = (PFN_vkGetBufferDeviceAddressKHR) vkGetDeviceProcAddr(device, "vkGetBufferDeviceAddressKHR");
@@ -25,6 +26,7 @@ RessourceBuilder::RessourceBuilder(VkPhysicalDevice physicalDevice, VkDevice dev
 
 AllocatedBuffer RessourceBuilder::createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties) {
     AllocatedBuffer allocatedBuffer{};
+    allocatedBuffer.size = size;
 
     VkBufferCreateInfo bufferInfo{};
     bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;

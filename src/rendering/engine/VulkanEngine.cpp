@@ -868,19 +868,6 @@ void VulkanEngine::createAccelerationStructures(MeshAsset mesh) {
     blas_structure_builder.addTriangleGeometry(mesh);
     bottomLevelAccelerationStructure = blas_structure_builder.buildAccelerationStructure(VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_KHR);
 
-    glm::mat4 translation = glm::translate(glm::mat4(1.0f), glm::vec3(1.f, 0.0f, 0.0f));
-    glm::mat4 scale = glm::scale(glm::mat4(1.0f), glm::vec3(0.5f, 0.5f, 0.5f));
-    tlas_structure_builder.addInstance(bottomLevelAccelerationStructure, scale * translation);
-
-    translation = glm::translate(glm::mat4(1.0f), glm::vec3(-1.f, 0.0f, 0.0f));
-    tlas_structure_builder.addInstance(bottomLevelAccelerationStructure, scale * translation);
-
-    if (topLevelAccelerationStructure.deviceAddress == 0) {
-        tlas_structure_builder.addInstanceGeometry();
-    } else {
-        tlas_structure_builder.update_instance_geometry(0);
-    }
-    topLevelAccelerationStructure = tlas_structure_builder.buildAccelerationStructure(VK_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL_KHR);
     mainDeletionQueue.pushFunction([&]() {
         blas_structure_builder.destroyAccelerationStructure(bottomLevelAccelerationStructure);
         tlas_structure_builder.destroyAccelerationStructure(topLevelAccelerationStructure);
@@ -922,7 +909,7 @@ void VulkanEngine::createShaderBindingTables() {
 
 void VulkanEngine::rt_createDescriptorSets() {
     rt_descriptorSet = descriptorAllocator.allocate(device, rt_descriptorSetLayout);
-    descriptorAllocator.writeAccelerationStructure(0, topLevelAccelerationStructure.handle, VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR);
+    //descriptorAllocator.writeAccelerationStructure(0, topLevelAccelerationStructure.handle, VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR);
     descriptorAllocator.writeImage(1, storageImage.imageView, VK_NULL_HANDLE, VK_IMAGE_LAYOUT_GENERAL, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
     descriptorAllocator.writeBuffer(2, sceneUniformBuffers[0].handle, sizeof(SceneData), 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
     descriptorAllocator.updateSet(device, rt_descriptorSet);
@@ -1114,13 +1101,28 @@ void VulkanEngine::updateScene(uint32_t currentImage) {
     static auto startTime = std::chrono::high_resolution_clock::now();
     auto currentTime = std::chrono::high_resolution_clock::now();
     float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
-    glm::mat4 rotation = glm::rotate(glm::mat4{1.0f}, time * glm::radians(45.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+    glm::mat4 rotation = glm::rotate(glm::mat4{1.0f}, time * glm::radians(45.0f), glm::vec3(0.0f, 1.0f, 0.0f));
     /*loadedNodes["Spheres"]->refreshTransform(rotation);
 
     mainDrawContext.opaqueSurfaces.clear();
     for (auto& pair : loadedNodes) {
         pair.second->draw(glm::mat4(1.0f), mainDrawContext);
     }*/
+
+    glm::mat4 translation = glm::translate(glm::mat4(1.0f), glm::vec3(1.f, 0.0f, 0.0f));
+    glm::mat4 scale = glm::scale(glm::mat4(1.0f), glm::vec3(0.5f, 0.5f, 0.5f));
+    tlas_structure_builder.addInstance(bottomLevelAccelerationStructure, rotation);
+
+    if (topLevelAccelerationStructure.deviceAddress == 0) {
+        tlas_structure_builder.addInstanceGeometry();
+    } else {
+        tlas_structure_builder.update_instance_geometry(0);
+    }
+    topLevelAccelerationStructure = tlas_structure_builder.buildAccelerationStructure(VK_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL_KHR);
+
+    descriptorAllocator.writeAccelerationStructure(0, topLevelAccelerationStructure.handle, VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR);
+    descriptorAllocator.updateSet(device, rt_descriptorSet);
+    descriptorAllocator.clearWrites();
 
     SceneData sceneData{};
     sceneData.view = glm::translate(glm::mat4(1.0f), glm::vec3{ 0,0,-2.5f });

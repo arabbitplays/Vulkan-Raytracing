@@ -107,38 +107,31 @@ AccelerationStructure AccelerationStructureBuilder::buildAccelerationStructure(V
         &geometries[0].primitiveCount,
         &build_sizes_info);
 
-    if (acceleration_structure.buffer.handle == VK_NULL_HANDLE) {
+    if (acceleration_structure.buffer.handle == VK_NULL_HANDLE || acceleration_structure.buffer.size != build_sizes_info.accelerationStructureSize) {
+        acceleration_structure.buffer = ressource_builder.createBuffer(
+                build_sizes_info.accelerationStructureSize,
+                VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
+                VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
+                );
 
+        VkAccelerationStructureCreateInfoKHR accelerationStructureCreateInfo{};
+        accelerationStructureCreateInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_CREATE_INFO_KHR;
+        accelerationStructureCreateInfo.buffer = acceleration_structure.buffer.handle;
+        accelerationStructureCreateInfo.size = build_sizes_info.accelerationStructureSize;
+        accelerationStructureCreateInfo.type = type;
+        if (CreateAccelerationStructureKHR(device, &accelerationStructureCreateInfo, nullptr, &acceleration_structure.handle) != VK_SUCCESS) {
+            throw std::runtime_error("failed to create bl acceleration structure!");
+        }
     }
-    acceleration_structure.buffer = ressource_builder.createBuffer(
-        build_sizes_info.accelerationStructureSize,
-        VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
-        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
-        );
 
-    VkAccelerationStructureCreateInfoKHR accelerationStructureCreateInfo{};
-    accelerationStructureCreateInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_CREATE_INFO_KHR;
-    accelerationStructureCreateInfo.buffer = acceleration_structure.buffer.handle;
-    accelerationStructureCreateInfo.size = build_sizes_info.accelerationStructureSize;
-    accelerationStructureCreateInfo.type = type;
-    if (CreateAccelerationStructureKHR(device, &accelerationStructureCreateInfo, nullptr, &acceleration_structure.handle) != VK_SUCCESS) {
-        throw std::runtime_error("failed to create bl acceleration structure!");
-    }
 
     AllocatedBuffer scratchBuffer = ressource_builder.createBuffer(
         build_sizes_info.buildScratchSize,
         VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
         VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
-    VkAccelerationStructureBuildGeometryInfoKHR accelerationBuildGeometryInfo{};
-    accelerationBuildGeometryInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_GEOMETRY_INFO_KHR;
-    accelerationBuildGeometryInfo.type = type;
-    accelerationBuildGeometryInfo.flags = VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR;
-    accelerationBuildGeometryInfo.mode = VK_BUILD_ACCELERATION_STRUCTURE_MODE_BUILD_KHR;
-    accelerationBuildGeometryInfo.dstAccelerationStructure = acceleration_structure.handle;
-    accelerationBuildGeometryInfo.geometryCount = static_cast<uint32_t>(geometries.size());
-    accelerationBuildGeometryInfo.pGeometries = &geometries[0].handle; //
-    accelerationBuildGeometryInfo.scratchData.deviceAddress = scratchBuffer.deviceAddress;
+    build_geometry_info.dstAccelerationStructure = acceleration_structure.handle;
+    build_geometry_info.scratchData.deviceAddress = scratchBuffer.deviceAddress;
 
     VkCommandBuffer cmdBuffer = command_manager.beginSingleTimeCommands();
     auto as_build_range_infos = &*acceleration_structure_build_range_infos.data();
@@ -146,7 +139,7 @@ AccelerationStructure AccelerationStructureBuilder::buildAccelerationStructure(V
         device,
         cmdBuffer,
         1,
-        &accelerationBuildGeometryInfo,
+        &build_geometry_info,
         &as_build_range_infos
         );
     command_manager.endSingleTimeCommand(cmdBuffer);
