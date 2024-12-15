@@ -198,9 +198,6 @@ private:
     VkPresentModeKHR chooseSwapPresentMode(const std::vector<VkPresentModeKHR> &availablePresentModes);
     VkExtent2D chooseSwapExtend(const VkSurfaceCapabilitiesKHR &capabilities);
     void createImageViews();
-    void createDescriptorSetLayout();
-    void initPipelines();
-    void createFrameBuffers();
 
     void createCommandManager();
     void createRessourceBuilder();
@@ -222,7 +219,7 @@ private:
 
     void rt_createDescriptorSets();
 
-    void rt_createPipeline();
+    void createPipeline();
 
     void createUniformBuffers();
     void createDescriptorAllocator();
@@ -234,8 +231,6 @@ private:
     void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
 
     void updateScene(uint32_t currentImage);
-
-    void rt_recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
 
     static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
             VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
