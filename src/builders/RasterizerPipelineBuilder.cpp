@@ -1,8 +1,9 @@
 #include <string>
-#include "PipelineBuilder.hpp"
-#include "Vertex.hpp"
+#include <RasterizerPipelineBuilder.hpp>
 
-void PipelineBuilder::buildPipeline(VkDevice& device, VkRenderPass& renderPass, VkPipeline* pipeline, VkPipelineLayout* pipelineLayout) {
+#include "../rendering/Vertex.hpp"
+
+void RasterizerPipelineBuilder::buildPipeline(VkDevice& device, VkRenderPass& renderPass, VkPipeline* pipeline, VkPipelineLayout& pipelineLayout) {
 
     std::vector<VkDynamicState> dynamicStates = {
             VK_DYNAMIC_STATE_VIEWPORT,
@@ -42,10 +43,6 @@ void PipelineBuilder::buildPipeline(VkDevice& device, VkRenderPass& renderPass, 
     colorBlending.attachmentCount = 1;
     colorBlending.pAttachments = &colorBlendAttachment;
 
-    if (vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, pipelineLayout) != VK_SUCCESS) {
-        throw std::runtime_error("failed to create pipeline layout!");
-    }
-
     VkGraphicsPipelineCreateInfo pipelineInfo{};
     pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
     pipelineInfo.stageCount = static_cast<uint32_t>(shaderStages.size());
@@ -58,7 +55,7 @@ void PipelineBuilder::buildPipeline(VkDevice& device, VkRenderPass& renderPass, 
     pipelineInfo.pDepthStencilState = &depthStencilInfo;
     pipelineInfo.pColorBlendState = &colorBlending;
     pipelineInfo.pDynamicState = &dynamicState;
-    pipelineInfo.layout = *pipelineLayout;
+    pipelineInfo.layout = pipelineLayout;
     pipelineInfo.renderPass = renderPass;
     pipelineInfo.subpass = 0;
     pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
@@ -70,7 +67,13 @@ void PipelineBuilder::buildPipeline(VkDevice& device, VkRenderPass& renderPass, 
     }
 }
 
-void PipelineBuilder::setShaders(VkShaderModule vertShaderModule, VkShaderModule fragShaderModule) {
+void RasterizerPipelineBuilder::buildPipelineLayout(VkDevice& device, VkPipelineLayout* pipelineLayout) {
+    if (vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, pipelineLayout) != VK_SUCCESS) {
+        throw std::runtime_error("failed to create pipeline layout!");
+    }
+}
+
+void RasterizerPipelineBuilder::setShaders(VkShaderModule vertShaderModule, VkShaderModule fragShaderModule) {
     VkPipelineShaderStageCreateInfo vertShaderStageInfo{};
     vertShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
     vertShaderStageInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
@@ -87,44 +90,62 @@ void PipelineBuilder::setShaders(VkShaderModule vertShaderModule, VkShaderModule
     shaderStages.push_back(fragShaderStageInfo);
 }
 
-void PipelineBuilder::setInputTopology(VkPrimitiveTopology topology) {
+void RasterizerPipelineBuilder::setInputTopology(VkPrimitiveTopology topology) {
     inputAssemblyInfo.topology = topology;
 }
 
-void PipelineBuilder::setPolygonMode(VkPolygonMode polygonMode) {
+void RasterizerPipelineBuilder::setPolygonMode(VkPolygonMode polygonMode) {
     rasterizerInfo.polygonMode = polygonMode;
     rasterizerInfo.lineWidth = 1.0f;
 }
 
-void PipelineBuilder::setCullMode(VkCullModeFlags cullMode, VkFrontFace frontFace) {
+void RasterizerPipelineBuilder::setCullMode(VkCullModeFlags cullMode, VkFrontFace frontFace) {
     rasterizerInfo.cullMode = cullMode;
     rasterizerInfo.frontFace = frontFace;
 }
 
-void PipelineBuilder::setMultisamplingNone() {
+void RasterizerPipelineBuilder::setMultisamplingNone() {
     multisamplingInfo.sampleShadingEnable = VK_FALSE;
     multisamplingInfo.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
 }
 
-void PipelineBuilder::setDepthStencil() {
-    depthStencilInfo.depthTestEnable = VK_TRUE;
-    depthStencilInfo.depthWriteEnable = VK_TRUE;
-    depthStencilInfo.depthCompareOp = VK_COMPARE_OP_LESS;
+void RasterizerPipelineBuilder::enableDepthTest(VkBool32 enabled, VkCompareOp compareOp) {
+    depthStencilInfo.depthTestEnable = enabled;
+    depthStencilInfo.depthWriteEnable = enabled;
+    depthStencilInfo.depthCompareOp = compareOp;
     depthStencilInfo.depthBoundsTestEnable = VK_FALSE;
 }
 
-void PipelineBuilder::disableColorBlending() {
+void RasterizerPipelineBuilder::disableColorBlending() {
     colorBlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT
                                           | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
     colorBlendAttachment.blendEnable = VK_FALSE;
 }
 
-void PipelineBuilder::setDescriptorSetLayout(VkDescriptorSetLayout& descriptorSetLayout) {
-    pipelineLayoutInfo.setLayoutCount = 1;
-    pipelineLayoutInfo.pSetLayouts = &descriptorSetLayout;
+void RasterizerPipelineBuilder::enableAdditiveBlending() {
+    colorBlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT
+                                          | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+    colorBlendAttachment.blendEnable = VK_TRUE;
+    colorBlendAttachment.colorBlendOp = VK_BLEND_OP_ADD;
+    colorBlendAttachment.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
+    colorBlendAttachment.dstColorBlendFactor = VK_BLEND_FACTOR_ONE;
+
+    colorBlendAttachment.alphaBlendOp = VK_BLEND_OP_ADD;
+    colorBlendAttachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
+    colorBlendAttachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
 }
 
-void PipelineBuilder::clear() {
+void RasterizerPipelineBuilder::setDescriptorSetLayouts(std::vector<VkDescriptorSetLayout>& descriptorSetLayouts) {
+    pipelineLayoutInfo.setLayoutCount = static_cast<uint32_t>(descriptorSetLayouts.size());
+    pipelineLayoutInfo.pSetLayouts = descriptorSetLayouts.data();
+}
+
+void RasterizerPipelineBuilder::setPushConstantRanges(std::vector<VkPushConstantRange> &ranges) {
+    pipelineLayoutInfo.pushConstantRangeCount = static_cast<uint32_t>(ranges.size());
+    pipelineLayoutInfo.pPushConstantRanges = ranges.data();
+}
+
+void RasterizerPipelineBuilder::clear() {
     inputAssemblyInfo = { .sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO };
     rasterizerInfo = { .sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO };
     multisamplingInfo = { .sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO };

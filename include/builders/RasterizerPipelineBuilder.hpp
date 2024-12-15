@@ -6,7 +6,7 @@
 #include <stdexcept>
 #include <fstream>
 
-class PipelineBuilder {
+class RasterizerPipelineBuilder {
 public:
     std::vector<VkPipelineShaderStageCreateInfo> shaderStages;
 
@@ -17,19 +17,22 @@ public:
     VkPipelineLayoutCreateInfo pipelineLayoutInfo;
     VkPipelineDepthStencilStateCreateInfo depthStencilInfo;
 
-    PipelineBuilder() { clear(); }
+    RasterizerPipelineBuilder() { clear(); }
 
     void clear();
 
-    void buildPipeline(VkDevice& device, VkRenderPass& renderPass, VkPipeline* pipeline, VkPipelineLayout* pipelineLayout);
+    void buildPipeline(VkDevice& device, VkRenderPass& renderPass, VkPipeline* pipeline, VkPipelineLayout& pipelineLayout);
+    void buildPipelineLayout(VkDevice& device, VkPipelineLayout* layout);
     void setShaders(VkShaderModule vertShaderModule, VkShaderModule fragShaderModule);
     void setInputTopology(VkPrimitiveTopology topology);
     void setPolygonMode(VkPolygonMode polygonMode);
     void setCullMode(VkCullModeFlags cullMode, VkFrontFace frontFace);
     void setMultisamplingNone();
-    void setDepthStencil();
+    void enableDepthTest(VkBool32 enabled, VkCompareOp compareOp);
     void disableColorBlending();
-    void setDescriptorSetLayout(VkDescriptorSetLayout& descriptorSetLayout);
+    void enableAdditiveBlending();
+    void setDescriptorSetLayouts(std::vector<VkDescriptorSetLayout>& descriptorSetLayouts);
+    void setPushConstantRanges(std::vector<VkPushConstantRange>& ranges);
 
 private:
 };

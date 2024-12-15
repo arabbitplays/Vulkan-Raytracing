@@ -6,7 +6,14 @@ project('Raytracing',
         ],
 )
 
-incdir = include_directories('include')
+incdirs = [
+    include_directories('include'),
+    include_directories('include/builders'),
+    include_directories('include/rendering/engine'),
+    include_directories('include/rendering/nodes'),
+    include_directories('include/rendering/ressources'),
+    include_directories('include/rendering'),
+]
 
 vulkan = dependency('vulkan', version: ['>=1.3.0'], required: false)
 if not vulkan.found()
@@ -39,7 +46,7 @@ else
 endif
 
 spv_compile_script = [meson.project_source_root() + '/scripts/compile_shader.py', '--glslc_path', glslc_path]
-glslc_args = ['--target-env', 'vulkan1.0']
+glslc_args = ['--target-env', 'vulkan1.3']
 glslc_args += ['-I' + meson.project_source_root()]
 glslc_args += ['-I' + join_paths(project_root, 'src')]
 glslc_args += ['-I' + join_paths(project_root, 'include')]
@@ -70,6 +77,6 @@ exe = executable(
         tol,
         vulkan,
     ],
-    include_directories: incdir,
+    include_directories: incdirs,
     install : true
 )

@@ -1,6 +1,14 @@
+subdir('builders')
+subdir('rendering/engine')
+subdir('rendering/nodes')
+subdir('rendering/ressources')
+
 shaders = [
-    'shader.frag',
-    'shader.vert',
+    'shaders/shader.frag',
+    'shaders/shader.vert',
+    'shaders/miss.rmiss',
+    'shaders/closesthit.rchit',
+    'shaders/raygen.rgen',
 ]
 
 foreach s : shaders
@@ -9,6 +17,4 @@ endforeach
 
 src += files(
     'main.cpp',
-    'DescriptorAllocator.cpp',
-    'PipelineBuilder.cpp',
 )

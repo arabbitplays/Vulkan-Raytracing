@@ -3,6 +3,7 @@
 //
 
 #include <stdexcept>
+#include <cmath>
 #include "DescriptorAllocator.hpp"
 
 VkDescriptorPool DescriptorAllocator::getPool(VkDevice device) {
@@ -13,7 +14,7 @@ VkDescriptorPool DescriptorAllocator::getPool(VkDevice device) {
     } else {
         newPool = createPool(device, setsPerPool, ratios);
 
-        setsPerPool *= GROW_RATIO;
+        setsPerPool = setsPerPool * GROW_RATIO;
         if (setsPerPool > MAX_SET_COUNT) {
             setsPerPool = MAX_SET_COUNT;
         }
@@ -86,7 +87,6 @@ void DescriptorAllocator::destroyPools(VkDevice device) {
 VkDescriptorSet DescriptorAllocator::allocate(VkDevice device, VkDescriptorSetLayout layout, void *pNext) {
     VkDescriptorPool poolToUse = getPool(device);
 
-    VkDescriptorSetLayout layouts[] = {layout};
     VkDescriptorSetAllocateInfo allocInfo{};
     allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
     allocInfo.pNext = pNext;
@@ -110,4 +110,77 @@ VkDescriptorSet DescriptorAllocator::allocate(VkDevice device, VkDescriptorSetLa
 
     readyPools.push_back(poolToUse);
     return descriptorSet;
+}
+
+void DescriptorAllocator::writeBuffer(uint32_t binding, VkBuffer buffer, uint32_t size, uint32_t offset, VkDescriptorType type) {
+    VkDescriptorBufferInfo& bufferInfo = bufferInfos.emplace_back(VkDescriptorBufferInfo{
+            .buffer = buffer,
+            .offset = offset,
+            .range = size
+    });
+
+    VkWriteDescriptorSet write{};
+    write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    write.dstBinding = binding;
+    write.dstArrayElement = 0;
+    write.descriptorCount = 1;
+    write.descriptorType = type;
+    write.pBufferInfo = &bufferInfo;
+
+    writes.push_back(write);
+}
+
+void DescriptorAllocator::writeImage(uint32_t binding, VkImageView imageView,
+                                     VkSampler sampler, VkImageLayout layout, VkDescriptorType type) {
+    VkDescriptorImageInfo& imageInfo = imageInfos.emplace_back(VkDescriptorImageInfo{
+            .sampler = sampler,
+            .imageView = imageView,
+            .imageLayout = layout
+    });
+
+    VkWriteDescriptorSet write{};
+    write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    write.dstBinding = binding;
+    write.dstArrayElement = 0;
+    write.descriptorCount = 1;
+    write.descriptorType = type;
+    write.pImageInfo = &imageInfo;
+
+    writes.push_back(write);
+}
+
+void DescriptorAllocator::writeAccelerationStructure(uint32_t binding, const VkAccelerationStructureKHR& accelerationStructure, VkDescriptorType type) {
+    VkWriteDescriptorSetAccelerationStructureKHR& descriptorSetAccelerationStructure = accelerationStructureInfos.emplace_back(VkWriteDescriptorSetAccelerationStructureKHR{
+        .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_ACCELERATION_STRUCTURE_KHR,
+        .pNext = nullptr,
+        .accelerationStructureCount = 1,
+        .pAccelerationStructures = &accelerationStructure,
+    });
+
+
+    VkWriteDescriptorSet write{};
+    write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    write.dstBinding = binding;
+    write.descriptorCount = 1;
+    write.descriptorType = type;
+    write.pNext = &descriptorSetAccelerationStructure;
+
+    writes.push_back(write);
+}
+
+
+void DescriptorAllocator::updateSet(VkDevice& device, VkDescriptorSet& set) {
+    for (auto& write : writes) {
+        write.dstSet = set;
+    }
+
+    vkUpdateDescriptorSets(device, static_cast<uint32_t>(writes.size()),
+                           writes.data(), 0, VK_NULL_HANDLE);
+}
+
+void DescriptorAllocator::clearWrites() {
+    bufferInfos.clear();
+    imageInfos.clear();
+    accelerationStructureInfos.clear();
+    writes.clear();
 }
