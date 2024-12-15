@@ -24,9 +24,7 @@
 #include <chrono>
 #include <stb_image.h>
 #define TINYOBJLOADER_IMPLEMENTATION
-#include <AccelerationStructureBuilder.hpp>
-#include <BottomLevelAccelerationStructureBuilder.hpp>
-#include <TopLevelAccelerationStructureBuilder.hpp>
+#include <AccelerationStructure.hpp>
 #include <unordered_map>
 #include "../Vertex.hpp"
 #include "RasterizerPipelineBuilder.hpp"
@@ -97,8 +95,6 @@ public:
     CommandManager commandManager;
     RessourceBuilder ressourceBuilder;
     MeshAssetBuilder meshAssetBuilder;
-    BottomLevelAccelerationStructureBuilder blas_structure_builder;
-    TopLevelAccelerationStructureBuilder tlas_structure_builder;
 
     VkDescriptorSetLayout sceneDataDescriptorLayout;
     VkPushConstantRange objectDataCostantRange;
@@ -137,8 +133,8 @@ private:
 
     AllocatedImage storageImage;
 
-    AccelerationStructure bottomLevelAccelerationStructure;
-    AccelerationStructure topLevelAccelerationStructure;
+    std::shared_ptr<AccelerationStructure> bottomLevelAccelerationStructure;
+    std::shared_ptr<AccelerationStructure> topLevelAccelerationStructure;
 
     VkPipeline rt_pipeline;
     VkPipelineLayout rt_pipelineLayout;
@@ -208,7 +204,6 @@ private:
 
     void createCommandManager();
     void createRessourceBuilder();
-    void createAccelerationStructureBuilder();
 
     void createDepthResources();
     VkFormat findDepthFormat();

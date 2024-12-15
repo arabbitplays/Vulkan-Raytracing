@@ -107,7 +107,6 @@ void VulkanEngine::initVulkan() {
     createCommandManager();
     createRessourceBuilder();
     createDescriptorAllocator();
-    createAccelerationStructureBuilder();
 
     createSwapChain();
     createStorageImage();
@@ -653,13 +652,6 @@ void VulkanEngine::createDescriptorAllocator() {
     });
 }
 
-void VulkanEngine::createAccelerationStructureBuilder() {
-    auto pBlasBuilder = new BottomLevelAccelerationStructureBuilder(device, ressourceBuilder, commandManager);
-    blas_structure_builder = *pBlasBuilder;
-    auto pTlasBuilder = new TopLevelAccelerationStructureBuilder(device, ressourceBuilder, commandManager);
-    tlas_structure_builder = *pTlasBuilder;
-}
-
 void VulkanEngine::createDepthResources() {
     VkFormat depthFormat = findDepthFormat();
 
@@ -865,12 +857,15 @@ void VulkanEngine::loadMeshes() {
 }
 
 void VulkanEngine::createAccelerationStructures(MeshAsset mesh) {
-    blas_structure_builder.addTriangleGeometry(mesh);
-    bottomLevelAccelerationStructure = blas_structure_builder.buildAccelerationStructure(VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_KHR);
+    bottomLevelAccelerationStructure = std::make_shared<AccelerationStructure>(device, ressourceBuilder, commandManager, VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_KHR);
+    topLevelAccelerationStructure = std::make_shared<AccelerationStructure>(device, ressourceBuilder, commandManager, VK_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL_KHR);
+
+    bottomLevelAccelerationStructure->addTriangleGeometry(mesh);
+    bottomLevelAccelerationStructure->build();
 
     mainDeletionQueue.pushFunction([&]() {
-        blas_structure_builder.destroyAccelerationStructure(bottomLevelAccelerationStructure);
-        tlas_structure_builder.destroyAccelerationStructure(topLevelAccelerationStructure);
+        bottomLevelAccelerationStructure->destroy();
+        topLevelAccelerationStructure->destroy();
     });
 }
 
@@ -1111,16 +1106,16 @@ void VulkanEngine::updateScene(uint32_t currentImage) {
 
     glm::mat4 translation = glm::translate(glm::mat4(1.0f), glm::vec3(1.f, 0.0f, 0.0f));
     glm::mat4 scale = glm::scale(glm::mat4(1.0f), glm::vec3(0.5f, 0.5f, 0.5f));
-    tlas_structure_builder.addInstance(bottomLevelAccelerationStructure, rotation);
+    topLevelAccelerationStructure->addInstance(bottomLevelAccelerationStructure, rotation);
 
-    if (topLevelAccelerationStructure.deviceAddress == 0) {
-        tlas_structure_builder.addInstanceGeometry();
+    if (topLevelAccelerationStructure->getHandle() == VK_NULL_HANDLE) {
+        topLevelAccelerationStructure->addInstanceGeometry();
     } else {
-        tlas_structure_builder.update_instance_geometry(0);
+        topLevelAccelerationStructure->update_instance_geometry(0);
     }
-    topLevelAccelerationStructure = tlas_structure_builder.buildAccelerationStructure(VK_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL_KHR);
+    topLevelAccelerationStructure->build();
 
-    descriptorAllocator.writeAccelerationStructure(0, topLevelAccelerationStructure.handle, VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR);
+    descriptorAllocator.writeAccelerationStructure(0, topLevelAccelerationStructure->getHandle(), VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR);
     descriptorAllocator.updateSet(device, rt_descriptorSet);
     descriptorAllocator.clearWrites();
 

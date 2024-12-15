@@ -1,6 +1,7 @@
 subdir('builders')
 subdir('rendering/engine')
 subdir('rendering/nodes')
+subdir('rendering/ressources')
 
 shaders = [
     'shaders/shader.frag',

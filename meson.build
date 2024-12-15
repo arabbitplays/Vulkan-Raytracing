@@ -11,6 +11,7 @@ incdirs = [
     include_directories('include/builders'),
     include_directories('include/rendering/engine'),
     include_directories('include/rendering/nodes'),
+    include_directories('include/rendering/ressources'),
     include_directories('include/rendering'),
 ]
 
