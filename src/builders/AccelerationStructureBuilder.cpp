@@ -61,16 +61,18 @@ AccelerationStructureBuilder::AccelerationStructureBuilder(VkDevice& device, Res
     this->command_manager = command_manager;
 }
 
-AccelerationStructure AccelerationStructureBuilder::buildAccelerationStructure(VkAccelerationStructureTypeKHR type) {
-
-    AccelerationStructure acceleration_structure{};
-
+AccelerationStructure AccelerationStructureBuilder::buildAccelerationStructure(VkAccelerationStructureTypeKHR type,
+        VkBuildAccelerationStructureFlagsKHR flags, VkBuildAccelerationStructureModeKHR mode) {
     assert(!geometries.empty());
 
     std::vector<VkAccelerationStructureGeometryKHR> acceleration_structure_geometries;
     std::vector<VkAccelerationStructureBuildRangeInfoKHR> acceleration_structure_build_range_infos;
     std::vector<uint32_t> primitive_counts;
     for (auto geometry : geometries) {
+        if (mode == VK_BUILD_ACCELERATION_STRUCTURE_MODE_UPDATE_KHR && !geometry.updated) {
+            continue;
+        }
+
         acceleration_structure_geometries.push_back(geometry.handle);
 
         VkAccelerationStructureBuildRangeInfoKHR accelerationBuildRangeInfo{};
@@ -81,13 +83,18 @@ AccelerationStructure AccelerationStructureBuilder::buildAccelerationStructure(V
         acceleration_structure_build_range_infos.push_back(accelerationBuildRangeInfo);
 
         primitive_counts.push_back(geometry.primitiveCount);
+        geometry.updated = false;
     }
 
     VkAccelerationStructureBuildGeometryInfoKHR build_geometry_info{};
     build_geometry_info.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_GEOMETRY_INFO_KHR;
     build_geometry_info.type = type;
-    build_geometry_info.flags = VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR;
-    // TODO here comes update stuff
+    build_geometry_info.flags = flags;
+    build_geometry_info.mode = mode;
+    if (mode == VK_BUILD_ACCELERATION_STRUCTURE_MODE_UPDATE_KHR && acceleration_structure.handle != VK_NULL_HANDLE) {
+        build_geometry_info.srcAccelerationStructure = acceleration_structure.handle;
+        build_geometry_info.dstAccelerationStructure = acceleration_structure.handle;
+    }
     build_geometry_info.geometryCount = static_cast<uint32_t>(acceleration_structure_geometries.size());
     build_geometry_info.pGeometries = acceleration_structure_geometries.data();
 
@@ -100,6 +107,9 @@ AccelerationStructure AccelerationStructureBuilder::buildAccelerationStructure(V
         &geometries[0].primitiveCount,
         &build_sizes_info);
 
+    if (acceleration_structure.buffer.handle == VK_NULL_HANDLE) {
+
+    }
     acceleration_structure.buffer = ressource_builder.createBuffer(
         build_sizes_info.accelerationStructureSize,
         VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,

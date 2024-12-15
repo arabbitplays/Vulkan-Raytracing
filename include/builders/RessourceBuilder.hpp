@@ -11,7 +11,7 @@
 #include "../rendering/engine/CommandManager.hpp"
 
 struct AllocatedBuffer {
-    VkBuffer handle;
+    VkBuffer handle = VK_NULL_HANDLE;
     VkDeviceMemory bufferMemory;
     uint64_t deviceAddress;
 

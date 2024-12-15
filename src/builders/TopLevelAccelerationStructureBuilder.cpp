@@ -77,4 +77,5 @@ void TopLevelAccelerationStructureBuilder::update_instance_geometry(uint32_t ind
     accelerationStructureGeometry.geometry.instances.data = instanceDataDeviceAddress;
 
     geometries[index].primitiveCount = static_cast<uint32_t>(instances.size());
+    geometries[index].updated = true;
 }
