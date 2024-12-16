@@ -65,11 +65,11 @@ void AccelerationStructure::addTriangleGeometry(const AllocatedBuffer& vertex_bu
     accelerationStructureGeometry.flags = VK_GEOMETRY_OPAQUE_BIT_KHR;
     accelerationStructureGeometry.geometry.triangles.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_TRIANGLES_DATA_KHR;
     accelerationStructureGeometry.geometry.triangles.vertexFormat = VK_FORMAT_R32G32B32_SFLOAT;
-    accelerationStructureGeometry.geometry.triangles.vertexData.deviceAddress = vertex_buffer.deviceAddress + vertex_offset;
+    accelerationStructureGeometry.geometry.triangles.vertexData.deviceAddress = vertex_buffer.deviceAddress + vertex_offset * vertex_stride;
     accelerationStructureGeometry.geometry.triangles.maxVertex = max_vertex;
     accelerationStructureGeometry.geometry.triangles.vertexStride = vertex_stride;
     accelerationStructureGeometry.geometry.triangles.indexType = VK_INDEX_TYPE_UINT32;
-    accelerationStructureGeometry.geometry.triangles.indexData.deviceAddress = index_buffer.deviceAddress + index_offset;
+    accelerationStructureGeometry.geometry.triangles.indexData.deviceAddress = index_buffer.deviceAddress + index_offset * sizeof(uint32_t);
 
     Geometry geometry{};
     geometry.handle = accelerationStructureGeometry;

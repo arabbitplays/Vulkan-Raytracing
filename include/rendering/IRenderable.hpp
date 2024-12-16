@@ -2,6 +2,7 @@
 // Created by oster on 09.09.2024.
 //
 
+#include <AccelerationStructure.hpp>
 #include <vulkan/vulkan_core.h>
 
 #ifndef BASICS_IRENDERABLE_HPP
@@ -41,7 +42,7 @@ struct RenderObject {
 };
 
 struct DrawContext {
-    std::vector<RenderObject> opaqueSurfaces;
+    std::shared_ptr<AccelerationStructure> top_level_acceleration_structure = nullptr;
 };
 
 class IRenderable {

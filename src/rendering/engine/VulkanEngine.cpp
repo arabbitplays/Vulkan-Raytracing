@@ -773,18 +773,33 @@ void VulkanEngine::loadMeshes() {
     auto pMeshAssetBuilder = new MeshAssetBuilder(device, ressourceBuilder);
     meshAssetBuilder = *pMeshAssetBuilder;
 
-    MeshAsset meshAsset = meshAssetBuilder.LoadMeshAsset("Sphere", "../ressources/models/sphere.obj");
+    std::shared_ptr<MeshAsset> meshAsset = std::make_shared<MeshAsset>(meshAssetBuilder.LoadMeshAsset("Sphere", "../ressources/models/sphere.obj"));
     meshAssets.push_back(meshAsset);
 
-    /*meshAsset = meshAssetBuilder.LoadMeshAsset("Room", "../ressources/models/viking_room.obj");
-    meshAssets.push_back(meshAsset);*/
+    meshAsset = std::make_shared<MeshAsset>(meshAssetBuilder.LoadMeshAsset("Sphere", "../ressources/models/plane.obj"));
+    meshAssets.push_back(meshAsset);
 
     for (auto& meshAsset : meshAssets) {
         mainDeletionQueue.pushFunction([&]() {
-            meshAssetBuilder.destroyMeshAsset(meshAsset);
+            meshAssetBuilder.destroyMeshAsset(*meshAsset);
         });
     }
 
+    std::shared_ptr<MeshNode> sphere = std::make_shared<MeshNode>();
+    sphere->localTransform = glm::translate(glm::mat4(1.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+    sphere->worldTransform = glm::mat4{1.0f};
+    sphere->children = {};
+    sphere->meshAsset = meshAssets[0];
+    sphere->refreshTransform(glm::mat4(1.0f));
+    loadedNodes["Sphere"] = std::move(sphere);
+
+    std::shared_ptr<MeshNode> plane = std::make_shared<MeshNode>();
+    plane->localTransform = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, -1.0f, 0.0f)) * glm::scale( glm::mat4(1.0f), glm::vec3(3.f, 1.0f, 3.f));
+    plane->worldTransform = glm::mat4{1.0f};
+    plane->children = {};
+    plane->meshAsset = meshAssets[1];
+    plane->refreshTransform(glm::mat4(1.0f));
+    loadedNodes["Plane"] = std::move(plane);
 
     /*std::shared_ptr<Node> parentNode = std::make_shared<Node>();
     parentNode->localTransform = glm::mat4{1.0f};
@@ -795,10 +810,10 @@ void VulkanEngine::loadMeshes() {
     for (int x = 0; x < 5; x++) {
         for (int y = 0; y < 5; y++) {
             std::shared_ptr<MeshNode> newNode = std::make_shared<MeshNode>();
-            newNode->meshAsset = std::make_shared<MeshAsset>(meshAssets[0]);
+            newNode->meshAsset = meshAssets[0];
 
-            MaterialInstance material = createMetalRoughMaterial(0.1f + 0.2f * (float)y, 0.01f + 0.2f * (float)x, glm::vec3{1, 1, 1});
-            newNode->material = std::make_shared<Material>(material);
+            //MaterialInstance material = createMetalRoughMaterial(0.1f + 0.2f * (float)y, 0.01f + 0.2f * (float)x, glm::vec3{1, 1, 1});
+            //newNode->material = std::make_shared<Material>(material);
 
             glm::mat4 translation = glm::translate(glm::mat4(1.0f), glm::vec3{x - 2, y - 2, 0});
             glm::mat4 scale = glm::scale(glm::mat4(1.0f), glm::vec3(0.4f));
@@ -825,15 +840,16 @@ void VulkanEngine::createSceneBuffers() {
 }
 
 void VulkanEngine::createAccelerationStructure() {
+    uint32_t object_id = 0;
     for (auto& meshAsset : meshAssets) {
-        meshAsset.accelerationStructure = std::make_shared<AccelerationStructure>(device, ressourceBuilder, commandManager, VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_KHR);
+        meshAsset->accelerationStructure = std::make_shared<AccelerationStructure>(device, ressourceBuilder, commandManager, VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_KHR);
 
-        meshAsset.accelerationStructure->addTriangleGeometry(vertex_buffer, index_buffer,
-            meshAsset.vertex_count - 1, meshAsset.triangle_count, sizeof(Vertex),
-            meshAsset.instance_data.vertex_offset, meshAsset.instance_data.triangle_offset);
-        meshAsset.accelerationStructure->build();
+        meshAsset->accelerationStructure->addTriangleGeometry(vertex_buffer, index_buffer,
+            meshAsset->vertex_count - 1, meshAsset->triangle_count, sizeof(Vertex),
+            meshAsset->instance_data.vertex_offset, meshAsset->instance_data.triangle_offset);
+        meshAsset->accelerationStructure->build();
+        meshAsset->objectID = object_id++;
     }
-
 }
 
 inline uint32_t alignedSize(uint32_t value, uint32_t alignment) {
@@ -874,8 +890,8 @@ void VulkanEngine::rt_createDescriptorSets() {
     // Binding 0 is the TLAS added in updateScene
     descriptorAllocator.writeImage(1, storageImage.imageView, VK_NULL_HANDLE, VK_IMAGE_LAYOUT_GENERAL, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
     descriptorAllocator.writeBuffer(2, sceneUniformBuffers[0].handle, sizeof(SceneData), 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
-    descriptorAllocator.writeBuffer(3, vertex_buffer.handle, 559 * sizeof(Vertex), 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
-    descriptorAllocator.writeBuffer(4, index_buffer.handle, 2880 * sizeof(uint32_t), 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+    descriptorAllocator.writeBuffer(3, vertex_buffer.handle, 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+    descriptorAllocator.writeBuffer(4, index_buffer.handle, 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
     descriptorAllocator.writeBuffer(5, data_mapping_buffer.handle, 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
     descriptorAllocator.updateSet(device, rt_descriptorSet);
     descriptorAllocator.clearWrites();
@@ -1069,43 +1085,42 @@ void VulkanEngine::updateScene(uint32_t currentImage) {
     static auto startTime = std::chrono::high_resolution_clock::now();
     auto currentTime = std::chrono::high_resolution_clock::now();
     float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
-    /*loadedNodes["Spheres"]->refreshTransform(rotation);
+    glm::mat4 rotation = glm::rotate(glm::mat4{1.0f}, time * glm::radians(45.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+    loadedNodes["Sphere"]->localTransform = glm::translate(glm::mat4(1.0f), glm::vec3(1.0f, 0.0f, 0.0f)) * rotation;
+    loadedNodes["Sphere"]->refreshTransform(glm::mat4(1.0f));
 
-    mainDrawContext.opaqueSurfaces.clear();
-    for (auto& pair : loadedNodes) {
-        pair.second->draw(glm::mat4(1.0f), mainDrawContext);
-    }*/
-
-    if (topLevelAccelerationStructure == nullptr) {
-        topLevelAccelerationStructure = std::make_shared<AccelerationStructure>(device, ressourceBuilder, commandManager, VK_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL_KHR);
+    if (mainDrawContext.top_level_acceleration_structure == nullptr) {
+        mainDrawContext.top_level_acceleration_structure = std::make_shared<AccelerationStructure>(device, ressourceBuilder, commandManager, VK_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL_KHR);
 
         mainDeletionQueue.pushFunction([&]() {
-            topLevelAccelerationStructure->destroy();
+            mainDrawContext.top_level_acceleration_structure->destroy();
         });
+    }
+    for (auto& pair : loadedNodes) {
+        pair.second->draw(glm::mat4(1.0f), mainDrawContext);
     }
 
     glm::mat4 translation = glm::translate(glm::mat4(1.0f), glm::vec3(1.5f, 0.0f, 0.0f));
     glm::mat4 scale = glm::scale(glm::mat4(1.0f), glm::vec3(0.5f, 0.5f, 0.5f));
-    glm::mat4 rotation = glm::rotate(glm::mat4{1.0f}, time * glm::radians(45.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-    topLevelAccelerationStructure->addInstance(meshAssets[0].accelerationStructure, scale * translation * rotation, 0);
 
-    /*translation = glm::translate(glm::mat4(1.0f), glm::vec3(-1.5f, 0.0f, 0.0f));
-    rotation = glm::rotate(glm::mat4{1.0f}, time * glm::radians(-45.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-    topLevelAccelerationStructure->addInstance(meshAssets[1].accelerationStructure, scale * translation * rotation, 1);*/
+    translation = glm::translate(glm::mat4(1.0f), glm::vec3(-1.0f, -0.5f, 0.0f));
+    scale = glm::scale(glm::mat4(1.0f), glm::vec3(0.8f, 0.8f, 0.8f));
+    rotation = glm::rotate(glm::mat4{1.0f}, glm::radians(-90.f), glm::vec3(0.0f, 0.0f, 1.0f));
+    glm::mat4 rotation2 = glm::rotate(glm::mat4{1.0f}, glm::radians(-90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
 
-    if (topLevelAccelerationStructure->getHandle() == VK_NULL_HANDLE) {
-        topLevelAccelerationStructure->addInstanceGeometry();
+    if (mainDrawContext.top_level_acceleration_structure->getHandle() == VK_NULL_HANDLE) {
+        mainDrawContext.top_level_acceleration_structure->addInstanceGeometry();
     } else {
-        topLevelAccelerationStructure->update_instance_geometry(0);
+        mainDrawContext.top_level_acceleration_structure->update_instance_geometry(0);
     }
-    topLevelAccelerationStructure->build();
+    mainDrawContext.top_level_acceleration_structure->build();
 
-    descriptorAllocator.writeAccelerationStructure(0, topLevelAccelerationStructure->getHandle(), VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR);
+    descriptorAllocator.writeAccelerationStructure(0, mainDrawContext.top_level_acceleration_structure->getHandle(), VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR);
     descriptorAllocator.updateSet(device, rt_descriptorSet);
     descriptorAllocator.clearWrites();
 
     SceneData sceneData{};
-    sceneData.view = glm::translate(glm::mat4(1.0f), glm::vec3{ 0,0,-2.5f });
+    sceneData.view = glm::translate(glm::mat4(1.0f), glm::vec3{ 0,0,-4.5f });
     /*sceneData.view = glm::lookAt(glm::vec3(4.0f, 4.0f, 4.0f),
                            glm::vec3(0.0f, 0.0f, 0.0f),
                            glm::vec3(0.0f, 0.0f, 1.0f));*/
@@ -1116,14 +1131,14 @@ void VulkanEngine::updateScene(uint32_t currentImage) {
     sceneData.viewProj = sceneData.view * sceneData.proj;
 
     sceneData.viewPos = glm::vec4{ 0,0,6, 0 };
-    sceneData.pointLightPositions = {glm::vec4{1, 1, 3, 1}, glm::vec4{1, -1, 3, 1},
+    sceneData.pointLightPositions = {glm::vec4{-2, 4, 3, 1}, glm::vec4{1, -1, 3, 1},
                                      glm::vec4{-1, 1, 3, 1}, glm::vec4{-1, -1, 3, 1}};
     sceneData.pointLightColors = {glm::vec4{1, 0, 0, 0}, glm::vec4{0, 1, 0, 0},
                                   glm::vec4{0, 0, 1, 0}, glm::vec4{1, 1, 1, 0}};
 
     sceneData.ambientColor = glm::vec4(1.f);
     sceneData.sunlightColor = glm::vec4(1.f);
-    sceneData.sunlightDirection = glm::vec4(-1,1,2,1.f);
+    sceneData.sunlightDirection = glm::vec4(-1,-1,-1,1.f);
 
     memcpy(sceneUniformBuffersMapped[currentImage], &sceneData, sizeof(SceneData));
 }

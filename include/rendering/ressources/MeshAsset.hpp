@@ -26,6 +26,7 @@ struct MeshAsset {
     InstanceData instance_data;
     MeshBuffers meshBuffers;
     std::shared_ptr<AccelerationStructure> accelerationStructure;
+    uint32_t objectID;
 };
 
 #endif //MESHASSET_HPP

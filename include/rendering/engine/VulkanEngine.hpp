@@ -126,7 +126,7 @@ private:
     std::vector<VkFramebuffer> swapChainFrameBuffers;
     std::vector<VkCommandBuffer> commandBuffers;
 
-    std::vector<MeshAsset> meshAssets;
+    std::vector<std::shared_ptr<MeshAsset>> meshAssets;
     AllocatedBuffer vertex_buffer, index_buffer, data_mapping_buffer;
 
     std::unordered_map<std::string, std::shared_ptr<Node>> loadedNodes;
@@ -135,8 +135,6 @@ private:
     VkPhysicalDeviceRayTracingPipelinePropertiesKHR raytracingProperties{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_PROPERTIES_KHR};
 
     AllocatedImage storageImage;
-
-    std::shared_ptr<AccelerationStructure> topLevelAccelerationStructure;
 
     std::shared_ptr<Pipeline> raytracing_pipeline;
     VkDescriptorSet rt_descriptorSet;
