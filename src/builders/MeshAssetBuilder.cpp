@@ -99,7 +99,8 @@ AllocatedBuffer MeshAssetBuilder::createVertexBuffer(std::vector<MeshAsset>& mes
     }
     vkUnmapMemory(device, stagingBuffer.bufferMemory);
 
-    AllocatedBuffer vertexBuffer = bufferBuilder.createBuffer(size, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
+    AllocatedBuffer vertexBuffer = bufferBuilder.createBuffer(size, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR
+        | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
                  VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
     bufferBuilder.copyBuffer(stagingBuffer, vertexBuffer, size);
@@ -127,12 +128,13 @@ AllocatedBuffer MeshAssetBuilder::createIndexBuffer(std::vector<MeshAsset>& mesh
         uint32_t mesh_size = mesh_asset.meshBuffers.indices.size() * sizeof(mesh_asset.meshBuffers.indices[0]);
         memcpy(data + offset, mesh_asset.meshBuffers.indices.data(), (size_t) mesh_size);
 
-        mesh_asset.instance_data.index_offset = offset;
+        mesh_asset.instance_data.triangle_offset = offset;
         offset += mesh_size;
     }
     vkUnmapMemory(device, stagingBuffer.bufferMemory);
 
-    AllocatedBuffer indexBuffer = bufferBuilder.createBuffer(size, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
+    AllocatedBuffer indexBuffer = bufferBuilder.createBuffer(size, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR
+        | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
                  VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
     bufferBuilder.copyBuffer(stagingBuffer, indexBuffer, size);
@@ -159,7 +161,8 @@ AllocatedBuffer MeshAssetBuilder::createDataMappingBuffer(std::vector<MeshAsset>
     memcpy(data, instance_datas.data(), (size_t) size);
     vkUnmapMemory(device, stagingBuffer.bufferMemory);
 
-    AllocatedBuffer indexBuffer = bufferBuilder.createBuffer(size, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
+    AllocatedBuffer indexBuffer = bufferBuilder.createBuffer(size, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR
+        | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
                  VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
     bufferBuilder.copyBuffer(stagingBuffer, indexBuffer, size);

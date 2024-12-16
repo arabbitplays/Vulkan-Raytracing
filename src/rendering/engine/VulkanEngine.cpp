@@ -594,6 +594,7 @@ void VulkanEngine::createRessourceBuilder() {
 void VulkanEngine::createDescriptorAllocator() {
     std::vector<DescriptorAllocator::PoolSizeRatio> poolRatios = {
         { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1 },
+        { VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1 },
         { VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1 },
         { VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1 },
         { VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, 1 },
@@ -775,8 +776,8 @@ void VulkanEngine::loadMeshes() {
     MeshAsset meshAsset = meshAssetBuilder.LoadMeshAsset("Sphere", "../ressources/models/sphere.obj");
     meshAssets.push_back(meshAsset);
 
-    meshAsset = meshAssetBuilder.LoadMeshAsset("Room", "../ressources/models/viking_room.obj");
-    meshAssets.push_back(meshAsset);
+    /*meshAsset = meshAssetBuilder.LoadMeshAsset("Room", "../ressources/models/viking_room.obj");
+    meshAssets.push_back(meshAsset);*/
 
     for (auto& meshAsset : meshAssets) {
         mainDeletionQueue.pushFunction([&]() {
@@ -828,8 +829,8 @@ void VulkanEngine::createAccelerationStructure() {
         meshAsset.accelerationStructure = std::make_shared<AccelerationStructure>(device, ressourceBuilder, commandManager, VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_KHR);
 
         meshAsset.accelerationStructure->addTriangleGeometry(vertex_buffer, index_buffer,
-            meshAsset.vertex_count, meshAsset.triangle_count, sizeof(Vertex),
-            meshAsset.instance_data.vertex_offset, meshAsset.instance_data.index_offset);
+            meshAsset.vertex_count - 1, meshAsset.triangle_count, sizeof(Vertex),
+            meshAsset.instance_data.vertex_offset, meshAsset.instance_data.triangle_offset);
         meshAsset.accelerationStructure->build();
     }
 
@@ -870,9 +871,12 @@ void VulkanEngine::createShaderBindingTables() {
 
 void VulkanEngine::rt_createDescriptorSets() {
     rt_descriptorSet = descriptorAllocator.allocate(device, rt_descriptorSetLayout);
-    //descriptorAllocator.writeAccelerationStructure(0, topLevelAccelerationStructure.handle, VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR);
+    // Binding 0 is the TLAS added in updateScene
     descriptorAllocator.writeImage(1, storageImage.imageView, VK_NULL_HANDLE, VK_IMAGE_LAYOUT_GENERAL, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
     descriptorAllocator.writeBuffer(2, sceneUniformBuffers[0].handle, sizeof(SceneData), 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+    descriptorAllocator.writeBuffer(3, vertex_buffer.handle, 559 * sizeof(Vertex), 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+    descriptorAllocator.writeBuffer(4, index_buffer.handle, 2880 * sizeof(uint32_t), 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+    descriptorAllocator.writeBuffer(5, data_mapping_buffer.handle, 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
     descriptorAllocator.updateSet(device, rt_descriptorSet);
     descriptorAllocator.clearWrites();
 }
@@ -884,7 +888,11 @@ void VulkanEngine::createPipeline() {
     layoutBuilder.addBinding(0, VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR);
     layoutBuilder.addBinding(1, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
     layoutBuilder.addBinding(2, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
-    rt_descriptorSetLayout = layoutBuilder.build(device, VK_SHADER_STAGE_RAYGEN_BIT_KHR);
+    layoutBuilder.addBinding(3, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+    layoutBuilder.addBinding(4, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+    layoutBuilder.addBinding(5, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+
+    rt_descriptorSetLayout = layoutBuilder.build(device, VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR);
     mainDeletionQueue.pushFunction([&]() {
         vkDestroyDescriptorSetLayout(device, rt_descriptorSetLayout, nullptr);
     });
@@ -1081,9 +1089,9 @@ void VulkanEngine::updateScene(uint32_t currentImage) {
     glm::mat4 rotation = glm::rotate(glm::mat4{1.0f}, time * glm::radians(45.0f), glm::vec3(0.0f, 1.0f, 0.0f));
     topLevelAccelerationStructure->addInstance(meshAssets[0].accelerationStructure, scale * translation * rotation, 0);
 
-    translation = glm::translate(glm::mat4(1.0f), glm::vec3(-1.5f, 0.0f, 0.0f));
+    /*translation = glm::translate(glm::mat4(1.0f), glm::vec3(-1.5f, 0.0f, 0.0f));
     rotation = glm::rotate(glm::mat4{1.0f}, time * glm::radians(-45.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-    topLevelAccelerationStructure->addInstance(meshAssets[1].accelerationStructure, scale * translation * rotation, 0);
+    topLevelAccelerationStructure->addInstance(meshAssets[1].accelerationStructure, scale * translation * rotation, 1);*/
 
     if (topLevelAccelerationStructure->getHandle() == VK_NULL_HANDLE) {
         topLevelAccelerationStructure->addInstanceGeometry();

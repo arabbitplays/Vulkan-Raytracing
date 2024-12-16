@@ -16,7 +16,7 @@ struct MeshBuffers {
 
 struct InstanceData {
     uint32_t vertex_offset = 0;
-    uint32_t index_offset = 0;
+    uint32_t triangle_offset = 0;
 };
 
 struct MeshAsset {
