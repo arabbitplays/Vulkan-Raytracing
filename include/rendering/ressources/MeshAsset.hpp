@@ -10,18 +10,20 @@
 #include "AccelerationStructure.hpp"
 
 struct MeshBuffers {
-    AllocatedBuffer vertexBuffer;
-    AllocatedBuffer indexBuffer;
+    std::vector<Vertex> vertices;
+    std::vector<uint32_t> indices;
 };
 
-struct MeshSurface {
-    uint32_t startIndex;
-    uint32_t count;
+struct InstanceData {
+    uint32_t vertex_offset = 0;
+    uint32_t index_offset = 0;
 };
 
 struct MeshAsset {
     std::string name;
-    std::vector<MeshSurface> surfaces;
+    uint32_t vertex_count = 0;
+    uint32_t triangle_count = 0;
+    InstanceData instance_data;
     MeshBuffers meshBuffers;
     std::shared_ptr<AccelerationStructure> accelerationStructure;
 };

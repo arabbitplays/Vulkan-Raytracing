@@ -55,13 +55,9 @@ VkDeviceAddress GetAccelerationStructureDeviceAddressKHR( VkDevice device, const
 
 // -----------------------------------------------------------------------------------------------------------------------
 
-void AccelerationStructure::addTriangleGeometry(const AllocatedBuffer& vertex_buffer, const AllocatedBuffer& index_buffer, uint32_t vertexCount) {
+void AccelerationStructure::addTriangleGeometry(const AllocatedBuffer& vertex_buffer, const AllocatedBuffer& index_buffer,
+        uint32_t max_vertex, uint32_t triangle_count, uint32_t vertex_stride, uint32_t vertex_offset, uint32_t index_offset) {
     assert(type == VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_KHR);
-
-    VkDeviceOrHostAddressConstKHR vertexDeviceAddress{};
-    VkDeviceOrHostAddressConstKHR indexDeviceAddress{};
-    vertexDeviceAddress.deviceAddress = vertex_buffer.deviceAddress;
-    indexDeviceAddress.deviceAddress = index_buffer.deviceAddress;
 
     VkAccelerationStructureGeometryKHR accelerationStructureGeometry{};
     accelerationStructureGeometry.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_KHR;
@@ -69,15 +65,15 @@ void AccelerationStructure::addTriangleGeometry(const AllocatedBuffer& vertex_bu
     accelerationStructureGeometry.flags = VK_GEOMETRY_OPAQUE_BIT_KHR;
     accelerationStructureGeometry.geometry.triangles.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_TRIANGLES_DATA_KHR;
     accelerationStructureGeometry.geometry.triangles.vertexFormat = VK_FORMAT_R32G32B32_SFLOAT;
-    accelerationStructureGeometry.geometry.triangles.vertexData = vertexDeviceAddress;
-    accelerationStructureGeometry.geometry.triangles.maxVertex = vertexCount;
-    accelerationStructureGeometry.geometry.triangles.vertexStride = sizeof(Vertex);
+    accelerationStructureGeometry.geometry.triangles.vertexData.deviceAddress = vertex_buffer.deviceAddress + vertex_offset;
+    accelerationStructureGeometry.geometry.triangles.maxVertex = max_vertex;
+    accelerationStructureGeometry.geometry.triangles.vertexStride = vertex_stride;
     accelerationStructureGeometry.geometry.triangles.indexType = VK_INDEX_TYPE_UINT32;
-    accelerationStructureGeometry.geometry.triangles.indexData = indexDeviceAddress;
+    accelerationStructureGeometry.geometry.triangles.indexData.deviceAddress = index_buffer.deviceAddress + index_offset;
 
     Geometry geometry{};
     geometry.handle = accelerationStructureGeometry;
-    geometry.primitiveCount = vertexCount / 3;// TODO verallgemeinern
+    geometry.primitiveCount = triangle_count;
     geometries.push_back(geometry);
 }
 

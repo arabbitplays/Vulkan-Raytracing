@@ -14,20 +14,17 @@ MeshAssetBuilder::MeshAssetBuilder(VkDevice device, RessourceBuilder bufferBuild
 }
 
 MeshAsset MeshAssetBuilder::LoadMeshAsset(std::string name, std::string path) {
-    std::vector<Vertex> vertices;
-    std::vector<uint32_t> indices;
-    loadModel(path, vertices, indices);
-
     MeshBuffers meshBuffers{};
-    meshBuffers.vertexBuffer = createVertexBuffer(vertices);
-    meshBuffers.indexBuffer = createIndexBuffer(indices);
+
+    loadModel(path, meshBuffers.vertices, meshBuffers.indices);
 
     MeshAsset meshAsset{};
     meshAsset.name = name;
     meshAsset.meshBuffers = meshBuffers;
-    std::vector<MeshSurface> surfaces;
-    surfaces.push_back({0, static_cast<uint32_t>(indices.size())});
-    meshAsset.surfaces = surfaces;
+    meshAsset.vertex_count = meshBuffers.indices.size();
+    meshAsset.triangle_count = meshBuffers.indices.size() / 3;
+
+    meshAsset.instance_data = {};
 
     return meshAsset;
 }
@@ -79,15 +76,27 @@ void MeshAssetBuilder::loadModel(std::string path, std::vector<Vertex>& vertices
     }
 }
 
-AllocatedBuffer MeshAssetBuilder::createVertexBuffer(std::vector<Vertex>& vertices) {
-    VkDeviceSize size = sizeof(vertices[0]) * vertices.size();
+AllocatedBuffer MeshAssetBuilder::createVertexBuffer(std::vector<MeshAsset>& mesh_assets) {
+    assert(!mesh_assets.empty());
+
+    VkDeviceSize size =  0;
+    for (auto& mesh_asset : mesh_assets) {
+        size += mesh_asset.meshBuffers.vertices.size() * sizeof(mesh_asset.meshBuffers.vertices[0]);;
+    }
 
     AllocatedBuffer stagingBuffer = bufferBuilder.createBuffer(size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT
             , VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 
     void* data;
     vkMapMemory(device, stagingBuffer.bufferMemory, 0, size, 0, &data);
-    memcpy(data, vertices.data(), (size_t) size);
+    uint32_t offset = 0;
+    for (auto& mesh_asset : mesh_assets) {
+        uint32_t mesh_size = mesh_asset.meshBuffers.vertices.size() * sizeof(mesh_asset.meshBuffers.vertices[0]);
+        memcpy(data + offset, mesh_asset.meshBuffers.vertices.data(), (size_t) mesh_size);
+
+        mesh_asset.instance_data.vertex_offset = offset;
+        offset += mesh_size;
+    }
     vkUnmapMemory(device, stagingBuffer.bufferMemory);
 
     AllocatedBuffer vertexBuffer = bufferBuilder.createBuffer(size, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
@@ -99,15 +108,55 @@ AllocatedBuffer MeshAssetBuilder::createVertexBuffer(std::vector<Vertex>& vertic
     return vertexBuffer;
 }
 
-AllocatedBuffer MeshAssetBuilder::createIndexBuffer(std::vector<uint32_t>& indices) {
-    VkDeviceSize size = sizeof(indices[0]) * indices.size();
+AllocatedBuffer MeshAssetBuilder::createIndexBuffer(std::vector<MeshAsset>& mesh_assets) {
+    assert(!mesh_assets.empty());
+
+    VkDeviceSize size =  0;
+    for (auto& mesh_asset : mesh_assets) {
+        size += mesh_asset.meshBuffers.indices.size() * sizeof(mesh_asset.meshBuffers.indices[0]);;
+    }
+
 
     AllocatedBuffer stagingBuffer = bufferBuilder.createBuffer(size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT
             , VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 
     void* data;
     vkMapMemory(device, stagingBuffer.bufferMemory, 0, size, 0, &data);
-    memcpy(data, indices.data(), (size_t) size);
+    uint32_t offset = 0;
+    for (auto& mesh_asset : mesh_assets) {
+        uint32_t mesh_size = mesh_asset.meshBuffers.indices.size() * sizeof(mesh_asset.meshBuffers.indices[0]);
+        memcpy(data + offset, mesh_asset.meshBuffers.indices.data(), (size_t) mesh_size);
+
+        mesh_asset.instance_data.index_offset = offset;
+        offset += mesh_size;
+    }
+    vkUnmapMemory(device, stagingBuffer.bufferMemory);
+
+    AllocatedBuffer indexBuffer = bufferBuilder.createBuffer(size, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
+                 VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+
+    bufferBuilder.copyBuffer(stagingBuffer, indexBuffer, size);
+
+    bufferBuilder.destroyBuffer(stagingBuffer);
+    return indexBuffer;
+}
+
+AllocatedBuffer MeshAssetBuilder::createDataMappingBuffer(std::vector<MeshAsset>& mesh_assets) {
+    assert(!mesh_assets.empty());
+
+    VkDeviceSize size = mesh_assets.size() * sizeof(InstanceData);
+
+    AllocatedBuffer stagingBuffer = bufferBuilder.createBuffer(size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT
+            , VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+
+    std::vector<InstanceData> instance_datas;
+    for (auto& mesh_asset : mesh_assets) {
+        instance_datas.push_back(mesh_asset.instance_data);
+    }
+
+    void* data;
+    vkMapMemory(device, stagingBuffer.bufferMemory, 0, size, 0, &data);
+    memcpy(data, instance_datas.data(), (size_t) size);
     vkUnmapMemory(device, stagingBuffer.bufferMemory);
 
     AllocatedBuffer indexBuffer = bufferBuilder.createBuffer(size, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
@@ -120,7 +169,5 @@ AllocatedBuffer MeshAssetBuilder::createIndexBuffer(std::vector<uint32_t>& indic
 }
 
 void MeshAssetBuilder::destroyMeshAsset(MeshAsset& meshAsset) {
-    bufferBuilder.destroyBuffer(meshAsset.meshBuffers.vertexBuffer);
-    bufferBuilder.destroyBuffer(meshAsset.meshBuffers.indexBuffer);
     meshAsset.accelerationStructure->destroy();
 }

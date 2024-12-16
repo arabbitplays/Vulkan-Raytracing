@@ -23,7 +23,8 @@ public:
     AccelerationStructure(VkDevice& device, RessourceBuilder& ressource_builder, CommandManager& command_manager, VkAccelerationStructureTypeKHR type) :
         device(device), ressource_builder(ressource_builder), command_manager(command_manager), type(type) {};
 
-    void addTriangleGeometry(const AllocatedBuffer& vertex_buffer, const AllocatedBuffer& index_buffer, uint32_t vertexCount);
+    void addTriangleGeometry(const AllocatedBuffer& vertex_buffer, const AllocatedBuffer& index_buffer,
+        uint32_t max_vertex, uint32_t triangle_count, uint32_t vertex_stride, uint32_t vertex_offset, uint32_t index_offset);
 
     void addInstance(std::shared_ptr<AccelerationStructure>& instance, glm::mat4 transform_matrix, uint32_t instanceId);
     void addInstanceGeometry();

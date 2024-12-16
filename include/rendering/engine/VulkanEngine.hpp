@@ -127,6 +127,8 @@ private:
     std::vector<VkCommandBuffer> commandBuffers;
 
     std::vector<MeshAsset> meshAssets;
+    AllocatedBuffer vertex_buffer, index_buffer, data_mapping_buffer;
+
     std::unordered_map<std::string, std::shared_ptr<Node>> loadedNodes;
     DrawContext mainDrawContext;
 
@@ -169,6 +171,9 @@ private:
     MetallicRoughness metalRoughMaterial;
 
     void initWindow();
+
+    void createSceneBuffers();
+
     void initVulkan();
     void mainLoop();
     void cleanup();
@@ -213,7 +218,7 @@ private:
     void createDefaultMaterials();
     void loadMeshes();
 
-    void createAccelerationStructureForMesh(MeshAsset& mesh);
+    void createAccelerationStructure();
     void createShaderBindingTables();
 
     void rt_createDescriptorSets();

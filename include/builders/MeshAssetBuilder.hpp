@@ -21,10 +21,14 @@ public:
     MeshAsset LoadMeshAsset(std::string name, std::string path);
     void destroyMeshAsset(MeshAsset& meshAsset);
 
+    AllocatedBuffer createVertexBuffer(std::vector<MeshAsset> &mesh_assets);
+    AllocatedBuffer createIndexBuffer(std::vector<MeshAsset> &mesh_assets);
+
+    AllocatedBuffer createDataMappingBuffer(std::vector<MeshAsset> &mesh_assets);
+
 private:
     void loadModel(std::string path, std::vector<Vertex>& vertices, std::vector<uint32_t>& indices);
-    AllocatedBuffer createVertexBuffer(std::vector<Vertex>& vertices);
-    AllocatedBuffer createIndexBuffer(std::vector<uint32_t>& indices);
+
 
     VkDevice device;
     RessourceBuilder bufferBuilder;

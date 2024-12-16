@@ -117,6 +117,8 @@ void VulkanEngine::initVulkan() {
     initDefaultResources();
 
     loadMeshes();
+    createSceneBuffers();
+    createAccelerationStructure();
     createUniformBuffers();
 
     createPipeline();
@@ -777,8 +779,6 @@ void VulkanEngine::loadMeshes() {
     meshAssets.push_back(meshAsset);
 
     for (auto& meshAsset : meshAssets) {
-        createAccelerationStructureForMesh(meshAsset);
-
         mainDeletionQueue.pushFunction([&]() {
             meshAssetBuilder.destroyMeshAsset(meshAsset);
         });
@@ -811,11 +811,28 @@ void VulkanEngine::loadMeshes() {
     }*/
 }
 
-void VulkanEngine::createAccelerationStructureForMesh(MeshAsset& mesh) {
-    mesh.accelerationStructure = std::make_shared<AccelerationStructure>(device, ressourceBuilder, commandManager, VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_KHR);
+void VulkanEngine::createSceneBuffers() {
+    vertex_buffer = meshAssetBuilder.createVertexBuffer(meshAssets);
+    index_buffer = meshAssetBuilder.createIndexBuffer(meshAssets);
+    data_mapping_buffer = meshAssetBuilder.createDataMappingBuffer(meshAssets);
 
-    mesh.accelerationStructure->addTriangleGeometry(mesh.meshBuffers.vertexBuffer, mesh.meshBuffers.indexBuffer, mesh.surfaces[0].count);
-    mesh.accelerationStructure->build();
+    mainDeletionQueue.pushFunction([&]() {
+        ressourceBuilder.destroyBuffer(vertex_buffer);
+        ressourceBuilder.destroyBuffer(index_buffer);
+        ressourceBuilder.destroyBuffer(data_mapping_buffer);
+    });
+}
+
+void VulkanEngine::createAccelerationStructure() {
+    for (auto& meshAsset : meshAssets) {
+        meshAsset.accelerationStructure = std::make_shared<AccelerationStructure>(device, ressourceBuilder, commandManager, VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_KHR);
+
+        meshAsset.accelerationStructure->addTriangleGeometry(vertex_buffer, index_buffer,
+            meshAsset.vertex_count, meshAsset.triangle_count, sizeof(Vertex),
+            meshAsset.instance_data.vertex_offset, meshAsset.instance_data.index_offset);
+        meshAsset.accelerationStructure->build();
+    }
+
 }
 
 inline uint32_t alignedSize(uint32_t value, uint32_t alignment) {
