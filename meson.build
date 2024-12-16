@@ -13,6 +13,7 @@ incdirs = [
     include_directories('include/rendering/nodes'),
     include_directories('include/rendering/ressources'),
     include_directories('include/rendering'),
+    include_directories('include/util'),
 ]
 
 vulkan = dependency('vulkan', version: ['>=1.3.0'], required: false)

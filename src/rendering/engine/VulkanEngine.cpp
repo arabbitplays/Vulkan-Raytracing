@@ -1,6 +1,9 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "rendering/engine/VulkanEngine.hpp"
 
+#include <DescriptorLayoutBuilder.hpp>
+#include <set>
+
 #include "../nodes/MeshNode.hpp"
 #include "../../Analytics.hpp"
 
@@ -725,10 +728,10 @@ void VulkanEngine::createDefaultSamplers() {
 }
 
 void VulkanEngine::createDefaultMaterials() {
-    //defaultMetalRough = createMetalRoughMaterial(1.0f, 0.5f, glm::vec3{1, 1, 1});
+    defaultMetalRough = createMetalRoughMaterial(1.0f, 0.5f, glm::vec3{1, 1, 1});
 }
 
-/*MaterialInstance VulkanEngine::createMetalRoughMaterial(float metallic, float roughness, glm::vec3 albedo) {
+MaterialInstance VulkanEngine::createMetalRoughMaterial(float metallic, float roughness, glm::vec3 albedo) {
     MetallicRoughness::MaterialResources resources{};
     resources.colorImage = whiteImage;
     resources.colorSampler = defaultSamplerLinear;
@@ -755,8 +758,9 @@ void VulkanEngine::createDefaultMaterials() {
     resources.dataBuffer = materialBuffer.handle;
     resources.bufferOffset = 0;
 
-    return metalRoughMaterial.writeMaterial(device, MaterialPass::MainColor, resources, descriptorAllocator);
-}*/
+    metalRoughMaterial.pipeline = raytracing_pipeline;
+    return metalRoughMaterial.writeMaterial(device, resources, descriptorAllocator);
+}
 
 void VulkanEngine::createStorageImage() {
     storageImage = ressourceBuilder.createImage(
@@ -840,6 +844,7 @@ void VulkanEngine::createSceneBuffers() {
 }
 
 void VulkanEngine::createAccelerationStructure() {
+    QuickTimer timer{"BLAS Build", true};
     uint32_t object_id = 0;
     for (auto& meshAsset : meshAssets) {
         meshAsset->accelerationStructure = std::make_shared<AccelerationStructure>(device, ressourceBuilder, commandManager, VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_KHR);
@@ -1082,6 +1087,8 @@ void VulkanEngine::drawFrame() {
 }
 
 void VulkanEngine::updateScene(uint32_t currentImage) {
+    //QuickTimer timer{"Scene Update", true};
+
     static auto startTime = std::chrono::high_resolution_clock::now();
     auto currentTime = std::chrono::high_resolution_clock::now();
     float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
@@ -1239,34 +1246,21 @@ VkFormat VulkanEngine::getDepthFormat() {
     return findDepthFormat();
 }
 
-MaterialInstance MetallicRoughness::writeMaterial(VkDevice device, MaterialPass pass,
-                                                  const MaterialResources& resources, DescriptorAllocator& allocator) {
+MaterialInstance MetallicRoughness::writeMaterial(VkDevice device, const MaterialResources& resources, DescriptorAllocator& allocator) {
     MaterialInstance instance;
-    instance.materialPass = pass;
-    if (pass == MaterialPass::Transparent) {
-        instance.pipeline = &transparentPipeline;
-    } else {
-        instance.pipeline = &opaquePipeline;
-    }
-
-    instance.materialSet = allocator.allocate(device, materialLayout);
+    /*instance.materialSet = allocator.allocate(device, materialLayout);
 
     allocator.clearWrites();
     allocator.writeBuffer(0, resources.dataBuffer, sizeof(MaterialConstants), resources.bufferOffset, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
     allocator.writeImage(1, resources.colorImage.imageView, resources.colorSampler, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL ,VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
     allocator.writeImage(2, resources.metalRoughImage.imageView, resources.metalRoughSampler, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL ,VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
 
-    allocator.updateSet(device, instance.materialSet);
+    allocator.updateSet(device, instance.materialSet);*/
 
     return instance;
 }
 
 void MetallicRoughness::clearRessources(VkDevice device) {
     vkDestroyDescriptorSetLayout(device, materialLayout, nullptr);
-    vkDestroyPipeline(device, opaquePipeline.pipeline, nullptr);
-    vkDestroyPipeline(device, transparentPipeline.pipeline, nullptr);
-    vkDestroyPipelineLayout(device, opaquePipeline.pipelineLayout, nullptr);
-    vkDestroyPipelineLayout(device, transparentPipeline.pipelineLayout, nullptr);
-    vkDestroyRenderPass(device, opaquePipeline.renderPass, nullptr);
-    vkDestroyRenderPass(device, transparentPipeline.renderPass, nullptr);
+    pipeline->destroy(device);
 }

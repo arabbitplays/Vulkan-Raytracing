@@ -3,27 +3,15 @@
 //
 
 #include <AccelerationStructure.hpp>
+#include <Pipeline.hpp>
 #include <vulkan/vulkan_core.h>
 
 #ifndef BASICS_IRENDERABLE_HPP
 #define BASICS_IRENDERABLE_HPP
 
-enum class MaterialPass : uint8_t {
-    MainColor,
-    Transparent,
-    Other
-};
-
-struct MaterialPipeline {
-    VkPipeline pipeline;
-    VkPipelineLayout pipelineLayout;
-    VkRenderPass renderPass;
-};
 
 struct MaterialInstance {
-    MaterialPipeline* pipeline;
     VkDescriptorSet materialSet;
-    MaterialPass materialPass;
 };
 
 struct Material {

@@ -9,11 +9,7 @@
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 #include <vector>
-#include <cstring>
 #include <optional>
-#include <set>
-#include <limits>
-#include <algorithm>
 #include <fstream>
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEFAULT_ALIGNED_GENTYPES
@@ -28,26 +24,20 @@
 #include <Pipeline.hpp>
 #include <unordered_map>
 #include "../Vertex.hpp"
-#include "RasterizerPipelineBuilder.hpp"
 #include "DescriptorAllocator.hpp"
 #include "CommandManager.hpp"
 #include "../../builders/MeshAssetBuilder.hpp"
+#include "../../util/QuickTimer.hpp"
 #include "../../util/VulkanUtil.hpp"
-#include "../../builders/DescriptorLayoutBuilder.hpp"
-#include "../../builders/RenderPassBuilder.hpp"
 #include "../IRenderable.hpp"
 #include "../nodes/Node.hpp"
-#include "../nodes/MeshNode.hpp"
 #include "../../Analytics.hpp"
 #include "DeletionQueue.hpp"
 
 class VulkanEngine;
 
 struct MetallicRoughness {
-
-    MaterialPipeline opaquePipeline;
-    MaterialPipeline transparentPipeline;
-
+    std::shared_ptr<Pipeline> pipeline;
     VkDescriptorSetLayout materialLayout;
 
     struct MaterialConstants {
@@ -70,8 +60,7 @@ struct MetallicRoughness {
     void buildPipelines(VulkanEngine* engine);
     void clearRessources(VkDevice device);
 
-    MaterialInstance writeMaterial(VkDevice device, MaterialPass pass,
-                                   const MaterialResources& resources, DescriptorAllocator& allocator);
+    MaterialInstance writeMaterial(VkDevice device, const MaterialResources& resources, DescriptorAllocator& allocator);
 };
 
 struct SceneData {
