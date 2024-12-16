@@ -4,5 +4,4 @@ src += files(
     'RasterizerPipelineBuilder.cpp',
     'RenderPassBuilder.cpp',
     'RessourceBuilder.cpp',
-    'RaytracingPipelineBuilder.cpp',
 )

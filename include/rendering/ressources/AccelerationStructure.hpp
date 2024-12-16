@@ -5,9 +5,10 @@
 #ifndef ACCELERATIONSTRUCTURE_HPP
 #define ACCELERATIONSTRUCTURE_HPP
 
-#include <MeshAssetBuilder.hpp>
 #include <RessourceBuilder.hpp>
 #include <vector>
+#include <bits/shared_ptr.h>
+#include "Vertex.hpp"
 #include <vulkan/vulkan_core.h>
 
 struct Geometry {
@@ -22,9 +23,9 @@ public:
     AccelerationStructure(VkDevice& device, RessourceBuilder& ressource_builder, CommandManager& command_manager, VkAccelerationStructureTypeKHR type) :
         device(device), ressource_builder(ressource_builder), command_manager(command_manager), type(type) {};
 
-    void addTriangleGeometry(const MeshAsset& mesh);
+    void addTriangleGeometry(const AllocatedBuffer& vertex_buffer, const AllocatedBuffer& index_buffer, uint32_t vertexCount);
 
-    void addInstance(std::shared_ptr<AccelerationStructure>& instance, glm::mat4 transform_matrix);
+    void addInstance(std::shared_ptr<AccelerationStructure>& instance, glm::mat4 transform_matrix, uint32_t instanceId);
     void addInstanceGeometry();
     void update_instance_geometry(uint32_t index);
 

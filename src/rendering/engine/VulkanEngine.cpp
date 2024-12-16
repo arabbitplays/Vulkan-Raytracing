@@ -1,8 +1,6 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "rendering/engine/VulkanEngine.hpp"
 
-#include <RaytracingPipelineBuilder.hpp>
-
 #include "../nodes/MeshNode.hpp"
 #include "../../Analytics.hpp"
 
@@ -312,7 +310,6 @@ bool VulkanEngine::isDeviceSuitable(VkPhysicalDevice device) {
         swapChainAdequate = !swapChainSupport.formats.empty() && !swapChainSupport.presentModes.empty();
     }
 
-    // TODO check for raytracing features
     return extensionsSupported && indices.isComplete() && swapChainAdequate
         && deviceFeatures.samplerAnisotropy
         && raytracingPipelineFeatures.rayTracingPipeline && accelerationStructureFeatures.accelerationStructure;
@@ -776,13 +773,17 @@ void VulkanEngine::loadMeshes() {
     MeshAsset meshAsset = meshAssetBuilder.LoadMeshAsset("Sphere", "../ressources/models/sphere.obj");
     meshAssets.push_back(meshAsset);
 
+    meshAsset = meshAssetBuilder.LoadMeshAsset("Room", "../ressources/models/viking_room.obj");
+    meshAssets.push_back(meshAsset);
+
     for (auto& meshAsset : meshAssets) {
+        createAccelerationStructureForMesh(meshAsset);
+
         mainDeletionQueue.pushFunction([&]() {
             meshAssetBuilder.destroyMeshAsset(meshAsset);
         });
     }
 
-    createAccelerationStructures(meshAsset);
 
     /*std::shared_ptr<Node> parentNode = std::make_shared<Node>();
     parentNode->localTransform = glm::mat4{1.0f};
@@ -810,17 +811,11 @@ void VulkanEngine::loadMeshes() {
     }*/
 }
 
-void VulkanEngine::createAccelerationStructures(MeshAsset mesh) {
-    bottomLevelAccelerationStructure = std::make_shared<AccelerationStructure>(device, ressourceBuilder, commandManager, VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_KHR);
-    topLevelAccelerationStructure = std::make_shared<AccelerationStructure>(device, ressourceBuilder, commandManager, VK_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL_KHR);
+void VulkanEngine::createAccelerationStructureForMesh(MeshAsset& mesh) {
+    mesh.accelerationStructure = std::make_shared<AccelerationStructure>(device, ressourceBuilder, commandManager, VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_KHR);
 
-    bottomLevelAccelerationStructure->addTriangleGeometry(mesh);
-    bottomLevelAccelerationStructure->build();
-
-    mainDeletionQueue.pushFunction([&]() {
-        bottomLevelAccelerationStructure->destroy();
-        topLevelAccelerationStructure->destroy();
-    });
+    mesh.accelerationStructure->addTriangleGeometry(mesh.meshBuffers.vertexBuffer, mesh.meshBuffers.indexBuffer, mesh.surfaces[0].count);
+    mesh.accelerationStructure->build();
 }
 
 inline uint32_t alignedSize(uint32_t value, uint32_t alignment) {
@@ -847,7 +842,7 @@ void VulkanEngine::createShaderBindingTables() {
     });
 
     std::vector<uint8_t> shaderHandleStorage(sbt_size);
-    if (GetRayTracingShaderGroupHandlesKHR(device, rt_pipeline, 0, groupCount, sbt_size, shaderHandleStorage.data()) != VK_SUCCESS) {
+    if (GetRayTracingShaderGroupHandlesKHR(device, raytracing_pipeline->getHandle(), 0, groupCount, sbt_size, shaderHandleStorage.data()) != VK_SUCCESS) {
         throw std::runtime_error("failed to get shader group handles!");
     }
 
@@ -867,7 +862,7 @@ void VulkanEngine::rt_createDescriptorSets() {
 
 void VulkanEngine::createPipeline() {
     DescriptorLayoutBuilder layoutBuilder;
-    RaytracingPipelineBuilder raytracingPipelineBuilder;
+    raytracing_pipeline = std::make_shared<Pipeline>();
 
     layoutBuilder.addBinding(0, VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR);
     layoutBuilder.addBinding(1, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
@@ -878,21 +873,20 @@ void VulkanEngine::createPipeline() {
     });
 
     std::vector<VkDescriptorSetLayout> descriptorSetLayouts{rt_descriptorSetLayout};
-    raytracingPipelineBuilder.setDescriptorSetLayouts(descriptorSetLayouts);
+    raytracing_pipeline->setDescriptorSetLayouts(descriptorSetLayouts);
 
     VkShaderModule raygenShaderModule = VulkanUtil::createShaderModule(device, oschd_raygen_rgen_spv_size(), oschd_raygen_rgen_spv());
     VkShaderModule missShaderModule = VulkanUtil::createShaderModule(device, oschd_miss_rmiss_spv_size(), oschd_miss_rmiss_spv());
     VkShaderModule closestHitShaderModule = VulkanUtil::createShaderModule(device, oschd_closesthit_rchit_spv_size(), oschd_closesthit_rchit_spv());
 
-    raytracingPipelineBuilder.addShaderStage(raygenShaderModule, VK_SHADER_STAGE_RAYGEN_BIT_KHR, VK_RAY_TRACING_SHADER_GROUP_TYPE_GENERAL_KHR);
-    raytracingPipelineBuilder.addShaderStage(missShaderModule, VK_SHADER_STAGE_MISS_BIT_KHR, VK_RAY_TRACING_SHADER_GROUP_TYPE_GENERAL_KHR);
-    raytracingPipelineBuilder.addShaderStage(closestHitShaderModule, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR, VK_RAY_TRACING_SHADER_GROUP_TYPE_TRIANGLES_HIT_GROUP_KHR);
+    raytracing_pipeline->addShaderStage(raygenShaderModule, VK_SHADER_STAGE_RAYGEN_BIT_KHR, VK_RAY_TRACING_SHADER_GROUP_TYPE_GENERAL_KHR);
+    raytracing_pipeline->addShaderStage(missShaderModule, VK_SHADER_STAGE_MISS_BIT_KHR, VK_RAY_TRACING_SHADER_GROUP_TYPE_GENERAL_KHR);
+    raytracing_pipeline->addShaderStage(closestHitShaderModule, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR, VK_RAY_TRACING_SHADER_GROUP_TYPE_TRIANGLES_HIT_GROUP_KHR);
 
-    raytracingPipelineBuilder.buildPipeline(device, &rt_pipeline, &rt_pipelineLayout);
+    raytracing_pipeline->build(device);
 
     mainDeletionQueue.pushFunction([&]() {
-        vkDestroyPipelineLayout(device, rt_pipelineLayout, nullptr);
-        vkDestroyPipeline(device, rt_pipeline, nullptr);
+        raytracing_pipeline->destroy(device);
     });
 
     vkDestroyShaderModule(device, raygenShaderModule, nullptr);
@@ -1050,7 +1044,6 @@ void VulkanEngine::updateScene(uint32_t currentImage) {
     static auto startTime = std::chrono::high_resolution_clock::now();
     auto currentTime = std::chrono::high_resolution_clock::now();
     float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
-    glm::mat4 rotation = glm::rotate(glm::mat4{1.0f}, time * glm::radians(45.0f), glm::vec3(0.0f, 1.0f, 0.0f));
     /*loadedNodes["Spheres"]->refreshTransform(rotation);
 
     mainDrawContext.opaqueSurfaces.clear();
@@ -1058,9 +1051,22 @@ void VulkanEngine::updateScene(uint32_t currentImage) {
         pair.second->draw(glm::mat4(1.0f), mainDrawContext);
     }*/
 
-    glm::mat4 translation = glm::translate(glm::mat4(1.0f), glm::vec3(1.f, 0.0f, 0.0f));
+    if (topLevelAccelerationStructure == nullptr) {
+        topLevelAccelerationStructure = std::make_shared<AccelerationStructure>(device, ressourceBuilder, commandManager, VK_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL_KHR);
+
+        mainDeletionQueue.pushFunction([&]() {
+            topLevelAccelerationStructure->destroy();
+        });
+    }
+
+    glm::mat4 translation = glm::translate(glm::mat4(1.0f), glm::vec3(1.5f, 0.0f, 0.0f));
     glm::mat4 scale = glm::scale(glm::mat4(1.0f), glm::vec3(0.5f, 0.5f, 0.5f));
-    topLevelAccelerationStructure->addInstance(bottomLevelAccelerationStructure, rotation);
+    glm::mat4 rotation = glm::rotate(glm::mat4{1.0f}, time * glm::radians(45.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+    topLevelAccelerationStructure->addInstance(meshAssets[0].accelerationStructure, scale * translation * rotation, 0);
+
+    translation = glm::translate(glm::mat4(1.0f), glm::vec3(-1.5f, 0.0f, 0.0f));
+    rotation = glm::rotate(glm::mat4{1.0f}, time * glm::radians(-45.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+    topLevelAccelerationStructure->addInstance(meshAssets[1].accelerationStructure, scale * translation * rotation, 0);
 
     if (topLevelAccelerationStructure->getHandle() == VK_NULL_HANDLE) {
         topLevelAccelerationStructure->addInstanceGeometry();
@@ -1124,8 +1130,8 @@ void VulkanEngine::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t i
 
     VkStridedDeviceAddressRegionKHR callableShaderSbtEntry{};
 
-    vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, rt_pipeline);
-    vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, rt_pipelineLayout, 0, 1, &rt_descriptorSet, 0, nullptr);
+    vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, raytracing_pipeline->getHandle());
+    vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, raytracing_pipeline->getLayoutHandle(), 0, 1, &rt_descriptorSet, 0, nullptr);
 
     CmdTraceRaysKHR(
         device,

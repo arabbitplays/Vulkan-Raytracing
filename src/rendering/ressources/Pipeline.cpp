@@ -1,13 +1,13 @@
 //
-// Created by oschdi on 12/14/24.
+// Created by oschdi on 12/16/24.
 //
 
-#include "RaytracingPipelineBuilder.hpp"
+#include "Pipeline.hpp"
 
 #include <stdexcept>
 
 VkResult CreateRayTracingPipelinesKHR(VkDevice device, VkDeferredOperationKHR deferredOperation, VkPipelineCache pipelineCache, uint32_t createInfoCount,
-    const VkRayTracingPipelineCreateInfoKHR* pCreateInfos, const VkAllocationCallbacks* pAllocator, VkPipeline* pPipelines) {
+                                      const VkRayTracingPipelineCreateInfoKHR* pCreateInfos, const VkAllocationCallbacks* pAllocator, VkPipeline* pPipelines) {
 
     auto func = (PFN_vkCreateRayTracingPipelinesKHR) vkGetDeviceProcAddr(device, "vkCreateRayTracingPipelinesKHR");
     if (func != nullptr) {
@@ -19,8 +19,8 @@ VkResult CreateRayTracingPipelinesKHR(VkDevice device, VkDeferredOperationKHR de
 
 // --------------------------------------------------------------------------------------------------------------------------
 
-void RaytracingPipelineBuilder::buildPipeline(VkDevice& device, VkPipeline* pipeline, VkPipelineLayout* layout) {
-    if (vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, layout) != VK_SUCCESS) {
+void Pipeline::build(VkDevice& device) {
+    if (vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &layout) != VK_SUCCESS) {
         throw std::runtime_error("failed to create pipeline layout!");
     }
 
@@ -31,13 +31,13 @@ void RaytracingPipelineBuilder::buildPipeline(VkDevice& device, VkPipeline* pipe
     pipelineInfo.groupCount = static_cast<uint32_t>(shader_groups.size());
     pipelineInfo.pGroups = shader_groups.data();
     pipelineInfo.maxPipelineRayRecursionDepth = 1;
-    pipelineInfo.layout = *layout;
-    if (CreateRayTracingPipelinesKHR(device, VK_NULL_HANDLE, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, pipeline) != VK_SUCCESS) {
+    pipelineInfo.layout = layout;
+    if (CreateRayTracingPipelinesKHR(device, VK_NULL_HANDLE, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &pipeline) != VK_SUCCESS) {
         throw std::runtime_error("failed to create ray tracing pipeline!");
     }
 }
 
-void RaytracingPipelineBuilder::addShaderStage(VkShaderModule shaderModule, VkShaderStageFlagBits shaderStage, VkRayTracingShaderGroupTypeKHR shaderGroup) {
+void Pipeline::addShaderStage(VkShaderModule shaderModule, VkShaderStageFlagBits shaderStage, VkRayTracingShaderGroupTypeKHR shaderGroup) {
     VkPipelineShaderStageCreateInfo shaderStageInfo{};
     shaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
     shaderStageInfo.stage = shaderStage;
@@ -62,17 +62,27 @@ void RaytracingPipelineBuilder::addShaderStage(VkShaderModule shaderModule, VkSh
     shader_groups.push_back(shaderGroupInfo);
 }
 
-void RaytracingPipelineBuilder::setDescriptorSetLayouts(std::vector<VkDescriptorSetLayout>& descriptorSetLayouts) {
+void Pipeline::setDescriptorSetLayouts(std::vector<VkDescriptorSetLayout>& descriptorSetLayouts) {
     pipelineLayoutInfo.setLayoutCount = static_cast<uint32_t>(descriptorSetLayouts.size());
     pipelineLayoutInfo.pSetLayouts = descriptorSetLayouts.data();
 }
 
-void RaytracingPipelineBuilder::clear() {
+void Pipeline::clear() {
     pipelineLayoutInfo = { .sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO };
     shader_stages.clear();
     shader_groups.clear();
 }
 
-void RaytracingPipelineBuilder::destroyPipeline(VkDevice device, VkPipeline& pipeline, VkPipelineLayout& layout) {
+void Pipeline::destroy(VkDevice device) {
     vkDestroyPipelineLayout(device, layout, nullptr);
+    vkDestroyPipeline(device, pipeline, nullptr);
 }
+
+VkPipeline Pipeline::getHandle() const {
+    return pipeline;
+}
+
+VkPipelineLayout Pipeline::getLayoutHandle() const {
+    return layout;
+}
+

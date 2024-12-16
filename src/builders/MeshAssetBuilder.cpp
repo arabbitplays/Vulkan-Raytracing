@@ -6,7 +6,6 @@
 #include <tiny_obj_loader.h>
 #include <iostream>
 #include "MeshAssetBuilder.hpp"
-
 #include <cstring>
 
 MeshAssetBuilder::MeshAssetBuilder(VkDevice device, RessourceBuilder bufferBuilder) {
@@ -123,4 +122,5 @@ AllocatedBuffer MeshAssetBuilder::createIndexBuffer(std::vector<uint32_t>& indic
 void MeshAssetBuilder::destroyMeshAsset(MeshAsset& meshAsset) {
     bufferBuilder.destroyBuffer(meshAsset.meshBuffers.vertexBuffer);
     bufferBuilder.destroyBuffer(meshAsset.meshBuffers.indexBuffer);
+    meshAsset.accelerationStructure->destroy();
 }

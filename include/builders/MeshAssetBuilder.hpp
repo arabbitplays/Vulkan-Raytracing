@@ -6,29 +6,13 @@
 #define BASICS_MESHASSETBUILDER_HPP
 
 
+#include <AccelerationStructure.hpp>
+#include <MeshAsset.hpp>
 #include <vulkan/vulkan.h>
 #include <vector>
-#include <bits/shared_ptr.h>
 #include "../rendering/engine/CommandManager.hpp"
 #include "../rendering/Vertex.hpp"
 #include "RessourceBuilder.hpp"
-#include "../rendering/IRenderable.hpp"
-
-struct MeshBuffers {
-    AllocatedBuffer vertexBuffer;
-    AllocatedBuffer indexBuffer;
-};
-
-struct MeshSurface {
-    uint32_t startIndex;
-    uint32_t count;
-};
-
-struct MeshAsset {
-    std::string name;
-    std::vector<MeshSurface> surfaces;
-    MeshBuffers meshBuffers;
-};
 
 class MeshAssetBuilder {
 public:

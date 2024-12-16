@@ -1,6 +1,7 @@
 #ifndef BASICS_VERTEX_HPP
 #define BASICS_VERTEX_HPP
 
+
 #include <glm/glm.hpp>
 #include <vulkan/vulkan.h>
 #include <array>

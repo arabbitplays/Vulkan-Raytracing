@@ -25,6 +25,7 @@
 #include <stb_image.h>
 #define TINYOBJLOADER_IMPLEMENTATION
 #include <AccelerationStructure.hpp>
+#include <Pipeline.hpp>
 #include <unordered_map>
 #include "../Vertex.hpp"
 #include "RasterizerPipelineBuilder.hpp"
@@ -133,11 +134,9 @@ private:
 
     AllocatedImage storageImage;
 
-    std::shared_ptr<AccelerationStructure> bottomLevelAccelerationStructure;
     std::shared_ptr<AccelerationStructure> topLevelAccelerationStructure;
 
-    VkPipeline rt_pipeline;
-    VkPipelineLayout rt_pipelineLayout;
+    std::shared_ptr<Pipeline> raytracing_pipeline;
     VkDescriptorSet rt_descriptorSet;
     VkDescriptorSetLayout rt_descriptorSetLayout;
 
@@ -214,7 +213,7 @@ private:
     void createDefaultMaterials();
     void loadMeshes();
 
-    void createAccelerationStructures(MeshAsset mesh);
+    void createAccelerationStructureForMesh(MeshAsset& mesh);
     void createShaderBindingTables();
 
     void rt_createDescriptorSets();

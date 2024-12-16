@@ -55,13 +55,13 @@ VkDeviceAddress GetAccelerationStructureDeviceAddressKHR( VkDevice device, const
 
 // -----------------------------------------------------------------------------------------------------------------------
 
-void AccelerationStructure::addTriangleGeometry(const MeshAsset &mesh) {
+void AccelerationStructure::addTriangleGeometry(const AllocatedBuffer& vertex_buffer, const AllocatedBuffer& index_buffer, uint32_t vertexCount) {
     assert(type == VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_KHR);
 
     VkDeviceOrHostAddressConstKHR vertexDeviceAddress{};
     VkDeviceOrHostAddressConstKHR indexDeviceAddress{};
-    vertexDeviceAddress.deviceAddress = mesh.meshBuffers.vertexBuffer.deviceAddress;
-    indexDeviceAddress.deviceAddress = mesh.meshBuffers.indexBuffer.deviceAddress;
+    vertexDeviceAddress.deviceAddress = vertex_buffer.deviceAddress;
+    indexDeviceAddress.deviceAddress = index_buffer.deviceAddress;
 
     VkAccelerationStructureGeometryKHR accelerationStructureGeometry{};
     accelerationStructureGeometry.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_KHR;
@@ -70,14 +70,14 @@ void AccelerationStructure::addTriangleGeometry(const MeshAsset &mesh) {
     accelerationStructureGeometry.geometry.triangles.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_TRIANGLES_DATA_KHR;
     accelerationStructureGeometry.geometry.triangles.vertexFormat = VK_FORMAT_R32G32B32_SFLOAT;
     accelerationStructureGeometry.geometry.triangles.vertexData = vertexDeviceAddress;
-    accelerationStructureGeometry.geometry.triangles.maxVertex = mesh.surfaces[0].count;
+    accelerationStructureGeometry.geometry.triangles.maxVertex = vertexCount;
     accelerationStructureGeometry.geometry.triangles.vertexStride = sizeof(Vertex);
     accelerationStructureGeometry.geometry.triangles.indexType = VK_INDEX_TYPE_UINT32;
     accelerationStructureGeometry.geometry.triangles.indexData = indexDeviceAddress;
 
     Geometry geometry{};
     geometry.handle = accelerationStructureGeometry;
-    geometry.primitiveCount = mesh.surfaces[0].count / 3;// TODO verallgemeinern
+    geometry.primitiveCount = vertexCount / 3;// TODO verallgemeinern
     geometries.push_back(geometry);
 }
 
@@ -94,10 +94,10 @@ VkTransformMatrixKHR convertToVkTransform(const glm::mat4& mat) {
     return transform;
 }
 
-void AccelerationStructure::addInstance(std::shared_ptr<AccelerationStructure>& instance, glm::mat4 transform_matrix) {
+void AccelerationStructure::addInstance(std::shared_ptr<AccelerationStructure>& instance, glm::mat4 transform_matrix, uint32_t instanceId) {
     VkAccelerationStructureInstanceKHR accelerationStructureInstance{};
     accelerationStructureInstance.transform = convertToVkTransform(transform_matrix);
-    accelerationStructureInstance.instanceCustomIndex = 0;
+    accelerationStructureInstance.instanceCustomIndex = instanceId;
     accelerationStructureInstance.mask = 0xFF;
     accelerationStructureInstance.instanceShaderBindingTableRecordOffset = 0;
     accelerationStructureInstance.flags = VK_GEOMETRY_INSTANCE_TRIANGLE_FACING_CULL_DISABLE_BIT_KHR;
