@@ -116,6 +116,9 @@ void VulkanEngine::initVulkan() {
         cleanupSwapChain();
     });
 
+    createPipeline();
+    createShaderBindingTables();
+
     //createDepthResources();
     initDefaultResources();
 
@@ -124,8 +127,6 @@ void VulkanEngine::initVulkan() {
     createAccelerationStructure();
     createUniformBuffers();
 
-    createPipeline();
-    createShaderBindingTables();
     rt_createDescriptorSets();
 
     createCommandBuffers();
@@ -729,7 +730,7 @@ void VulkanEngine::createDefaultSamplers() {
 
 void VulkanEngine::createDefaultMaterials() {
     phong_material = std::make_shared<PhongMaterial>(device);
-    phong_material->buildPipelines();
+    phong_material->buildPipelines(rt_descriptorSetLayout);
     mainDeletionQueue.pushFunction([&]() {
         phong_material->clearRessources();
     });
@@ -741,11 +742,13 @@ std::shared_ptr<MaterialInstance> VulkanEngine::createPhongMaterial(glm::vec3 al
     constants->albedo = {albedo,1};
     constants->properies = {diffuse, specular, ambient, 0};
 
-    auto instance = std::make_shared<MaterialInstance>();
-    instance->material_data = constants;
-    instance->data_size = sizeof(PhongMaterial::MaterialConstants);
+    uint32_t size = sizeof(PhongMaterial::MaterialConstants);
+    PhongMaterial::MaterialRessources ressources {};
+    ressources.data_buffer = ressourceBuilder.createBuffer(size, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+                 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+    ressources.data_buffer.update(device, &constants, size);
 
-    return instance;
+    return phong_material->writeMaterial(ressources);
 }
 
 void VulkanEngine::createStorageImage() {
@@ -780,7 +783,7 @@ void VulkanEngine::loadMeshes() {
     sphere1->worldTransform = glm::mat4{1.0f};
     sphere1->children = {};
     sphere1->meshAsset = meshAssets[0];
-    sphere1->material = default_phong;
+    sphere1->material_index = 0;
     sphere1->refreshTransform(glm::mat4(1.0f));
     loadedNodes["Sphere1"] = std::move(sphere1);
 
@@ -789,7 +792,7 @@ void VulkanEngine::loadMeshes() {
     sphere2->worldTransform = glm::mat4{1.0f};
     sphere2->children = {};
     sphere2->meshAsset = meshAssets[0];
-    sphere2->material = default_phong;
+    sphere2->material_index = 0;
     sphere2->refreshTransform(glm::mat4(1.0f));
     loadedNodes["Sphere2"] = std::move(sphere2);
 
@@ -920,6 +923,7 @@ void VulkanEngine::createPipeline() {
     layoutBuilder.addBinding(3, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
     layoutBuilder.addBinding(4, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
     layoutBuilder.addBinding(5, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+    layoutBuilder.addBinding(6, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
 
     rt_descriptorSetLayout = layoutBuilder.build(device, VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR);
     mainDeletionQueue.pushFunction([&]() {
@@ -1118,8 +1122,15 @@ void VulkanEngine::updateScene(uint32_t currentImage) {
         pair.second->draw(glm::mat4(1.0f), mainDrawContext);
     }
 
+    if (instance_mapping_buffer.handle == VK_NULL_HANDLE) { // TODO make it dynamic
+        instance_mapping_buffer = meshAssetBuilder.createInstanceMappingBuffer(mainDrawContext.objects);
+        mainDeletionQueue.pushFunction([&]() {
+            ressourceBuilder.destroyBuffer(instance_mapping_buffer);
+        });
+    }
+    uint32_t instance_id = 0;
     for (auto& object : mainDrawContext.objects) {
-        top_level_acceleration_structure->addInstance(object.acceleration_structure, object.transform, object.geometry_id);
+        top_level_acceleration_structure->addInstance(object.acceleration_structure, object.transform, instance_id++);
     }
 
     glm::mat4 translation = glm::translate(glm::mat4(1.0f), glm::vec3(1.5f, 0.0f, 0.0f));
@@ -1138,6 +1149,7 @@ void VulkanEngine::updateScene(uint32_t currentImage) {
     top_level_acceleration_structure->build();
 
     descriptorAllocator.writeAccelerationStructure(0, top_level_acceleration_structure->getHandle(), VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR);
+    descriptorAllocator.writeBuffer(6, instance_mapping_buffer.handle, 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
     descriptorAllocator.updateSet(device, rt_descriptorSet);
     descriptorAllocator.clearWrites();
 
@@ -1166,6 +1178,9 @@ void VulkanEngine::updateScene(uint32_t currentImage) {
 }
 
 void VulkanEngine::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex) {
+    std::shared_ptr<Material> material = phong_material;
+    Pipeline pipeline = *this->raytracing_pipeline;
+
     VkCommandBufferBeginInfo beginInfo{};
     beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 
@@ -1192,8 +1207,14 @@ void VulkanEngine::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t i
 
     VkStridedDeviceAddressRegionKHR callableShaderSbtEntry{};
 
-    vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, raytracing_pipeline->getHandle());
-    vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, raytracing_pipeline->getLayoutHandle(), 0, 1, &rt_descriptorSet, 0, nullptr);
+    std::vector<VkDescriptorSet> descriptor_sets{};
+    descriptor_sets.push_back(rt_descriptorSet);
+    //descriptor_sets.push_back(default_phong->material_set);
+
+    vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, pipeline.getHandle());
+    vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, pipeline.getLayoutHandle(),
+        0, static_cast<uint32_t>(descriptor_sets.size()), descriptor_sets.data(),
+        0, nullptr);
 
     CmdTraceRaysKHR(
         device,

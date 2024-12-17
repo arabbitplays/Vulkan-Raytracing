@@ -7,7 +7,7 @@
 void MeshNode::draw(const glm::mat4 &topMatrix, DrawContext &ctx) {
     glm::mat4 nodeMatrix = topMatrix * worldTransform;
 
-    ctx.objects.push_back(RenderObject{instance_id, meshAsset->accelerationStructure, nodeMatrix});
+    ctx.objects.push_back(RenderObject{InstanceData{meshAsset->geometry_id, material_index}, meshAsset->accelerationStructure, nodeMatrix});
 
     Node::draw(topMatrix, ctx);
 }

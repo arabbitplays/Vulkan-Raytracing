@@ -7,6 +7,7 @@
 #include <iostream>
 #include "MeshAssetBuilder.hpp"
 #include <cstring>
+#include <IRenderable.hpp>
 
 MeshAssetBuilder::MeshAssetBuilder(VkDevice device, RessourceBuilder bufferBuilder) {
     this->device = device;
@@ -152,14 +153,42 @@ AllocatedBuffer MeshAssetBuilder::createIndexBuffer(std::vector<std::shared_ptr<
 AllocatedBuffer MeshAssetBuilder::createGeometryMappingBuffer(std::vector<std::shared_ptr<MeshAsset>>& mesh_assets) {
     assert(!mesh_assets.empty());
 
-    VkDeviceSize size = mesh_assets.size() * sizeof(InstanceData);
+    VkDeviceSize size = mesh_assets.size() * sizeof(GeometryData);
+
+    AllocatedBuffer stagingBuffer = bufferBuilder.createBuffer(size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT
+            , VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+
+    std::vector<GeometryData> geometry_datas;
+    for (auto& mesh_asset : mesh_assets) {
+        geometry_datas.push_back(mesh_asset->instance_data);
+    }
+
+    void* data;
+    vkMapMemory(device, stagingBuffer.bufferMemory, 0, size, 0, &data);
+    memcpy(data, geometry_datas.data(), (size_t) size);
+    vkUnmapMemory(device, stagingBuffer.bufferMemory);
+
+    AllocatedBuffer mapping_buffer = bufferBuilder.createBuffer(size, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR
+        | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+                 VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+
+    bufferBuilder.copyBuffer(stagingBuffer, mapping_buffer, size);
+
+    bufferBuilder.destroyBuffer(stagingBuffer);
+    return mapping_buffer;
+}
+
+AllocatedBuffer MeshAssetBuilder::createInstanceMappingBuffer(std::vector<RenderObject>& objects) {
+    assert(!objects.empty());
+
+    VkDeviceSize size = objects.size() * sizeof(InstanceData);
 
     AllocatedBuffer stagingBuffer = bufferBuilder.createBuffer(size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT
             , VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 
     std::vector<InstanceData> instance_datas;
-    for (auto& mesh_asset : mesh_assets) {
-        instance_datas.push_back(mesh_asset->instance_data);
+    for (auto& object : objects) {
+        instance_datas.push_back(object.instance_data);
     }
 
     void* data;
@@ -167,14 +196,14 @@ AllocatedBuffer MeshAssetBuilder::createGeometryMappingBuffer(std::vector<std::s
     memcpy(data, instance_datas.data(), (size_t) size);
     vkUnmapMemory(device, stagingBuffer.bufferMemory);
 
-    AllocatedBuffer indexBuffer = bufferBuilder.createBuffer(size, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR
+    AllocatedBuffer mapping_buffer = bufferBuilder.createBuffer(size, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR
         | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
                  VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
-    bufferBuilder.copyBuffer(stagingBuffer, indexBuffer, size);
+    bufferBuilder.copyBuffer(stagingBuffer, mapping_buffer, size);
 
     bufferBuilder.destroyBuffer(stagingBuffer);
-    return indexBuffer;
+    return mapping_buffer;
 }
 
 void MeshAssetBuilder::destroyMeshAsset(MeshAsset& meshAsset) {

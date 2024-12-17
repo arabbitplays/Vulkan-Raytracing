@@ -15,11 +15,6 @@
 
 class Pipeline;
 
-struct MaterialInstance {
-    std::shared_ptr<void> material_data;
-    size_t data_size;
-};
-
 class Material {
   public:
     Material() = default;
@@ -34,10 +29,14 @@ class Material {
     std::shared_ptr<Pipeline> pipeline;
     VkDescriptorSetLayout materialLayout;
 
-    virtual void buildPipelines() = 0;
+    virtual void buildPipelines(VkDescriptorSetLayout sceneLayout) = 0;
     void clearRessources();
 };
 
-
+struct MaterialInstance {
+    std::shared_ptr<Material> material;
+    VkDescriptorSet material_set;
+    uint32_t material_index;
+};
 
 #endif //MATERIAL_HPP

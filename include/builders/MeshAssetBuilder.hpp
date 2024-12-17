@@ -7,6 +7,7 @@
 
 
 #include <AccelerationStructure.hpp>
+#include <IRenderable.hpp>
 #include <MeshAsset.hpp>
 #include <vulkan/vulkan.h>
 #include <vector>
@@ -25,6 +26,8 @@ public:
     AllocatedBuffer createIndexBuffer(std::vector<std::shared_ptr<MeshAsset>>& mesh_assets);
 
     AllocatedBuffer createGeometryMappingBuffer(std::vector<std::shared_ptr<MeshAsset>>& mesh_assets);
+
+    AllocatedBuffer createInstanceMappingBuffer(std::vector<RenderObject> &objects);
 
 private:
     void loadModel(std::string path, std::vector<Vertex>& vertices, std::vector<uint32_t>& indices);

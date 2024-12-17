@@ -14,7 +14,7 @@ struct MeshBuffers {
     std::vector<uint32_t> indices;
 };
 
-struct InstanceData {
+struct GeometryData {
     uint32_t vertex_offset = 0;
     uint32_t triangle_offset = 0;
 };
@@ -24,7 +24,7 @@ struct MeshAsset {
     uint32_t geometry_id;
     uint32_t vertex_count = 0;
     uint32_t triangle_count = 0;
-    InstanceData instance_data;
+    GeometryData instance_data;
     MeshBuffers meshBuffers;
     std::shared_ptr<AccelerationStructure> accelerationStructure;
 };

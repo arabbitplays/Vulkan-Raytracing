@@ -11,10 +11,13 @@
 #define BASICS_IRENDERABLE_HPP
 
 
-
+struct InstanceData {
+    uint32_t geometry_id;
+    uint32_t material_index;
+};
 
 struct RenderObject {
-    uint32_t geometry_id;
+    InstanceData instance_data;
     std::shared_ptr<AccelerationStructure> acceleration_structure;
     glm::mat4 transform;
 };

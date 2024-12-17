@@ -14,9 +14,14 @@ public:
         glm::vec4 properies; // diffuse, specular, ambient
     };
 
+    struct MaterialRessources {
+        AllocatedBuffer data_buffer;
+    };
+
     PhongMaterial(VkDevice& device) : Material(device) {}
 
-    void buildPipelines() override;
+    void buildPipelines(VkDescriptorSetLayout sceneLayout) override;
+    std::shared_ptr<MaterialInstance> writeMaterial(MaterialRessources ressources);
 };
 
 

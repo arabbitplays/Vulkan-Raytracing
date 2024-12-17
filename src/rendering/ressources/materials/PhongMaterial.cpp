@@ -6,29 +6,25 @@
 
 #include <DescriptorLayoutBuilder.hpp>
 #include <VulkanUtil.hpp>
+#include <glm/detail/type_mat4x3.hpp>
 
 #include "miss.rmiss.spv.h"
 #include "shadow_miss.rmiss.spv.h"
 #include "closesthit.rchit.spv.h"
 #include "raygen.rgen.spv.h"
 
-void PhongMaterial::buildPipelines() {
+void PhongMaterial::buildPipelines(VkDescriptorSetLayout sceneLayout) {
     DescriptorLayoutBuilder layoutBuilder;
     pipeline = std::make_shared<Pipeline>();
 
-    layoutBuilder.addBinding(0, VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR);
-    layoutBuilder.addBinding(1, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
-    layoutBuilder.addBinding(2, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
-    layoutBuilder.addBinding(3, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
-    layoutBuilder.addBinding(4, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
-    layoutBuilder.addBinding(5, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+    layoutBuilder.addBinding(0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
 
     materialLayout = layoutBuilder.build(device, VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR);
     deletionQueue.pushFunction([&]() {
         vkDestroyDescriptorSetLayout(device, materialLayout, nullptr);
     });
 
-    std::vector<VkDescriptorSetLayout> descriptorSetLayouts{materialLayout};
+    std::vector<VkDescriptorSetLayout> descriptorSetLayouts{sceneLayout, materialLayout};
     pipeline->setDescriptorSetLayouts(descriptorSetLayouts);
 
     VkShaderModule raygenShaderModule = VulkanUtil::createShaderModule(device, oschd_raygen_rgen_spv_size(), oschd_raygen_rgen_spv());
@@ -51,4 +47,14 @@ void PhongMaterial::buildPipelines() {
     vkDestroyShaderModule(device, missShaderModule, nullptr);
     vkDestroyShaderModule(device, shadowMissShaderModule, nullptr);
     vkDestroyShaderModule(device, closestHitShaderModule, nullptr);
+}
+
+std::shared_ptr<MaterialInstance> PhongMaterial::writeMaterial(MaterialRessources ressources) {
+    std::shared_ptr<MaterialInstance> instance = std::make_shared<MaterialInstance>();
+    /*VkDescriptorSet material_set = descriptorAllocator.allocate(device, materialLayout);
+    descriptorAllocator.clearWrites();
+    descriptorAllocator.writeBuffer(0, ressources.data_buffer.handle, sizeof(MaterialConstants), 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+    descriptorAllocator.updateSet(device, material_set);
+    instance->material_set = material_set;*/
+    return instance;
 }

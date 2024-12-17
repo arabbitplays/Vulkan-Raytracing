@@ -30,9 +30,12 @@ layout(binding = 3, set = 0) readonly buffer VertexBuffer {
 layout(binding = 4, set = 0) readonly buffer IndexBuffer {
     uint indices[];
 } index_buffer;
-layout(binding = 5, set = 0) readonly buffer DataMappingBuffer {
+layout(binding = 5, set = 0) readonly buffer GeometryappingBuffer {
     uint indices[];
-} data_mapping_buffer;
+} geometry_mapping_buffer;
+layout(binding = 6, set = 0) readonly buffer InstanceMappingBuffer {
+    uint indices[];
+} instance_mapping_buffer;
 
 layout(location = 0) rayPayloadInEXT Payload hitValue;
 layout(location = 1) rayPayloadEXT bool isShadowed;
@@ -67,8 +70,10 @@ uvec3 getIndices(uint index_offset, uint primitive_id) {
 void main() {
     uint index = gl_InstanceCustomIndexEXT;
 
-    uint vertex_offset = data_mapping_buffer.indices[2 * index];
-    uint index_offset = data_mapping_buffer.indices[2 * index + 1];
+    uint geometry_index = instance_mapping_buffer.indices[2 * index];
+
+    uint vertex_offset = geometry_mapping_buffer.indices[2 * geometry_index];
+    uint index_offset = geometry_mapping_buffer.indices[2 * geometry_index + 1];
 
     uvec3 indices = getIndices(index_offset, gl_PrimitiveID);
     Vertex A = getVertex(vertex_offset, indices.x);
