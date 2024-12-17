@@ -21,6 +21,7 @@
 #include <stb_image.h>
 #define TINYOBJLOADER_IMPLEMENTATION
 #include <AccelerationStructure.hpp>
+#include <PhongMaterial.hpp>
 #include <Pipeline.hpp>
 #include <unordered_map>
 #include "../Vertex.hpp"
@@ -35,33 +36,6 @@
 #include "DeletionQueue.hpp"
 
 class VulkanEngine;
-
-struct MetallicRoughness {
-    std::shared_ptr<Pipeline> pipeline;
-    VkDescriptorSetLayout materialLayout;
-
-    struct MaterialConstants {
-        glm::vec4 colorFactors;
-        glm::vec4 metalRoughFactors;
-        glm::vec4 extra[14];
-    };
-
-    struct MaterialResources {
-        AllocatedImage colorImage;
-        VkSampler colorSampler;
-        AllocatedImage metalRoughImage;
-        VkSampler metalRoughSampler;
-        VkBuffer dataBuffer;
-        uint32_t bufferOffset;
-    };
-
-    DescriptorAllocator descriptorAllocator;
-
-    void buildPipelines(VulkanEngine* engine);
-    void clearRessources(VkDevice device);
-
-    MaterialInstance writeMaterial(VkDevice device, const MaterialResources& resources, DescriptorAllocator& allocator);
-};
 
 struct SceneData {
     glm::mat4 view;
@@ -154,8 +128,8 @@ private:
     uint32_t currentFrame = 0;
     bool framebufferResized = false;
 
-    MaterialInstance defaultMetalRough;
-    MetallicRoughness metalRoughMaterial;
+    std::shared_ptr<MaterialInstance> default_phong;
+    std::shared_ptr<PhongMaterial> phong_material;
 
     void initWindow();
 
@@ -234,7 +208,7 @@ private:
         return VK_FALSE;
     }
 
-    MaterialInstance createMetalRoughMaterial(float metallic, float roughness, glm::vec3 albedo);
+    std::shared_ptr<MaterialInstance> createPhongMaterial(glm::vec3 albedo, float diffuse, float specular, float ambient);
 
     void createStorageImage();
 };

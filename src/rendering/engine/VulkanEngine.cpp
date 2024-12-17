@@ -2,6 +2,7 @@
 #include "rendering/engine/VulkanEngine.hpp"
 
 #include <DescriptorLayoutBuilder.hpp>
+#include <PhongMaterial.hpp>
 #include <set>
 
 #include "../nodes/MeshNode.hpp"
@@ -727,38 +728,24 @@ void VulkanEngine::createDefaultSamplers() {
 }
 
 void VulkanEngine::createDefaultMaterials() {
-    defaultMetalRough = createMetalRoughMaterial(1.0f, 0.5f, glm::vec3{1, 1, 1});
+    phong_material = std::make_shared<PhongMaterial>(device);
+    phong_material->buildPipelines();
+    mainDeletionQueue.pushFunction([&]() {
+        phong_material->clearRessources();
+    });
+    default_phong = createPhongMaterial(glm::vec3{1, 1, 1}, 1, 1, 1);
 }
 
-MaterialInstance VulkanEngine::createMetalRoughMaterial(float metallic, float roughness, glm::vec3 albedo) {
-    MetallicRoughness::MaterialResources resources{};
-    resources.colorImage = whiteImage;
-    resources.colorSampler = defaultSamplerLinear;
-    resources.metalRoughImage = whiteImage;
-    resources.metalRoughSampler = defaultSamplerLinear;
+std::shared_ptr<MaterialInstance> VulkanEngine::createPhongMaterial(glm::vec3 albedo, float diffuse, float specular, float ambient) {
+    auto constants = std::make_shared<PhongMaterial::MaterialConstants>();
+    constants->albedo = {albedo,1};
+    constants->properies = {diffuse, specular, ambient, 0};
 
-    MetallicRoughness::MaterialConstants constants{};
-    constants.colorFactors = {albedo,1};
-    constants.metalRoughFactors = {metallic, roughness, 0, 0};
+    auto instance = std::make_shared<MaterialInstance>();
+    instance->material_data = constants;
+    instance->data_size = sizeof(PhongMaterial::MaterialConstants);
 
-    VkDeviceSize bufferSize = sizeof(MetallicRoughness::MaterialConstants);
-    AllocatedBuffer materialBuffer = ressourceBuilder.createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-                                                   VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-
-    mainDeletionQueue.pushFunction([=, this]() {
-        ressourceBuilder.destroyBuffer(materialBuffer);
-    });
-
-    void* data;
-    vkMapMemory(device, materialBuffer.bufferMemory, 0, bufferSize, 0, &data);
-    memcpy(data, &constants, bufferSize);
-    vkUnmapMemory(device, materialBuffer.bufferMemory);
-
-    resources.dataBuffer = materialBuffer.handle;
-    resources.bufferOffset = 0;
-
-    metalRoughMaterial.pipeline = raytracing_pipeline;
-    return metalRoughMaterial.writeMaterial(device, resources, descriptorAllocator);
+    return instance;
 }
 
 void VulkanEngine::createStorageImage() {
@@ -788,13 +775,23 @@ void VulkanEngine::loadMeshes() {
         });
     }
 
-    std::shared_ptr<MeshNode> sphere = std::make_shared<MeshNode>();
-    sphere->localTransform = glm::translate(glm::mat4(1.0f), glm::vec3(1.0f, 0.0f, 0.0f));
-    sphere->worldTransform = glm::mat4{1.0f};
-    sphere->children = {};
-    sphere->meshAsset = meshAssets[0];
-    sphere->refreshTransform(glm::mat4(1.0f));
-    loadedNodes["Sphere"] = std::move(sphere);
+    std::shared_ptr<MeshNode> sphere1 = std::make_shared<MeshNode>();
+    sphere1->localTransform = glm::translate(glm::mat4(1.0f), glm::vec3(1.5f, 0.0f, 0.0f));
+    sphere1->worldTransform = glm::mat4{1.0f};
+    sphere1->children = {};
+    sphere1->meshAsset = meshAssets[0];
+    sphere1->material = default_phong;
+    sphere1->refreshTransform(glm::mat4(1.0f));
+    loadedNodes["Sphere1"] = std::move(sphere1);
+
+    std::shared_ptr<MeshNode> sphere2 = std::make_shared<MeshNode>();
+    sphere2->localTransform = glm::translate(glm::mat4(1.0f), glm::vec3(-1.5f, 0.0f, 0.0f));
+    sphere2->worldTransform = glm::mat4{1.0f};
+    sphere2->children = {};
+    sphere2->meshAsset = meshAssets[0];
+    sphere2->material = default_phong;
+    sphere2->refreshTransform(glm::mat4(1.0f));
+    loadedNodes["Sphere2"] = std::move(sphere2);
 
     std::shared_ptr<MeshNode> plane = std::make_shared<MeshNode>();
     plane->localTransform = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, -1.0f, 0.0f)) * glm::scale( glm::mat4(1.0f), glm::vec3(8.f, 1.0f, 8.f));
@@ -833,6 +830,7 @@ void VulkanEngine::loadMeshes() {
 void VulkanEngine::createSceneBuffers() {
     vertex_buffer = meshAssetBuilder.createVertexBuffer(meshAssets);
     index_buffer = meshAssetBuilder.createIndexBuffer(meshAssets);
+
     data_mapping_buffer = meshAssetBuilder.createDataMappingBuffer(meshAssets);
 
     mainDeletionQueue.pushFunction([&]() {
@@ -1106,8 +1104,6 @@ void VulkanEngine::updateScene(uint32_t currentImage) {
     auto currentTime = std::chrono::high_resolution_clock::now();
     float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
     glm::mat4 rotation = glm::rotate(glm::mat4{1.0f}, time * glm::radians(45.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-    loadedNodes["Sphere"]->localTransform = glm::translate(glm::mat4(1.0f), glm::vec3(1.0f, 0.0f, 0.0f)) * rotation;
-    loadedNodes["Sphere"]->refreshTransform(glm::mat4(1.0f));
 
     if (mainDrawContext.top_level_acceleration_structure == nullptr) {
         mainDrawContext.top_level_acceleration_structure = std::make_shared<AccelerationStructure>(device, ressourceBuilder, commandManager, VK_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL_KHR);
@@ -1257,23 +1253,4 @@ VkFormat VulkanEngine::getColorAttachmentFormat() {
 
 VkFormat VulkanEngine::getDepthFormat() {
     return findDepthFormat();
-}
-
-MaterialInstance MetallicRoughness::writeMaterial(VkDevice device, const MaterialResources& resources, DescriptorAllocator& allocator) {
-    MaterialInstance instance;
-    /*instance.materialSet = allocator.allocate(device, materialLayout);
-
-    allocator.clearWrites();
-    allocator.writeBuffer(0, resources.dataBuffer, sizeof(MaterialConstants), resources.bufferOffset, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
-    allocator.writeImage(1, resources.colorImage.imageView, resources.colorSampler, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL ,VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
-    allocator.writeImage(2, resources.metalRoughImage.imageView, resources.metalRoughSampler, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL ,VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
-
-    allocator.updateSet(device, instance.materialSet);*/
-
-    return instance;
-}
-
-void MetallicRoughness::clearRessources(VkDevice device) {
-    vkDestroyDescriptorSetLayout(device, materialLayout, nullptr);
-    pipeline->destroy(device);
 }

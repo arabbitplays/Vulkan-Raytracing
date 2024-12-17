@@ -3,6 +3,7 @@
 //
 
 #include <AccelerationStructure.hpp>
+#include <Material.hpp>
 #include <Pipeline.hpp>
 #include <vulkan/vulkan_core.h>
 
@@ -10,13 +11,7 @@
 #define BASICS_IRENDERABLE_HPP
 
 
-struct MaterialInstance {
-    VkDescriptorSet materialSet;
-};
 
-struct Material {
-    MaterialInstance instance;
-};
 
 struct RenderObject {
     uint32_t indexCount;

@@ -54,7 +54,6 @@ private:
     AllocatedBuffer instance_buffer;
     std::vector<VkAccelerationStructureInstanceKHR> instances{};
     std::vector<Geometry> geometries{};
-
 };
 
 
