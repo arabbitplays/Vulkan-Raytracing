@@ -14,18 +14,13 @@
 
 
 struct RenderObject {
-    uint32_t indexCount;
-    uint32_t firstIndex;
-    VkBuffer vertexBuffer;
-    VkBuffer indexBuffer;
-
-    MaterialInstance* material;
-
+    uint32_t geometry_id;
+    std::shared_ptr<AccelerationStructure> acceleration_structure;
     glm::mat4 transform;
 };
 
 struct DrawContext {
-    std::shared_ptr<AccelerationStructure> top_level_acceleration_structure = nullptr;
+    std::vector<RenderObject> objects;
 };
 
 class IRenderable {

@@ -21,12 +21,12 @@ struct InstanceData {
 
 struct MeshAsset {
     std::string name;
+    uint32_t geometry_id;
     uint32_t vertex_count = 0;
     uint32_t triangle_count = 0;
     InstanceData instance_data;
     MeshBuffers meshBuffers;
     std::shared_ptr<AccelerationStructure> accelerationStructure;
-    uint32_t objectID;
 };
 
 #endif //MESHASSET_HPP

@@ -831,12 +831,12 @@ void VulkanEngine::createSceneBuffers() {
     vertex_buffer = meshAssetBuilder.createVertexBuffer(meshAssets);
     index_buffer = meshAssetBuilder.createIndexBuffer(meshAssets);
 
-    data_mapping_buffer = meshAssetBuilder.createDataMappingBuffer(meshAssets);
+    geometry_mapping_buffer = meshAssetBuilder.createGeometryMappingBuffer(meshAssets);
 
     mainDeletionQueue.pushFunction([&]() {
         ressourceBuilder.destroyBuffer(vertex_buffer);
         ressourceBuilder.destroyBuffer(index_buffer);
-        ressourceBuilder.destroyBuffer(data_mapping_buffer);
+        ressourceBuilder.destroyBuffer(geometry_mapping_buffer);
     });
 }
 
@@ -850,7 +850,7 @@ void VulkanEngine::createAccelerationStructure() {
             meshAsset->vertex_count - 1, meshAsset->triangle_count, sizeof(Vertex),
             meshAsset->instance_data.vertex_offset, meshAsset->instance_data.triangle_offset);
         meshAsset->accelerationStructure->build();
-        meshAsset->objectID = object_id++;
+        meshAsset->geometry_id = object_id++;
     }
 }
 
@@ -905,7 +905,7 @@ void VulkanEngine::rt_createDescriptorSets() {
     descriptorAllocator.writeBuffer(2, sceneUniformBuffers[0].handle, sizeof(SceneData), 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
     descriptorAllocator.writeBuffer(3, vertex_buffer.handle, 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
     descriptorAllocator.writeBuffer(4, index_buffer.handle, 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
-    descriptorAllocator.writeBuffer(5, data_mapping_buffer.handle, 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+    descriptorAllocator.writeBuffer(5, geometry_mapping_buffer.handle, 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
     descriptorAllocator.updateSet(device, rt_descriptorSet);
     descriptorAllocator.clearWrites();
 }
@@ -1105,15 +1105,21 @@ void VulkanEngine::updateScene(uint32_t currentImage) {
     float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
     glm::mat4 rotation = glm::rotate(glm::mat4{1.0f}, time * glm::radians(45.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 
-    if (mainDrawContext.top_level_acceleration_structure == nullptr) {
-        mainDrawContext.top_level_acceleration_structure = std::make_shared<AccelerationStructure>(device, ressourceBuilder, commandManager, VK_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL_KHR);
+    if (top_level_acceleration_structure == nullptr) {
+        top_level_acceleration_structure = std::make_shared<AccelerationStructure>(device, ressourceBuilder, commandManager, VK_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL_KHR);
 
         mainDeletionQueue.pushFunction([&]() {
-            mainDrawContext.top_level_acceleration_structure->destroy();
+            top_level_acceleration_structure->destroy();
         });
     }
+
+    mainDrawContext.objects.clear();
     for (auto& pair : loadedNodes) {
         pair.second->draw(glm::mat4(1.0f), mainDrawContext);
+    }
+
+    for (auto& object : mainDrawContext.objects) {
+        top_level_acceleration_structure->addInstance(object.acceleration_structure, object.transform, object.geometry_id);
     }
 
     glm::mat4 translation = glm::translate(glm::mat4(1.0f), glm::vec3(1.5f, 0.0f, 0.0f));
@@ -1124,14 +1130,14 @@ void VulkanEngine::updateScene(uint32_t currentImage) {
     rotation = glm::rotate(glm::mat4{1.0f}, glm::radians(-90.f), glm::vec3(0.0f, 0.0f, 1.0f));
     glm::mat4 rotation2 = glm::rotate(glm::mat4{1.0f}, glm::radians(-90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
 
-    if (mainDrawContext.top_level_acceleration_structure->getHandle() == VK_NULL_HANDLE) {
-        mainDrawContext.top_level_acceleration_structure->addInstanceGeometry();
+    if (top_level_acceleration_structure->getHandle() == VK_NULL_HANDLE) {
+        top_level_acceleration_structure->addInstanceGeometry();
     } else {
-        mainDrawContext.top_level_acceleration_structure->update_instance_geometry(0);
+        top_level_acceleration_structure->update_instance_geometry(0);
     }
-    mainDrawContext.top_level_acceleration_structure->build();
+    top_level_acceleration_structure->build();
 
-    descriptorAllocator.writeAccelerationStructure(0, mainDrawContext.top_level_acceleration_structure->getHandle(), VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR);
+    descriptorAllocator.writeAccelerationStructure(0, top_level_acceleration_structure->getHandle(), VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR);
     descriptorAllocator.updateSet(device, rt_descriptorSet);
     descriptorAllocator.clearWrites();
 

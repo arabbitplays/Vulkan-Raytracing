@@ -149,7 +149,7 @@ AllocatedBuffer MeshAssetBuilder::createIndexBuffer(std::vector<std::shared_ptr<
     return indexBuffer;
 }
 
-AllocatedBuffer MeshAssetBuilder::createDataMappingBuffer(std::vector<std::shared_ptr<MeshAsset>>& mesh_assets) {
+AllocatedBuffer MeshAssetBuilder::createGeometryMappingBuffer(std::vector<std::shared_ptr<MeshAsset>>& mesh_assets) {
     assert(!mesh_assets.empty());
 
     VkDeviceSize size = mesh_assets.size() * sizeof(InstanceData);

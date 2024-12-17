@@ -90,7 +90,8 @@ private:
     std::vector<VkCommandBuffer> commandBuffers;
 
     std::vector<std::shared_ptr<MeshAsset>> meshAssets;
-    AllocatedBuffer vertex_buffer, index_buffer, data_mapping_buffer;
+    AllocatedBuffer vertex_buffer, index_buffer, instance_mapping_buffer, geometry_mapping_buffer;
+    std::shared_ptr<AccelerationStructure> top_level_acceleration_structure;
 
     std::unordered_map<std::string, std::shared_ptr<Node>> loadedNodes;
     DrawContext mainDrawContext;
