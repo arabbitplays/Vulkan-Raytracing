@@ -108,7 +108,7 @@ void main() {
         //traceRayEXT(topLevelAS, gl_RayFlagsOpaqueEXT, 0xff, 0, 0, 0, origin.xyz, tmin, direction.xyz, tmax, 0);
     }
 
-    hitValue.color = diffuse;
+    hitValue.color = N;
     hitValue.intersection = vec4(P, 0.0);
     hitValue.normal = vec4(N, gl_HitTEXT);
 }

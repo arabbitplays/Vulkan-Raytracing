@@ -86,3 +86,8 @@ VkPipelineLayout Pipeline::getLayoutHandle() const {
     return layout;
 }
 
+uint32_t Pipeline::getGroupCount() const {
+    return shader_groups.size();
+}
+
+

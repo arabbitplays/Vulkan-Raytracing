@@ -4,9 +4,8 @@ subdir('rendering/nodes')
 subdir('rendering/ressources')
 
 shaders = [
-    'shaders/shader.frag',
-    'shaders/shader.vert',
     'shaders/miss.rmiss',
+    'shaders/shadow_miss.rmiss',
     'shaders/closesthit.rchit',
     'shaders/raygen.rgen',
 ]

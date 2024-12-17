@@ -7,9 +7,8 @@
 #include "../nodes/MeshNode.hpp"
 #include "../../Analytics.hpp"
 
-#include "shader.vert.spv.h"
-#include "shader.frag.spv.h"
 #include "miss.rmiss.spv.h"
+#include "shadow_miss.rmiss.spv.h"
 #include "closesthit.rchit.spv.h"
 #include "raygen.rgen.spv.h"
 
@@ -862,11 +861,14 @@ inline uint32_t alignedSize(uint32_t value, uint32_t alignment) {
 }
 
 void VulkanEngine::createShaderBindingTables() {
+    std::vector<uint32_t> rgen_indices{0};
+    std::vector<uint32_t> miss_indices{1};
+    std::vector<uint32_t> hit_indices{2};
+
     const uint32_t handleSize = raytracingProperties.shaderGroupHandleSize;
     const uint32_t handleAlignment = raytracingProperties.shaderGroupHandleAlignment;
     const uint32_t handleSizeAligned = alignedSize(handleSize, handleAlignment);
-    //const uint32_t groupCount = static_cast<uint32_t>(shaderGroups.size()); TODO Fix this
-    const uint32_t groupCount = static_cast<uint32_t>(3);
+    const uint32_t groupCount = static_cast<uint32_t>(raytracing_pipeline->getGroupCount());
     const uint32_t sbt_size = groupCount * handleSizeAligned;
     const uint32_t sbtUsageFlags = VK_BUFFER_USAGE_SHADER_BINDING_TABLE_BIT_KHR | VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
     const uint32_t sbtMemoryPropertyFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
@@ -885,9 +887,17 @@ void VulkanEngine::createShaderBindingTables() {
         throw std::runtime_error("failed to get shader group handles!");
     }
 
-    raygenShaderBindingTable.update(device, shaderHandleStorage.data(), handleSize);
-    missShaderBindingTable.update(device, shaderHandleStorage.data() + handleSizeAligned, handleSize);
-    hitShaderBindingTable.update(device, shaderHandleStorage.data() + 2* handleSizeAligned, handleSize);
+    auto copyHandle = [&](AllocatedBuffer& buffer, std::vector<uint32_t>& indices, uint32_t stride) {
+        size_t offset = 0;
+        for (uint32_t index = 0; index < indices.size(); index++) {
+            buffer.update(device, shaderHandleStorage.data() + (indices[index] * handleSizeAligned), handleSize, offset);
+            offset += stride * sizeof(uint8_t);
+        }
+    };
+
+    copyHandle(raygenShaderBindingTable, rgen_indices, handleSizeAligned);
+    copyHandle(missShaderBindingTable, miss_indices, handleSizeAligned);
+    copyHandle(hitShaderBindingTable, hit_indices, handleSizeAligned);
 }
 
 void VulkanEngine::rt_createDescriptorSets() {
@@ -923,10 +933,11 @@ void VulkanEngine::createPipeline() {
 
     VkShaderModule raygenShaderModule = VulkanUtil::createShaderModule(device, oschd_raygen_rgen_spv_size(), oschd_raygen_rgen_spv());
     VkShaderModule missShaderModule = VulkanUtil::createShaderModule(device, oschd_miss_rmiss_spv_size(), oschd_miss_rmiss_spv());
+    VkShaderModule shadowMissShaderModule = VulkanUtil::createShaderModule(device, oschd_shadow_miss_rmiss_spv_size(), oschd_shadow_miss_rmiss_spv());
     VkShaderModule closestHitShaderModule = VulkanUtil::createShaderModule(device, oschd_closesthit_rchit_spv_size(), oschd_closesthit_rchit_spv());
 
     raytracing_pipeline->addShaderStage(raygenShaderModule, VK_SHADER_STAGE_RAYGEN_BIT_KHR, VK_RAY_TRACING_SHADER_GROUP_TYPE_GENERAL_KHR);
-    raytracing_pipeline->addShaderStage(missShaderModule, VK_SHADER_STAGE_MISS_BIT_KHR, VK_RAY_TRACING_SHADER_GROUP_TYPE_GENERAL_KHR);
+    raytracing_pipeline->addShaderStage(shadowMissShaderModule, VK_SHADER_STAGE_MISS_BIT_KHR, VK_RAY_TRACING_SHADER_GROUP_TYPE_GENERAL_KHR);
     raytracing_pipeline->addShaderStage(closestHitShaderModule, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR, VK_RAY_TRACING_SHADER_GROUP_TYPE_TRIANGLES_HIT_GROUP_KHR);
 
     raytracing_pipeline->build(device);

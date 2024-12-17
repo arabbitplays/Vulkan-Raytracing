@@ -20,6 +20,7 @@ public:
 
     VkPipeline getHandle() const;
     VkPipelineLayout getLayoutHandle() const;
+    uint32_t getGroupCount() const;
 
 private:
     VkPipeline pipeline = VK_NULL_HANDLE;
