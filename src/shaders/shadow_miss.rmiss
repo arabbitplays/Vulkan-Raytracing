@@ -4,9 +4,8 @@
 
 #include "payload.glsl"
 
-layout(location = 0) rayPayloadInEXT Payload hitValue;
+layout(location = 0) rayPayloadInEXT bool isShadowed;
 
 void main() {
-    hitValue.color = vec3(0.2, 0.0, 0.0);
-    hitValue.normal.w = 10000;
+    isShadowed = false;
 }

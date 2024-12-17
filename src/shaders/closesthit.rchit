@@ -97,18 +97,22 @@ void main() {
     vec3 specular = vec3(0);
 
     if (NdotL > 0) {
-        float tmin = 0.01;
+        float tmin = 0.001;
         float tmax = 1e32;
-        vec3 origin = P;
+        vec3 origin = P + 0.005 * N;
         vec3 direction = L;
         uint flags = gl_RayFlagsTerminateOnFirstHitEXT | gl_RayFlagsOpaqueEXT | gl_RayFlagsSkipClosestHitShaderEXT;
         isShadowed = true;
         hitValue.color = vec3(0.0);
 
-        //traceRayEXT(topLevelAS, gl_RayFlagsOpaqueEXT, 0xff, 0, 0, 0, origin.xyz, tmin, direction.xyz, tmax, 0);
+        traceRayEXT(topLevelAS, flags, 0xff, 0, 0, 1, origin.xyz, tmin, direction.xyz, tmax, 1);
+
+        if (isShadowed) {
+            diffuse *= 0.3;
+        }
     }
 
-    hitValue.color = N;
+    hitValue.color = diffuse;
     hitValue.intersection = vec4(P, 0.0);
     hitValue.normal = vec4(N, gl_HitTEXT);
 }

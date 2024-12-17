@@ -797,7 +797,7 @@ void VulkanEngine::loadMeshes() {
     loadedNodes["Sphere"] = std::move(sphere);
 
     std::shared_ptr<MeshNode> plane = std::make_shared<MeshNode>();
-    plane->localTransform = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, -1.0f, 0.0f)) * glm::scale( glm::mat4(1.0f), glm::vec3(3.f, 1.0f, 3.f));
+    plane->localTransform = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, -1.0f, 0.0f)) * glm::scale( glm::mat4(1.0f), glm::vec3(8.f, 1.0f, 8.f));
     plane->worldTransform = glm::mat4{1.0f};
     plane->children = {};
     plane->meshAsset = meshAssets[1];
@@ -862,8 +862,8 @@ inline uint32_t alignedSize(uint32_t value, uint32_t alignment) {
 
 void VulkanEngine::createShaderBindingTables() {
     std::vector<uint32_t> rgen_indices{0};
-    std::vector<uint32_t> miss_indices{1};
-    std::vector<uint32_t> hit_indices{2};
+    std::vector<uint32_t> miss_indices{1, 2};
+    std::vector<uint32_t> hit_indices{3};
 
     const uint32_t handleSize = raytracingProperties.shaderGroupHandleSize;
     const uint32_t handleAlignment = raytracingProperties.shaderGroupHandleAlignment;
@@ -937,6 +937,7 @@ void VulkanEngine::createPipeline() {
     VkShaderModule closestHitShaderModule = VulkanUtil::createShaderModule(device, oschd_closesthit_rchit_spv_size(), oschd_closesthit_rchit_spv());
 
     raytracing_pipeline->addShaderStage(raygenShaderModule, VK_SHADER_STAGE_RAYGEN_BIT_KHR, VK_RAY_TRACING_SHADER_GROUP_TYPE_GENERAL_KHR);
+    raytracing_pipeline->addShaderStage(missShaderModule, VK_SHADER_STAGE_MISS_BIT_KHR, VK_RAY_TRACING_SHADER_GROUP_TYPE_GENERAL_KHR);
     raytracing_pipeline->addShaderStage(shadowMissShaderModule, VK_SHADER_STAGE_MISS_BIT_KHR, VK_RAY_TRACING_SHADER_GROUP_TYPE_GENERAL_KHR);
     raytracing_pipeline->addShaderStage(closestHitShaderModule, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR, VK_RAY_TRACING_SHADER_GROUP_TYPE_TRIANGLES_HIT_GROUP_KHR);
 
@@ -948,6 +949,7 @@ void VulkanEngine::createPipeline() {
 
     vkDestroyShaderModule(device, raygenShaderModule, nullptr);
     vkDestroyShaderModule(device, missShaderModule, nullptr);
+    vkDestroyShaderModule(device, shadowMissShaderModule, nullptr);
     vkDestroyShaderModule(device, closestHitShaderModule, nullptr);
 }
 
