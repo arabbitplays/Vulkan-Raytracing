@@ -86,4 +86,18 @@ protected:
     void initScene(std::shared_ptr<PhongMaterial> phong_material) override;
 };
 
+class CornellBox : public Scene {
+public:
+    CornellBox() = default;
+    CornellBox(std::shared_ptr<MeshAssetBuilder>& mesh_asset_builder, uint32_t image_width, uint32_t image_height, std::shared_ptr<PhongMaterial> phong_material) : Scene(mesh_asset_builder) {
+        initCamera(image_width, image_height);
+        initScene(phong_material);
+    };
+    void update(uint32_t image_width, uint32_t image_height) override;
+
+protected:
+    void initCamera(uint32_t image_width, uint32_t image_height) override;
+    void initScene(std::shared_ptr<PhongMaterial> phong_material) override;
+};
+
 #endif //SCENE_HPP

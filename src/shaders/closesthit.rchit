@@ -17,7 +17,10 @@ struct Material {
     vec3 diffuse;
     vec3 specular;
     vec3 ambient;
+    vec3 reflection;
+    vec3 transmission;
     float n;
+    vec3 eta;
 };
 
 layout(binding = 0, set = 0) uniform accelerationStructureEXT topLevelAS;
@@ -69,16 +72,21 @@ uvec3 getIndices(uint index_offset, uint primitive_id) {
 }
 
 Material getMaterial(uint material_id) {
-    uint base_index = 3 * material_id;
+    uint base_index = 5 * material_id;
     vec4 A = material_buffer.data[base_index];
     vec4 B = material_buffer.data[base_index + 1];
     vec4 C = material_buffer.data[base_index + 2];
+    vec4 D = material_buffer.data[base_index + 3];
+    vec4 E = material_buffer.data[base_index + 4];
 
     Material m;
     m.diffuse = A.xyz;
     m.specular = vec3(A.w, B.x, B.y);
     m.ambient = vec3(B.zw, C.x);
-    m.n = C.y;
+    m.reflection = C.yzw;
+    m.transmission = D.xyz;
+    m.n = D.w;
+    m.eta = E.xyz;
 
     return m;
 }
@@ -128,7 +136,7 @@ void main() {
 
     if (NdotL > 0) {
         float tmin = 0.001;
-        float tmax = 1e32;
+        float tmax = distance_to_light;
         vec3 origin = P + 0.005 * N;
         vec3 direction = L;
         uint flags = gl_RayFlagsTerminateOnFirstHitEXT | gl_RayFlagsOpaqueEXT | gl_RayFlagsSkipClosestHitShaderEXT;
@@ -149,6 +157,7 @@ void main() {
     vec3 ambient = incoming_light * material.ambient;
 
     hitValue.color = diffuse + specular + ambient;
+    //hitValue.color = specular;
     hitValue.intersection = vec4(P, 0.0);
     hitValue.normal = vec4(N, gl_HitTEXT);
 }

@@ -61,12 +61,18 @@ void PhongMaterial::writeMaterial() {
     descriptorAllocator.clearWrites();
 }
 
-std::shared_ptr<MaterialInstance> PhongMaterial::createInstance(glm::vec3 diffuse, glm::vec3 specular, glm::vec3 ambient, float n) {
+std::shared_ptr<MaterialInstance> PhongMaterial::createInstance(
+        glm::vec3 diffuse, glm::vec3 specular, glm::vec3 ambient,
+        glm::vec3 reflection, glm::vec3 transmission,
+        float n, glm::vec3 eta) {
     auto constants = std::make_shared<PhongMaterial::MaterialConstants>();
     constants->diffuse = diffuse;
     constants->specular = specular;
     constants->ambient = ambient;
-    constants->properies = glm::vec3(n, 0, 0);
+    constants->reflection = reflection;
+    constants->transmission = transmission;
+    constants->n = n;
+    constants-> eta = glm::vec4(eta, 0.0f);
 
     auto resources = std::make_shared<PhongMaterial::MaterialRessources>();
     resources->constants = constants;
