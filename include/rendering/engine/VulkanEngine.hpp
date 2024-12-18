@@ -201,7 +201,7 @@ private:
         return VK_FALSE;
     }
 
-    std::shared_ptr<MaterialInstance> createPhongMaterial(glm::vec3 albedo, float diffuse, float specular, float ambient);
+    std::shared_ptr<MaterialInstance> createPhongMaterial(glm::vec3 diffuse, glm::vec3 specular, glm::vec3 ambient, float n);
 
     void createStorageImage();
 };

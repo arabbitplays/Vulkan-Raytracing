@@ -13,8 +13,10 @@ struct Vertex {
 };
 
 struct Material {
-    vec3 albedo;
-    vec3 parameters;
+    vec3 diffuse;
+    vec3 specular;
+    vec3 ambient;
+    float n;
 };
 
 layout(binding = 0, set = 0) uniform accelerationStructureEXT topLevelAS;
@@ -76,13 +78,16 @@ uvec3 getIndices(uint index_offset, uint primitive_id) {
 }
 
 Material getMaterial(uint material_id) {
-    uint base_index = 2 * material_id;
+    uint base_index = 3 * material_id;
     vec4 A = material_buffer.data[base_index];
     vec4 B = material_buffer.data[base_index + 1];
+    vec4 C = material_buffer.data[base_index + 2];
 
     Material m;
-    m.albedo = A.xyz;
-    m.parameters = B.xyz;
+    m.diffuse = A.xyz;
+    m.specular = vec3(A.w, B.x, B.y);
+    m.ambient = vec3(B.zw, C.x);
+    m.n = C.y;
 
     return m;
 }
@@ -117,12 +122,18 @@ void main() {
     vec3 P = vec3(gl_ObjectToWorldEXT * vec4(position, 1.0)); // transform position to world space
     vec3 N = normalize(vec3(normal * gl_WorldToObjectEXT)); // transform normal to world space
 
-    vec3 L = -normalize(sceneData.sunlightDirection.xyz);
+    vec3 L = sceneData.pointLightPositions[0].xyz - P;
+    float distance_to_light = length(L);
+    L = normalize(L);
+
+    vec3 V = -normalize(gl_WorldRayDirectionEXT);
 
     float NdotL = dot(N, L);
 
-    vec3 diffuse = material.albedo * max(NdotL, 0.3);
+    vec3 diffuse = vec3(0);
     vec3 specular = vec3(0);
+
+    float incoming_light = sceneData.pointLightPositions[0].w / (distance_to_light * distance_to_light);
 
     if (NdotL > 0) {
         float tmin = 0.001;
@@ -135,12 +146,18 @@ void main() {
 
         traceRayEXT(topLevelAS, flags, 0xff, 0, 0, 1, origin.xyz, tmin, direction.xyz, tmax, 1);
 
-        if (isShadowed) {
-            diffuse *= 0.3;
+        if (!isShadowed) {
+            diffuse = incoming_light * material.diffuse * max(0, NdotL);
+
+            vec3 R = reflect(-L, N);
+            float VdotR = dot(V, R);
+            specular = incoming_light * material.specular * pow(max(0, VdotR), material.n);
         }
     }
 
-    hitValue.color = diffuse;
+    vec3 ambient = incoming_light * material.ambient;
+
+    hitValue.color = diffuse + specular + ambient;
     hitValue.intersection = vec4(P, 0.0);
     hitValue.normal = vec4(N, gl_HitTEXT);
 }

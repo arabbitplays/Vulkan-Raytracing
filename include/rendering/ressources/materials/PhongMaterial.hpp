@@ -5,13 +5,16 @@
 #ifndef PHONGMATERIAL_HPP
 #define PHONGMATERIAL_HPP
 #include <Material.hpp>
+#include <glm/vec3.hpp>
 
 
 class PhongMaterial : public Material {
 public:
     struct MaterialConstants {
-        glm::vec4 albedo;
-        glm::vec4 properies; // diffuse, specular, ambient
+        glm::vec3 diffuse;
+        glm::vec3 specular;
+        glm::vec3 ambient;
+        glm::vec3 properies; // n
     };
 
     struct MaterialRessources {
