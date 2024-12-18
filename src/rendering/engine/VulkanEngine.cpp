@@ -285,6 +285,9 @@ void VulkanEngine::pickPhysicalDevice() {
         throw std::runtime_error("failed to find suitable GPU!");
     }
 
+    VkPhysicalDeviceProperties deviceProperties;
+    vkGetPhysicalDeviceProperties(physicalDevice, &deviceProperties);
+
     VkPhysicalDeviceProperties2 physicalDeviceProperties;
     physicalDeviceProperties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
     physicalDeviceProperties.pNext = &raytracingProperties;
@@ -729,12 +732,12 @@ void VulkanEngine::createDefaultSamplers() {
 }
 
 void VulkanEngine::createDefaultMaterials() {
-    phong_material = std::make_shared<PhongMaterial>(device);
+    phong_material = std::make_shared<PhongMaterial>(device, ressourceBuilder);
     phong_material->buildPipelines(rt_descriptorSetLayout);
     mainDeletionQueue.pushFunction([&]() {
         phong_material->clearRessources();
     });
-    default_phong = createPhongMaterial(glm::vec3{1, 1, 1}, 1, 1, 1);
+    default_phong = createPhongMaterial(glm::vec3{1, 0, 0}, 1, 1, 1);
 }
 
 std::shared_ptr<MaterialInstance> VulkanEngine::createPhongMaterial(glm::vec3 albedo, float diffuse, float specular, float ambient) {
@@ -742,13 +745,17 @@ std::shared_ptr<MaterialInstance> VulkanEngine::createPhongMaterial(glm::vec3 al
     constants->albedo = {albedo,1};
     constants->properies = {diffuse, specular, ambient, 0};
 
-    uint32_t size = sizeof(PhongMaterial::MaterialConstants);
+    auto ressources = std::make_shared<PhongMaterial::MaterialRessources>();
+    ressources->constants = constants;
+    return phong_material->writeMaterial(ressources);
+    /*uint32_t size = sizeof(PhongMaterial::MaterialConstants);
     PhongMaterial::MaterialRessources ressources {};
     ressources.data_buffer = ressourceBuilder.createBuffer(size, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
                  VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
     ressources.data_buffer.update(device, &constants, size);
 
-    return phong_material->writeMaterial(ressources);
+    return phong_material->writeMaterial(ressources);*/
+    return nullptr;
 }
 
 void VulkanEngine::createStorageImage() {
@@ -833,6 +840,7 @@ void VulkanEngine::loadMeshes() {
 void VulkanEngine::createSceneBuffers() {
     vertex_buffer = meshAssetBuilder.createVertexBuffer(meshAssets);
     index_buffer = meshAssetBuilder.createIndexBuffer(meshAssets);
+    material_buffer = phong_material->createMaterialBuffer();
 
     geometry_mapping_buffer = meshAssetBuilder.createGeometryMappingBuffer(meshAssets);
 
@@ -840,6 +848,7 @@ void VulkanEngine::createSceneBuffers() {
         ressourceBuilder.destroyBuffer(vertex_buffer);
         ressourceBuilder.destroyBuffer(index_buffer);
         ressourceBuilder.destroyBuffer(geometry_mapping_buffer);
+        ressourceBuilder.destroyBuffer(material_buffer);
     });
 }
 
@@ -909,6 +918,7 @@ void VulkanEngine::rt_createDescriptorSets() {
     descriptorAllocator.writeBuffer(3, vertex_buffer.handle, 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
     descriptorAllocator.writeBuffer(4, index_buffer.handle, 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
     descriptorAllocator.writeBuffer(5, geometry_mapping_buffer.handle, 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+    descriptorAllocator.writeBuffer(7, material_buffer.handle, 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
     descriptorAllocator.updateSet(device, rt_descriptorSet);
     descriptorAllocator.clearWrites();
 }
@@ -924,6 +934,7 @@ void VulkanEngine::createPipeline() {
     layoutBuilder.addBinding(4, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
     layoutBuilder.addBinding(5, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
     layoutBuilder.addBinding(6, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+    layoutBuilder.addBinding(7, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
 
     rt_descriptorSetLayout = layoutBuilder.build(device, VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR);
     mainDeletionQueue.pushFunction([&]() {

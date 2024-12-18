@@ -37,6 +37,9 @@ public:
     RessourceBuilder() = default;
     RessourceBuilder(VkPhysicalDevice physicalDevice, VkDevice device, CommandManager commandManager);
     AllocatedBuffer createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties);
+
+    AllocatedBuffer stageMemoryToNewBuffer(void *data, size_t size, VkBufferUsageFlagBits usage);
+
     AllocatedBuffer createStagedBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties);
     void copyBuffer(AllocatedBuffer src, AllocatedBuffer dst, VkDeviceSize size);
     void destroyBuffer(AllocatedBuffer buffer);

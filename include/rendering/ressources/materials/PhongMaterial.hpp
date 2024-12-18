@@ -15,13 +15,21 @@ public:
     };
 
     struct MaterialRessources {
-        AllocatedBuffer data_buffer;
+        std::shared_ptr<MaterialConstants> constants;
+        // add images and samplers here
     };
 
-    PhongMaterial(VkDevice& device) : Material(device) {}
+    PhongMaterial(VkDevice& device, RessourceBuilder& ressource_builder_) : Material(device), ressource_builder(ressource_builder_) {}
 
     void buildPipelines(VkDescriptorSetLayout sceneLayout) override;
-    std::shared_ptr<MaterialInstance> writeMaterial(MaterialRessources ressources);
+    std::shared_ptr<MaterialInstance> writeMaterial(std::shared_ptr<MaterialRessources>& ressources);
+    AllocatedBuffer createMaterialBuffer();
+
+private:
+    std::vector<std::shared_ptr<MaterialInstance>> instances;
+    std::vector<std::shared_ptr<MaterialConstants>> constants;
+
+    RessourceBuilder ressource_builder;
 };
 
 

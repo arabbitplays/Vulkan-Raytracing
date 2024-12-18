@@ -49,8 +49,10 @@ void PhongMaterial::buildPipelines(VkDescriptorSetLayout sceneLayout) {
     vkDestroyShaderModule(device, closestHitShaderModule, nullptr);
 }
 
-std::shared_ptr<MaterialInstance> PhongMaterial::writeMaterial(MaterialRessources ressources) {
+std::shared_ptr<MaterialInstance> PhongMaterial::writeMaterial(std::shared_ptr<MaterialRessources>& ressources) {
     std::shared_ptr<MaterialInstance> instance = std::make_shared<MaterialInstance>();
+    instances.push_back(instance);
+    constants.push_back(ressources->constants);
     /*VkDescriptorSet material_set = descriptorAllocator.allocate(device, materialLayout);
     descriptorAllocator.clearWrites();
     descriptorAllocator.writeBuffer(0, ressources.data_buffer.handle, sizeof(MaterialConstants), 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
@@ -58,3 +60,12 @@ std::shared_ptr<MaterialInstance> PhongMaterial::writeMaterial(MaterialRessource
     instance->material_set = material_set;*/
     return instance;
 }
+
+AllocatedBuffer PhongMaterial::createMaterialBuffer() {
+    std::vector<MaterialConstants> materialConstants{};
+    for (auto& constant : constants) {
+        materialConstants.push_back(*constant);
+    }
+    return ressource_builder.stageMemoryToNewBuffer(materialConstants.data(), materialConstants.size() * sizeof(MaterialConstants), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
+}
+

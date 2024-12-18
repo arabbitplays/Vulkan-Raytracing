@@ -36,6 +36,9 @@ layout(binding = 5, set = 0) readonly buffer GeometryappingBuffer {
 layout(binding = 6, set = 0) readonly buffer InstanceMappingBuffer {
     uint indices[];
 } instance_mapping_buffer;
+layout(binding = 7, set = 0) readonly buffer MaterialBuffer {
+    vec4[] data;
+} material_buffer;
 
 layout(location = 0) rayPayloadInEXT Payload hitValue;
 layout(location = 1) rayPayloadEXT bool isShadowed;
@@ -118,6 +121,7 @@ void main() {
     }
 
     hitValue.color = diffuse;
+    hitValue.color = material_buffer.data[0].xyz;
     hitValue.intersection = vec4(P, 0.0);
     hitValue.normal = vec4(N, gl_HitTEXT);
 }

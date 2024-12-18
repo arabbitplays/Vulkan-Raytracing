@@ -34,7 +34,7 @@ private:
 
 
     VkDevice device;
-    RessourceBuilder bufferBuilder;
+    RessourceBuilder ressource_builder;
 };
 
 
