@@ -243,8 +243,8 @@ void CornellBox::initScene(std::shared_ptr<PhongMaterial> phong_material) {
         glm::vec3(0.0f),
         glm::vec3(0.0f),
         glm::vec3(0.0f),
+        glm::vec3(1.0f),
         glm::vec3(0.0f),
-        glm::vec3(0.9f),
         1);
     sphere->refreshTransform(glm::mat4(1.0f));
     nodes["MirrorSphere2"] = std::move(sphere);
@@ -259,7 +259,7 @@ void CornellBox::initScene(std::shared_ptr<PhongMaterial> phong_material) {
         glm::vec3(0.0f),
         glm::vec3(0.0f),
         glm::vec3(0.0f),
-        glm::vec3(1.0f),
+        glm::vec3(0.0f),
         glm::vec3(0.9f),
         1,
         glm::vec3(1.f) / glm::vec3(1.03f, 1.06f, 1.09f));

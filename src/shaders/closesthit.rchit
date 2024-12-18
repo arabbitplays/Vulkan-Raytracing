@@ -6,24 +6,16 @@
 #include "payload.glsl"
 #include "scene_data.glsl"
 
+layout(location = 0) rayPayloadInEXT Payload payload;
+
+#include "lighting.glsl"
+
 struct Vertex {
     vec3 position;
     vec3 normal;
     vec3 color;
     vec2 uv;
 };
-
-struct Material {
-    vec3 diffuse;
-    vec3 specular;
-    vec3 ambient;
-    vec3 reflection;
-    vec3 transmission;
-    float n;
-    vec3 eta;
-};
-
-layout(binding = 0, set = 0) uniform accelerationStructureEXT topLevelAS;
 
 layout(binding = 3, set = 0) readonly buffer VertexBuffer {
     vec4[] data;
@@ -41,8 +33,6 @@ layout(binding = 0, set = 1) readonly buffer MaterialBuffer {
     vec4[] data;
 } material_buffer;
 
-layout(location = 0) rayPayloadInEXT Payload hitValue;
-layout(location = 1) rayPayloadEXT bool isShadowed;
 hitAttributeEXT vec3 attribs;
 
 
@@ -124,40 +114,15 @@ void main() {
     vec3 L = sceneData.pointLightPositions[0].xyz - P;
     float distance_to_light = length(L);
     L = normalize(L);
+    float incoming_light = sceneData.pointLightPositions[0].w / (distance_to_light * distance_to_light);
 
     vec3 V = -normalize(gl_WorldRayDirectionEXT);
 
-    float NdotL = dot(N, L);
-
-    vec3 diffuse = vec3(0);
-    vec3 specular = vec3(0);
-
-    float incoming_light = sceneData.pointLightPositions[0].w / (distance_to_light * distance_to_light);
-
-    if (NdotL > 0) {
-        float tmin = 0.001;
-        float tmax = distance_to_light;
-        vec3 origin = P + 0.005 * N;
-        vec3 direction = L;
-        uint flags = gl_RayFlagsTerminateOnFirstHitEXT | gl_RayFlagsOpaqueEXT | gl_RayFlagsSkipClosestHitShaderEXT;
-        isShadowed = true;
-        hitValue.color = vec3(0.0);
-
-        traceRayEXT(topLevelAS, flags, 0xff, 0, 0, 1, origin.xyz, tmin, direction.xyz, tmax, 1);
-
-        if (!isShadowed) {
-            diffuse = incoming_light * material.diffuse * max(0, NdotL);
-
-            vec3 R = reflect(-L, N);
-            float VdotR = dot(V, R);
-            specular = incoming_light * material.specular * pow(max(0, VdotR), material.n);
-        }
+    if (length(material.reflection) > 0.0) {
+        evaluateReflection(P, N, V, material);
+    } else {
+        payload.next_direction = vec3(0.0);
     }
 
-    vec3 ambient = incoming_light * material.ambient;
-
-    hitValue.color = diffuse + specular + ambient;
-    //hitValue.color = specular;
-    hitValue.intersection = vec4(P, 0.0);
-    hitValue.normal = vec4(N, gl_HitTEXT);
+    payload.direct_light = evaluatePhong(P, N, L, incoming_light, distance_to_light, V, material);
 }

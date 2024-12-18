@@ -755,6 +755,7 @@ void VulkanEngine::createStorageImage() {
 }
 
 void VulkanEngine::createScene() {
+    QuickTimer timer{"Scene Creation", true};
     mesh_builder = std::make_shared<MeshAssetBuilder>(device, ressourceBuilder);
 
     //scene = std::make_shared<PlaneScene>(mesh_builder, swapChainExtent.width, swapChainExtent.height, phong_material);
