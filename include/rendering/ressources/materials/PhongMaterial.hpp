@@ -22,12 +22,15 @@ public:
     PhongMaterial(VkDevice& device, RessourceBuilder& ressource_builder_) : Material(device), ressource_builder(ressource_builder_) {}
 
     void buildPipelines(VkDescriptorSetLayout sceneLayout) override;
-    std::shared_ptr<MaterialInstance> writeMaterial(std::shared_ptr<MaterialRessources>& ressources);
-    AllocatedBuffer createMaterialBuffer();
+    void writeMaterial() override;
+    std::shared_ptr<MaterialInstance> addInstance(std::shared_ptr<MaterialRessources>& ressources);
 
 private:
+    AllocatedBuffer createMaterialBuffer();
+
     std::vector<std::shared_ptr<MaterialInstance>> instances;
     std::vector<std::shared_ptr<MaterialConstants>> constants;
+    AllocatedBuffer materialBuffer;
 
     RessourceBuilder ressource_builder;
 };

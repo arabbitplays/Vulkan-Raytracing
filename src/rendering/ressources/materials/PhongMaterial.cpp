@@ -19,7 +19,7 @@ void PhongMaterial::buildPipelines(VkDescriptorSetLayout sceneLayout) {
 
     layoutBuilder.addBinding(0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
 
-    materialLayout = layoutBuilder.build(device, VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR);
+    materialLayout = layoutBuilder.build(device, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR);
     deletionQueue.pushFunction([&]() {
         vkDestroyDescriptorSetLayout(device, materialLayout, nullptr);
     });
@@ -49,15 +49,22 @@ void PhongMaterial::buildPipelines(VkDescriptorSetLayout sceneLayout) {
     vkDestroyShaderModule(device, closestHitShaderModule, nullptr);
 }
 
-std::shared_ptr<MaterialInstance> PhongMaterial::writeMaterial(std::shared_ptr<MaterialRessources>& ressources) {
+void PhongMaterial::writeMaterial() {
+    materialBuffer = createMaterialBuffer();
+    deletionQueue.pushFunction([&]() {
+        ressource_builder.destroyBuffer(materialBuffer);
+    });
+
+    materialDescriptorSet = descriptorAllocator.allocate(device, materialLayout);
+    descriptorAllocator.writeBuffer(0, materialBuffer.handle, 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+    descriptorAllocator.updateSet(device, materialDescriptorSet);
+    descriptorAllocator.clearWrites();
+}
+
+std::shared_ptr<MaterialInstance> PhongMaterial::addInstance(std::shared_ptr<MaterialRessources>& ressources) {
     std::shared_ptr<MaterialInstance> instance = std::make_shared<MaterialInstance>();
     instances.push_back(instance);
     constants.push_back(ressources->constants);
-    /*VkDescriptorSet material_set = descriptorAllocator.allocate(device, materialLayout);
-    descriptorAllocator.clearWrites();
-    descriptorAllocator.writeBuffer(0, ressources.data_buffer.handle, sizeof(MaterialConstants), 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
-    descriptorAllocator.updateSet(device, material_set);
-    instance->material_set = material_set;*/
     return instance;
 }
 

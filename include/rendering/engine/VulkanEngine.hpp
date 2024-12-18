@@ -49,10 +49,6 @@ struct SceneData {
     glm::vec4 sunlightColor;
 };
 
-struct ObjectData {
-    glm::mat4 model;
-};
-
 class VulkanEngine {
 public:
     VkDevice device;
@@ -61,7 +57,6 @@ public:
     MeshAssetBuilder meshAssetBuilder;
 
     VkDescriptorSetLayout sceneDataDescriptorLayout;
-    VkPushConstantRange objectDataCostantRange;
 
     void run();
     VkFormat getColorAttachmentFormat();
@@ -90,7 +85,7 @@ private:
     std::vector<VkCommandBuffer> commandBuffers;
 
     std::vector<std::shared_ptr<MeshAsset>> meshAssets;
-    AllocatedBuffer vertex_buffer, index_buffer, material_buffer, instance_mapping_buffer, geometry_mapping_buffer;
+    AllocatedBuffer vertex_buffer, index_buffer, instance_mapping_buffer, geometry_mapping_buffer;
     std::shared_ptr<AccelerationStructure> top_level_acceleration_structure;
 
     std::unordered_map<std::string, std::shared_ptr<Node>> loadedNodes;
@@ -100,8 +95,7 @@ private:
 
     AllocatedImage storageImage;
 
-    std::shared_ptr<Pipeline> raytracing_pipeline;
-    VkDescriptorSet rt_descriptorSet;
+    VkDescriptorSet scene_descriptor_set;
     VkDescriptorSetLayout rt_descriptorSetLayout;
 
     AllocatedBuffer raygenShaderBindingTable;
@@ -120,7 +114,6 @@ private:
     std::vector<void*> sceneUniformBuffersMapped;
 
     DescriptorAllocator descriptorAllocator;
-    std::vector<VkDescriptorSet> sceneDescriptorSets;
 
     std::vector<VkSemaphore> imageAvailableSemaphores;
     std::vector<VkSemaphore> renderFinishedSemaphores;
@@ -185,11 +178,10 @@ private:
 
     void rt_createDescriptorSets();
 
-    void createPipeline();
+    void createSceneLayout();
 
     void createUniformBuffers();
     void createDescriptorAllocator();
-    void createDescriptorSets();
     void createCommandBuffers();
     void createSyncObjects();
     void drawFrame();

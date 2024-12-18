@@ -41,7 +41,7 @@ layout(binding = 5, set = 0) readonly buffer GeometryappingBuffer {
 layout(binding = 6, set = 0) readonly buffer InstanceMappingBuffer {
     uint indices[];
 } instance_mapping_buffer;
-layout(binding = 7, set = 0) readonly buffer MaterialBuffer {
+layout(binding = 0, set = 1) readonly buffer MaterialBuffer {
     vec4[] data;
 } material_buffer;
 

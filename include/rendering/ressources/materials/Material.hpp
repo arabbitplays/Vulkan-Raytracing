@@ -18,24 +18,34 @@ class Pipeline;
 class Material {
   public:
     Material() = default;
-    Material(VkDevice& device) : device(device) {};
+    Material(VkDevice& device) : device(device) {
+        std::vector<DescriptorAllocator::PoolSizeRatio> poolRatios = {
+            { VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1 },
+        };
+        descriptorAllocator.init(device, 4, poolRatios);
+
+        deletionQueue.pushFunction([&]() {
+            descriptorAllocator.destroyPools(device);
+        });
+    };
 
     virtual ~Material() {};
 
+    std::shared_ptr<Pipeline> pipeline;
+    VkDescriptorSetLayout materialLayout;
+    VkDescriptorSet materialDescriptorSet;
+
+    virtual void buildPipelines(VkDescriptorSetLayout sceneLayout) = 0;
+    virtual void writeMaterial() = 0;
+    void clearRessources();
+
+protected:
     VkDevice device;
     DescriptorAllocator descriptorAllocator;
     DeletionQueue deletionQueue;
-
-    std::shared_ptr<Pipeline> pipeline;
-    VkDescriptorSetLayout materialLayout;
-
-    virtual void buildPipelines(VkDescriptorSetLayout sceneLayout) = 0;
-    void clearRessources();
 };
 
 struct MaterialInstance {
-    std::shared_ptr<Material> material;
-    VkDescriptorSet material_set;
     uint32_t material_index;
 };
 

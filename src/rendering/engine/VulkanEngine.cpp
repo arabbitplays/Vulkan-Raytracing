@@ -116,8 +116,7 @@ void VulkanEngine::initVulkan() {
         cleanupSwapChain();
     });
 
-    createPipeline();
-    createShaderBindingTables();
+    createSceneLayout();
 
     //createDepthResources();
     initDefaultResources();
@@ -127,6 +126,7 @@ void VulkanEngine::initVulkan() {
     createAccelerationStructure();
     createUniformBuffers();
 
+    createShaderBindingTables();
     rt_createDescriptorSets();
 
     createCommandBuffers();
@@ -466,7 +466,7 @@ void VulkanEngine::recreateSwapChain() {
     //createDepthResources();
     createStorageImage();
     descriptorAllocator.writeImage(1, storageImage.imageView, VK_NULL_HANDLE, VK_IMAGE_LAYOUT_GENERAL, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
-    descriptorAllocator.updateSet(device, rt_descriptorSet);
+    descriptorAllocator.updateSet(device, scene_descriptor_set);
     descriptorAllocator.clearWrites();
 }
 
@@ -747,7 +747,7 @@ std::shared_ptr<MaterialInstance> VulkanEngine::createPhongMaterial(glm::vec3 al
 
     auto ressources = std::make_shared<PhongMaterial::MaterialRessources>();
     ressources->constants = constants;
-    return phong_material->writeMaterial(ressources);
+    return phong_material->addInstance(ressources);
     /*uint32_t size = sizeof(PhongMaterial::MaterialConstants);
     PhongMaterial::MaterialRessources ressources {};
     ressources.data_buffer = ressourceBuilder.createBuffer(size, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
@@ -841,7 +841,7 @@ void VulkanEngine::loadMeshes() {
 void VulkanEngine::createSceneBuffers() {
     vertex_buffer = meshAssetBuilder.createVertexBuffer(meshAssets);
     index_buffer = meshAssetBuilder.createIndexBuffer(meshAssets);
-    material_buffer = phong_material->createMaterialBuffer();
+    phong_material->writeMaterial();
 
     geometry_mapping_buffer = meshAssetBuilder.createGeometryMappingBuffer(meshAssets);
 
@@ -849,7 +849,6 @@ void VulkanEngine::createSceneBuffers() {
         ressourceBuilder.destroyBuffer(vertex_buffer);
         ressourceBuilder.destroyBuffer(index_buffer);
         ressourceBuilder.destroyBuffer(geometry_mapping_buffer);
-        ressourceBuilder.destroyBuffer(material_buffer);
     });
 }
 
@@ -872,6 +871,8 @@ inline uint32_t alignedSize(uint32_t value, uint32_t alignment) {
 }
 
 void VulkanEngine::createShaderBindingTables() {
+    Pipeline pipeline = *phong_material->pipeline;
+
     std::vector<uint32_t> rgen_indices{0};
     std::vector<uint32_t> miss_indices{1, 2};
     std::vector<uint32_t> hit_indices{3};
@@ -879,7 +880,7 @@ void VulkanEngine::createShaderBindingTables() {
     const uint32_t handleSize = raytracingProperties.shaderGroupHandleSize;
     const uint32_t handleAlignment = raytracingProperties.shaderGroupHandleAlignment;
     const uint32_t handleSizeAligned = alignedSize(handleSize, handleAlignment);
-    const uint32_t groupCount = static_cast<uint32_t>(raytracing_pipeline->getGroupCount());
+    const uint32_t groupCount = static_cast<uint32_t>(pipeline.getGroupCount());
     const uint32_t sbt_size = groupCount * handleSizeAligned;
     const uint32_t sbtUsageFlags = VK_BUFFER_USAGE_SHADER_BINDING_TABLE_BIT_KHR | VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
     const uint32_t sbtMemoryPropertyFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
@@ -894,7 +895,7 @@ void VulkanEngine::createShaderBindingTables() {
     });
 
     std::vector<uint8_t> shaderHandleStorage(sbt_size);
-    if (GetRayTracingShaderGroupHandlesKHR(device, raytracing_pipeline->getHandle(), 0, groupCount, sbt_size, shaderHandleStorage.data()) != VK_SUCCESS) {
+    if (GetRayTracingShaderGroupHandlesKHR(device, pipeline.getHandle(), 0, groupCount, sbt_size, shaderHandleStorage.data()) != VK_SUCCESS) {
         throw std::runtime_error("failed to get shader group handles!");
     }
 
@@ -912,21 +913,20 @@ void VulkanEngine::createShaderBindingTables() {
 }
 
 void VulkanEngine::rt_createDescriptorSets() {
-    rt_descriptorSet = descriptorAllocator.allocate(device, rt_descriptorSetLayout);
+    // TODO make this MAX_FRAMES_IN_FLIGHT many
+    scene_descriptor_set = descriptorAllocator.allocate(device, rt_descriptorSetLayout);
     // Binding 0 is the TLAS added in updateScene
     descriptorAllocator.writeImage(1, storageImage.imageView, VK_NULL_HANDLE, VK_IMAGE_LAYOUT_GENERAL, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
     descriptorAllocator.writeBuffer(2, sceneUniformBuffers[0].handle, sizeof(SceneData), 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
     descriptorAllocator.writeBuffer(3, vertex_buffer.handle, 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
     descriptorAllocator.writeBuffer(4, index_buffer.handle, 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
     descriptorAllocator.writeBuffer(5, geometry_mapping_buffer.handle, 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
-    descriptorAllocator.writeBuffer(7, material_buffer.handle, 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
-    descriptorAllocator.updateSet(device, rt_descriptorSet);
+    descriptorAllocator.updateSet(device, scene_descriptor_set);
     descriptorAllocator.clearWrites();
 }
 
-void VulkanEngine::createPipeline() {
+void VulkanEngine::createSceneLayout() {
     DescriptorLayoutBuilder layoutBuilder;
-    raytracing_pipeline = std::make_shared<Pipeline>();
 
     layoutBuilder.addBinding(0, VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR);
     layoutBuilder.addBinding(1, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
@@ -941,30 +941,6 @@ void VulkanEngine::createPipeline() {
     mainDeletionQueue.pushFunction([&]() {
         vkDestroyDescriptorSetLayout(device, rt_descriptorSetLayout, nullptr);
     });
-
-    std::vector<VkDescriptorSetLayout> descriptorSetLayouts{rt_descriptorSetLayout};
-    raytracing_pipeline->setDescriptorSetLayouts(descriptorSetLayouts);
-
-    VkShaderModule raygenShaderModule = VulkanUtil::createShaderModule(device, oschd_raygen_rgen_spv_size(), oschd_raygen_rgen_spv());
-    VkShaderModule missShaderModule = VulkanUtil::createShaderModule(device, oschd_miss_rmiss_spv_size(), oschd_miss_rmiss_spv());
-    VkShaderModule shadowMissShaderModule = VulkanUtil::createShaderModule(device, oschd_shadow_miss_rmiss_spv_size(), oschd_shadow_miss_rmiss_spv());
-    VkShaderModule closestHitShaderModule = VulkanUtil::createShaderModule(device, oschd_closesthit_rchit_spv_size(), oschd_closesthit_rchit_spv());
-
-    raytracing_pipeline->addShaderStage(raygenShaderModule, VK_SHADER_STAGE_RAYGEN_BIT_KHR, VK_RAY_TRACING_SHADER_GROUP_TYPE_GENERAL_KHR);
-    raytracing_pipeline->addShaderStage(missShaderModule, VK_SHADER_STAGE_MISS_BIT_KHR, VK_RAY_TRACING_SHADER_GROUP_TYPE_GENERAL_KHR);
-    raytracing_pipeline->addShaderStage(shadowMissShaderModule, VK_SHADER_STAGE_MISS_BIT_KHR, VK_RAY_TRACING_SHADER_GROUP_TYPE_GENERAL_KHR);
-    raytracing_pipeline->addShaderStage(closestHitShaderModule, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR, VK_RAY_TRACING_SHADER_GROUP_TYPE_TRIANGLES_HIT_GROUP_KHR);
-
-    raytracing_pipeline->build(device);
-
-    mainDeletionQueue.pushFunction([&]() {
-        raytracing_pipeline->destroy(device);
-    });
-
-    vkDestroyShaderModule(device, raygenShaderModule, nullptr);
-    vkDestroyShaderModule(device, missShaderModule, nullptr);
-    vkDestroyShaderModule(device, shadowMissShaderModule, nullptr);
-    vkDestroyShaderModule(device, closestHitShaderModule, nullptr);
 }
 
 
@@ -983,21 +959,6 @@ void VulkanEngine::createUniformBuffers() {
         mainDeletionQueue.pushFunction([&, i]() {
             ressourceBuilder.destroyBuffer(sceneUniformBuffers[i]);
         });
-    }
-}
-
-void VulkanEngine::createDescriptorSets() {
-    sceneDescriptorSets.resize(MAX_FRAMES_IN_FLIGHT);
-
-    for (uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-        sceneDescriptorSets[i] = descriptorAllocator.allocate(device, sceneDataDescriptorLayout, nullptr);
-    }
-
-    for (size_t i = 0; i < sceneDescriptorSets.size(); i++) {
-        descriptorAllocator.clearWrites();
-        descriptorAllocator.writeBuffer(0, sceneUniformBuffers[i].handle, sizeof(SceneData),
-                                        0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
-        descriptorAllocator.updateSet(device, sceneDescriptorSets[i]);
     }
 }
 
@@ -1162,7 +1123,7 @@ void VulkanEngine::updateScene(uint32_t currentImage) {
 
     descriptorAllocator.writeAccelerationStructure(0, top_level_acceleration_structure->getHandle(), VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR);
     descriptorAllocator.writeBuffer(6, instance_mapping_buffer.handle, 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
-    descriptorAllocator.updateSet(device, rt_descriptorSet);
+    descriptorAllocator.updateSet(device, scene_descriptor_set);
     descriptorAllocator.clearWrites();
 
     SceneData sceneData{};
@@ -1190,8 +1151,7 @@ void VulkanEngine::updateScene(uint32_t currentImage) {
 }
 
 void VulkanEngine::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex) {
-    std::shared_ptr<Material> material = phong_material;
-    Pipeline pipeline = *this->raytracing_pipeline;
+    Pipeline pipeline = *phong_material->pipeline;
 
     VkCommandBufferBeginInfo beginInfo{};
     beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -1220,8 +1180,8 @@ void VulkanEngine::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t i
     VkStridedDeviceAddressRegionKHR callableShaderSbtEntry{};
 
     std::vector<VkDescriptorSet> descriptor_sets{};
-    descriptor_sets.push_back(rt_descriptorSet);
-    //descriptor_sets.push_back(default_phong->material_set);
+    descriptor_sets.push_back(scene_descriptor_set);
+    descriptor_sets.push_back(phong_material->materialDescriptorSet);
 
     vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, pipeline.getHandle());
     vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, pipeline.getLayoutHandle(),
