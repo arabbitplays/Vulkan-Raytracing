@@ -14,7 +14,7 @@ public:
     MeshNode() = default;
 
     std::shared_ptr<MeshAsset> meshAsset;
-    uint32_t material_index = 0;
+    std::shared_ptr<MaterialInstance> meshMaterial;
 
     void draw(const glm::mat4& topMatrix, DrawContext& ctx) override;
 };

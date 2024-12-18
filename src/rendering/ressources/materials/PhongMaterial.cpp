@@ -62,9 +62,12 @@ std::shared_ptr<MaterialInstance> PhongMaterial::writeMaterial(std::shared_ptr<M
 }
 
 AllocatedBuffer PhongMaterial::createMaterialBuffer() {
+    assert(constants.size() == instances.size());
+
     std::vector<MaterialConstants> materialConstants{};
-    for (auto& constant : constants) {
-        materialConstants.push_back(*constant);
+    for (uint32_t i = 0; i < constants.size(); i++) {
+        instances[i]->material_index = i;
+        materialConstants.push_back(*constants[i]);
     }
     return ressource_builder.stageMemoryToNewBuffer(materialConstants.data(), materialConstants.size() * sizeof(MaterialConstants), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
 }

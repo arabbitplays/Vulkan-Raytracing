@@ -12,6 +12,11 @@ struct Vertex {
     vec2 uv;
 };
 
+struct Material {
+    vec3 albedo;
+    vec3 parameters;
+};
+
 layout(binding = 0, set = 0) uniform accelerationStructureEXT topLevelAS;
 layout(binding = 2, set = 0) uniform SceneData {
     mat4 view;
@@ -70,10 +75,23 @@ uvec3 getIndices(uint index_offset, uint primitive_id) {
     return uvec3(index0, index1, index2);
 }
 
+Material getMaterial(uint material_id) {
+    uint base_index = 2 * material_id;
+    vec4 A = material_buffer.data[base_index];
+    vec4 B = material_buffer.data[base_index + 1];
+
+    Material m;
+    m.albedo = A.xyz;
+    m.parameters = B.xyz;
+
+    return m;
+}
+
 void main() {
     uint index = gl_InstanceCustomIndexEXT;
 
     uint geometry_index = instance_mapping_buffer.indices[2 * index];
+    uint material_index = instance_mapping_buffer.indices[2 * index + 1];
 
     uint vertex_offset = geometry_mapping_buffer.indices[2 * geometry_index];
     uint index_offset = geometry_mapping_buffer.indices[2 * geometry_index + 1];
@@ -82,6 +100,8 @@ void main() {
     Vertex A = getVertex(vertex_offset, indices.x);
     Vertex B = getVertex(vertex_offset, indices.y);
     Vertex C = getVertex(vertex_offset, indices.z);
+
+    Material material = getMaterial(material_index);
 
     const vec3 barycentricCoords = vec3(1.0f - attribs.x - attribs.y, attribs.x, attribs.y);
     float alpha = barycentricCoords.x;
@@ -121,7 +141,7 @@ void main() {
     }
 
     hitValue.color = diffuse;
-    hitValue.color = material_buffer.data[0].xyz;
+    hitValue.color = material.albedo;
     hitValue.intersection = vec4(P, 0.0);
     hitValue.normal = vec4(N, gl_HitTEXT);
 }

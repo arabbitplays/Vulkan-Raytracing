@@ -737,7 +737,7 @@ void VulkanEngine::createDefaultMaterials() {
     mainDeletionQueue.pushFunction([&]() {
         phong_material->clearRessources();
     });
-    default_phong = createPhongMaterial(glm::vec3{1, 0, 0}, 1, 1, 1);
+    //default_phong = createPhongMaterial(glm::vec3{1, 0, 0}, 1, 1, 1);
 }
 
 std::shared_ptr<MaterialInstance> VulkanEngine::createPhongMaterial(glm::vec3 albedo, float diffuse, float specular, float ambient) {
@@ -790,24 +790,25 @@ void VulkanEngine::loadMeshes() {
     sphere1->worldTransform = glm::mat4{1.0f};
     sphere1->children = {};
     sphere1->meshAsset = meshAssets[0];
-    sphere1->material_index = 0;
+    sphere1->meshMaterial = createPhongMaterial(glm::vec3(1.0f, 0.0f, 0.0f), 1.0f, 0.0f, 0.0f);
     sphere1->refreshTransform(glm::mat4(1.0f));
     loadedNodes["Sphere1"] = std::move(sphere1);
 
-    std::shared_ptr<MeshNode> sphere2 = std::make_shared<MeshNode>();
+    /*std::shared_ptr<MeshNode> sphere2 = std::make_shared<MeshNode>();
     sphere2->localTransform = glm::translate(glm::mat4(1.0f), glm::vec3(-1.5f, 0.0f, 0.0f));
     sphere2->worldTransform = glm::mat4{1.0f};
     sphere2->children = {};
     sphere2->meshAsset = meshAssets[0];
-    sphere2->material_index = 0;
+    sphere2->meshMaterial = createPhongMaterial(glm::vec3(0.0f, 1.0f, 0.0f), 1.0f, 0.0f, 0.0f);
     sphere2->refreshTransform(glm::mat4(1.0f));
-    loadedNodes["Sphere2"] = std::move(sphere2);
+    loadedNodes["Sphere2"] = std::move(sphere2);*/
 
     std::shared_ptr<MeshNode> plane = std::make_shared<MeshNode>();
     plane->localTransform = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, -1.0f, 0.0f)) * glm::scale( glm::mat4(1.0f), glm::vec3(8.f, 1.0f, 8.f));
     plane->worldTransform = glm::mat4{1.0f};
     plane->children = {};
     plane->meshAsset = meshAssets[1];
+    plane->meshMaterial = createPhongMaterial(glm::vec3(0.0f, 1.0f, 0.0f), 1.0f, 0.0f, 0.0f);
     plane->refreshTransform(glm::mat4(1.0f));
     loadedNodes["Plane"] = std::move(plane);
 
