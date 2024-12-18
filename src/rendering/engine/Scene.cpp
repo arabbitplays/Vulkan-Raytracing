@@ -88,3 +88,8 @@ void PlaneScene::initScene(std::shared_ptr<PhongMaterial> phong_material) {
     sun = DirectionalLight(glm::vec3(-1,-1,-1), glm::vec3(1.0f), 1.0f);
 }
 
+void PlaneScene::update(uint32_t image_width, uint32_t image_height) {
+    initCamera(image_width, image_height);
+}
+
+

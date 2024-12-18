@@ -129,7 +129,7 @@ void VulkanEngine::initVulkan() {
     createUniformBuffers();
 
     createShaderBindingTables();
-    rt_createDescriptorSets();
+    createSceneDescriptorSets();
 
     createCommandBuffers();
     createSyncObjects();
@@ -467,6 +467,7 @@ void VulkanEngine::recreateSwapChain() {
     createSwapChain();
     //createDepthResources();
     createStorageImage();
+    scene->update(swapChainExtent.width, swapChainExtent.height);
     descriptorAllocator.writeImage(1, storageImage.imageView, VK_NULL_HANDLE, VK_IMAGE_LAYOUT_GENERAL, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
     descriptorAllocator.updateSet(device, scene_descriptor_set);
     descriptorAllocator.clearWrites();
@@ -836,7 +837,7 @@ void VulkanEngine::createShaderBindingTables() {
     copyHandle(hitShaderBindingTable, hit_indices, handleSizeAligned);
 }
 
-void VulkanEngine::rt_createDescriptorSets() {
+void VulkanEngine::createSceneDescriptorSets() {
     // TODO make this MAX_FRAMES_IN_FLIGHT many
     scene_descriptor_set = descriptorAllocator.allocate(device, rt_descriptorSetLayout);
     // Binding 0 is the TLAS added in updateScene

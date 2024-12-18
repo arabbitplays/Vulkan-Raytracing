@@ -53,6 +53,7 @@ public:
     }
 
     std::shared_ptr<SceneData> createSceneData();
+    virtual void update(uint32_t image_width, uint32_t image_height) {};
     void clearRessources();
 
     std::shared_ptr<Camera> camera;
@@ -78,6 +79,7 @@ public:
         initCamera(image_width, image_height);
         initScene(phong_material);
     };
+    void update(uint32_t image_width, uint32_t image_height) override;
 
 protected:
     void initCamera(uint32_t image_width, uint32_t image_height) override;

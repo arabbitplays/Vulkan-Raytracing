@@ -165,7 +165,7 @@ private:
     void createAccelerationStructure();
     void createShaderBindingTables();
 
-    void rt_createDescriptorSets();
+    void createSceneDescriptorSets();
 
     void createSceneLayout();
 
