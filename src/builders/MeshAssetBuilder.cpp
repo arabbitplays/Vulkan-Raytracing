@@ -9,9 +9,9 @@
 #include <cstring>
 #include <IRenderable.hpp>
 
-MeshAssetBuilder::MeshAssetBuilder(VkDevice device, RessourceBuilder bufferBuilder) {
+MeshAssetBuilder::MeshAssetBuilder(VkDevice device, RessourceBuilder ressource_builder) {
     this->device = device;
-    this->ressource_builder = bufferBuilder;
+    this->ressource_builder = ressource_builder;
 }
 
 MeshAsset MeshAssetBuilder::LoadMeshAsset(std::string name, std::string path) {

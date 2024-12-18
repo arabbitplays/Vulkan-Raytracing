@@ -61,20 +61,29 @@ void PhongMaterial::writeMaterial() {
     descriptorAllocator.clearWrites();
 }
 
-std::shared_ptr<MaterialInstance> PhongMaterial::addInstance(std::shared_ptr<MaterialRessources>& ressources) {
+std::shared_ptr<MaterialInstance> PhongMaterial::createInstance(glm::vec3 diffuse, glm::vec3 specular, glm::vec3 ambient, float n) {
+    auto constants = std::make_shared<PhongMaterial::MaterialConstants>();
+    constants->diffuse = diffuse;
+    constants->specular = specular;
+    constants->ambient = ambient;
+    constants->properies = glm::vec3(n, 0, 0);
+
+    auto resources = std::make_shared<PhongMaterial::MaterialRessources>();
+    resources->constants = constants;
+
     std::shared_ptr<MaterialInstance> instance = std::make_shared<MaterialInstance>();
     instances.push_back(instance);
-    constants.push_back(ressources->constants);
+    constants_buffer.push_back(resources->constants);
     return instance;
 }
 
 AllocatedBuffer PhongMaterial::createMaterialBuffer() {
-    assert(constants.size() == instances.size());
+    assert(constants_buffer.size() == instances.size());
 
     std::vector<MaterialConstants> materialConstants{};
-    for (uint32_t i = 0; i < constants.size(); i++) {
+    for (uint32_t i = 0; i < constants_buffer.size(); i++) {
         instances[i]->material_index = i;
-        materialConstants.push_back(*constants[i]);
+        materialConstants.push_back(*constants_buffer[i]);
     }
     return ressource_builder.stageMemoryToNewBuffer(materialConstants.data(), materialConstants.size() * sizeof(MaterialConstants), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
 }

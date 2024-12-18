@@ -26,13 +26,13 @@ public:
 
     void buildPipelines(VkDescriptorSetLayout sceneLayout) override;
     void writeMaterial() override;
-    std::shared_ptr<MaterialInstance> addInstance(std::shared_ptr<MaterialRessources>& ressources);
+    std::shared_ptr<MaterialInstance> createInstance(glm::vec3 diffuse, glm::vec3 specular, glm::vec3 ambient, float n);
 
 private:
     AllocatedBuffer createMaterialBuffer();
 
     std::vector<std::shared_ptr<MaterialInstance>> instances;
-    std::vector<std::shared_ptr<MaterialConstants>> constants;
+    std::vector<std::shared_ptr<MaterialConstants>> constants_buffer;
     AllocatedBuffer materialBuffer;
 
     RessourceBuilder ressource_builder;

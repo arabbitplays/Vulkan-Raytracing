@@ -4,6 +4,7 @@
 #extension GL_EXT_nonuniform_qualifier : enable
 
 #include "payload.glsl"
+#include "scene_data.glsl"
 
 struct Vertex {
     vec3 position;
@@ -20,17 +21,7 @@ struct Material {
 };
 
 layout(binding = 0, set = 0) uniform accelerationStructureEXT topLevelAS;
-layout(binding = 2, set = 0) uniform SceneData {
-    mat4 view;
-    mat4 proj;
-    mat4 viewProj;
-    vec4 viewPos;
-    vec4 pointLightPositions[4];
-    vec3 pointLightColors[4];
-    vec4 ambientColor;
-    vec4 sunlightDirection; // w for power
-    vec3 sunlightColor;
-} sceneData;
+
 layout(binding = 3, set = 0) readonly buffer VertexBuffer {
     vec4[] data;
 } vertex_buffer;

@@ -1,6 +1,7 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "rendering/engine/VulkanEngine.hpp"
 
+#include <Camera.hpp>
 #include <DescriptorLayoutBuilder.hpp>
 #include <PhongMaterial.hpp>
 #include <set>
@@ -122,7 +123,7 @@ void VulkanEngine::initVulkan() {
     //createDepthResources();
     initDefaultResources();
 
-    loadMeshes();
+    createScene();
     createSceneBuffers();
     createAccelerationStructure();
     createUniformBuffers();
@@ -741,26 +742,6 @@ void VulkanEngine::createDefaultMaterials() {
     //default_phong = createPhongMaterial(glm::vec3{1, 0, 0}, 1, 1, 1);
 }
 
-std::shared_ptr<MaterialInstance> VulkanEngine::createPhongMaterial(glm::vec3 diffuse, glm::vec3 specular, glm::vec3 ambient, float n) {
-    auto constants = std::make_shared<PhongMaterial::MaterialConstants>();
-    constants->diffuse = diffuse;
-    constants->specular = specular;
-    constants->ambient = ambient;
-    constants->properies = glm::vec3(n, 0, 0);
-
-    auto ressources = std::make_shared<PhongMaterial::MaterialRessources>();
-    ressources->constants = constants;
-    return phong_material->addInstance(ressources);
-    /*uint32_t size = sizeof(PhongMaterial::MaterialConstants);
-    PhongMaterial::MaterialRessources ressources {};
-    ressources.data_buffer = ressourceBuilder.createBuffer(size, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
-                 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-    ressources.data_buffer.update(device, &constants, size);
-
-    return phong_material->writeMaterial(ressources);*/
-    return nullptr;
-}
-
 void VulkanEngine::createStorageImage() {
     storageImage = ressourceBuilder.createImage(
         VkExtent3D{swapChainExtent.width, swapChainExtent.height, 1},
@@ -772,74 +753,21 @@ void VulkanEngine::createStorageImage() {
         VK_ACCESS_NONE, VK_ACCESS_NONE, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
 }
 
-void VulkanEngine::loadMeshes() {
-    auto pMeshAssetBuilder = new MeshAssetBuilder(device, ressourceBuilder);
-    meshAssetBuilder = *pMeshAssetBuilder;
+void VulkanEngine::createScene() {
+    mesh_builder = std::make_shared<MeshAssetBuilder>(device, ressourceBuilder);
 
-    std::shared_ptr<MeshAsset> meshAsset = std::make_shared<MeshAsset>(meshAssetBuilder.LoadMeshAsset("Sphere", "../ressources/models/sphere.obj"));
-    meshAssets.push_back(meshAsset);
-
-    meshAsset = std::make_shared<MeshAsset>(meshAssetBuilder.LoadMeshAsset("Sphere", "../ressources/models/plane.obj"));
-    meshAssets.push_back(meshAsset);
-
-    for (auto& meshAsset : meshAssets) {
-        mainDeletionQueue.pushFunction([&]() {
-            meshAssetBuilder.destroyMeshAsset(*meshAsset);
-        });
-    }
-
-    for (int i = 0; i < 5; i++) {
-        std::shared_ptr<MeshNode> sphere1 = std::make_shared<MeshNode>();
-        sphere1->localTransform = glm::translate(glm::mat4(1.0f), glm::vec3(-3.f + 6.0f / 4.0f * i, 0.0f, 0.0f)) * glm::scale(glm::mat4(1.0f), glm::vec3(0.5f));
-        sphere1->worldTransform = glm::mat4{1.0f};
-        sphere1->children = {};
-        sphere1->meshAsset = meshAssets[0];
-        sphere1->meshMaterial = createPhongMaterial(glm::vec3(0.0f, 0.5f, 0.5f), glm::vec3(0.4f, 0.4f, 0.4f), glm::vec3(0.0f, 0.2f, 0.2f), std::pow(5.f, i));
-        sphere1->refreshTransform(glm::mat4(1.0f));
-        loadedNodes["Sphere" + i] = std::move(sphere1);
-    }
-
-    std::shared_ptr<MeshNode> plane = std::make_shared<MeshNode>();
-    plane->localTransform = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, -1.0f, 0.0f)) * glm::scale( glm::mat4(1.0f), glm::vec3(8.f, 1.0f, 8.f));
-    plane->worldTransform = glm::mat4{1.0f};
-    plane->children = {};
-    plane->meshAsset = meshAssets[1];
-    plane->meshMaterial = createPhongMaterial(glm::vec3(0.5f, 0.0f, 0.0f), glm::vec3(0.5f), glm::vec3(0.02f, 0.0f, 0.0f), 5.0f);
-    plane->refreshTransform(glm::mat4(1.0f));
-    loadedNodes["Plane"] = std::move(plane);
-
-    /*std::shared_ptr<Node> parentNode = std::make_shared<Node>();
-    parentNode->localTransform = glm::mat4{1.0f};
-    parentNode->worldTransform = glm::mat4{1.0f};
-    parentNode->children = {};
-    loadedNodes["Spheres"] = std::move(parentNode);
-
-    for (int x = 0; x < 5; x++) {
-        for (int y = 0; y < 5; y++) {
-            std::shared_ptr<MeshNode> newNode = std::make_shared<MeshNode>();
-            newNode->meshAsset = meshAssets[0];
-
-            //MaterialInstance material = createMetalRoughMaterial(0.1f + 0.2f * (float)y, 0.01f + 0.2f * (float)x, glm::vec3{1, 1, 1});
-            //newNode->material = std::make_shared<Material>(material);
-
-            glm::mat4 translation = glm::translate(glm::mat4(1.0f), glm::vec3{x - 2, y - 2, 0});
-            glm::mat4 scale = glm::scale(glm::mat4(1.0f), glm::vec3(0.4f));
-            newNode->localTransform = translation * scale;
-            newNode->worldTransform = glm::mat4{1.0f};
-
-            loadedNodes["Spheres"]->children.push_back(newNode);
-        }
-
-        loadedNodes["Spheres"]->refreshTransform(glm::mat4(1.0f));
-    }*/
+    scene = std::make_shared<PlaneScene>(mesh_builder, swapChainExtent.width, swapChainExtent.height, phong_material);
+    mainDeletionQueue.pushFunction([&]() {
+        scene->clearRessources();
+    });
 }
 
 void VulkanEngine::createSceneBuffers() {
-    vertex_buffer = meshAssetBuilder.createVertexBuffer(meshAssets);
-    index_buffer = meshAssetBuilder.createIndexBuffer(meshAssets);
+    vertex_buffer = mesh_builder->createVertexBuffer(scene->meshes);
+    index_buffer = mesh_builder->createIndexBuffer(scene->meshes);
     phong_material->writeMaterial();
 
-    geometry_mapping_buffer = meshAssetBuilder.createGeometryMappingBuffer(meshAssets);
+    geometry_mapping_buffer = mesh_builder->createGeometryMappingBuffer(scene->meshes);
 
     mainDeletionQueue.pushFunction([&]() {
         ressourceBuilder.destroyBuffer(vertex_buffer);
@@ -851,7 +779,7 @@ void VulkanEngine::createSceneBuffers() {
 void VulkanEngine::createAccelerationStructure() {
     QuickTimer timer{"BLAS Build", true};
     uint32_t object_id = 0;
-    for (auto& meshAsset : meshAssets) {
+    for (auto& meshAsset : scene->meshes) {
         meshAsset->accelerationStructure = std::make_shared<AccelerationStructure>(device, ressourceBuilder, commandManager, VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_KHR);
 
         meshAsset->accelerationStructure->addTriangleGeometry(vertex_buffer, index_buffer,
@@ -1087,12 +1015,12 @@ void VulkanEngine::updateScene(uint32_t currentImage) {
     }
 
     mainDrawContext.objects.clear();
-    for (auto& pair : loadedNodes) {
+    for (auto& pair : scene->nodes) {
         pair.second->draw(glm::mat4(1.0f), mainDrawContext);
     }
 
     if (instance_mapping_buffer.handle == VK_NULL_HANDLE) { // TODO make it dynamic
-        instance_mapping_buffer = meshAssetBuilder.createInstanceMappingBuffer(mainDrawContext.objects);
+        instance_mapping_buffer = mesh_builder->createInstanceMappingBuffer(mainDrawContext.objects);
         mainDeletionQueue.pushFunction([&]() {
             ressourceBuilder.destroyBuffer(instance_mapping_buffer);
         });
@@ -1122,28 +1050,9 @@ void VulkanEngine::updateScene(uint32_t currentImage) {
     descriptorAllocator.updateSet(device, scene_descriptor_set);
     descriptorAllocator.clearWrites();
 
-    SceneData sceneData{};
-    sceneData.view = glm::translate(glm::mat4(1.0f), glm::vec3{ 0,0,-4.5f });
-    /*sceneData.view = glm::lookAt(glm::vec3(4.0f, 4.0f, 4.0f),
-                           glm::vec3(0.0f, 0.0f, 0.0f),
-                           glm::vec3(0.0f, 0.0f, 1.0f));*/
-    sceneData.proj = glm::perspective(glm::radians(60.0f),
-                                swapChainExtent.width / (float) swapChainExtent.height,
-                                0.1f, 512.0f);
-    sceneData.proj[1][1] *= -1; // flip y-axis because glm is for openGL
-    sceneData.viewProj = sceneData.view * sceneData.proj;
-
-    sceneData.viewPos = glm::vec4{ 0,0,6, 0 };
-    sceneData.pointLightPositions = {glm::vec4{0, 1.5f, 3, 10}, glm::vec4{1, -1, 3, 1},
-                                     glm::vec4{-1, 1, 3, 1}, glm::vec4{-1, -1, 3, 1}};
-    sceneData.pointLightColors = {glm::vec4{1, 0, 0, 0}, glm::vec4{0, 1, 0, 0},
-                                  glm::vec4{0, 0, 1, 0}, glm::vec4{1, 1, 1, 0}};
-
-    sceneData.ambientColor = glm::vec4(1.f);
-    sceneData.sunlightColor = glm::vec4(1.f);
-    sceneData.sunlightDirection = glm::vec4(-1,-1,-1,1.f);
-
-    memcpy(sceneUniformBuffersMapped[currentImage], &sceneData, sizeof(SceneData));
+    std::shared_ptr<SceneData> scene_data = scene->createSceneData();
+    SceneData test = *scene_data;
+    memcpy(sceneUniformBuffersMapped[currentImage], &test, sizeof(SceneData));
 }
 
 void VulkanEngine::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex) {

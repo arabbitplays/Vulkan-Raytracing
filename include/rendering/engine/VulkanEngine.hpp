@@ -23,6 +23,7 @@
 #include <AccelerationStructure.hpp>
 #include <PhongMaterial.hpp>
 #include <Pipeline.hpp>
+#include <Scene.hpp>
 #include <unordered_map>
 #include "../Vertex.hpp"
 #include "DescriptorAllocator.hpp"
@@ -37,24 +38,12 @@
 
 class VulkanEngine;
 
-struct SceneData {
-    glm::mat4 view;
-    glm::mat4 proj;
-    glm::mat4 viewProj;
-    glm::vec4 viewPos;
-    std::array<glm::vec4, 4> pointLightPositions;
-    std::array<glm::vec4, 4> pointLightColors;
-    glm::vec4 ambientColor;
-    glm::vec4 sunlightDirection; // w for sun power
-    glm::vec4 sunlightColor;
-};
-
 class VulkanEngine {
 public:
     VkDevice device;
     CommandManager commandManager;
     RessourceBuilder ressourceBuilder;
-    MeshAssetBuilder meshAssetBuilder;
+    std::shared_ptr<MeshAssetBuilder> mesh_builder;
 
     VkDescriptorSetLayout sceneDataDescriptorLayout;
 
@@ -84,16 +73,16 @@ private:
     std::vector<VkFramebuffer> swapChainFrameBuffers;
     std::vector<VkCommandBuffer> commandBuffers;
 
-    std::vector<std::shared_ptr<MeshAsset>> meshAssets;
     AllocatedBuffer vertex_buffer, index_buffer, instance_mapping_buffer, geometry_mapping_buffer;
     std::shared_ptr<AccelerationStructure> top_level_acceleration_structure;
 
-    std::unordered_map<std::string, std::shared_ptr<Node>> loadedNodes;
     DrawContext mainDrawContext;
 
     VkPhysicalDeviceRayTracingPipelinePropertiesKHR raytracingProperties{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_PROPERTIES_KHR};
 
     AllocatedImage storageImage;
+
+    std::shared_ptr<Scene> scene;
 
     VkDescriptorSet scene_descriptor_set;
     VkDescriptorSetLayout rt_descriptorSetLayout;
@@ -171,7 +160,7 @@ private:
     void createDefaultTextures();
     void createDefaultSamplers();
     void createDefaultMaterials();
-    void loadMeshes();
+    void createScene();
 
     void createAccelerationStructure();
     void createShaderBindingTables();
@@ -200,8 +189,6 @@ private:
 
         return VK_FALSE;
     }
-
-    std::shared_ptr<MaterialInstance> createPhongMaterial(glm::vec3 diffuse, glm::vec3 specular, glm::vec3 ambient, float n);
 
     void createStorageImage();
 };
