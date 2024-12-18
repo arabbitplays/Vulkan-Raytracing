@@ -121,7 +121,7 @@ void main() {
 
     float NdotL = dot(N, L);
 
-    vec3 diffuse = vec3(1.0) * max(NdotL, 0.3);
+    vec3 diffuse = material.albedo * max(NdotL, 0.3);
     vec3 specular = vec3(0);
 
     if (NdotL > 0) {
@@ -141,7 +141,6 @@ void main() {
     }
 
     hitValue.color = diffuse;
-    hitValue.color = material.albedo;
     hitValue.intersection = vec4(P, 0.0);
     hitValue.normal = vec4(N, gl_HitTEXT);
 }
