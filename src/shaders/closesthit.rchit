@@ -107,7 +107,6 @@ void main() {
     vec3 color = alpha * A.color + beta * B.color + gamma * C.color;
     vec2 uv = alpha * A.uv + beta * B.uv + gamma * C.uv;
 
-
     vec3 P = vec3(gl_ObjectToWorldEXT * vec4(position, 1.0)); // transform position to world space
     vec3 N = normalize(vec3(normal * gl_WorldToObjectEXT)); // transform normal to world space
 
@@ -118,10 +117,11 @@ void main() {
 
     vec3 V = -normalize(gl_WorldRayDirectionEXT);
 
+    payload.next_direction = vec3(0.0);
     if (length(material.reflection) > 0.0) {
         evaluateReflection(P, N, V, material);
-    } else {
-        payload.next_direction = vec3(0.0);
+    } else if (length(material.transmission) > 0.0) {
+        evaluateTransmission(P, N, V, material);
     }
 
     payload.direct_light = evaluatePhong(P, N, L, incoming_light, distance_to_light, V, material);

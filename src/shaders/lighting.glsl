@@ -44,9 +44,33 @@ vec3 evaluatePhong(vec3 P, vec3 N, vec3 L, float incoming_light, float dist_to_l
     return diffuse + specular + ambient;
 }
 
-void evaluateReflection(vec3 P, vec3 N, vec3 V, Material mat) {
+void evaluateReflection(vec3 P, vec3 N, vec3 V, Material material) {
 
     payload.next_origin = P + EPSILON * N;
     payload.next_direction = reflect(-V, N);
-    payload.next_contribution_factor = mat.reflection;
+    payload.next_contribution_factor = material.reflection;
+}
+
+void evaluateTransmission(vec3 P, vec3 N, vec3 V, Material material) {
+    float NdotV = dot(N, V);
+
+    float eta = material.eta.x;
+    if (NdotV < 0.0) {
+        N = -N;
+        NdotV = -NdotV;
+    } else {
+        eta = 1.0 / eta;
+    }
+
+    const float radicand = 1.0 - eta * eta * (1.0 - NdotV * NdotV);
+    if (radicand < 0.0) {
+        payload.next_direction = vec3(0.0);
+        return;
+    }
+
+    vec3 refract_dir = normalize((eta * NdotV - sqrt(radicand)) * N - eta * V);
+
+    payload.next_origin = P + EPSILON * refract_dir;
+    payload.next_direction = refract_dir;
+    payload.next_contribution_factor = material.transmission;
 }
