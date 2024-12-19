@@ -30,7 +30,7 @@ void Pipeline::build(VkDevice& device) {
     pipelineInfo.pStages = shader_stages.data();
     pipelineInfo.groupCount = static_cast<uint32_t>(shader_groups.size());
     pipelineInfo.pGroups = shader_groups.data();
-    pipelineInfo.maxPipelineRayRecursionDepth = 1;
+    pipelineInfo.maxPipelineRayRecursionDepth = 31;
     pipelineInfo.layout = layout;
     if (CreateRayTracingPipelinesKHR(device, VK_NULL_HANDLE, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &pipeline) != VK_SUCCESS) {
         throw std::runtime_error("failed to create ray tracing pipeline!");

@@ -3,6 +3,8 @@
 #extension GL_GOOGLE_include_directive : enable
 #extension GL_EXT_nonuniform_qualifier : enable
 
+#define MAX_RECURSION_DEPTH 5
+
 #include "payload.glsl"
 #include "scene_data.glsl"
 
@@ -117,12 +119,19 @@ void main() {
 
     vec3 V = -normalize(gl_WorldRayDirectionEXT);
 
-    payload.next_direction = vec3(0.0);
-    if (length(material.reflection) > 0.0) {
+    vec3 reflection = vec3(0.0);
+    if (payload.depth < MAX_RECURSION_DEPTH && length(material.reflection) > 0.0) {
         evaluateReflection(P, N, V, material);
-    } else if (length(material.transmission) > 0.0) {
-        evaluateTransmission(P, N, V, material);
+        reflection = payload.direct_light;
     }
 
-    payload.direct_light = evaluatePhong(P, N, L, incoming_light, distance_to_light, V, material);
+    vec3 transmission = vec3(0.0);
+    if (length(material.transmission) > 0.0) {
+        evaluateTransmission(P, N, V, material);
+        transmission = payload.direct_light;
+    }
+
+    vec3 phong = evaluatePhong(P, N, L, incoming_light, distance_to_light, V, material);
+
+    payload.direct_light = phong + material.reflection * reflection + material.transmission * transmission;
 }

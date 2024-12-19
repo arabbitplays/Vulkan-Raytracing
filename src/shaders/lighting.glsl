@@ -46,9 +46,14 @@ vec3 evaluatePhong(vec3 P, vec3 N, vec3 L, float incoming_light, float dist_to_l
 
 void evaluateReflection(vec3 P, vec3 N, vec3 V, Material material) {
 
-    payload.next_origin = P + EPSILON * N;
-    payload.next_direction = reflect(-V, N);
-    payload.next_contribution_factor = material.reflection;
+    vec3 origin = P + EPSILON * N;
+    vec3 direction = reflect(-V, N);
+
+    float tmin = 0.01;
+    float tmax = 10000.0;
+
+    payload.depth++;
+    traceRayEXT(topLevelAS, gl_RayFlagsOpaqueEXT, 0xff, 0, 0, 0, origin, tmin, direction, tmax, 0);
 }
 
 void evaluateTransmission(vec3 P, vec3 N, vec3 V, Material material) {
@@ -64,13 +69,16 @@ void evaluateTransmission(vec3 P, vec3 N, vec3 V, Material material) {
 
     const float radicand = 1.0 - eta * eta * (1.0 - NdotV * NdotV);
     if (radicand < 0.0) {
-        payload.next_direction = vec3(0.0);
+        payload.direct_light = vec3(0.0);
         return;
     }
 
     vec3 refract_dir = normalize((eta * NdotV - sqrt(radicand)) * N - eta * V);
+    vec3 origin = P + EPSILON * refract_dir;
 
-    payload.next_origin = P + EPSILON * refract_dir;
-    payload.next_direction = refract_dir;
-    payload.next_contribution_factor = material.transmission;
+    float tmin = 0.01;
+    float tmax = 10000.0;
+
+    payload.depth++;
+    traceRayEXT(topLevelAS, gl_RayFlagsOpaqueEXT, 0xff, 0, 0, 0, origin, tmin, refract_dir, tmax, 0);
 }
