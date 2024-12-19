@@ -1,7 +1,5 @@
 subdir('builders')
-subdir('rendering/engine')
-subdir('rendering/nodes')
-subdir('rendering/ressources')
+subdir('rendering')
 
 shaders = [
     'shaders/miss.rmiss',

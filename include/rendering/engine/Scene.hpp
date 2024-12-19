@@ -7,6 +7,7 @@
 
 #include <array>
 #include <Camera.hpp>
+#include <InteractiveCamera.hpp>
 #include <MeshAsset.hpp>
 #include <MeshAssetBuilder.hpp>
 #include <Node.hpp>

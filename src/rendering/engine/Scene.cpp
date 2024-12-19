@@ -12,9 +12,9 @@
 std::shared_ptr<SceneData> Scene::createSceneData() {
     auto sceneData = std::make_shared<SceneData>();
 
-    sceneData->inverse_view = camera->inverse_view;
-    sceneData->inverse_proj = camera->inverse_projection;
-    sceneData->view_pos = glm::vec4(camera->position, 0.0f);
+    sceneData->inverse_view = camera->getInverseView();
+    sceneData->inverse_proj = camera->getInverseProjection();
+    sceneData->view_pos = glm::vec4(camera->getPosition(), 0.0f);
 
     std::array<glm::vec4, POINT_LIGHT_COUNT> point_light_positions = {};
     std::array<glm::vec4, POINT_LIGHT_COUNT> point_light_colors = {};
@@ -49,6 +49,9 @@ void PlaneScene::initCamera(uint32_t image_width, uint32_t image_height) {
         glm::translate(glm::mat4(1.0f), glm::vec3{ 0,0,-4.5f }),
         proj
     );
+
+    camera->image_width = image_width;
+    camera->image_height = image_height;
 }
 
 void PlaneScene::initScene(std::shared_ptr<PhongMaterial> phong_material) {
@@ -101,7 +104,9 @@ void PlaneScene::initScene(std::shared_ptr<PhongMaterial> phong_material) {
 }
 
 void PlaneScene::update(uint32_t image_width, uint32_t image_height) {
-    initCamera(image_width, image_height);
+    if (image_width != camera->image_width || image_height != camera->image_height) {
+        initCamera(image_width, image_height);
+    }
 }
 
 // -----------------------------------------------------------------------------------------------------------------------
@@ -111,10 +116,17 @@ void CornellBox::initCamera(uint32_t image_width, uint32_t image_height) {
         image_width / (float)image_height,
         0.1f, 512.0f);
     proj[1][1] *= -1; // flip y-axis because glm is for openGL
-    camera = std::make_shared<Camera>(
+    /*camera = std::make_shared<Camera>(
         glm::lookAt(glm::vec3(0, 4, 8), glm::vec3(0, 2.5f, 0), glm::vec3(0, 1, 0)),
         proj
-    );
+    );*/
+
+    auto interactive_camera = std::make_shared<InteractiveCamera>(proj);
+    interactive_camera->position = glm::vec3(0.0f, 5.0f, 0.0f);
+    camera = interactive_camera;
+
+    camera->image_width = image_width;
+    camera->image_height = image_height;
 }
 
 void CornellBox::initScene(std::shared_ptr<PhongMaterial> phong_material) {
@@ -321,7 +333,11 @@ void CornellBox::initScene(std::shared_ptr<PhongMaterial> phong_material) {
 }
 
 void CornellBox::update(uint32_t image_width, uint32_t image_height) {
-    initCamera(image_width, image_height);
+    if (image_width != camera->image_width || image_height != camera->image_height) {
+        initCamera(image_width, image_height);
+    }
+
+    camera->update();
 }
 
 

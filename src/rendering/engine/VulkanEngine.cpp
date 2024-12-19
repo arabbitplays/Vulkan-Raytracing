@@ -93,11 +93,27 @@ void VulkanEngine::initWindow() {
     window = glfwCreateWindow(WIDTH, HEIGHT, "Vulkan", nullptr, nullptr);
     glfwSetWindowUserPointer(window, this);
     glfwSetFramebufferSizeCallback(window, framebufferResizeCallback);
+    glfwSetKeyCallback(window, keyCallback);
+    glfwSetCursorPosCallback(window, mouseCallback);
 }
 
 void VulkanEngine::framebufferResizeCallback(GLFWwindow* window, int width, int height) {
     auto app = reinterpret_cast<VulkanEngine*>(glfwGetWindowUserPointer(window));
     app->framebufferResized = true;
+}
+
+void VulkanEngine::keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods) {
+    auto app = reinterpret_cast<VulkanEngine*>(glfwGetWindowUserPointer(window));
+    if (app->scene != nullptr && app->scene->camera != nullptr) {
+        app->scene->camera->processGlfwKeyEvent(key, action);
+    }
+}
+
+void VulkanEngine::mouseCallback(GLFWwindow* window, double xPos, double yPos) {
+    auto app = reinterpret_cast<VulkanEngine*>(glfwGetWindowUserPointer(window));
+    if (app->scene != nullptr && app->scene->camera != nullptr) {
+        app->scene->camera->processGlfwMouseEvent(xPos, yPos);
+    }
 }
 
 void VulkanEngine::initVulkan() {
@@ -736,7 +752,7 @@ void VulkanEngine::createDefaultSamplers() {
 
 void VulkanEngine::createDefaultMaterials() {
     phong_material = std::make_shared<PhongMaterial>(device, ressourceBuilder);
-    phong_material->buildPipelines(rt_descriptorSetLayout);
+    phong_material->buildPipelines(scene_descsriptor_set_layout);
     mainDeletionQueue.pushFunction([&]() {
         phong_material->clearRessources();
     });
@@ -841,7 +857,7 @@ void VulkanEngine::createShaderBindingTables() {
 
 void VulkanEngine::createSceneDescriptorSets() {
     // TODO make this MAX_FRAMES_IN_FLIGHT many
-    scene_descriptor_set = descriptorAllocator.allocate(device, rt_descriptorSetLayout);
+    scene_descriptor_set = descriptorAllocator.allocate(device, scene_descsriptor_set_layout);
     // Binding 0 is the TLAS added in updateScene
     descriptorAllocator.writeImage(1, storageImage.imageView, VK_NULL_HANDLE, VK_IMAGE_LAYOUT_GENERAL, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
     descriptorAllocator.writeBuffer(2, sceneUniformBuffers[0].handle, sizeof(SceneData), 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
@@ -864,9 +880,9 @@ void VulkanEngine::createSceneLayout() {
     layoutBuilder.addBinding(6, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
     layoutBuilder.addBinding(7, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
 
-    rt_descriptorSetLayout = layoutBuilder.build(device, VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR);
+    scene_descsriptor_set_layout = layoutBuilder.build(device, VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR);
     mainDeletionQueue.pushFunction([&]() {
-        vkDestroyDescriptorSetLayout(device, rt_descriptorSetLayout, nullptr);
+        vkDestroyDescriptorSetLayout(device, scene_descsriptor_set_layout, nullptr);
     });
 }
 
@@ -1003,6 +1019,8 @@ void VulkanEngine::drawFrame() {
 
 void VulkanEngine::updateScene(uint32_t currentImage) {
     //QuickTimer timer{"Scene Update", true};
+
+    scene->update(swapChainExtent.width, swapChainExtent.height);
 
     static auto startTime = std::chrono::high_resolution_clock::now();
     auto currentTime = std::chrono::high_resolution_clock::now();

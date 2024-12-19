@@ -84,8 +84,7 @@ private:
 
     std::shared_ptr<Scene> scene;
 
-    VkDescriptorSet scene_descriptor_set;
-    VkDescriptorSetLayout rt_descriptorSetLayout;
+
 
     AllocatedBuffer raygenShaderBindingTable;
     AllocatedBuffer missShaderBindingTable;
@@ -99,6 +98,8 @@ private:
     VkSampler defaultSamplerLinear;
     VkSampler defaultSamplerNearest;
 
+    VkDescriptorSet scene_descriptor_set;
+    VkDescriptorSetLayout scene_descsriptor_set_layout;
     std::vector<AllocatedBuffer> sceneUniformBuffers;
     std::vector<void*> sceneUniformBuffersMapped;
 
@@ -123,6 +124,9 @@ private:
     void cleanup();
 
     static void framebufferResizeCallback(GLFWwindow *window, int width, int height);
+    static void keyCallback(GLFWwindow *window, int key, int scancode, int action, int mods);
+    static void mouseCallback(GLFWwindow *window, double xPos, double yPos);
+
     void createInstance();
     bool checkValidationLayerSupport();
     std::vector<const char *> getRequiredExtensions();
@@ -173,6 +177,9 @@ private:
     void createDescriptorAllocator();
     void createCommandBuffers();
     void createSyncObjects();
+
+    void pollSdlEvents();
+
     void drawFrame();
     void cleanupSwapChain();
     void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
