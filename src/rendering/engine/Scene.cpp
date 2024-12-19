@@ -28,7 +28,7 @@ std::shared_ptr<SceneData> Scene::createSceneData() {
     sceneData->sunlightDirection = glm::vec4(sun.direction,sun.intensity);
     sceneData->sunlightColor = glm::vec4(sun.color, 0.0f);
 
-    sceneData->ambientColor = glm::vec4(1.f);
+    sceneData->ambientColor = glm::vec4(0.05f);
 
     return sceneData;
 }
@@ -133,22 +133,38 @@ void CornellBox::initScene(std::shared_ptr<PhongMaterial> phong_material) {
     glm::vec3 diffuse_gray = glm::vec3(0.5f);
     float quad_scale = 5.0f;
 
-    std::shared_ptr<MeshNode> quad = std::make_shared<MeshNode>();
-    quad->localTransform = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 5.0f, -5.0f))
-        * glm::rotate(glm::mat4(1.0f), glm::radians(90.0f), glm::vec3(1, 0, 0))
-        * glm::scale( glm::mat4(1.0f), glm::vec3(quad_scale, 1.0f, quad_scale));
-    quad->worldTransform = glm::mat4{1.0f};
-    quad->children = {};
-    quad->meshAsset = meshes[1];
-    quad->meshMaterial = phong_material->createInstance(
-        diffuse_gray,
-        glm::vec3(0.4f),
-        glm::vec3(0.0f),
-        glm::vec3(0.0f),
-        glm::vec3(0.0f),
-        10.0f);
-    quad->refreshTransform(glm::mat4(1.0f));
-    nodes["Back"] = std::move(quad);
+    std::shared_ptr<MeshNode> quad = nullptr;
+    for (int i = 0; i < 10; ++i) {
+        for (int j = 0; j < 10; ++j) {
+            quad = std::make_shared<MeshNode>();
+            quad->localTransform = glm::translate(glm::mat4(1.0f), glm::vec3(-4.5f + i, j + 0.5f, -5.0f))
+                * glm::rotate(glm::mat4(1.0f), glm::radians(90.0f), glm::vec3(1, 0, 0))
+                * glm::scale( glm::mat4(1.0f), glm::vec3(quad_scale / 10, 1.0f, quad_scale / 10));
+            quad->worldTransform = glm::mat4{1.0f};
+            quad->children = {};
+            quad->meshAsset = meshes[1];
+            if ((i % 2 == 0 && j % 2 == 0) || (i % 2 == 1 && j % 2 == 1)) {
+                quad->meshMaterial = phong_material->createInstance(
+                glm::vec3(0.0f, 0.0f, 0.5f),
+                glm::vec3(0.4f),
+                glm::vec3(0.0f, 0.0f, 0.02f),
+                glm::vec3(0.0f),
+                glm::vec3(0.0f),
+                10.0f);
+            } else {
+                quad->meshMaterial = phong_material->createInstance(
+                diffuse_gray,
+                glm::vec3(0.4f),
+                glm::vec3(0.0f),
+                glm::vec3(0.0f),
+                glm::vec3(0.0f),
+                10.0f);
+            }
+            quad->refreshTransform(glm::mat4(1.0f));
+            int index = i * 10 + j;
+            nodes["Back" + std::to_string(index)] = std::move(quad);
+        }
+    }
 
     quad = std::make_shared<MeshNode>();
     quad->localTransform = glm::scale( glm::mat4(1.0f), glm::vec3(quad_scale, 1.0f, quad_scale));
@@ -158,7 +174,7 @@ void CornellBox::initScene(std::shared_ptr<PhongMaterial> phong_material) {
     quad->meshMaterial = phong_material->createInstance(
         glm::vec3(0.2f),
         glm::vec3(0.0f),
-        glm::vec3(0.0f),
+        glm::vec3(0.02f),
         glm::vec3(0.4f),
         glm::vec3(0.0f),
         1.0f);
@@ -297,10 +313,10 @@ void CornellBox::initScene(std::shared_ptr<PhongMaterial> phong_material) {
             glm::vec3(0.0f),
             std::pow(5.f, i));
         sphere->refreshTransform(glm::mat4(1.0f));
-        nodes["Sphere" + i] = std::move(sphere);
+        nodes["Sphere" + std::to_string(i)] = std::move(sphere);
     }
 
-    pointLights[0] = PointLight(glm::vec3(0, 8.0f, 3), glm::vec3(1, 0, 0), 10);
+    pointLights[0] = PointLight(glm::vec3(0, 8.0f, 3), glm::vec3(1, 0, 0), 20);
     sun = DirectionalLight(glm::vec3(-1,-1,-1), glm::vec3(1.0f), 1.0f);
 }
 

@@ -135,5 +135,5 @@ void main() {
 
     vec3 phong = evaluatePhong(P, N, L, incoming_light, distance_to_light, V, material);
 
-    payload.direct_light = phong + material.reflection * reflection + material.transmission * transmission;
+    payload.direct_light = phong + material.reflection * reflection + material.transmission * transmission + sceneData.ambientColor.xyz * material.diffuse;
 }
