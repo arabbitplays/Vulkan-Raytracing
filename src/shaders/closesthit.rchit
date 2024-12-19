@@ -119,15 +119,17 @@ void main() {
 
     vec3 V = -normalize(gl_WorldRayDirectionEXT);
 
+    int depth = payload.depth;
+
     vec3 reflection = vec3(0.0);
     if (payload.depth < MAX_RECURSION_DEPTH && length(material.reflection) > 0.0) {
-        evaluateReflection(P, N, V, material);
+        evaluateReflection(P, N, V, material, depth);
         reflection = payload.direct_light;
     }
 
     vec3 transmission = vec3(0.0);
-    if (length(material.transmission) > 0.0) {
-        evaluateTransmission(P, N, V, material);
+    if (payload.depth < MAX_RECURSION_DEPTH && length(material.transmission) > 0.0) {
+        handleTransmissiveMaterial(P, N, V, material, depth);
         transmission = payload.direct_light;
     }
 

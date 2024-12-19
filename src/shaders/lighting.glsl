@@ -1,4 +1,5 @@
 #define EPSILON 0.005
+#define FRESNEL true
 
 struct Material {
     vec3 diffuse;
@@ -44,7 +45,7 @@ vec3 evaluatePhong(vec3 P, vec3 N, vec3 L, float incoming_light, float dist_to_l
     return diffuse + specular + ambient;
 }
 
-void evaluateReflection(vec3 P, vec3 N, vec3 V, Material material) {
+void evaluateReflection(vec3 P, vec3 N, vec3 V, Material material, int depth) {
 
     vec3 origin = P + EPSILON * N;
     vec3 direction = reflect(-V, N);
@@ -52,14 +53,14 @@ void evaluateReflection(vec3 P, vec3 N, vec3 V, Material material) {
     float tmin = 0.01;
     float tmax = 10000.0;
 
-    payload.depth++;
+    payload.depth = depth + 1;
+    payload.direct_light = vec3(0.0);
     traceRayEXT(topLevelAS, gl_RayFlagsOpaqueEXT, 0xff, 0, 0, 0, origin, tmin, direction, tmax, 0);
 }
 
-void evaluateTransmission(vec3 P, vec3 N, vec3 V, Material material) {
+void evaluateTransmission(vec3 P, vec3 N, vec3 V, float eta, int depth) {
     float NdotV = dot(N, V);
 
-    float eta = material.eta.x;
     if (NdotV < 0.0) {
         N = -N;
         NdotV = -NdotV;
@@ -79,6 +80,58 @@ void evaluateTransmission(vec3 P, vec3 N, vec3 V, Material material) {
     float tmin = 0.01;
     float tmax = 10000.0;
 
-    payload.depth++;
+    payload.depth = depth + 1;
+    payload.direct_light = vec3(0.0);
     traceRayEXT(topLevelAS, gl_RayFlagsOpaqueEXT, 0xff, 0, 0, 0, origin, tmin, refract_dir, tmax, 0);
+}
+
+float fresnel(vec3 V, vec3 N, float eta) {
+    if (eta == 1.0) {
+        return 0.0;
+    }
+
+    float cosThetaI = dot(V, N);
+    float scale = eta;
+    if (cosThetaI > 0.0) {
+        scale = 1.0 / eta;
+    }
+    float cosTheraTSqr = 1.0 - (1.0 - cosThetaI * cosThetaI) * (scale * scale);
+
+    if (cosTheraTSqr <= 0.0f) {
+        return 1.0f;
+    }
+
+    float absCosThetaI = abs(cosThetaI);
+    float absCosThetaT = sqrt(cosTheraTSqr);
+
+    float Rs = (absCosThetaI - eta * absCosThetaT) / (absCosThetaI + eta * absCosThetaT);
+    float Rp = (eta * absCosThetaI - absCosThetaT) / (eta * absCosThetaI + absCosThetaT);
+
+    return 0.5 * (Rs * Rs + Rp * Rp);
+}
+
+void handleTransmissiveMaterialSingleIOR(vec3 P, vec3 N, vec3 V, float eta, Material material, int depth) {
+    if (FRESNEL) {
+        float F = fresnel(V, N, eta);
+        evaluateReflection(P, N, V, material, depth);
+        vec3 reflection = payload.direct_light;
+        evaluateTransmission(P, N, V, eta, depth);
+        vec3 transmission = payload.direct_light;
+
+        payload.direct_light = F * reflection + (1.0 - F) * transmission;
+    } else {
+        evaluateTransmission(P, N, V, eta, depth);
+    }
+}
+
+void handleTransmissiveMaterial(vec3 P, vec3 N, vec3 V, Material material, int depth) {
+    vec3 result = vec3(0.0);
+    handleTransmissiveMaterialSingleIOR(P, N, V, material.eta.x, material, depth);
+    result.x = payload.direct_light.x;
+    handleTransmissiveMaterialSingleIOR(P, N, V, material.eta.y, material, depth);
+    result.y = payload.direct_light.y;
+    handleTransmissiveMaterialSingleIOR(P, N, V, material.eta.z, material, depth);
+    result.z = payload.direct_light.z;
+
+    payload.direct_light = result;
 }
