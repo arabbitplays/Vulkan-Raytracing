@@ -484,9 +484,6 @@ void VulkanEngine::recreateSwapChain() {
     //createDepthResources();
     createStorageImage();
     scene->update(swapChainExtent.width, swapChainExtent.height);
-    descriptorAllocator.writeImage(1, storageImage.imageView, VK_NULL_HANDLE, VK_IMAGE_LAYOUT_GENERAL, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
-    descriptorAllocator.updateSet(device, scene_descriptor_set);
-    descriptorAllocator.clearWrites();
 }
 
 void VulkanEngine::createSwapChain() {
@@ -856,16 +853,18 @@ void VulkanEngine::createShaderBindingTables() {
 }
 
 void VulkanEngine::createSceneDescriptorSets() {
-    // TODO make this MAX_FRAMES_IN_FLIGHT many
-    scene_descriptor_set = descriptorAllocator.allocate(device, scene_descsriptor_set_layout);
     // Binding 0 is the TLAS added in updateScene
-    descriptorAllocator.writeImage(1, storageImage.imageView, VK_NULL_HANDLE, VK_IMAGE_LAYOUT_GENERAL, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
-    descriptorAllocator.writeBuffer(2, sceneUniformBuffers[0].handle, sizeof(SceneData), 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+
     descriptorAllocator.writeBuffer(3, vertex_buffer.handle, 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
     descriptorAllocator.writeBuffer(4, index_buffer.handle, 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
     descriptorAllocator.writeBuffer(5, geometry_mapping_buffer.handle, 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
-    descriptorAllocator.updateSet(device, scene_descriptor_set);
-    descriptorAllocator.clearWrites();
+
+    for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+        scene_descriptor_sets.push_back(descriptorAllocator.allocate(device, scene_descsriptor_set_layout));
+        descriptorAllocator.updateSet(device, scene_descriptor_sets[i]);
+        descriptorAllocator.clearWrites();
+    }
+
 }
 
 void VulkanEngine::createSceneLayout() {
@@ -1067,13 +1066,14 @@ void VulkanEngine::updateScene(uint32_t currentImage) {
     top_level_acceleration_structure->build();
 
     descriptorAllocator.writeAccelerationStructure(0, top_level_acceleration_structure->getHandle(), VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR);
+    descriptorAllocator.writeImage(1, storageImage.imageView, VK_NULL_HANDLE, VK_IMAGE_LAYOUT_GENERAL, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
+    descriptorAllocator.writeBuffer(2, sceneUniformBuffers[0].handle, sizeof(SceneData), 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
     descriptorAllocator.writeBuffer(6, instance_mapping_buffer.handle, 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
-    descriptorAllocator.updateSet(device, scene_descriptor_set);
+    descriptorAllocator.updateSet(device, scene_descriptor_sets[0]);
     descriptorAllocator.clearWrites();
 
     std::shared_ptr<SceneData> scene_data = scene->createSceneData();
-    SceneData test = *scene_data;
-    memcpy(sceneUniformBuffersMapped[currentImage], &test, sizeof(SceneData));
+    memcpy(sceneUniformBuffersMapped[0], scene_data.get(), sizeof(SceneData));
 }
 
 void VulkanEngine::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex) {
@@ -1106,7 +1106,7 @@ void VulkanEngine::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t i
     VkStridedDeviceAddressRegionKHR callableShaderSbtEntry{};
 
     std::vector<VkDescriptorSet> descriptor_sets{};
-    descriptor_sets.push_back(scene_descriptor_set);
+    descriptor_sets.push_back(scene_descriptor_sets[0]);
     descriptor_sets.push_back(phong_material->materialDescriptorSet);
 
     vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, pipeline.getHandle());

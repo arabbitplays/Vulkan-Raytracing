@@ -44,7 +44,7 @@ void InteractiveCamera::processGlfwMouseEvent(double xPos, double yPos) {
     lastY = yPos;
 
     // Adjust yaw and pitch like in SDL
-    yaw -= xOffset / 200.f;
+    yaw += xOffset / 200.f;
     pitch += yOffset / 200.f;
 
     // Clamp pitch to avoid flipping

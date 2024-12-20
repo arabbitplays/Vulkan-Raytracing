@@ -15,7 +15,7 @@ public:
     InteractiveCamera(glm::mat4 projection) : Camera(glm::mat4(1.0f), projection) {
         velocity = glm::vec3(0.0f);
         pitch = 0.0f;
-        yaw = -90.0f;
+        yaw = 0.0f;
     }
 
     glm::mat4 getView() override;

@@ -98,7 +98,7 @@ private:
     VkSampler defaultSamplerLinear;
     VkSampler defaultSamplerNearest;
 
-    VkDescriptorSet scene_descriptor_set;
+    std::vector<VkDescriptorSet> scene_descriptor_sets{};
     VkDescriptorSetLayout scene_descsriptor_set_layout;
     std::vector<AllocatedBuffer> sceneUniformBuffers;
     std::vector<void*> sceneUniformBuffersMapped;
