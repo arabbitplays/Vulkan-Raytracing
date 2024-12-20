@@ -11,9 +11,11 @@
 struct QuickTimer {
     using clock = std::chrono::high_resolution_clock;
     const char* name;
-    const clock::time_point start;
+    clock::time_point start;
     bool print_on_exit;
-    explicit QuickTimer(const char* name_, bool print_on_exit_ = true) : name(name_), print_on_exit(print_on_exit_) {}
+    explicit QuickTimer(const char* name_, bool print_on_exit_ = true) : name(name_), print_on_exit(print_on_exit_) {
+        start = clock::now();
+    }
 
     ~QuickTimer() {
       if (print_on_exit) {
