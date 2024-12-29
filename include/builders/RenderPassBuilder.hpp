@@ -13,7 +13,7 @@ class RenderPassBuilder {
     VkFormat depthFormat;
 
 public:
-    VkRenderPass createRenderPass(VkDevice device);
+    VkRenderPass createRenderPass(VkDevice device, bool addDepthAttachment = false);
     void setColorAttachmentFormat(VkFormat colorFormat);
     void setDepthFormat(VkFormat depthFormat);
 };

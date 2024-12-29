@@ -16,6 +16,16 @@ void InteractiveCamera::update() {
 
 void InteractiveCamera::processGlfwKeyEvent(int key, int action) {
     if (action == GLFW_PRESS) {
+        if (key == GLFW_KEY_SPACE) {
+            isActive = !isActive;
+        }
+    }
+
+    if (!isActive) {
+        return;
+    }
+
+    if (action == GLFW_PRESS) {
         if (key == GLFW_KEY_W) { velocity.z = -1; }
         if (key == GLFW_KEY_S) { velocity.z = 1; }
         if (key == GLFW_KEY_A) { velocity.x = -1; }
@@ -31,6 +41,10 @@ void InteractiveCamera::processGlfwKeyEvent(int key, int action) {
 }
 
 void InteractiveCamera::processGlfwMouseEvent(double xPos, double yPos) {
+    if (!isActive) {
+        return;
+    }
+
     if (firstMouse) {  // Initialize first frame
         lastX = xPos;
         lastY = yPos;

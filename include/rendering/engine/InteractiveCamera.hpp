@@ -27,6 +27,7 @@ public:
 
     glm::vec3 velocity;
     glm::vec3 position;
+    bool isActive = true;
 
     // Mouse state
     float lastX = 400, lastY = 300;

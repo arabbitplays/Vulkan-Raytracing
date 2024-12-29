@@ -3,7 +3,11 @@
 
 #include <Camera.hpp>
 #include <DescriptorLayoutBuilder.hpp>
+#include <imgui.h>
+#include <imgui_impl_glfw.h>
+#include <imgui_impl_vulkan.h>
 #include <PhongMaterial.hpp>
+#include <RenderPassBuilder.hpp>
 #include <set>
 #include <deps/linmath.h>
 
@@ -75,11 +79,10 @@ void CmdTraceRaysKHR(VkDevice device, VkCommandBuffer commandBuffer, const VkStr
 const uint32_t WIDTH = 800;
 const uint32_t HEIGHT = 600;
 
-const int MAX_FRAMES_IN_FLIGHT = 2;
-
 void VulkanEngine::run() {
     initWindow();
     initVulkan();
+    initGUI();
     mainLoop();
     cleanup();
 }
@@ -114,6 +117,88 @@ void VulkanEngine::mouseCallback(GLFWwindow* window, double xPos, double yPos) {
     if (app->scene != nullptr && app->scene->camera != nullptr) {
         app->scene->camera->processGlfwMouseEvent(xPos, yPos);
     }
+}
+
+// only used as imgui callback
+void checkVulkanResult(VkResult err)
+{
+    if (err == 0)
+        return;
+    throw std::runtime_error("Error: VkResult = " + err);
+}
+
+void VulkanEngine::initGUI() {
+
+    RenderPassBuilder renderPassBuilder;
+    renderPassBuilder.setColorAttachmentFormat(swapChainImageFormat);
+    gui_render_pass = renderPassBuilder.createRenderPass(device);
+    createGuiFrameBuffers();
+
+    mainDeletionQueue.pushFunction([&]() {
+        vkDestroyRenderPass(device, gui_render_pass, nullptr);
+    });
+
+    IMGUI_CHECKVERSION();
+    ImGui::CreateContext();
+    ImGuiIO& io = ImGui::GetIO(); (void)io;
+    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
+
+    ImGui::StyleColorsDark();
+    // ImGui::StyleColorsLight();
+
+    QueueFamilyIndices indices = findQueueFamilies(physicalDevice);
+
+    std::vector<VkDescriptorPoolSize> pool_sizes =
+        {
+            { VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1 },
+        };
+    gui_descriptor_pool = descriptorAllocator.createPool(device, pool_sizes, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT);
+
+    mainDeletionQueue.pushFunction([&]() {
+        vkDestroyDescriptorPool(device, gui_descriptor_pool, nullptr);
+    });
+
+    ImGui_ImplGlfw_InitForVulkan(window, true);
+    ImGui_ImplVulkan_InitInfo initInfo = {};
+    initInfo.Instance = instance;
+    initInfo.PhysicalDevice = physicalDevice;
+    initInfo.Device = device;
+    initInfo.QueueFamily = indices.graphicsFamily.value();
+    initInfo.Queue = graphicsQueue;
+    initInfo.PipelineCache = VK_NULL_HANDLE;
+    initInfo.DescriptorPool = gui_descriptor_pool;
+    initInfo.RenderPass = gui_render_pass;
+    initInfo.Subpass = 0;
+    initInfo.MinImageCount = minImageCount;
+    initInfo.ImageCount = static_cast<uint32_t>(swapChainImages.size());
+    initInfo.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
+    initInfo.Allocator = nullptr;
+    initInfo.CheckVkResultFn = checkVulkanResult;
+    ImGui_ImplVulkan_Init(&initInfo);
+}
+
+void VulkanEngine::initVulkanWindow(ImGui_ImplVulkanH_Window* wd, VkSurfaceKHR surface, int width, int height) {
+    /*wd->Surface = surface;
+    QueueFamilyIndices indices = findQueueFamilies(physicalDevice);
+
+    VkBool32 result;
+    vkGetPhysicalDeviceSurfaceSupportKHR(physicalDevice, indices.graphicsFamily.value(), surface, &result);
+    if (result != VK_TRUE) {
+        throw std::runtime_error("WSI support needed for GUI");
+    }
+
+    // Select Surface Format
+    const VkFormat requestSurfaceImageFormat[] = { VK_FORMAT_B8G8R8A8_UNORM, VK_FORMAT_R8G8B8A8_UNORM, VK_FORMAT_B8G8R8_UNORM, VK_FORMAT_R8G8B8_UNORM };
+    const VkColorSpaceKHR requestSurfaceColorSpace = VK_COLORSPACE_SRGB_NONLINEAR_KHR;
+    wd->SurfaceFormat = ImGui_ImplVulkanH_SelectSurfaceFormat(physicalDevice, wd->Surface, requestSurfaceImageFormat, (size_t)IM_ARRAYSIZE(requestSurfaceImageFormat), requestSurfaceColorSpace);
+
+    // Select Present Mode
+    VkPresentModeKHR present_modes[] = { VK_PRESENT_MODE_FIFO_KHR };
+    wd->PresentMode = ImGui_ImplVulkanH_SelectPresentMode(physicalDevice, wd->Surface, &present_modes[0], IM_ARRAYSIZE(present_modes));
+    //printf("[vulkan] Selected PresentMode = %d\n", wd->PresentMode);
+
+    // Create SwapChain, RenderPass, Framebuffer, etc.
+    ImGui_ImplVulkanH_CreateOrResizeWindow(instance, physicalDevice, device, wd, indices.graphicsFamily.value(), nullptr, width, height, minImageCount);*/
 }
 
 void VulkanEngine::initVulkan() {
@@ -254,11 +339,6 @@ void VulkanEngine::setupDebugMessenger() {
     mainDeletionQueue.pushFunction([&]() {
         DestroyDebugUtilsMessengerEXT(instance, debugMessenger, nullptr);
     });
-
-    auto pAnalytics = new Analytics();
-    analytics = *pAnalytics;
-
-
 }
 
 void VulkanEngine::populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo) {
@@ -481,8 +561,8 @@ void VulkanEngine::recreateSwapChain() {
     cleanupSwapChain();
 
     createSwapChain();
-    //createDepthResources();
     createStorageImage();
+    createGuiFrameBuffers();
     scene->update(swapChainExtent.width, swapChainExtent.height);
 }
 
@@ -591,14 +671,27 @@ void VulkanEngine::createImageViews() {
     }
 }
 
-/*void VulkanEngine::createDescriptorSetLayout() {
+void VulkanEngine::createGuiFrameBuffers() {
+    swapChainFrameBuffers.resize(swapChainImageViews.size());
+    for (size_t i = 0; i < swapChainFrameBuffers.size(); i++) {
+        std::array<VkImageView, 1> attachments {
+            swapChainImageViews[i],
+        };
 
-    VkPushConstantRange range{};
-    range.size = sizeof(ObjectData);
-    range.offset = 0;
-    range.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-    objectDataCostantRange = range;
-}*/
+        VkFramebufferCreateInfo framebufferInfo{};
+        framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+        framebufferInfo.renderPass = gui_render_pass;
+        framebufferInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
+        framebufferInfo.pAttachments = attachments.data();
+        framebufferInfo.width = swapChainExtent.width;
+        framebufferInfo.height = swapChainExtent.height;
+        framebufferInfo.layers = 1;
+
+        if (vkCreateFramebuffer(device, &framebufferInfo, nullptr, &swapChainFrameBuffers[i]) != VK_SUCCESS) {
+            throw std::runtime_error("failed to create framebuffer!");
+        }
+    }
+}
 
 void VulkanEngine::createCommandManager() {
     auto pCommandManager = new CommandManager(device, findQueueFamilies(physicalDevice));
@@ -957,10 +1050,27 @@ void VulkanEngine::mainLoop() {
 void VulkanEngine::drawFrame() {
     vkWaitForFences(device, 1, &inFlightFences[currentFrame], VK_TRUE, UINT64_MAX);
 
-    //analytics.endFrame();
+    bool show_demo_window = true;
+    ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
+
+    ImGui_ImplVulkan_NewFrame();
+    ImGui_ImplGlfw_NewFrame();
+    ImGui::NewFrame();
+
+    if (show_demo_window) {
+        ImGui::ShowDemoWindow(&show_demo_window);
+    }
+
+    ImGui::Render();
+    ImDrawData* draw_data = ImGui::GetDrawData();
+
+    mainWindowData.ClearValue.color.float32[0] = clear_color.x * clear_color.w;
+    mainWindowData.ClearValue.color.float32[1] = clear_color.y * clear_color.w;
+    mainWindowData.ClearValue.color.float32[2] = clear_color.z * clear_color.w;
+    mainWindowData.ClearValue.color.float32[3] = clear_color.w;
+
     uint32_t imageIndex;
     VkResult result = vkAcquireNextImageKHR(device, swapChain, UINT64_MAX, imageAvailableSemaphores[currentFrame], VK_NULL_HANDLE, &imageIndex);
-    //analytics.startFrame();
 
     if (result == VK_ERROR_OUT_OF_DATE_KHR) {
         recreateSwapChain();
@@ -974,7 +1084,7 @@ void VulkanEngine::drawFrame() {
     updateScene(currentFrame);
 
     vkResetCommandBuffer(commandBuffers[currentFrame], 0);
-    recordCommandBuffer(commandBuffers[currentFrame], imageIndex);
+    recordCommandBuffer(commandBuffers[currentFrame], imageIndex, draw_data);
 
     VkSubmitInfo submitInfo{};
     submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -1050,14 +1160,6 @@ void VulkanEngine::updateScene(uint32_t currentImage) {
         top_level_acceleration_structure->addInstance(object.acceleration_structure, object.transform, instance_id++);
     }
 
-    glm::mat4 translation = glm::translate(glm::mat4(1.0f), glm::vec3(1.5f, 0.0f, 0.0f));
-    glm::mat4 scale = glm::scale(glm::mat4(1.0f), glm::vec3(0.5f, 0.5f, 0.5f));
-
-    translation = glm::translate(glm::mat4(1.0f), glm::vec3(-1.0f, -0.5f, 0.0f));
-    scale = glm::scale(glm::mat4(1.0f), glm::vec3(0.8f, 0.8f, 0.8f));
-    rotation = glm::rotate(glm::mat4{1.0f}, glm::radians(-90.f), glm::vec3(0.0f, 0.0f, 1.0f));
-    glm::mat4 rotation2 = glm::rotate(glm::mat4{1.0f}, glm::radians(-90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
-
     if (top_level_acceleration_structure->getHandle() == VK_NULL_HANDLE) {
         top_level_acceleration_structure->addInstanceGeometry();
     } else {
@@ -1076,7 +1178,7 @@ void VulkanEngine::updateScene(uint32_t currentImage) {
     memcpy(sceneUniformBuffersMapped[0], scene_data.get(), sizeof(SceneData));
 }
 
-void VulkanEngine::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex) {
+void VulkanEngine::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex, ImDrawData* gui_draw_data) {
     Pipeline pipeline = *phong_material->pipeline;
 
     VkCommandBufferBeginInfo beginInfo{};
@@ -1152,18 +1254,48 @@ void VulkanEngine::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t i
         VK_ACCESS_TRANSFER_READ_BIT, VK_ACCESS_NONE,
         VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL);
 
+    recordGuiCommands(commandBuffer, gui_draw_data, imageIndex);
+
     if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS) {
         throw std::runtime_error("failed to record command buffer!");
     }
 }
 
+void VulkanEngine::recordGuiCommands(VkCommandBuffer commandBuffer, ImDrawData* gui_draw_data, uint32_t imageIndex) {
+    {
+        std::array<VkClearValue, 1> clearValues = {};
+        clearValues[0].color = {{0.0f, 0.0f, 0.0f, 1.0f}};
+
+        VkRenderPassBeginInfo info = {};
+        info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+        info.renderPass = gui_render_pass;
+        info.framebuffer = swapChainFrameBuffers[imageIndex];
+        info.renderArea.extent = swapChainExtent;
+        info.clearValueCount = static_cast<uint32_t>(clearValues.size());
+        info.pClearValues = clearValues.data();
+        vkCmdBeginRenderPass(commandBuffer, &info, VK_SUBPASS_CONTENTS_INLINE);
+    }
+
+    // Record dear imgui primitives into command buffer
+    ImGui_ImplVulkan_RenderDrawData(gui_draw_data, commandBuffer);
+
+    vkCmdEndRenderPass(commandBuffer);
+}
+
 void VulkanEngine::cleanup() {
+    ImGui_ImplVulkan_Shutdown();
+    ImGui_ImplGlfw_Shutdown();
+    ImGui::DestroyContext();
+
     mainDeletionQueue.flush();
     glfwDestroyWindow(window);
     glfwTerminate();
 }
 
 void VulkanEngine::cleanupSwapChain() {
+    for (auto framebuffer : swapChainFrameBuffers) {
+        vkDestroyFramebuffer(device, framebuffer, nullptr);
+    }
     for (auto imageView : swapChainImageViews) {
         vkDestroyImageView(device, imageView, nullptr);
     }

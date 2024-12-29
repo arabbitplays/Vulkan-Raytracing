@@ -22,6 +22,7 @@ public:
     void clearPools(VkDevice device);
     void destroyPools(VkDevice device);
     VkDescriptorSet allocate(VkDevice device, VkDescriptorSetLayout layout, void* pNext = nullptr);
+    VkDescriptorPool createPool(VkDevice device, std::vector<VkDescriptorPoolSize> pool_sizes, VkDescriptorPoolCreateFlags flags);
 
     void writeBuffer(uint32_t binding, VkBuffer buffer, VkDeviceSize size, uint32_t offset, VkDescriptorType type);
     void writeBuffer(uint32_t binding, VkBuffer buffer, uint32_t offset, VkDescriptorType type);
@@ -29,6 +30,8 @@ public:
     void writeAccelerationStructure(uint32_t binding, const VkAccelerationStructureKHR& accelerationStructure, VkDescriptorType type);
     void updateSet(VkDevice& device, VkDescriptorSet& set);
     void clearWrites();
+
+    VkDescriptorPool getGUIDescriptorPool();
 
 private:
     VkDescriptorPool getPool(VkDevice device);

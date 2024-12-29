@@ -3,7 +3,7 @@
 #extension GL_GOOGLE_include_directive : enable
 #extension GL_EXT_nonuniform_qualifier : enable
 
-#define MAX_RECURSION_DEPTH 2
+#define MAX_RECURSION_DEPTH 4
 
 #include "payload.glsl"
 #include "scene_data.glsl"

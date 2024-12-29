@@ -21,6 +21,7 @@
 #include <stb_image.h>
 #define TINYOBJLOADER_IMPLEMENTATION
 #include <AccelerationStructure.hpp>
+#include <imgui_impl_vulkan.h>
 #include <PhongMaterial.hpp>
 #include <Pipeline.hpp>
 #include <Scene.hpp>
@@ -52,12 +53,18 @@ public:
     VkFormat getDepthFormat();
 
 private:
+    const int MAX_FRAMES_IN_FLIGHT = 2;
+
     GLFWwindow* window;
     VkInstance instance;
     VkSurfaceKHR surface;
     VkDebugUtilsMessengerEXT debugMessenger;
-    Analytics analytics;
     DeletionQueue mainDeletionQueue;
+
+    ImGui_ImplVulkanH_Window mainWindowData;
+    uint32_t minImageCount = MAX_FRAMES_IN_FLIGHT;
+    VkRenderPass gui_render_pass;
+    VkDescriptorPool gui_descriptor_pool;
 
     VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
     VkQueue graphicsQueue, presentQueue;
@@ -127,6 +134,10 @@ private:
     static void keyCallback(GLFWwindow *window, int key, int scancode, int action, int mods);
     static void mouseCallback(GLFWwindow *window, double xPos, double yPos);
 
+    void initGUI();
+
+    void initVulkanWindow(ImGui_ImplVulkanH_Window* wd, VkSurfaceKHR surface, int width, int height);
+
     void createInstance();
     bool checkValidationLayerSupport();
     std::vector<const char *> getRequiredExtensions();
@@ -150,6 +161,8 @@ private:
     VkPresentModeKHR chooseSwapPresentMode(const std::vector<VkPresentModeKHR> &availablePresentModes);
     VkExtent2D chooseSwapExtend(const VkSurfaceCapabilitiesKHR &capabilities);
     void createImageViews();
+
+    void createGuiFrameBuffers();
 
     void createCommandManager();
     void createRessourceBuilder();
@@ -182,7 +195,11 @@ private:
 
     void drawFrame();
     void cleanupSwapChain();
-    void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
+    void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex, ImDrawData* gui_draw_data);
+
+    void recordGuiCommands(VkCommandBuffer commandBuffer, ImDrawData* gui_draw_data, uint32_t imageIndex);
+
+    void drawGuiFrame();
 
     void updateScene(uint32_t currentImage);
 

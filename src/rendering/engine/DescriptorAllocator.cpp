@@ -47,6 +47,23 @@ VkDescriptorPool DescriptorAllocator::createPool(VkDevice device, uint32_t setCo
     return descriptorPool;
 }
 
+VkDescriptorPool DescriptorAllocator::createPool(VkDevice device, std::vector<VkDescriptorPoolSize> pool_sizes, VkDescriptorPoolCreateFlags flags) {
+    VkDescriptorPool descriptorPool = VK_NULL_HANDLE;
+
+    VkDescriptorPoolCreateInfo pool_info = {};
+    pool_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+    pool_info.flags = flags;
+    pool_info.maxSets = 1;
+    pool_info.poolSizeCount = static_cast<uint32_t>(pool_sizes.size());
+    pool_info.pPoolSizes = pool_sizes.data();
+    if (vkCreateDescriptorPool(device, &pool_info, nullptr, &descriptorPool) != VK_SUCCESS) {
+        throw std::runtime_error("failed to create descriptor pool!");
+    };
+
+    return descriptorPool;
+}
+
+
 void DescriptorAllocator::init(VkDevice device, uint32_t initialSetCount, std::span<PoolSizeRatio> poolRatios) {
     ratios.clear();
 
