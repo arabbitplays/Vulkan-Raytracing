@@ -9,7 +9,10 @@
 #include <glm/fwd.hpp>
 
 struct RaytracingOptions {
-    int32_t recursion_depth;
+    int32_t recursion_depth = 3;
+    int32_t shadows = 1;
+    int32_t fresnel = 1;
+    int32_t dispersion = 0;
 };
 
 class OptionsWindow final : public GuiWindow {
@@ -20,6 +23,17 @@ public:
     void createFrame() override;
 
     std::shared_ptr<RaytracingOptions> options;
+
+private:
+    struct ImguiOptions {
+        bool shadows, fresnel, dispersion;
+    };
+
+    ImguiOptions imgui_options {
+        .shadows = true,
+        .fresnel = true,
+        .dispersion = false,
+    };
 
 protected:
 };

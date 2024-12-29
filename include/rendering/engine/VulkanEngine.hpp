@@ -40,8 +40,6 @@
 #include "../../Analytics.hpp"
 #include "DeletionQueue.hpp"
 
-class VulkanEngine;
-
 class VulkanEngine {
 public:
     static constexpr int MAX_FRAMES_IN_FLIGHT = 2;

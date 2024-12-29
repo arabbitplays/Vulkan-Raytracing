@@ -10,8 +10,6 @@
 
 layout(location = 0) rayPayloadInEXT Payload payload;
 
-#include "lighting.glsl"
-
 struct Vertex {
     vec3 position;
     vec3 normal;
@@ -37,10 +35,14 @@ layout(binding = 0, set = 1) readonly buffer MaterialBuffer {
 
 layout(push_constant) uniform PushConstants {
     int recursion_depth;
+    bool shadows;
+    bool fresnel;
+    bool dispersion;
 } options;
 
 hitAttributeEXT vec3 attribs;
 
+#include "lighting.glsl"
 
 Vertex getVertex(uint vertexOffset, uint index)
 {
