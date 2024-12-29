@@ -10,15 +10,28 @@ void OptionsWindow::createFrame() {
     ImGui::SetNextWindowSize(ImVec2(400, 300), ImGuiCond_Once);
     if (show_window) {
         ImGui::Begin("Main Window", &show_window);
-        ImGui::SliderInt("Recursion depth", &options->recursion_depth, 0, 5);
+
+        const char* items[] = { "Cornell Box", "Plane" };
+        if (ImGui::Combo("Select an option", &imgui_options.currentScene, items, IM_ARRAYSIZE(items))) {
+            switch (imgui_options.currentScene) {
+                case 0:
+                    renderer_options->scene_type = SceneType::CORNELL_BOX;
+                    break;
+                case 1:
+                    renderer_options->scene_type = SceneType::PLANE;
+                    break;
+            }
+        }
+
+        ImGui::SliderInt("Recursion depth", &raytracing_options->recursion_depth, 0, 5);
         if (ImGui::Checkbox("Shadows", &imgui_options.shadows)) {
-            options->shadows = imgui_options.shadows ? 1 : 0;
+            raytracing_options->shadows = imgui_options.shadows ? 1 : 0;
         }
         if (ImGui::Checkbox("Fresnel", &imgui_options.fresnel)) {
-            options->fresnel = imgui_options.fresnel ? 1 : 0;
+            raytracing_options->fresnel = imgui_options.fresnel ? 1 : 0;
         }
         if (ImGui::Checkbox("Dispersion", &imgui_options.dispersion)) {
-            options->dispersion = imgui_options.dispersion ? 1 : 0;
+            raytracing_options->dispersion = imgui_options.dispersion ? 1 : 0;
         }
         ImGui::End();
     }

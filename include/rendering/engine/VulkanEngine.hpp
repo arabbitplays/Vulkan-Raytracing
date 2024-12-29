@@ -37,7 +37,6 @@
 #include "../../util/VulkanUtil.hpp"
 #include "../IRenderable.hpp"
 #include "../nodes/Node.hpp"
-#include "../../Analytics.hpp"
 #include "DeletionQueue.hpp"
 
 class VulkanEngine {
@@ -78,6 +77,7 @@ private:
 
     DrawContext mainDrawContext;
     std::shared_ptr<RaytracingOptions> raytracing_options;
+    std::shared_ptr<RendererOptions> renderer_options;
 
     VkPhysicalDeviceRayTracingPipelinePropertiesKHR raytracingProperties{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_PROPERTIES_KHR};
 

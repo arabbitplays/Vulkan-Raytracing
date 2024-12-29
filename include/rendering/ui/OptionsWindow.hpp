@@ -15,18 +15,30 @@ struct RaytracingOptions {
     int32_t dispersion = 0;
 };
 
+enum SceneType {
+    CORNELL_BOX,
+    PLANE,
+};
+
+struct RendererOptions {
+    SceneType scene_type = CORNELL_BOX;
+};
+
 class OptionsWindow final : public GuiWindow {
 public:
     OptionsWindow() : GuiWindow() {}
-    explicit OptionsWindow(const std::shared_ptr<RaytracingOptions>& options) : GuiWindow(), options(options) {}
+    explicit OptionsWindow(const std::shared_ptr<RaytracingOptions>& raytracing_options, std::shared_ptr<RendererOptions>& renderer_options)
+        : GuiWindow(), raytracing_options(raytracing_options), renderer_options(renderer_options) {}
 
     void createFrame() override;
 
-    std::shared_ptr<RaytracingOptions> options;
+    std::shared_ptr<RaytracingOptions> raytracing_options;
+    std::shared_ptr<RendererOptions> renderer_options;
 
 private:
     struct ImguiOptions {
         bool shadows, fresnel, dispersion;
+        int currentScene;
     };
 
     ImguiOptions imgui_options {

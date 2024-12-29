@@ -12,7 +12,6 @@
 #include <deps/linmath.h>
 
 #include "../nodes/MeshNode.hpp"
-#include "../../Analytics.hpp"
 
 #include "miss.rmiss.spv.h"
 #include "shadow_miss.rmiss.spv.h"
@@ -130,7 +129,9 @@ void VulkanEngine::initGui() {
     });
 
     raytracing_options = std::make_shared<RaytracingOptions>();
-    guiManager->addWindow(std::make_shared<OptionsWindow>(raytracing_options));
+    renderer_options = std::make_shared<RendererOptions>();
+
+    guiManager->addWindow(std::make_shared<OptionsWindow>(raytracing_options, renderer_options));
 }
 
 void VulkanEngine::initVulkan() {
@@ -618,8 +619,16 @@ void VulkanEngine::createScene() {
     QuickTimer timer{"Scene Creation", true};
     mesh_builder = std::make_shared<MeshAssetBuilder>(device, ressourceBuilder);
 
-    //scene = std::make_shared<PlaneScene>(mesh_builder, swapChainExtent.width, swapChainExtent.height, phong_material);
-    scene = std::make_shared<CornellBox>(mesh_builder, ressourceBuilder, swapchain->extent.width, swapchain->extent.height, phong_material);
+    /*switch (renderer_options->scene_type) {
+        case SceneType::CORNELL_BOX:
+            scene = std::make_shared<CornellBox>(mesh_builder, ressourceBuilder, swapchain->extent.width, swapchain->extent.height, phong_material);
+            break;
+        case SceneType::PLANE:
+            scene = std::make_shared<PlaneScene>(mesh_builder, ressourceBuilder, swapchain->extent.width, swapchain->extent.height, phong_material);
+            break;
+    }*/
+    scene = std::make_shared<PlaneScene>(mesh_builder, ressourceBuilder, swapchain->extent.width, swapchain->extent.height, phong_material);
+
     mainDeletionQueue.pushFunction([&]() {
         scene->clearRessources();
     });

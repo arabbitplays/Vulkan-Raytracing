@@ -9,6 +9,7 @@ project('Raytracing',
 incdirs = [
     include_directories('include'),
     include_directories('include/builders'),
+    include_directories('include/rendering/camera'),
     include_directories('include/rendering/engine'),
     include_directories('include/rendering/nodes'),
     include_directories('include/rendering/ressources'),

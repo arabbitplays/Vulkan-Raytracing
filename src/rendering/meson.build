@@ -1,3 +1,4 @@
+subdir('camera')
 subdir('engine')
 subdir('nodes')
 subdir('ressources')
