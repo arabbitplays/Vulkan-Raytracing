@@ -33,8 +33,6 @@ GuiManager::GuiManager(VkDevice device, VkPhysicalDevice physical_device, GLFWwi
     });
 
     initImGui(physical_device, window, instance, grafics_queue_family, grafics_queue);
-
-    gui_windows.push_back(std::make_shared<OptionsWindow>());
 }
 
 void GuiManager::createRenderPass(VkFormat image_format) {
@@ -103,7 +101,12 @@ void GuiManager::initImGui(VkPhysicalDevice physical_device, GLFWwindow* window,
     ImGui_ImplVulkan_Init(&initInfo);
 }
 
-void GuiManager::updateWindow(std::shared_ptr<Swapchain> swapchain) {
+void GuiManager::addWindow(std::shared_ptr<GuiWindow> window) {
+    gui_windows.push_back(window);
+}
+
+
+void GuiManager::updateWindows(std::shared_ptr<Swapchain> swapchain) {
     for (auto framebuffer : frame_buffers) {
         vkDestroyFramebuffer(device, framebuffer, nullptr);
     }

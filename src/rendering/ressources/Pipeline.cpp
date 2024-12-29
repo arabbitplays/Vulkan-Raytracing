@@ -20,6 +20,8 @@ VkResult CreateRayTracingPipelinesKHR(VkDevice device, VkDeferredOperationKHR de
 // --------------------------------------------------------------------------------------------------------------------------
 
 void Pipeline::build(VkDevice& device) {
+    pipelineLayoutInfo.pushConstantRangeCount = static_cast<uint32_t>(pushConstants.size());
+    pipelineLayoutInfo.pPushConstantRanges = pushConstants.data();
     if (vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &layout) != VK_SUCCESS) {
         throw std::runtime_error("failed to create pipeline layout!");
     }
@@ -67,10 +69,20 @@ void Pipeline::setDescriptorSetLayouts(std::vector<VkDescriptorSetLayout>& descr
     pipelineLayoutInfo.pSetLayouts = descriptorSetLayouts.data();
 }
 
+void Pipeline::addPushConstant(uint32_t size, VkShaderStageFlagBits shaderStage) {
+    VkPushConstantRange pushConstantRange = {};
+    pushConstantRange.stageFlags = shaderStage;
+    pushConstantRange.offset = 0;
+    pushConstantRange.size = size;
+
+    pushConstants.push_back(pushConstantRange);
+}
+
 void Pipeline::clear() {
     pipelineLayoutInfo = { .sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO };
     shader_stages.clear();
     shader_groups.clear();
+    pushConstants.clear();
 }
 
 void Pipeline::destroy(VkDevice device) {

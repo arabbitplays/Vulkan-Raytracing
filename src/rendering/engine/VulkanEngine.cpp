@@ -128,6 +128,9 @@ void VulkanEngine::initGui() {
     mainDeletionQueue.pushFunction([&]() {
         guiManager->destroy();
     });
+
+    raytracing_options = std::make_shared<RaytracingOptions>();
+    guiManager->addWindow(std::make_shared<OptionsWindow>(raytracing_options));
 }
 
 void VulkanEngine::initVulkan() {
@@ -885,7 +888,7 @@ void VulkanEngine::refreshAfterResize() {
     swapchain->recreate();
     cleanupStorageImages();
     createStorageImages();
-    guiManager->updateWindow(swapchain);
+    guiManager->updateWindows(swapchain);
     scene->update(swapchain->extent.width, swapchain->extent.height);
 }
 
@@ -978,6 +981,8 @@ void VulkanEngine::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t i
     vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, pipeline.getLayoutHandle(),
         0, static_cast<uint32_t>(descriptor_sets.size()), descriptor_sets.data(),
         0, nullptr);
+
+    vkCmdPushConstants(commandBuffer, pipeline.getLayoutHandle(), VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR, 0, sizeof(RaytracingOptions), raytracing_options.get());
 
     CmdTraceRaysKHR(
         device,

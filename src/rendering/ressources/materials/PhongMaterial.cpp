@@ -5,6 +5,7 @@
 #include "PhongMaterial.hpp"
 
 #include <DescriptorLayoutBuilder.hpp>
+#include <OptionsWindow.hpp>
 #include <VulkanUtil.hpp>
 #include <glm/detail/type_mat4x3.hpp>
 
@@ -26,6 +27,8 @@ void PhongMaterial::buildPipelines(VkDescriptorSetLayout sceneLayout) {
 
     std::vector<VkDescriptorSetLayout> descriptorSetLayouts{sceneLayout, materialLayout};
     pipeline->setDescriptorSetLayouts(descriptorSetLayouts);
+
+    pipeline->addPushConstant(sizeof(RaytracingOptions), VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR);
 
     VkShaderModule raygenShaderModule = VulkanUtil::createShaderModule(device, oschd_raygen_rgen_spv_size(), oschd_raygen_rgen_spv());
     VkShaderModule missShaderModule = VulkanUtil::createShaderModule(device, oschd_miss_rmiss_spv_size(), oschd_miss_rmiss_spv());

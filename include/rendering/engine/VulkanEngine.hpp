@@ -79,14 +79,13 @@ private:
     std::shared_ptr<AccelerationStructure> top_level_acceleration_structure;
 
     DrawContext mainDrawContext;
+    std::shared_ptr<RaytracingOptions> raytracing_options;
 
     VkPhysicalDeviceRayTracingPipelinePropertiesKHR raytracingProperties{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_PROPERTIES_KHR};
 
     std::vector<AllocatedImage> storageImages;
 
     std::shared_ptr<Scene> scene;
-
-
 
     AllocatedBuffer raygenShaderBindingTable;
     AllocatedBuffer missShaderBindingTable;

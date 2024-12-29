@@ -5,19 +5,21 @@
 #ifndef OPTIONSUI_HPP
 #define OPTIONSUI_HPP
 #include <GuiWindow.hpp>
+#include <bits/shared_ptr.h>
 #include <glm/fwd.hpp>
 
 struct RaytracingOptions {
     int32_t recursion_depth;
 };
 
-class OptionsWindow : public GuiWindow {
+class OptionsWindow final : public GuiWindow {
 public:
     OptionsWindow() : GuiWindow() {}
+    explicit OptionsWindow(const std::shared_ptr<RaytracingOptions>& options) : GuiWindow(), options(options) {}
 
     void createFrame() override;
 
-    RaytracingOptions options{};
+    std::shared_ptr<RaytracingOptions> options;
 
 protected:
 };

@@ -35,6 +35,10 @@ layout(binding = 0, set = 1) readonly buffer MaterialBuffer {
     vec4[] data;
 } material_buffer;
 
+layout(push_constant) uniform PushConstants {
+    int recursion_depth;
+} options;
+
 hitAttributeEXT vec3 attribs;
 
 
@@ -122,13 +126,13 @@ void main() {
     int depth = payload.depth;
 
     vec3 reflection = vec3(0.0);
-    if (payload.depth < MAX_RECURSION_DEPTH && length(material.reflection) > 0.0) {
+    if (payload.depth < options.recursion_depth && length(material.reflection) > 0.0) {
         evaluateReflection(P, N, V, material, depth);
         reflection = payload.direct_light;
     }
 
     vec3 transmission = vec3(0.0);
-    if (payload.depth < MAX_RECURSION_DEPTH && length(material.transmission) > 0.0) {
+    if (payload.depth < options.recursion_depth && length(material.transmission) > 0.0) {
         handleTransmissiveMaterial(P, N, V, material, depth);
         transmission = payload.direct_light;
     }
