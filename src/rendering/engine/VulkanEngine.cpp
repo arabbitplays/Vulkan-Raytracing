@@ -525,28 +525,6 @@ bool VulkanEngine::hasStencilComponent(VkFormat format) {
     return format == VK_FORMAT_D32_SFLOAT_S8_UINT || format == VK_FORMAT_D24_UNORM_S8_UINT;
 }
 
-AllocatedImage VulkanEngine::loadTextureImage(std::string path) {
-    int texWidth, texHeight, texChannels;
-    stbi_uc* pixels = stbi_load(path.c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
-    VkDeviceSize imageSize = texWidth * texHeight * 4;
-
-    if (!pixels) {
-        throw std::runtime_error("failed to load texture image!");
-    }
-
-    AllocatedImage textureImage = ressourceBuilder.createImage(pixels, {static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight), 1},
-                                                VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL,
-                                                VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_ASPECT_COLOR_BIT);
-
-    stbi_image_free(pixels);
-
-    mainDeletionQueue.pushFunction([=, this]() {
-        ressourceBuilder.destroyImage(textureImage);
-    });
-
-    return textureImage;
-}
-
 void VulkanEngine::initDefaultResources() {
     createDefaultTextures();
     createDefaultSamplers();
@@ -641,7 +619,7 @@ void VulkanEngine::createScene() {
     mesh_builder = std::make_shared<MeshAssetBuilder>(device, ressourceBuilder);
 
     //scene = std::make_shared<PlaneScene>(mesh_builder, swapChainExtent.width, swapChainExtent.height, phong_material);
-    scene = std::make_shared<CornellBox>(mesh_builder, swapchain->extent.width, swapchain->extent.height, phong_material);
+    scene = std::make_shared<CornellBox>(mesh_builder, ressourceBuilder, swapchain->extent.width, swapchain->extent.height, phong_material);
     mainDeletionQueue.pushFunction([&]() {
         scene->clearRessources();
     });
@@ -722,11 +700,15 @@ void VulkanEngine::createShaderBindingTables() {
 }
 
 void VulkanEngine::createSceneDescriptorSets() {
-    // Binding 0 is the TLAS added in updateScene
-
     descriptorAllocator.writeBuffer(3, vertex_buffer.handle, 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
     descriptorAllocator.writeBuffer(4, index_buffer.handle, 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
     descriptorAllocator.writeBuffer(5, geometry_mapping_buffer.handle, 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+
+    std::vector<VkImageView> views{};
+    for (uint32_t i = 0; i < 6; i++) {
+        views.push_back(scene->environment_map[i].imageView);
+    }
+    descriptorAllocator.writeImages(7, views, defaultSamplerLinear, VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
 
     for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
         scene_descriptor_sets.push_back(descriptorAllocator.allocate(device, scene_descsriptor_set_layout));
@@ -746,8 +728,9 @@ void VulkanEngine::createSceneLayout() {
     layoutBuilder.addBinding(4, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
     layoutBuilder.addBinding(5, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
     layoutBuilder.addBinding(6, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+    layoutBuilder.addBinding(7, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 6); // env map
 
-    scene_descsriptor_set_layout = layoutBuilder.build(device, VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR);
+    scene_descsriptor_set_layout = layoutBuilder.build(device, VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR | VK_SHADER_STAGE_MISS_BIT_KHR);
     mainDeletionQueue.pushFunction([&]() {
         vkDestroyDescriptorSetLayout(device, scene_descsriptor_set_layout, nullptr);
     });

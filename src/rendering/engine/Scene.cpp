@@ -330,6 +330,19 @@ void CornellBox::initScene(std::shared_ptr<PhongMaterial> phong_material) {
 
     pointLights[0] = PointLight(glm::vec3(0, 8.0f, 3), glm::vec3(1, 0, 0), 20);
     sun = DirectionalLight(glm::vec3(-1,-1,-1), glm::vec3(1.0f), 1.0f);
+
+    environment_map[0] = ressource_builder.loadTextureImage("../ressources/textures/environmentMaps/posx.jpg");
+    environment_map[1] = ressource_builder.loadTextureImage("../ressources/textures/environmentMaps/negx.jpg");
+    environment_map[2] = ressource_builder.loadTextureImage("../ressources/textures/environmentMaps/posy.jpg");
+    environment_map[3] = ressource_builder.loadTextureImage("../ressources/textures/environmentMaps/negy.jpg");
+    environment_map[4] = ressource_builder.loadTextureImage("../ressources/textures/environmentMaps/posz.jpg");
+    environment_map[5] = ressource_builder.loadTextureImage("../ressources/textures/environmentMaps/negz.jpg");
+
+    deletion_queue.pushFunction([&] () {
+        for (auto image : environment_map) {
+            ressource_builder.destroyImage(image);
+        }
+    });
 }
 
 void CornellBox::update(uint32_t image_width, uint32_t image_height) {

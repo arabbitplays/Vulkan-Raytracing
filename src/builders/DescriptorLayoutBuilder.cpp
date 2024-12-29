@@ -5,10 +5,10 @@
 #include <stdexcept>
 #include "DescriptorLayoutBuilder.hpp"
 
-void DescriptorLayoutBuilder::addBinding(uint32_t binding, VkDescriptorType type) {
+void DescriptorLayoutBuilder::addBinding(uint32_t binding, VkDescriptorType type, uint32_t descriptor_count) {
     VkDescriptorSetLayoutBinding layoutBinding{};
     layoutBinding.binding = binding;
-    layoutBinding.descriptorCount = 1;
+    layoutBinding.descriptorCount = descriptor_count;
     layoutBinding.descriptorType = type;
     layoutBinding.pImmutableSamplers = nullptr;
 

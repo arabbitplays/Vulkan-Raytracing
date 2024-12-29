@@ -6,6 +6,7 @@
 #include "RessourceBuilder.hpp"
 
 #include <cstring>
+#include <stb_image.h>
 #include <glm/vector_relational.hpp>
 
 VkDeviceAddress GetBufferDeviceAddressKHR(VkDevice device, const VkBufferDeviceAddressInfoKHR* address_info) {
@@ -174,6 +175,7 @@ AllocatedImage RessourceBuilder::createImage(void* data, VkExtent3D extent, VkFo
 
     AllocatedImage image = createImage(extent, format, tiling, VK_BUFFER_USAGE_2_TRANSFER_DST_BIT_KHR | usage, aspectFlags);
 
+    // TODO weird shader stages
     transitionImageLayout(image.image, VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
         VK_ACCESS_NONE, VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
     copyBufferToImage(stagingBuffer.handle, image.image, extent);
@@ -182,6 +184,23 @@ AllocatedImage RessourceBuilder::createImage(void* data, VkExtent3D extent, VkFo
 
     destroyBuffer(stagingBuffer);
     return image;
+}
+
+AllocatedImage RessourceBuilder::loadTextureImage(std::string path) {
+    int texWidth, texHeight, texChannels;
+    stbi_uc* pixels = stbi_load(path.c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
+
+    if (!pixels) {
+        throw std::runtime_error("failed to load texture image!");
+    }
+
+    AllocatedImage textureImage = createImage(pixels, {static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight), 1},
+                                                VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL,
+                                                VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_ASPECT_COLOR_BIT);
+
+    stbi_image_free(pixels);
+
+    return textureImage;
 }
 
 void RessourceBuilder::transitionImageLayout(VkCommandBuffer commandBuffer, VkImage image,
