@@ -137,7 +137,6 @@ private:
     void pickPhysicalDevice();
     bool isDeviceSuitable(VkPhysicalDevice device);
     bool checkDeviceExtensionSupport(VkPhysicalDevice device);
-    QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device);
 
     void createLogicalDevice();
     void createImageViews();

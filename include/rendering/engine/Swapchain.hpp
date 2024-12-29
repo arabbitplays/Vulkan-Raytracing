@@ -25,9 +25,6 @@ public:
     };
     static SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice device, VkSurfaceKHR surface);
     void recreate();
-
-    QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device);
-
     void destroy();
 
     VkDevice device;

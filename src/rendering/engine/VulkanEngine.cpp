@@ -119,7 +119,7 @@ void VulkanEngine::mouseCallback(GLFWwindow* window, double xPos, double yPos) {
 }
 
 void VulkanEngine::initGui() {
-    QueueFamilyIndices indices = findQueueFamilies(physicalDevice);
+    QueueFamilyIndices indices = VulkanUtil::findQueueFamilies(physicalDevice, surface);
     guiManager = std::make_shared<GuiManager    >(device, physicalDevice, window, instance, descriptorAllocator,
         swapchain, indices.graphicsFamily.value(),
         graphicsQueue);
@@ -342,7 +342,7 @@ bool VulkanEngine::isDeviceSuitable(VkPhysicalDevice device) {
     // implement device checks here
 
     bool extensionsSupported = checkDeviceExtensionSupport(device);
-    QueueFamilyIndices indices = findQueueFamilies(device);
+    QueueFamilyIndices indices = VulkanUtil::findQueueFamilies(device, surface);
 
     bool swapChainAdequate = false;
     if (extensionsSupported) {
@@ -369,37 +369,8 @@ bool VulkanEngine::checkDeviceExtensionSupport(VkPhysicalDevice device) {
     return requiredExtensions.empty();
 }
 
-QueueFamilyIndices VulkanEngine::findQueueFamilies(VkPhysicalDevice device) {
-    QueueFamilyIndices indices;
-
-    uint32_t queueFamilyCount = 0;
-    vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, nullptr);
-    std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyCount);
-    vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, queueFamilies.data());
-
-    int i = 0;
-    for(const auto& queueFamily : queueFamilies) {
-        if (queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT) {
-            indices.graphicsFamily = i;
-        }
-
-        VkBool32 presentSupport = false;
-        vkGetPhysicalDeviceSurfaceSupportKHR(device, i, surface, &presentSupport);
-        if (presentSupport) {
-            indices.presentFamily = i;
-        }
-
-        if (indices.isComplete()) {
-            break;
-        }
-
-        i++;
-    }
-    return indices;
-}
-
 void VulkanEngine::createLogicalDevice() {
-    QueueFamilyIndices indices = findQueueFamilies(physicalDevice);
+    QueueFamilyIndices indices = VulkanUtil::findQueueFamilies(physicalDevice, surface);
 
     std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
     // so no family is created multiple times if it covers multiple types
@@ -461,7 +432,7 @@ void VulkanEngine::createLogicalDevice() {
 }
 
 void VulkanEngine::createCommandManager() {
-    auto pCommandManager = new CommandManager(device, findQueueFamilies(physicalDevice));
+    auto pCommandManager = new CommandManager(device, VulkanUtil::findQueueFamilies(physicalDevice, surface));
     commandManager = *pCommandManager;
 
     mainDeletionQueue.pushFunction([&]() {
