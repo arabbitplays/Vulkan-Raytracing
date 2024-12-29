@@ -82,7 +82,7 @@ const uint32_t HEIGHT = 600;
 void VulkanEngine::run() {
     initWindow();
     initVulkan();
-    initGUI();
+    initGui();
     mainLoop();
     cleanup();
 }
@@ -119,62 +119,15 @@ void VulkanEngine::mouseCallback(GLFWwindow* window, double xPos, double yPos) {
     }
 }
 
-// only used as imgui callback
-void checkVulkanResult(VkResult err)
-{
-    if (err == 0)
-        return;
-    throw std::runtime_error("Error: VkResult = " + err);
-}
-
-void VulkanEngine::initGUI() {
-
-    RenderPassBuilder renderPassBuilder;
-    renderPassBuilder.setColorAttachmentFormat(swapChainImageFormat);
-    gui_render_pass = renderPassBuilder.createRenderPass(device);
-    createGuiFrameBuffers();
-
-    mainDeletionQueue.pushFunction([&]() {
-        vkDestroyRenderPass(device, gui_render_pass, nullptr);
-    });
-
-    IMGUI_CHECKVERSION();
-    ImGui::CreateContext();
-    ImGuiIO& io = ImGui::GetIO(); (void)io;
-    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
-
-    ImGui::StyleColorsDark();
-    // ImGui::StyleColorsLight();
-
+void VulkanEngine::initGui() {
     QueueFamilyIndices indices = findQueueFamilies(physicalDevice);
-
-    std::vector<VkDescriptorPoolSize> pool_sizes =
-        {
-            { VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1 },
-        };
-    gui_descriptor_pool = descriptorAllocator.createPool(device, pool_sizes, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT);
+    guiWindow = std::make_shared<GuiWindow>(device, physicalDevice, window, instance, descriptorAllocator,
+        swapchain, indices.graphicsFamily.value(),
+        graphicsQueue);
 
     mainDeletionQueue.pushFunction([&]() {
-        vkDestroyDescriptorPool(device, gui_descriptor_pool, nullptr);
+        guiWindow->destroy();
     });
-
-    ImGui_ImplGlfw_InitForVulkan(window, true);
-    ImGui_ImplVulkan_InitInfo initInfo = {};
-    initInfo.Instance = instance;
-    initInfo.PhysicalDevice = physicalDevice;
-    initInfo.Device = device;
-    initInfo.QueueFamily = indices.graphicsFamily.value();
-    initInfo.Queue = graphicsQueue;
-    initInfo.PipelineCache = VK_NULL_HANDLE;
-    initInfo.DescriptorPool = gui_descriptor_pool;
-    initInfo.RenderPass = gui_render_pass;
-    initInfo.Subpass = 0;
-    initInfo.MinImageCount = minImageCount;
-    initInfo.ImageCount = static_cast<uint32_t>(swapChainImages.size());
-    initInfo.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
-    initInfo.Allocator = nullptr;
-    initInfo.CheckVkResultFn = checkVulkanResult;
-    ImGui_ImplVulkan_Init(&initInfo);
 }
 
 void VulkanEngine::initVulkan() {
@@ -538,8 +491,8 @@ void VulkanEngine::recreateSwapChain() {
 
     createSwapChain();
     createStorageImages();
-    createGuiFrameBuffers();
-    scene->update(swapChainExtent.width, swapChainExtent.height);
+    guiWindow->updateWindow(swapchain);
+    scene->update(swapchain->swapChainExtent.width, swapchain->swapChainExtent.height);
 }
 
 void VulkanEngine::createSwapChain() {
@@ -582,16 +535,18 @@ void VulkanEngine::createSwapChain() {
     createInfo.clipped = VK_TRUE;
     createInfo.oldSwapchain = VK_NULL_HANDLE;
 
-    if (vkCreateSwapchainKHR(device, &createInfo, nullptr, &swapChain) != VK_SUCCESS) {
+    swapchain = std::make_shared<SwapChain>();
+
+    if (vkCreateSwapchainKHR(device, &createInfo, nullptr, &swapchain->handle) != VK_SUCCESS) {
         throw std::runtime_error("failed to create swap chain!");
     }
 
-    vkGetSwapchainImagesKHR(device, swapChain, &imageCount, nullptr);
-    swapChainImages.resize(imageCount);
-    vkGetSwapchainImagesKHR(device, swapChain, &imageCount, swapChainImages.data());
+    vkGetSwapchainImagesKHR(device, swapchain->handle, &imageCount, nullptr);
+    swapchain->swapChainImages.resize(imageCount);
+    vkGetSwapchainImagesKHR(device, swapchain->handle, &imageCount, swapchain->swapChainImages.data());
 
-    swapChainImageFormat = surfaceFormat.format;
-    swapChainExtent = extent;
+    swapchain->swapChainImageFormat = surfaceFormat.format;
+    swapchain->swapChainExtent = extent;
 
     createImageViews();
 }
@@ -641,31 +596,9 @@ VkExtent2D VulkanEngine::chooseSwapExtend(const VkSurfaceCapabilitiesKHR& capabi
 }
 
 void VulkanEngine::createImageViews() {
-    swapChainImageViews.resize(swapChainImages.size());
-    for (size_t i = 0; i < swapChainImageViews.size(); i++) {
-        swapChainImageViews[i] = ressourceBuilder.createImageView(swapChainImages[i], swapChainImageFormat, VK_IMAGE_ASPECT_COLOR_BIT);
-    }
-}
-
-void VulkanEngine::createGuiFrameBuffers() {
-    swapChainFrameBuffers.resize(swapChainImageViews.size());
-    for (size_t i = 0; i < swapChainFrameBuffers.size(); i++) {
-        std::array<VkImageView, 1> attachments {
-            swapChainImageViews[i],
-        };
-
-        VkFramebufferCreateInfo framebufferInfo{};
-        framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-        framebufferInfo.renderPass = gui_render_pass;
-        framebufferInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
-        framebufferInfo.pAttachments = attachments.data();
-        framebufferInfo.width = swapChainExtent.width;
-        framebufferInfo.height = swapChainExtent.height;
-        framebufferInfo.layers = 1;
-
-        if (vkCreateFramebuffer(device, &framebufferInfo, nullptr, &swapChainFrameBuffers[i]) != VK_SUCCESS) {
-            throw std::runtime_error("failed to create framebuffer!");
-        }
+    swapchain->swapChainImageViews.resize(swapchain->swapChainImages.size());
+    for (size_t i = 0; i < swapchain->swapChainImageViews.size(); i++) {
+        swapchain->swapChainImageViews[i] = ressourceBuilder.createImageView(swapchain->swapChainImages[i], swapchain->swapChainImageFormat, VK_IMAGE_ASPECT_COLOR_BIT);
     }
 }
 
@@ -701,7 +634,7 @@ void VulkanEngine::createDescriptorAllocator() {
 void VulkanEngine::createDepthResources() {
     VkFormat depthFormat = findDepthFormat();
 
-    depthImage = ressourceBuilder.createImage({swapChainExtent.width, swapChainExtent.height, 1}, depthFormat,
+    depthImage = ressourceBuilder.createImage({swapchain->swapChainExtent.width, swapchain->swapChainExtent.height, 1}, depthFormat,
                                               VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_IMAGE_ASPECT_DEPTH_BIT);
 
     mainDeletionQueue.pushFunction([&]() {
@@ -829,7 +762,7 @@ void VulkanEngine::createStorageImages() {
     storageImages.resize(MAX_FRAMES_IN_FLIGHT);
     for (uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
         storageImages[i] = ressourceBuilder.createImage(
-            VkExtent3D{swapChainExtent.width, swapChainExtent.height, 1},
+            VkExtent3D{swapchain->swapChainExtent.width, swapchain->swapChainExtent.height, 1},
             VK_FORMAT_B8G8R8A8_UNORM, VK_IMAGE_TILING_OPTIMAL,
             VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_STORAGE_BIT,
             VK_IMAGE_ASPECT_COLOR_BIT);
@@ -844,7 +777,7 @@ void VulkanEngine::createScene() {
     mesh_builder = std::make_shared<MeshAssetBuilder>(device, ressourceBuilder);
 
     //scene = std::make_shared<PlaneScene>(mesh_builder, swapChainExtent.width, swapChainExtent.height, phong_material);
-    scene = std::make_shared<CornellBox>(mesh_builder, swapChainExtent.width, swapChainExtent.height, phong_material);
+    scene = std::make_shared<CornellBox>(mesh_builder, swapchain->swapChainExtent.width, swapchain->swapChainExtent.height, phong_material);
     mainDeletionQueue.pushFunction([&]() {
         scene->clearRessources();
     });
@@ -1042,13 +975,8 @@ void VulkanEngine::drawFrame() {
     ImGui::Render();
     ImDrawData* draw_data = ImGui::GetDrawData();
 
-    mainWindowData.ClearValue.color.float32[0] = clear_color.x * clear_color.w;
-    mainWindowData.ClearValue.color.float32[1] = clear_color.y * clear_color.w;
-    mainWindowData.ClearValue.color.float32[2] = clear_color.z * clear_color.w;
-    mainWindowData.ClearValue.color.float32[3] = clear_color.w;
-
     uint32_t imageIndex;
-    VkResult result = vkAcquireNextImageKHR(device, swapChain, UINT64_MAX, imageAvailableSemaphores[currentFrame], VK_NULL_HANDLE, &imageIndex);
+    VkResult result = vkAcquireNextImageKHR(device, swapchain->handle, UINT64_MAX, imageAvailableSemaphores[currentFrame], VK_NULL_HANDLE, &imageIndex);
 
     if (result == VK_ERROR_OUT_OF_DATE_KHR) {
         recreateSwapChain();
@@ -1086,7 +1014,7 @@ void VulkanEngine::drawFrame() {
     presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
     presentInfo.waitSemaphoreCount = 1;
     presentInfo.pWaitSemaphores = signalSemaphore;
-    VkSwapchainKHR swapChains[] = {swapChain};
+    VkSwapchainKHR swapChains[] = {swapchain->handle};
     presentInfo.swapchainCount = 1;
     presentInfo.pSwapchains = swapChains;
     presentInfo.pImageIndices = &imageIndex;
@@ -1107,7 +1035,7 @@ void VulkanEngine::drawFrame() {
 void VulkanEngine::updateScene(uint32_t currentImage) {
     //QuickTimer timer{"Scene Update", true};
 
-    scene->update(swapChainExtent.width, swapChainExtent.height);
+    scene->update(swapchain->swapChainExtent.width, swapchain->swapChainExtent.height);
 
     static auto startTime = std::chrono::high_resolution_clock::now();
     auto currentTime = std::chrono::high_resolution_clock::now();
@@ -1201,11 +1129,11 @@ void VulkanEngine::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t i
         &missShaderSbtEntry,
         &closestHitShaderSbtEntry,
         &callableShaderSbtEntry,
-        swapChainExtent.width,
-        swapChainExtent.height,
+        swapchain->swapChainExtent.width,
+        swapchain->swapChainExtent.height,
         1);
 
-    ressourceBuilder.transitionImageLayout(commandBuffer, swapChainImages[imageIndex],
+    ressourceBuilder.transitionImageLayout(commandBuffer, swapchain->swapChainImages[imageIndex],
         VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
         VK_ACCESS_NONE, VK_ACCESS_NONE,
         VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
@@ -1218,11 +1146,11 @@ void VulkanEngine::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t i
     copyRegion.srcOffset = {0, 0, 0};
     copyRegion.dstSubresource = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1};
     copyRegion.dstOffset = {0, 0, 0};
-    copyRegion.extent = {swapChainExtent.width, swapChainExtent.height, 1};
+    copyRegion.extent = {swapchain->swapChainExtent.width, swapchain->swapChainExtent.height, 1};
     vkCmdCopyImage(commandBuffer, storageImages[currentFrame].image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-        swapChainImages[imageIndex], VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copyRegion);
+        swapchain->swapChainImages[imageIndex], VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copyRegion);
 
-    ressourceBuilder.transitionImageLayout(commandBuffer, swapChainImages[imageIndex],
+    ressourceBuilder.transitionImageLayout(commandBuffer, swapchain->swapChainImages[imageIndex],
         VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
         VK_ACCESS_NONE, VK_ACCESS_NONE,
         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
@@ -1246,9 +1174,9 @@ void VulkanEngine::recordGuiCommands(VkCommandBuffer commandBuffer, ImDrawData* 
 
         VkRenderPassBeginInfo info = {};
         info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-        info.renderPass = gui_render_pass;
-        info.framebuffer = swapChainFrameBuffers[imageIndex];
-        info.renderArea.extent = swapChainExtent;
+        info.renderPass = guiWindow->render_pass;
+        info.framebuffer = guiWindow->frame_buffers[imageIndex];
+        info.renderArea.extent = swapchain->swapChainExtent;
         info.clearValueCount = static_cast<uint32_t>(clearValues.size());
         info.pClearValues = clearValues.data();
         vkCmdBeginRenderPass(commandBuffer, &info, VK_SUBPASS_CONTENTS_INLINE);
@@ -1271,13 +1199,13 @@ void VulkanEngine::cleanup() {
 }
 
 void VulkanEngine::cleanupSwapChain() {
-    for (auto framebuffer : swapChainFrameBuffers) {
+    for (auto framebuffer : guiWindow->frame_buffers) {
         vkDestroyFramebuffer(device, framebuffer, nullptr);
     }
-    for (auto imageView : swapChainImageViews) {
+    for (auto imageView : swapchain->swapChainImageViews) {
         vkDestroyImageView(device, imageView, nullptr);
     }
-    vkDestroySwapchainKHR(device, swapChain, nullptr);
+    vkDestroySwapchainKHR(device, swapchain->handle, nullptr);
 
     for (auto image : storageImages) {
         ressourceBuilder.destroyImage(image);
@@ -1285,7 +1213,7 @@ void VulkanEngine::cleanupSwapChain() {
 }
 
 VkFormat VulkanEngine::getColorAttachmentFormat() {
-    return swapChainImageFormat;
+    return swapchain->swapChainImageFormat;
 }
 
 VkFormat VulkanEngine::getDepthFormat() {

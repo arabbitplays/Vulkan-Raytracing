@@ -21,10 +21,12 @@
 #include <stb_image.h>
 #define TINYOBJLOADER_IMPLEMENTATION
 #include <AccelerationStructure.hpp>
+#include <GuiWindow.hpp>
 #include <imgui_impl_vulkan.h>
 #include <PhongMaterial.hpp>
 #include <Pipeline.hpp>
 #include <Scene.hpp>
+#include <SwapChain.hpp>
 #include <unordered_map>
 #include "../Vertex.hpp"
 #include "DescriptorAllocator.hpp"
@@ -56,28 +58,19 @@ private:
     const int MAX_FRAMES_IN_FLIGHT = 2;
 
     GLFWwindow* window;
+    std::shared_ptr<GuiWindow> guiWindow;
     VkInstance instance;
     VkSurfaceKHR surface;
     VkDebugUtilsMessengerEXT debugMessenger;
     DeletionQueue mainDeletionQueue;
 
-    ImGui_ImplVulkanH_Window mainWindowData;
-    uint32_t minImageCount = MAX_FRAMES_IN_FLIGHT;
-    VkRenderPass gui_render_pass;
-    VkDescriptorPool gui_descriptor_pool;
-
     VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
     VkQueue graphicsQueue, presentQueue;
 
-    VkSwapchainKHR swapChain;
-    std::vector<VkImage> swapChainImages;
-    std::vector<VkImageView> swapChainImageViews;
-    VkFormat swapChainImageFormat;
-    VkExtent2D swapChainExtent;
+    std::shared_ptr<SwapChain> swapchain;
 
     AllocatedImage depthImage;
 
-    std::vector<VkFramebuffer> swapChainFrameBuffers;
     std::vector<VkCommandBuffer> commandBuffers;
 
     AllocatedBuffer vertex_buffer, index_buffer, instance_mapping_buffer, geometry_mapping_buffer;
@@ -134,7 +127,7 @@ private:
     static void keyCallback(GLFWwindow *window, int key, int scancode, int action, int mods);
     static void mouseCallback(GLFWwindow *window, double xPos, double yPos);
 
-    void initGUI();
+    void initGui();
 
     void createInstance();
     bool checkValidationLayerSupport();
