@@ -177,30 +177,6 @@ void VulkanEngine::initGUI() {
     ImGui_ImplVulkan_Init(&initInfo);
 }
 
-void VulkanEngine::initVulkanWindow(ImGui_ImplVulkanH_Window* wd, VkSurfaceKHR surface, int width, int height) {
-    /*wd->Surface = surface;
-    QueueFamilyIndices indices = findQueueFamilies(physicalDevice);
-
-    VkBool32 result;
-    vkGetPhysicalDeviceSurfaceSupportKHR(physicalDevice, indices.graphicsFamily.value(), surface, &result);
-    if (result != VK_TRUE) {
-        throw std::runtime_error("WSI support needed for GUI");
-    }
-
-    // Select Surface Format
-    const VkFormat requestSurfaceImageFormat[] = { VK_FORMAT_B8G8R8A8_UNORM, VK_FORMAT_R8G8B8A8_UNORM, VK_FORMAT_B8G8R8_UNORM, VK_FORMAT_R8G8B8_UNORM };
-    const VkColorSpaceKHR requestSurfaceColorSpace = VK_COLORSPACE_SRGB_NONLINEAR_KHR;
-    wd->SurfaceFormat = ImGui_ImplVulkanH_SelectSurfaceFormat(physicalDevice, wd->Surface, requestSurfaceImageFormat, (size_t)IM_ARRAYSIZE(requestSurfaceImageFormat), requestSurfaceColorSpace);
-
-    // Select Present Mode
-    VkPresentModeKHR present_modes[] = { VK_PRESENT_MODE_FIFO_KHR };
-    wd->PresentMode = ImGui_ImplVulkanH_SelectPresentMode(physicalDevice, wd->Surface, &present_modes[0], IM_ARRAYSIZE(present_modes));
-    //printf("[vulkan] Selected PresentMode = %d\n", wd->PresentMode);
-
-    // Create SwapChain, RenderPass, Framebuffer, etc.
-    ImGui_ImplVulkanH_CreateOrResizeWindow(instance, physicalDevice, device, wd, indices.graphicsFamily.value(), nullptr, width, height, minImageCount);*/
-}
-
 void VulkanEngine::initVulkan() {
     createInstance();
     setupDebugMessenger();
@@ -213,7 +189,7 @@ void VulkanEngine::initVulkan() {
     createDescriptorAllocator();
 
     createSwapChain();
-    createStorageImage();
+    createStorageImages();
 
     mainDeletionQueue.pushFunction([&]() {
         cleanupSwapChain();
@@ -561,7 +537,7 @@ void VulkanEngine::recreateSwapChain() {
     cleanupSwapChain();
 
     createSwapChain();
-    createStorageImage();
+    createStorageImages();
     createGuiFrameBuffers();
     scene->update(swapChainExtent.width, swapChainExtent.height);
 }
@@ -849,15 +825,18 @@ void VulkanEngine::createDefaultMaterials() {
     //default_phong = createPhongMaterial(glm::vec3{1, 0, 0}, 1, 1, 1);
 }
 
-void VulkanEngine::createStorageImage() {
-    storageImage = ressourceBuilder.createImage(
-        VkExtent3D{swapChainExtent.width, swapChainExtent.height, 1},
-        VK_FORMAT_B8G8R8A8_UNORM, VK_IMAGE_TILING_OPTIMAL,
-        VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_STORAGE_BIT,
-        VK_IMAGE_ASPECT_COLOR_BIT);
+void VulkanEngine::createStorageImages() {
+    storageImages.resize(MAX_FRAMES_IN_FLIGHT);
+    for (uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+        storageImages[i] = ressourceBuilder.createImage(
+            VkExtent3D{swapChainExtent.width, swapChainExtent.height, 1},
+            VK_FORMAT_B8G8R8A8_UNORM, VK_IMAGE_TILING_OPTIMAL,
+            VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_STORAGE_BIT,
+            VK_IMAGE_ASPECT_COLOR_BIT);
 
-    ressourceBuilder.transitionImageLayout(storageImage.image, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
-        VK_ACCESS_NONE, VK_ACCESS_NONE, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
+        ressourceBuilder.transitionImageLayout(storageImages[i].image, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
+            VK_ACCESS_NONE, VK_ACCESS_NONE, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
+    }
 }
 
 void VulkanEngine::createScene() {
@@ -970,7 +949,6 @@ void VulkanEngine::createSceneLayout() {
     layoutBuilder.addBinding(4, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
     layoutBuilder.addBinding(5, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
     layoutBuilder.addBinding(6, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
-    layoutBuilder.addBinding(7, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
 
     scene_descsriptor_set_layout = layoutBuilder.build(device, VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR);
     mainDeletionQueue.pushFunction([&]() {
@@ -1168,14 +1146,14 @@ void VulkanEngine::updateScene(uint32_t currentImage) {
     top_level_acceleration_structure->build();
 
     descriptorAllocator.writeAccelerationStructure(0, top_level_acceleration_structure->getHandle(), VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR);
-    descriptorAllocator.writeImage(1, storageImage.imageView, VK_NULL_HANDLE, VK_IMAGE_LAYOUT_GENERAL, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
+    descriptorAllocator.writeImage(1, storageImages[currentImage].imageView, VK_NULL_HANDLE, VK_IMAGE_LAYOUT_GENERAL, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
     descriptorAllocator.writeBuffer(2, sceneUniformBuffers[0].handle, sizeof(SceneData), 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
     descriptorAllocator.writeBuffer(6, instance_mapping_buffer.handle, 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
     descriptorAllocator.updateSet(device, scene_descriptor_sets[0]);
     descriptorAllocator.clearWrites();
 
     std::shared_ptr<SceneData> scene_data = scene->createSceneData();
-    memcpy(sceneUniformBuffersMapped[0], scene_data.get(), sizeof(SceneData));
+    memcpy(sceneUniformBuffersMapped[currentImage], scene_data.get(), sizeof(SceneData));
 }
 
 void VulkanEngine::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex, ImDrawData* gui_draw_data) {
@@ -1232,7 +1210,7 @@ void VulkanEngine::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t i
         VK_ACCESS_NONE, VK_ACCESS_NONE,
         VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
-    ressourceBuilder.transitionImageLayout(commandBuffer, storageImage.image, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+    ressourceBuilder.transitionImageLayout(commandBuffer, storageImages[currentFrame].image, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
         VK_ACCESS_NONE, VK_ACCESS_TRANSFER_READ_BIT, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
 
     VkImageCopy copyRegion{};
@@ -1241,7 +1219,7 @@ void VulkanEngine::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t i
     copyRegion.dstSubresource = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1};
     copyRegion.dstOffset = {0, 0, 0};
     copyRegion.extent = {swapChainExtent.width, swapChainExtent.height, 1};
-    vkCmdCopyImage(commandBuffer, storageImage.image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+    vkCmdCopyImage(commandBuffer, storageImages[currentFrame].image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
         swapChainImages[imageIndex], VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copyRegion);
 
     ressourceBuilder.transitionImageLayout(commandBuffer, swapChainImages[imageIndex],
@@ -1249,7 +1227,7 @@ void VulkanEngine::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t i
         VK_ACCESS_NONE, VK_ACCESS_NONE,
         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
 
-    ressourceBuilder.transitionImageLayout(commandBuffer, storageImage.image,
+    ressourceBuilder.transitionImageLayout(commandBuffer, storageImages[currentFrame].image,
         VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
         VK_ACCESS_TRANSFER_READ_BIT, VK_ACCESS_NONE,
         VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL);
@@ -1301,7 +1279,9 @@ void VulkanEngine::cleanupSwapChain() {
     }
     vkDestroySwapchainKHR(device, swapChain, nullptr);
 
-    ressourceBuilder.destroyImage(storageImage);
+    for (auto image : storageImages) {
+        ressourceBuilder.destroyImage(image);
+    }
 }
 
 VkFormat VulkanEngine::getColorAttachmentFormat() {

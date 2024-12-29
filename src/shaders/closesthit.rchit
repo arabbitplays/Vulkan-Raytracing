@@ -25,7 +25,7 @@ layout(binding = 3, set = 0) readonly buffer VertexBuffer {
 layout(binding = 4, set = 0) readonly buffer IndexBuffer {
     uint indices[];
 } index_buffer;
-layout(binding = 5, set = 0) readonly buffer GeometryappingBuffer {
+layout(binding = 5, set = 0) readonly buffer GeometryMappingBuffer {
     uint indices[];
 } geometry_mapping_buffer;
 layout(binding = 6, set = 0) readonly buffer InstanceMappingBuffer {

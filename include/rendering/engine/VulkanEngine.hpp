@@ -87,7 +87,7 @@ private:
 
     VkPhysicalDeviceRayTracingPipelinePropertiesKHR raytracingProperties{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_PROPERTIES_KHR};
 
-    AllocatedImage storageImage;
+    std::vector<AllocatedImage> storageImages;
 
     std::shared_ptr<Scene> scene;
 
@@ -135,8 +135,6 @@ private:
     static void mouseCallback(GLFWwindow *window, double xPos, double yPos);
 
     void initGUI();
-
-    void initVulkanWindow(ImGui_ImplVulkanH_Window* wd, VkSurfaceKHR surface, int width, int height);
 
     void createInstance();
     bool checkValidationLayerSupport();
@@ -198,9 +196,6 @@ private:
     void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex, ImDrawData* gui_draw_data);
 
     void recordGuiCommands(VkCommandBuffer commandBuffer, ImDrawData* gui_draw_data, uint32_t imageIndex);
-
-    void drawGuiFrame();
-
     void updateScene(uint32_t currentImage);
 
     static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
@@ -214,7 +209,7 @@ private:
         return VK_FALSE;
     }
 
-    void createStorageImage();
+    void createStorageImages();
 };
 
 #endif //BASICS_VULKANENGINE_HPP
