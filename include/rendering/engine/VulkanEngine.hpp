@@ -21,6 +21,7 @@
 #include <stb_image.h>
 #define TINYOBJLOADER_IMPLEMENTATION
 #include <AccelerationStructure.hpp>
+#include <GuiManager.hpp>
 #include <GuiWindow.hpp>
 #include <imgui_impl_vulkan.h>
 #include <PhongMaterial.hpp>
@@ -43,6 +44,8 @@ class VulkanEngine;
 
 class VulkanEngine {
 public:
+    static constexpr int MAX_FRAMES_IN_FLIGHT = 2;
+
     VkDevice device;
     CommandManager commandManager;
     RessourceBuilder ressourceBuilder;
@@ -55,10 +58,9 @@ public:
     VkFormat getDepthFormat();
 
 private:
-    const int MAX_FRAMES_IN_FLIGHT = 2;
 
     GLFWwindow* window;
-    std::shared_ptr<GuiWindow> guiWindow;
+    std::shared_ptr<GuiManager> guiManager;
     VkInstance instance;
     VkSurfaceKHR surface;
     VkDebugUtilsMessengerEXT debugMessenger;
@@ -184,7 +186,6 @@ private:
     void cleanupStorageImages();
     void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex, ImDrawData* gui_draw_data);
 
-    void recordGuiCommands(VkCommandBuffer commandBuffer, ImDrawData* gui_draw_data, uint32_t imageIndex);
     void updateScene(uint32_t currentImage);
 
     static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(

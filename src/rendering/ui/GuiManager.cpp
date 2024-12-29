@@ -2,7 +2,7 @@
 // Created by oschdi on 12/29/24.
 //
 
-#include "GuiWindow.hpp"
+#include "GuiManager.hpp"
 
 #include <CommandManager.hpp>
 #include <imgui.h>
@@ -19,7 +19,7 @@ void checkVulkanResult(VkResult err)
     throw std::runtime_error("Error: VkResult = " + err);
 }
 
-GuiWindow::GuiWindow(VkDevice device, VkPhysicalDevice physical_device, GLFWwindow* window, VkInstance instance,
+GuiManager::GuiManager(VkDevice device, VkPhysicalDevice physical_device, GLFWwindow* window, VkInstance instance,
               DescriptorAllocator descriptor_allocator, std::shared_ptr<Swapchain> swapchain,
               uint32_t grafics_queue_family, VkQueue grafics_queue) : device(device), swapchain(swapchain) {
 
@@ -33,15 +33,17 @@ GuiWindow::GuiWindow(VkDevice device, VkPhysicalDevice physical_device, GLFWwind
     });
 
     initImGui(physical_device, window, instance, grafics_queue_family, grafics_queue);
+
+    gui_windows.push_back(std::make_shared<OptionsWindow>());
 }
 
-void GuiWindow::createRenderPass(VkFormat image_format) {
+void GuiManager::createRenderPass(VkFormat image_format) {
     RenderPassBuilder renderPassBuilder;
     renderPassBuilder.setColorAttachmentFormat(image_format);
     render_pass = renderPassBuilder.createRenderPass(device);
 }
 
-void GuiWindow::createFrameBuffers() {
+void GuiManager::createFrameBuffers() {
     frame_buffers.resize(swapchain->imageViews.size());
     for (size_t i = 0; i < frame_buffers.size(); i++) {
         std::array<VkImageView, 1> attachments {
@@ -63,7 +65,7 @@ void GuiWindow::createFrameBuffers() {
     }
 }
 
-void GuiWindow::createDescriptorPool(DescriptorAllocator descriptor_allocator) {
+void GuiManager::createDescriptorPool(DescriptorAllocator descriptor_allocator) {
     std::vector<VkDescriptorPoolSize> pool_sizes =
         {
         { VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1 },
@@ -72,7 +74,7 @@ void GuiWindow::createDescriptorPool(DescriptorAllocator descriptor_allocator) {
 }
 
 
-void GuiWindow::initImGui(VkPhysicalDevice physical_device, GLFWwindow* window, VkInstance instance,
+void GuiManager::initImGui(VkPhysicalDevice physical_device, GLFWwindow* window, VkInstance instance,
         uint32_t graphics_queue_family, VkQueue graphics_queue) {
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
@@ -101,7 +103,7 @@ void GuiWindow::initImGui(VkPhysicalDevice physical_device, GLFWwindow* window, 
     ImGui_ImplVulkan_Init(&initInfo);
 }
 
-void GuiWindow::updateWindow(std::shared_ptr<Swapchain> swapchain) {
+void GuiManager::updateWindow(std::shared_ptr<Swapchain> swapchain) {
     for (auto framebuffer : frame_buffers) {
         vkDestroyFramebuffer(device, framebuffer, nullptr);
     }
@@ -110,12 +112,47 @@ void GuiWindow::updateWindow(std::shared_ptr<Swapchain> swapchain) {
     createFrameBuffers();
 }
 
+void GuiManager::recordGuiCommands(VkCommandBuffer commandBuffer, ImDrawData* gui_draw2_data, uint32_t imageIndex) {
+    ImGui_ImplVulkan_NewFrame();
+    ImGui_ImplGlfw_NewFrame();
+    ImGui::NewFrame();
 
-void GuiWindow::destroy() {
+    for (auto& window : gui_windows) {
+        window->createFrame();
+    }
+
+    ImGui::Render();
+    ImDrawData* draw_data = ImGui::GetDrawData();
+
+    std::array<VkClearValue, 1> clearValues = {};
+    clearValues[0].color = {{0.0f, 0.0f, 0.0f, 1.0f}};
+
+    VkRenderPassBeginInfo info = {};
+    info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+    info.renderPass = render_pass;
+    info.framebuffer = frame_buffers[imageIndex];
+    info.renderArea.extent = swapchain->extent;
+    info.clearValueCount = static_cast<uint32_t>(clearValues.size());
+    info.pClearValues = clearValues.data();
+    vkCmdBeginRenderPass(commandBuffer, &info, VK_SUBPASS_CONTENTS_INLINE);
+
+    // Record dear imgui primitives into command buffer
+    ImGui_ImplVulkan_RenderDrawData(draw_data, commandBuffer);
+
+    vkCmdEndRenderPass(commandBuffer);
+}
+
+void GuiManager::destroy() {
+    shutdownImGui();
+
     for (auto framebuffer : frame_buffers) {
         vkDestroyFramebuffer(device, framebuffer, nullptr);
     }
     deletion_queue.flush();
 }
 
-
+void GuiManager::shutdownImGui() {
+    ImGui_ImplVulkan_Shutdown();
+    ImGui_ImplGlfw_Shutdown();
+    ImGui::DestroyContext();
+}

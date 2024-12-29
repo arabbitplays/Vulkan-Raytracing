@@ -121,12 +121,12 @@ void VulkanEngine::mouseCallback(GLFWwindow* window, double xPos, double yPos) {
 
 void VulkanEngine::initGui() {
     QueueFamilyIndices indices = findQueueFamilies(physicalDevice);
-    guiWindow = std::make_shared<GuiWindow>(device, physicalDevice, window, instance, descriptorAllocator,
+    guiManager = std::make_shared<GuiManager    >(device, physicalDevice, window, instance, descriptorAllocator,
         swapchain, indices.graphicsFamily.value(),
         graphicsQueue);
 
     mainDeletionQueue.pushFunction([&]() {
-        guiWindow->destroy();
+        guiManager->destroy();
     });
 }
 
@@ -822,20 +822,6 @@ void VulkanEngine::mainLoop() {
 void VulkanEngine::drawFrame() {
     vkWaitForFences(device, 1, &inFlightFences[currentFrame], VK_TRUE, UINT64_MAX);
 
-    bool show_demo_window = true;
-    ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
-
-    ImGui_ImplVulkan_NewFrame();
-    ImGui_ImplGlfw_NewFrame();
-    ImGui::NewFrame();
-
-    if (show_demo_window) {
-        ImGui::ShowDemoWindow(&show_demo_window);
-    }
-
-    ImGui::Render();
-    ImDrawData* draw_data = ImGui::GetDrawData();
-
     uint32_t imageIndex;
     VkResult result = vkAcquireNextImageKHR(device, swapchain->handle, UINT64_MAX, imageAvailableSemaphores[currentFrame], VK_NULL_HANDLE, &imageIndex);
 
@@ -851,7 +837,7 @@ void VulkanEngine::drawFrame() {
     updateScene(currentFrame);
 
     vkResetCommandBuffer(commandBuffers[currentFrame], 0);
-    recordCommandBuffer(commandBuffers[currentFrame], imageIndex, draw_data);
+    recordCommandBuffer(commandBuffers[currentFrame], imageIndex, nullptr);
 
     VkSubmitInfo submitInfo{};
     submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -897,12 +883,9 @@ void VulkanEngine::refreshAfterResize() {
     vkDeviceWaitIdle(device);
 
     swapchain->recreate();
-
     cleanupStorageImages();
     createStorageImages();
-
-    guiWindow->updateWindow(swapchain);
-
+    guiManager->updateWindow(swapchain);
     scene->update(swapchain->extent.width, swapchain->extent.height);
 }
 
@@ -1034,39 +1017,14 @@ void VulkanEngine::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t i
         VK_ACCESS_TRANSFER_READ_BIT, VK_ACCESS_NONE,
         VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL);
 
-    recordGuiCommands(commandBuffer, gui_draw_data, imageIndex);
+    guiManager->recordGuiCommands(commandBuffer, gui_draw_data, imageIndex);
 
     if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS) {
         throw std::runtime_error("failed to record command buffer!");
     }
 }
 
-void VulkanEngine::recordGuiCommands(VkCommandBuffer commandBuffer, ImDrawData* gui_draw_data, uint32_t imageIndex) {
-    {
-        std::array<VkClearValue, 1> clearValues = {};
-        clearValues[0].color = {{0.0f, 0.0f, 0.0f, 1.0f}};
-
-        VkRenderPassBeginInfo info = {};
-        info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-        info.renderPass = guiWindow->render_pass;
-        info.framebuffer = guiWindow->frame_buffers[imageIndex];
-        info.renderArea.extent = swapchain->extent;
-        info.clearValueCount = static_cast<uint32_t>(clearValues.size());
-        info.pClearValues = clearValues.data();
-        vkCmdBeginRenderPass(commandBuffer, &info, VK_SUBPASS_CONTENTS_INLINE);
-    }
-
-    // Record dear imgui primitives into command buffer
-    ImGui_ImplVulkan_RenderDrawData(gui_draw_data, commandBuffer);
-
-    vkCmdEndRenderPass(commandBuffer);
-}
-
 void VulkanEngine::cleanup() {
-    ImGui_ImplVulkan_Shutdown();
-    ImGui_ImplGlfw_Shutdown();
-    ImGui::DestroyContext();
-
     mainDeletionQueue.flush();
     glfwDestroyWindow(window);
     glfwTerminate();
