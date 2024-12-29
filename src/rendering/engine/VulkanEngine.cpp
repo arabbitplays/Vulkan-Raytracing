@@ -141,11 +141,11 @@ void VulkanEngine::initVulkan() {
     createRessourceBuilder();
     createDescriptorAllocator();
 
-    createSwapChain();
+    createSwapchain();
     createStorageImages();
 
     mainDeletionQueue.pushFunction([&]() {
-        cleanupSwapChain();
+        cleanupStorageImages();
     });
 
     createSceneLayout();
@@ -342,7 +342,7 @@ bool VulkanEngine::isDeviceSuitable(VkPhysicalDevice device) {
 
     bool swapChainAdequate = false;
     if (extensionsSupported) {
-        SwapChainSupportDetails swapChainSupport = querySwapChainSupport(device);
+        SwapChainSupportDetails swapChainSupport = Swapchain::querySwapChainSupport(device, surface);
         swapChainAdequate = !swapChainSupport.formats.empty() && !swapChainSupport.presentModes.empty();
     }
 
@@ -392,28 +392,6 @@ QueueFamilyIndices VulkanEngine::findQueueFamilies(VkPhysicalDevice device) {
         i++;
     }
     return indices;
-}
-
-VulkanEngine::SwapChainSupportDetails VulkanEngine::querySwapChainSupport(VkPhysicalDevice device) {
-    SwapChainSupportDetails details;
-
-    vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, surface, &details.capabilities);
-
-    uint32_t formatCount = 0;
-    vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface, &formatCount, nullptr);
-    if (formatCount != 0) {
-        details.formats.resize(formatCount);
-        vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface, &formatCount, details.formats.data());
-    }
-
-    uint32_t presentModeCount = 0;
-    vkGetPhysicalDeviceSurfacePresentModesKHR(device, surface, &presentModeCount, nullptr);
-    if (presentModeCount != 0) {
-        details.presentModes.resize(presentModeCount);
-        vkGetPhysicalDeviceSurfacePresentModesKHR(device, surface, &presentModeCount, details.presentModes.data());
-    }
-
-    return details;
 }
 
 void VulkanEngine::createLogicalDevice() {
@@ -478,130 +456,6 @@ void VulkanEngine::createLogicalDevice() {
     vkGetDeviceQueue(device, indices.presentFamily.value(), 0, &presentQueue);
 }
 
-void VulkanEngine::recreateSwapChain() {
-    int width = 0, height = 0;
-    glfwGetFramebufferSize(window, &width, &height);
-    while (width == 0 || height == 0) {
-        glfwGetFramebufferSize(window, &width, &height);
-        glfwWaitEvents();
-    }
-
-    vkDeviceWaitIdle(device);
-    cleanupSwapChain();
-
-    createSwapChain();
-    createStorageImages();
-    guiWindow->updateWindow(swapchain);
-    scene->update(swapchain->swapChainExtent.width, swapchain->swapChainExtent.height);
-}
-
-void VulkanEngine::createSwapChain() {
-    SwapChainSupportDetails swapChainSupport = querySwapChainSupport(physicalDevice);
-
-    VkSurfaceFormatKHR surfaceFormat = chooseSwapSurfaceFormat(swapChainSupport.formats);
-    VkPresentModeKHR presentMode = chooseSwapPresentMode(swapChainSupport.presentModes);
-    VkExtent2D extent = chooseSwapExtend(swapChainSupport.capabilities);
-
-    uint32_t imageCount = swapChainSupport.capabilities.minImageCount + 1;
-    if (swapChainSupport.capabilities.maxImageCount > 0
-            && imageCount > swapChainSupport.capabilities.maxImageCount) {
-        imageCount = swapChainSupport.capabilities.maxImageCount;
-    }
-
-    VkSwapchainCreateInfoKHR createInfo{};
-    createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
-    createInfo.surface = surface;
-    createInfo.minImageCount = imageCount;
-    createInfo.imageFormat = surfaceFormat.format;
-    createInfo.imageColorSpace = surfaceFormat.colorSpace;
-    createInfo.imageExtent = extent;
-    createInfo.imageArrayLayers = 1;
-    createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-
-    QueueFamilyIndices indices = findQueueFamilies(physicalDevice);
-    uint32_t queueFamilyIndices[] = {indices.graphicsFamily.value(), indices.presentFamily.value()};
-
-    if (indices.graphicsFamily != indices.presentFamily) {
-        createInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
-        createInfo.queueFamilyIndexCount = 2;
-        createInfo.pQueueFamilyIndices = queueFamilyIndices;
-    } else {
-        createInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
-    }
-
-    createInfo.preTransform = swapChainSupport.capabilities.currentTransform;
-    createInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
-    createInfo.presentMode = presentMode;
-    createInfo.clipped = VK_TRUE;
-    createInfo.oldSwapchain = VK_NULL_HANDLE;
-
-    swapchain = std::make_shared<SwapChain>();
-
-    if (vkCreateSwapchainKHR(device, &createInfo, nullptr, &swapchain->handle) != VK_SUCCESS) {
-        throw std::runtime_error("failed to create swap chain!");
-    }
-
-    vkGetSwapchainImagesKHR(device, swapchain->handle, &imageCount, nullptr);
-    swapchain->swapChainImages.resize(imageCount);
-    vkGetSwapchainImagesKHR(device, swapchain->handle, &imageCount, swapchain->swapChainImages.data());
-
-    swapchain->swapChainImageFormat = surfaceFormat.format;
-    swapchain->swapChainExtent = extent;
-
-    createImageViews();
-}
-
-VkSurfaceFormatKHR VulkanEngine::chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats) {
-    for (const auto& availableFormat : availableFormats) {
-        if (availableFormat.format == VK_FORMAT_B8G8R8A8_SRGB
-                && availableFormat.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
-            return availableFormat;
-        }
-    }
-
-    return availableFormats[0];
-}
-
-VkPresentModeKHR VulkanEngine::chooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes) {
-    for (const auto& availablePresentMode : availablePresentModes) {
-        if (availablePresentMode == VK_PRESENT_MODE_MAILBOX_KHR) {
-            return availablePresentMode;
-        }
-    }
-
-    return VK_PRESENT_MODE_FIFO_KHR;
-}
-
-VkExtent2D VulkanEngine::chooseSwapExtend(const VkSurfaceCapabilitiesKHR& capabilities) {
-    if (capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max())
-        return capabilities.currentExtent;
-    else {
-        int width, height;
-        glfwGetFramebufferSize(window, &width, &height);
-
-        VkExtent2D actualExtent {
-            static_cast<uint32_t>(width),
-            static_cast<uint32_t>(height)
-        };
-
-        actualExtent.width = std::clamp(actualExtent.width,
-                                        capabilities.minImageExtent.width,
-                                        capabilities.maxImageExtent.width);
-        actualExtent.height = std::clamp(actualExtent.height,
-                                        capabilities.minImageExtent.height,
-                                        capabilities.maxImageExtent.height);
-
-        return actualExtent;
-    }
-}
-
-void VulkanEngine::createImageViews() {
-    swapchain->swapChainImageViews.resize(swapchain->swapChainImages.size());
-    for (size_t i = 0; i < swapchain->swapChainImageViews.size(); i++) {
-        swapchain->swapChainImageViews[i] = ressourceBuilder.createImageView(swapchain->swapChainImages[i], swapchain->swapChainImageFormat, VK_IMAGE_ASPECT_COLOR_BIT);
-    }
-}
-
 void VulkanEngine::createCommandManager() {
     auto pCommandManager = new CommandManager(device, findQueueFamilies(physicalDevice));
     commandManager = *pCommandManager;
@@ -634,7 +488,7 @@ void VulkanEngine::createDescriptorAllocator() {
 void VulkanEngine::createDepthResources() {
     VkFormat depthFormat = findDepthFormat();
 
-    depthImage = ressourceBuilder.createImage({swapchain->swapChainExtent.width, swapchain->swapChainExtent.height, 1}, depthFormat,
+    depthImage = ressourceBuilder.createImage({swapchain->extent.width, swapchain->extent.height, 1}, depthFormat,
                                               VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_IMAGE_ASPECT_DEPTH_BIT);
 
     mainDeletionQueue.pushFunction([&]() {
@@ -758,11 +612,18 @@ void VulkanEngine::createDefaultMaterials() {
     //default_phong = createPhongMaterial(glm::vec3{1, 0, 0}, 1, 1, 1);
 }
 
+void VulkanEngine::createSwapchain() {
+    swapchain = std::make_shared<Swapchain>(device, physicalDevice, window, surface, ressourceBuilder);
+    mainDeletionQueue.pushFunction([&]() {
+        swapchain->destroy();
+    });
+}
+
 void VulkanEngine::createStorageImages() {
     storageImages.resize(MAX_FRAMES_IN_FLIGHT);
     for (uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
         storageImages[i] = ressourceBuilder.createImage(
-            VkExtent3D{swapchain->swapChainExtent.width, swapchain->swapChainExtent.height, 1},
+            VkExtent3D{swapchain->extent.width, swapchain->extent.height, 1},
             VK_FORMAT_B8G8R8A8_UNORM, VK_IMAGE_TILING_OPTIMAL,
             VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_STORAGE_BIT,
             VK_IMAGE_ASPECT_COLOR_BIT);
@@ -777,7 +638,7 @@ void VulkanEngine::createScene() {
     mesh_builder = std::make_shared<MeshAssetBuilder>(device, ressourceBuilder);
 
     //scene = std::make_shared<PlaneScene>(mesh_builder, swapChainExtent.width, swapChainExtent.height, phong_material);
-    scene = std::make_shared<CornellBox>(mesh_builder, swapchain->swapChainExtent.width, swapchain->swapChainExtent.height, phong_material);
+    scene = std::make_shared<CornellBox>(mesh_builder, swapchain->extent.width, swapchain->extent.height, phong_material);
     mainDeletionQueue.pushFunction([&]() {
         scene->clearRessources();
     });
@@ -979,7 +840,7 @@ void VulkanEngine::drawFrame() {
     VkResult result = vkAcquireNextImageKHR(device, swapchain->handle, UINT64_MAX, imageAvailableSemaphores[currentFrame], VK_NULL_HANDLE, &imageIndex);
 
     if (result == VK_ERROR_OUT_OF_DATE_KHR) {
-        recreateSwapChain();
+        refreshAfterResize();
         return;
     } else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
         std::runtime_error("failed to acquire swap chain image!");
@@ -1023,7 +884,7 @@ void VulkanEngine::drawFrame() {
 
     if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || framebufferResized) {
         framebufferResized = false;
-        recreateSwapChain();
+        refreshAfterResize();
         return;
     } else if (result != VK_SUCCESS) {
         std::runtime_error("failed to present swap chain image!");
@@ -1032,10 +893,23 @@ void VulkanEngine::drawFrame() {
     currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
 }
 
+void VulkanEngine::refreshAfterResize() {
+    vkDeviceWaitIdle(device);
+
+    swapchain->recreate();
+
+    cleanupStorageImages();
+    createStorageImages();
+
+    guiWindow->updateWindow(swapchain);
+
+    scene->update(swapchain->extent.width, swapchain->extent.height);
+}
+
 void VulkanEngine::updateScene(uint32_t currentImage) {
     //QuickTimer timer{"Scene Update", true};
 
-    scene->update(swapchain->swapChainExtent.width, swapchain->swapChainExtent.height);
+    scene->update(swapchain->extent.width, swapchain->extent.height);
 
     static auto startTime = std::chrono::high_resolution_clock::now();
     auto currentTime = std::chrono::high_resolution_clock::now();
@@ -1129,11 +1003,11 @@ void VulkanEngine::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t i
         &missShaderSbtEntry,
         &closestHitShaderSbtEntry,
         &callableShaderSbtEntry,
-        swapchain->swapChainExtent.width,
-        swapchain->swapChainExtent.height,
+        swapchain->extent.width,
+        swapchain->extent.height,
         1);
 
-    ressourceBuilder.transitionImageLayout(commandBuffer, swapchain->swapChainImages[imageIndex],
+    ressourceBuilder.transitionImageLayout(commandBuffer, swapchain->images[imageIndex],
         VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
         VK_ACCESS_NONE, VK_ACCESS_NONE,
         VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
@@ -1146,11 +1020,11 @@ void VulkanEngine::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t i
     copyRegion.srcOffset = {0, 0, 0};
     copyRegion.dstSubresource = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1};
     copyRegion.dstOffset = {0, 0, 0};
-    copyRegion.extent = {swapchain->swapChainExtent.width, swapchain->swapChainExtent.height, 1};
+    copyRegion.extent = {swapchain->extent.width, swapchain->extent.height, 1};
     vkCmdCopyImage(commandBuffer, storageImages[currentFrame].image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-        swapchain->swapChainImages[imageIndex], VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copyRegion);
+        swapchain->images[imageIndex], VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copyRegion);
 
-    ressourceBuilder.transitionImageLayout(commandBuffer, swapchain->swapChainImages[imageIndex],
+    ressourceBuilder.transitionImageLayout(commandBuffer, swapchain->images[imageIndex],
         VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
         VK_ACCESS_NONE, VK_ACCESS_NONE,
         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
@@ -1176,7 +1050,7 @@ void VulkanEngine::recordGuiCommands(VkCommandBuffer commandBuffer, ImDrawData* 
         info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
         info.renderPass = guiWindow->render_pass;
         info.framebuffer = guiWindow->frame_buffers[imageIndex];
-        info.renderArea.extent = swapchain->swapChainExtent;
+        info.renderArea.extent = swapchain->extent;
         info.clearValueCount = static_cast<uint32_t>(clearValues.size());
         info.pClearValues = clearValues.data();
         vkCmdBeginRenderPass(commandBuffer, &info, VK_SUBPASS_CONTENTS_INLINE);
@@ -1198,22 +1072,14 @@ void VulkanEngine::cleanup() {
     glfwTerminate();
 }
 
-void VulkanEngine::cleanupSwapChain() {
-    for (auto framebuffer : guiWindow->frame_buffers) {
-        vkDestroyFramebuffer(device, framebuffer, nullptr);
-    }
-    for (auto imageView : swapchain->swapChainImageViews) {
-        vkDestroyImageView(device, imageView, nullptr);
-    }
-    vkDestroySwapchainKHR(device, swapchain->handle, nullptr);
-
+void VulkanEngine::cleanupStorageImages() {
     for (auto image : storageImages) {
         ressourceBuilder.destroyImage(image);
     }
 }
 
 VkFormat VulkanEngine::getColorAttachmentFormat() {
-    return swapchain->swapChainImageFormat;
+    return swapchain->imageFormat;
 }
 
 VkFormat VulkanEngine::getDepthFormat() {

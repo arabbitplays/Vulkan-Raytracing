@@ -26,7 +26,7 @@
 #include <PhongMaterial.hpp>
 #include <Pipeline.hpp>
 #include <Scene.hpp>
-#include <SwapChain.hpp>
+#include <Swapchain.hpp>
 #include <unordered_map>
 #include "../Vertex.hpp"
 #include "DescriptorAllocator.hpp"
@@ -67,7 +67,7 @@ private:
     VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
     VkQueue graphicsQueue, presentQueue;
 
-    std::shared_ptr<SwapChain> swapchain;
+    std::shared_ptr<Swapchain> swapchain;
 
     AllocatedImage depthImage;
 
@@ -139,18 +139,8 @@ private:
     bool isDeviceSuitable(VkPhysicalDevice device);
     bool checkDeviceExtensionSupport(VkPhysicalDevice device);
     QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device);
-    struct SwapChainSupportDetails {
-        VkSurfaceCapabilitiesKHR capabilities;
-        std::vector<VkSurfaceFormatKHR> formats;
-        std::vector<VkPresentModeKHR> presentModes;
-    };
-    SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice device);
+
     void createLogicalDevice();
-    void recreateSwapChain();
-    void createSwapChain();
-    VkSurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR> &availableFormats);
-    VkPresentModeKHR chooseSwapPresentMode(const std::vector<VkPresentModeKHR> &availablePresentModes);
-    VkExtent2D chooseSwapExtend(const VkSurfaceCapabilitiesKHR &capabilities);
     void createImageViews();
 
     void createGuiFrameBuffers();
@@ -168,6 +158,9 @@ private:
     void createDefaultTextures();
     void createDefaultSamplers();
     void createDefaultMaterials();
+
+    void createSwapchain();
+
     void createScene();
 
     void createAccelerationStructure();
@@ -185,7 +178,10 @@ private:
     void pollSdlEvents();
 
     void drawFrame();
-    void cleanupSwapChain();
+
+    void refreshAfterResize();
+
+    void cleanupStorageImages();
     void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex, ImDrawData* gui_draw_data);
 
     void recordGuiCommands(VkCommandBuffer commandBuffer, ImDrawData* gui_draw_data, uint32_t imageIndex);

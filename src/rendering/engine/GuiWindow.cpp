@@ -20,10 +20,10 @@ void checkVulkanResult(VkResult err)
 }
 
 GuiWindow::GuiWindow(VkDevice device, VkPhysicalDevice physical_device, GLFWwindow* window, VkInstance instance,
-              DescriptorAllocator descriptor_allocator, std::shared_ptr<SwapChain> swapchain,
+              DescriptorAllocator descriptor_allocator, std::shared_ptr<Swapchain> swapchain,
               uint32_t grafics_queue_family, VkQueue grafics_queue) : device(device), swapchain(swapchain) {
 
-    createRenderPass(swapchain->swapChainImageFormat);
+    createRenderPass(swapchain->imageFormat);
     createFrameBuffers();
     createDescriptorPool(descriptor_allocator);
 
@@ -42,10 +42,10 @@ void GuiWindow::createRenderPass(VkFormat image_format) {
 }
 
 void GuiWindow::createFrameBuffers() {
-    frame_buffers.resize(swapchain->swapChainImageViews.size());
+    frame_buffers.resize(swapchain->imageViews.size());
     for (size_t i = 0; i < frame_buffers.size(); i++) {
         std::array<VkImageView, 1> attachments {
-            swapchain->swapChainImageViews[i],
+            swapchain->imageViews[i],
         };
 
         VkFramebufferCreateInfo framebufferInfo{};
@@ -53,8 +53,8 @@ void GuiWindow::createFrameBuffers() {
         framebufferInfo.renderPass = render_pass;
         framebufferInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
         framebufferInfo.pAttachments = attachments.data();
-        framebufferInfo.width = swapchain->swapChainExtent.width;
-        framebufferInfo.height = swapchain->swapChainExtent.height;
+        framebufferInfo.width = swapchain->extent.width;
+        framebufferInfo.height = swapchain->extent.height;
         framebufferInfo.layers = 1;
 
         if (vkCreateFramebuffer(device, &framebufferInfo, nullptr, &frame_buffers[i]) != VK_SUCCESS) {
@@ -94,20 +94,27 @@ void GuiWindow::initImGui(VkPhysicalDevice physical_device, GLFWwindow* window, 
     initInfo.RenderPass = render_pass;
     initInfo.Subpass = 0;
     initInfo.MinImageCount = minImageCount;
-    initInfo.ImageCount = static_cast<uint32_t>(swapchain->swapChainImages.size());
+    initInfo.ImageCount = static_cast<uint32_t>(swapchain->images.size());
     initInfo.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
     initInfo.Allocator = nullptr;
     initInfo.CheckVkResultFn = checkVulkanResult;
     ImGui_ImplVulkan_Init(&initInfo);
 }
 
-void GuiWindow::updateWindow(std::shared_ptr<SwapChain> swapchain) {
+void GuiWindow::updateWindow(std::shared_ptr<Swapchain> swapchain) {
+    for (auto framebuffer : frame_buffers) {
+        vkDestroyFramebuffer(device, framebuffer, nullptr);
+    }
+
     this->swapchain = swapchain;
     createFrameBuffers();
 }
 
 
 void GuiWindow::destroy() {
+    for (auto framebuffer : frame_buffers) {
+        vkDestroyFramebuffer(device, framebuffer, nullptr);
+    }
     deletion_queue.flush();
 }
 

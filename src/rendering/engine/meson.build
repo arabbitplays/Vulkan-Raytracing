@@ -6,5 +6,5 @@ src += files(
     'VulkanEngine.cpp',
     'Camera.cpp',
     'Scene.cpp',
-    'SwapChain.cpp',
+    'Swapchain.cpp',
 )
