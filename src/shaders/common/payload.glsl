@@ -1,4 +1,4 @@
 struct Payload {
-    vec3 direct_light;
+    vec3 light;
     int depth;
 };

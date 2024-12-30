@@ -5,8 +5,8 @@
 
 #define MAX_RECURSION_DEPTH 4
 
-#include "payload.glsl"
-#include "scene_data.glsl"
+#include "../common/payload.glsl"
+#include "../common/scene_data.glsl"
 
 layout(location = 0) rayPayloadInEXT Payload payload;
 
@@ -130,16 +130,16 @@ void main() {
     vec3 reflection = vec3(0.0);
     if (payload.depth < options.recursion_depth && length(material.reflection) > 0.0) {
         evaluateReflection(P, N, V, material, depth);
-        reflection = payload.direct_light;
+        reflection = payload.light;
     }
 
     vec3 transmission = vec3(0.0);
     if (payload.depth < options.recursion_depth && length(material.transmission) > 0.0) {
         handleTransmissiveMaterial(P, N, V, material, depth);
-        transmission = payload.direct_light;
+        transmission = payload.light;
     }
 
     vec3 phong = evaluatePhong(P, N, L, incoming_light, distance_to_light, V, material);
 
-    payload.direct_light = phong + material.reflection * reflection + material.transmission * transmission + sceneData.ambientColor.xyz * material.diffuse;
+    payload.light = phong + material.reflection * reflection + material.transmission * transmission + sceneData.ambientColor.xyz * material.diffuse;
 }

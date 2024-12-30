@@ -2,7 +2,7 @@
 #extension GL_EXT_ray_tracing : enable
 #extension GL_GOOGLE_include_directive : enable
 
-#include "payload.glsl"
+#include "../common/payload.glsl"
 
 layout(set = 0, binding = 7) uniform sampler2D textures[6];
 
@@ -36,6 +36,5 @@ vec3 evaluateCubeMap() {
 }
 
 void main() {
-    //payload.direct_light = vec3(0.0, 0.0, 0.2);
     payload.direct_light = evaluateCubeMap();
 }

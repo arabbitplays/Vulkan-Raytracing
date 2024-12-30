@@ -2,7 +2,7 @@
 #extension GL_EXT_ray_tracing : enable
 #extension GL_GOOGLE_include_directive : enable
 
-#include "payload.glsl"
+#include "../common/payload.glsl"
 
 layout(location = 0) rayPayloadInEXT bool isShadowed;
 

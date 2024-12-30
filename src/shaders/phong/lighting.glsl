@@ -53,7 +53,7 @@ void evaluateReflection(vec3 P, vec3 N, vec3 V, Material material, int depth) {
     float tmax = 10000.0;
 
     payload.depth = depth + 1;
-    payload.direct_light = vec3(0.0);
+    payload.light = vec3(0.0);
     traceRayEXT(topLevelAS, gl_RayFlagsOpaqueEXT, 0xff, 0, 0, 0, origin, tmin, direction, tmax, 0);
 }
 
@@ -69,7 +69,7 @@ void evaluateTransmission(vec3 P, vec3 N, vec3 V, float eta, int depth) {
 
     const float radicand = 1.0 - eta * eta * (1.0 - NdotV * NdotV);
     if (radicand < 0.0) {
-        payload.direct_light = vec3(0.0);
+        payload.light = vec3(0.0);
         return;
     }
 
@@ -80,7 +80,7 @@ void evaluateTransmission(vec3 P, vec3 N, vec3 V, float eta, int depth) {
     float tmax = 10000.0;
 
     payload.depth = depth + 1;
-    payload.direct_light = vec3(0.0);
+    payload.light = vec3(0.0);
     traceRayEXT(topLevelAS, gl_RayFlagsOpaqueEXT, 0xff, 0, 0, 0, origin, tmin, refract_dir, tmax, 0);
 }
 
@@ -113,11 +113,11 @@ void handleTransmissiveMaterialSingleIOR(vec3 P, vec3 N, vec3 V, float eta, Mate
     if (options.fresnel) {
         float F = fresnel(V, N, eta);
         evaluateReflection(P, N, V, material, depth);
-        vec3 reflection = payload.direct_light;
+        vec3 reflection = payload.light;
         evaluateTransmission(P, N, V, eta, depth);
-        vec3 transmission = payload.direct_light;
+        vec3 transmission = payload.light;
 
-        payload.direct_light = F * reflection + (1.0 - F) * transmission;
+        payload.light = F * reflection + (1.0 - F) * transmission;
     } else {
         evaluateTransmission(P, N, V, eta, depth);
     }
@@ -127,12 +127,12 @@ void handleTransmissiveMaterial(vec3 P, vec3 N, vec3 V, Material material, int d
     if (options.dispersion) {
         vec3 result = vec3(0.0);
         handleTransmissiveMaterialSingleIOR(P, N, V, material.eta.x, material, depth);
-        result.x = payload.direct_light.x;
+        result.x = payload.light.x;
         handleTransmissiveMaterialSingleIOR(P, N, V, material.eta.y, material, depth);
-        result.y = payload.direct_light.y;
+        result.y = payload.light.y;
         handleTransmissiveMaterialSingleIOR(P, N, V, material.eta.z, material, depth);
-        result.z = payload.direct_light.z;
-        payload.direct_light = result;
+        result.z = payload.light.z;
+        payload.light = result;
     } else {
         float mean_eta = (material.eta.x + material.eta.y + material.eta.z) / 3;
         handleTransmissiveMaterialSingleIOR(P, N, V, mean_eta, material, depth);
