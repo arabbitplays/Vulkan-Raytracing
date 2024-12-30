@@ -5,5 +5,10 @@
 #include "Material.hpp"
 
 void Material::clearRessources() {
-    deletionQueue.flush();
+    resetQueue.flush();
+    mainDeletionQueue.flush();
+}
+
+void Material::reset() {
+    resetQueue.flush();
 }

@@ -77,8 +77,6 @@ private:
 
     std::vector<VkCommandBuffer> commandBuffers;
 
-    std::shared_ptr<AccelerationStructure> top_level_acceleration_structure;
-
     DrawContext mainDrawContext;
     std::shared_ptr<RaytracingOptions> raytracing_options;
     std::shared_ptr<RendererOptions> renderer_options;
@@ -101,7 +99,6 @@ private:
     bool framebufferResized = false;
 
     std::shared_ptr<MaterialInstance> default_phong;
-    AllocatedBuffer instance_mapping_buffer;
 
     void initWindow();
     void initVulkan();
@@ -154,8 +151,6 @@ private:
 
     void cleanupStorageImages();
     void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex, ImDrawData* gui_draw_data);
-
-    void updateScene(uint32_t currentImage);
 
     static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
             VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,

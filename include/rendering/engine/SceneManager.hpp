@@ -21,25 +21,19 @@ public:
     }
 
     void createScene(SceneType scene_type);
+    void updateScene(DrawContext& draw_context, uint32_t current_image_idx, AllocatedImage& current_image);
     void clearRessources();
 
     PhongMaterial getMaterial(); // TODO make this material return type
 
     void createBlas();
 
-    std::shared_ptr<VulkanContext> context;
-    DeletionQueue main_deletion_queue, scene_ressource_deletion_queue;
-    uint32_t max_frames_in_flight;
-
     std::shared_ptr<Scene> scene;
+    SceneType curr_scene_type;
 
-    VkDescriptorSetLayout scene_descsriptor_set_layout;
     std::vector<VkDescriptorSet> scene_descriptor_sets{};
     std::vector<AllocatedBuffer> sceneUniformBuffers;
     std::vector<void*> sceneUniformBuffersMapped;
-
-    std::shared_ptr<PhongMaterial> phong_material;
-    AllocatedBuffer vertex_buffer, index_buffer, geometry_mapping_buffer;
 
 private:
     void createSceneLayout();
@@ -53,6 +47,12 @@ private:
     void createSceneBuffers();
     void createUniformBuffers();
 
+    std::shared_ptr<VulkanContext> context;
+    DeletionQueue main_deletion_queue, scene_ressource_deletion_queue;
+    uint32_t max_frames_in_flight;
+
+    VkDescriptorSetLayout scene_descsriptor_set_layout;
+
     AllocatedImage whiteImage;
     AllocatedImage greyImage;
     AllocatedImage blackImage;
@@ -60,6 +60,11 @@ private:
 
     VkSampler defaultSamplerLinear;
     VkSampler defaultSamplerNearest;
+
+    std::shared_ptr<PhongMaterial> phong_material;
+    AllocatedBuffer vertex_buffer, index_buffer, geometry_mapping_buffer, instance_mapping_buffer;
+    std::shared_ptr<AccelerationStructure> top_level_acceleration_structure;
+
 };
 
 

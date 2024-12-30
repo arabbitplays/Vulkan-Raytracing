@@ -21,7 +21,7 @@ void PhongMaterial::buildPipelines(VkDescriptorSetLayout sceneLayout) {
     layoutBuilder.addBinding(0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
 
     materialLayout = layoutBuilder.build(device, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR);
-    deletionQueue.pushFunction([&]() {
+    mainDeletionQueue.pushFunction([&]() {
         vkDestroyDescriptorSetLayout(device, materialLayout, nullptr);
     });
 
@@ -42,7 +42,7 @@ void PhongMaterial::buildPipelines(VkDescriptorSetLayout sceneLayout) {
 
     pipeline->build(device);
 
-    deletionQueue.pushFunction([&]() {
+    mainDeletionQueue.pushFunction([&]() {
         pipeline->destroy(device);
     });
 
@@ -54,7 +54,7 @@ void PhongMaterial::buildPipelines(VkDescriptorSetLayout sceneLayout) {
 
 void PhongMaterial::writeMaterial() {
     materialBuffer = createMaterialBuffer();
-    deletionQueue.pushFunction([&]() {
+    resetQueue.pushFunction([&]() {
         ressource_builder.destroyBuffer(materialBuffer);
     });
 
@@ -95,5 +95,11 @@ AllocatedBuffer PhongMaterial::createMaterialBuffer() {
         materialConstants.push_back(*constants_buffer[i]);
     }
     return ressource_builder.stageMemoryToNewBuffer(materialConstants.data(), materialConstants.size() * sizeof(MaterialConstants), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
+}
+
+void PhongMaterial::reset() {
+    constants_buffer.clear();
+    instances.clear();
+    Material::reset();
 }
 

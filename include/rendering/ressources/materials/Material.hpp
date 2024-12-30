@@ -24,7 +24,7 @@ class Material {
         };
         descriptorAllocator.init(device, 4, poolRatios);
 
-        deletionQueue.pushFunction([&]() {
+        mainDeletionQueue.pushFunction([&]() {
             descriptorAllocator.destroyPools(device);
         });
     };
@@ -38,11 +38,12 @@ class Material {
     virtual void buildPipelines(VkDescriptorSetLayout sceneLayout) = 0;
     virtual void writeMaterial() = 0;
     void clearRessources();
+    virtual void reset();
 
 protected:
     VkDevice device;
     DescriptorAllocator descriptorAllocator;
-    DeletionQueue deletionQueue;
+    DeletionQueue mainDeletionQueue, resetQueue;
 };
 
 struct MaterialInstance {

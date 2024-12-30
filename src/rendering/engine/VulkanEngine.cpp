@@ -623,6 +623,12 @@ void VulkanEngine::createSyncObjects() {
 void VulkanEngine::mainLoop() {
     while(!glfwWindowShouldClose(window)) {
         glfwPollEvents();
+
+        if (scene_manager->curr_scene_type != renderer_options->scene_type) {
+            vkDeviceWaitIdle(device);
+            scene_manager->createScene(renderer_options->scene_type);
+        }
+
         drawFrame();
     }
 
@@ -644,7 +650,7 @@ void VulkanEngine::drawFrame() {
 
     vkResetFences(device, 1, &inFlightFences[currentFrame]);
 
-    updateScene(currentFrame);
+    scene_manager->updateScene(mainDrawContext, currentFrame, storageImages[currentFrame]);
 
     vkResetCommandBuffer(commandBuffers[currentFrame], 0);
     recordCommandBuffer(commandBuffers[currentFrame], imageIndex, nullptr);
@@ -697,59 +703,6 @@ void VulkanEngine::refreshAfterResize() {
     createStorageImages();
     guiManager->updateWindows(swapchain);
     scene_manager->scene->update(swapchain->extent.width, swapchain->extent.height);
-}
-
-void VulkanEngine::updateScene(uint32_t currentImage) {
-    //QuickTimer timer{"Scene Update", true};
-
-    scene_manager->scene->update(swapchain->extent.width, swapchain->extent.height);
-
-    static auto startTime = std::chrono::high_resolution_clock::now();
-    auto currentTime = std::chrono::high_resolution_clock::now();
-    float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
-    glm::mat4 rotation = glm::rotate(glm::mat4{1.0f}, time * glm::radians(45.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-
-    if (top_level_acceleration_structure == nullptr) {
-        top_level_acceleration_structure = std::make_shared<AccelerationStructure>(device, ressourceBuilder, commandManager, VK_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL_KHR);
-
-        mainDeletionQueue.pushFunction([&]() {
-            top_level_acceleration_structure->destroy();
-        });
-    }
-
-    mainDrawContext.objects.clear();
-    for (auto& pair : scene_manager->scene->nodes) {
-        pair.second->draw(glm::mat4(1.0f), mainDrawContext);
-    }
-
-    if (instance_mapping_buffer.handle == VK_NULL_HANDLE) { // TODO make it dynamic
-        instance_mapping_buffer = mesh_builder->createInstanceMappingBuffer(mainDrawContext.objects);
-        mainDeletionQueue.pushFunction([&]() {
-            ressourceBuilder.destroyBuffer(instance_mapping_buffer);
-        });
-    }
-    uint32_t instance_id = 0;
-    for (auto& object : mainDrawContext.objects) {
-        top_level_acceleration_structure->addInstance(object.acceleration_structure, object.transform, instance_id++);
-    }
-
-    if (top_level_acceleration_structure->getHandle() == VK_NULL_HANDLE) {
-        top_level_acceleration_structure->addInstanceGeometry();
-    } else {
-        top_level_acceleration_structure->update_instance_geometry(0);
-    }
-    top_level_acceleration_structure->build();
-
-    // TODO do this in the scene manager
-    descriptorAllocator->writeAccelerationStructure(0, top_level_acceleration_structure->getHandle(), VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR);
-    descriptorAllocator->writeImage(1, storageImages[currentImage].imageView, VK_NULL_HANDLE, VK_IMAGE_LAYOUT_GENERAL, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
-    descriptorAllocator->writeBuffer(2, scene_manager->sceneUniformBuffers[0].handle, sizeof(SceneData), 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
-    descriptorAllocator->writeBuffer(6, instance_mapping_buffer.handle, 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
-    descriptorAllocator->updateSet(device, scene_manager->scene_descriptor_sets[0]);
-    descriptorAllocator->clearWrites();
-
-    std::shared_ptr<SceneData> scene_data = scene_manager->scene->createSceneData();
-    memcpy(scene_manager->sceneUniformBuffersMapped[currentImage], scene_data.get(), sizeof(SceneData));
 }
 
 void VulkanEngine::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex, ImDrawData* gui_draw_data) {
