@@ -18,14 +18,14 @@ class Pipeline;
 class Material {
   public:
     Material() = default;
-    Material(VkDevice& device) : device(device) {
+    Material(std::shared_ptr<VulkanContext> context) : context(context) {
         std::vector<DescriptorAllocator::PoolSizeRatio> poolRatios = {
             { VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1 },
         };
-        descriptorAllocator.init(device, 4, poolRatios);
+        descriptorAllocator.init(context->device, 4, poolRatios);
 
         mainDeletionQueue.pushFunction([&]() {
-            descriptorAllocator.destroyPools(device);
+            descriptorAllocator.destroyPools(this->context->device);
         });
     };
 
@@ -41,7 +41,7 @@ class Material {
     virtual void reset();
 
 protected:
-    VkDevice device;
+    std::shared_ptr<VulkanContext> context;
     DescriptorAllocator descriptorAllocator;
     DeletionQueue mainDeletionQueue, resetQueue;
 };

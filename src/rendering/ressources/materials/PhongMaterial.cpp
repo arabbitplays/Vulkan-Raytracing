@@ -16,13 +16,13 @@
 
 void PhongMaterial::buildPipelines(VkDescriptorSetLayout sceneLayout) {
     DescriptorLayoutBuilder layoutBuilder;
-    pipeline = std::make_shared<Pipeline>();
+    pipeline = std::make_shared<Pipeline>(context);
 
     layoutBuilder.addBinding(0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
 
-    materialLayout = layoutBuilder.build(device, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR);
+    materialLayout = layoutBuilder.build(context->device, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR);
     mainDeletionQueue.pushFunction([&]() {
-        vkDestroyDescriptorSetLayout(device, materialLayout, nullptr);
+        vkDestroyDescriptorSetLayout(context->device, materialLayout, nullptr);
     });
 
     std::vector<VkDescriptorSetLayout> descriptorSetLayouts{sceneLayout, materialLayout};
@@ -30,37 +30,37 @@ void PhongMaterial::buildPipelines(VkDescriptorSetLayout sceneLayout) {
 
     pipeline->addPushConstant(sizeof(RaytracingOptions), VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR);
 
-    VkShaderModule raygenShaderModule = VulkanUtil::createShaderModule(device, oschd_raygen_rgen_spv_size(), oschd_raygen_rgen_spv());
-    VkShaderModule missShaderModule = VulkanUtil::createShaderModule(device, oschd_miss_rmiss_spv_size(), oschd_miss_rmiss_spv());
-    VkShaderModule shadowMissShaderModule = VulkanUtil::createShaderModule(device, oschd_shadow_miss_rmiss_spv_size(), oschd_shadow_miss_rmiss_spv());
-    VkShaderModule closestHitShaderModule = VulkanUtil::createShaderModule(device, oschd_closesthit_rchit_spv_size(), oschd_closesthit_rchit_spv());
+    VkShaderModule raygenShaderModule = VulkanUtil::createShaderModule(context->device, oschd_raygen_rgen_spv_size(), oschd_raygen_rgen_spv());
+    VkShaderModule missShaderModule = VulkanUtil::createShaderModule(context->device, oschd_miss_rmiss_spv_size(), oschd_miss_rmiss_spv());
+    VkShaderModule shadowMissShaderModule = VulkanUtil::createShaderModule(context->device, oschd_shadow_miss_rmiss_spv_size(), oschd_shadow_miss_rmiss_spv());
+    VkShaderModule closestHitShaderModule = VulkanUtil::createShaderModule(context->device, oschd_closesthit_rchit_spv_size(), oschd_closesthit_rchit_spv());
 
     pipeline->addShaderStage(raygenShaderModule, VK_SHADER_STAGE_RAYGEN_BIT_KHR, VK_RAY_TRACING_SHADER_GROUP_TYPE_GENERAL_KHR);
     pipeline->addShaderStage(missShaderModule, VK_SHADER_STAGE_MISS_BIT_KHR, VK_RAY_TRACING_SHADER_GROUP_TYPE_GENERAL_KHR);
     pipeline->addShaderStage(shadowMissShaderModule, VK_SHADER_STAGE_MISS_BIT_KHR, VK_RAY_TRACING_SHADER_GROUP_TYPE_GENERAL_KHR);
     pipeline->addShaderStage(closestHitShaderModule, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR, VK_RAY_TRACING_SHADER_GROUP_TYPE_TRIANGLES_HIT_GROUP_KHR);
 
-    pipeline->build(device);
+    pipeline->build();
 
     mainDeletionQueue.pushFunction([&]() {
-        pipeline->destroy(device);
+        pipeline->destroy();
     });
 
-    vkDestroyShaderModule(device, raygenShaderModule, nullptr);
-    vkDestroyShaderModule(device, missShaderModule, nullptr);
-    vkDestroyShaderModule(device, shadowMissShaderModule, nullptr);
-    vkDestroyShaderModule(device, closestHitShaderModule, nullptr);
+    vkDestroyShaderModule(context->device, raygenShaderModule, nullptr);
+    vkDestroyShaderModule(context->device, missShaderModule, nullptr);
+    vkDestroyShaderModule(context->device, shadowMissShaderModule, nullptr);
+    vkDestroyShaderModule(context->device, closestHitShaderModule, nullptr);
 }
 
 void PhongMaterial::writeMaterial() {
     materialBuffer = createMaterialBuffer();
     resetQueue.pushFunction([&]() {
-        ressource_builder.destroyBuffer(materialBuffer);
+        context->resource_builder->destroyBuffer(materialBuffer);
     });
 
-    materialDescriptorSet = descriptorAllocator.allocate(device, materialLayout);
+    materialDescriptorSet = descriptorAllocator.allocate(context->device, materialLayout);
     descriptorAllocator.writeBuffer(0, materialBuffer.handle, 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
-    descriptorAllocator.updateSet(device, materialDescriptorSet);
+    descriptorAllocator.updateSet(context->device, materialDescriptorSet);
     descriptorAllocator.clearWrites();
 }
 
@@ -94,7 +94,7 @@ AllocatedBuffer PhongMaterial::createMaterialBuffer() {
         instances[i]->material_index = i;
         materialConstants.push_back(*constants_buffer[i]);
     }
-    return ressource_builder.stageMemoryToNewBuffer(materialConstants.data(), materialConstants.size() * sizeof(MaterialConstants), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
+    return context->resource_builder->stageMemoryToNewBuffer(materialConstants.data(), materialConstants.size() * sizeof(MaterialConstants), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
 }
 
 void PhongMaterial::reset() {

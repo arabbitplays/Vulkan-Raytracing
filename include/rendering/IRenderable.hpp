@@ -3,9 +3,6 @@
 //
 
 #include <AccelerationStructure.hpp>
-#include <Material.hpp>
-#include <Pipeline.hpp>
-#include <vulkan/vulkan_core.h>
 
 #ifndef BASICS_IRENDERABLE_HPP
 #define BASICS_IRENDERABLE_HPP

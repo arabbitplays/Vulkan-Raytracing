@@ -5,6 +5,7 @@
 #include "Pipeline.hpp"
 
 #include <stdexcept>
+#include <VulkanUtil.hpp>
 
 VkResult CreateRayTracingPipelinesKHR(VkDevice device, VkDeferredOperationKHR deferredOperation, VkPipelineCache pipelineCache, uint32_t createInfoCount,
                                       const VkRayTracingPipelineCreateInfoKHR* pCreateInfos, const VkAllocationCallbacks* pAllocator, VkPipeline* pPipelines) {
@@ -17,12 +18,21 @@ VkResult CreateRayTracingPipelinesKHR(VkDevice device, VkDeferredOperationKHR de
     }
 }
 
+VkResult GetRayTracingShaderGroupHandlesKHR(VkDevice device, VkPipeline pipeline, uint32_t firstGroup, uint32_t groupCount, size_t dataSize, void* pData) {
+    auto func = (PFN_vkGetRayTracingShaderGroupHandlesKHR) vkGetDeviceProcAddr(device, "vkGetRayTracingShaderGroupHandlesKHR");
+    if (func != nullptr) {
+        return func(device, pipeline, firstGroup, groupCount, dataSize, pData);
+    } else {
+        return VK_ERROR_EXTENSION_NOT_PRESENT;
+    }
+}
+
 // --------------------------------------------------------------------------------------------------------------------------
 
-void Pipeline::build(VkDevice& device) {
+void Pipeline::build() {
     pipelineLayoutInfo.pushConstantRangeCount = static_cast<uint32_t>(pushConstants.size());
     pipelineLayoutInfo.pPushConstantRanges = pushConstants.data();
-    if (vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &layout) != VK_SUCCESS) {
+    if (vkCreatePipelineLayout(context->device, &pipelineLayoutInfo, nullptr, &layout) != VK_SUCCESS) {
         throw std::runtime_error("failed to create pipeline layout!");
     }
 
@@ -34,9 +44,54 @@ void Pipeline::build(VkDevice& device) {
     pipelineInfo.pGroups = shader_groups.data();
     pipelineInfo.maxPipelineRayRecursionDepth = 31;
     pipelineInfo.layout = layout;
-    if (CreateRayTracingPipelinesKHR(device, VK_NULL_HANDLE, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &pipeline) != VK_SUCCESS) {
+    if (CreateRayTracingPipelinesKHR(context->device, VK_NULL_HANDLE, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &handle) != VK_SUCCESS) {
         throw std::runtime_error("failed to create ray tracing pipeline!");
     }
+
+    deletionQueue.pushFunction([&] () {
+        vkDestroyPipelineLayout(context->device, layout, nullptr);
+        vkDestroyPipeline(context->device, handle, nullptr);
+    });
+}
+
+void Pipeline::createShaderBindingTables(VkPhysicalDeviceRayTracingPipelinePropertiesKHR raytracingProperties) {
+    std::vector<uint32_t> rgen_indices{0};
+    std::vector<uint32_t> miss_indices{1, 2};
+    std::vector<uint32_t> hit_indices{3};
+
+    const uint32_t handleSize = raytracingProperties.shaderGroupHandleSize;
+    const uint32_t handleAlignment = raytracingProperties.shaderGroupHandleAlignment;
+    const uint32_t handleSizeAligned = VulkanUtil::alignedSize(handleSize, handleAlignment);
+    const uint32_t groupCount = static_cast<uint32_t>(shader_groups.size());
+    const uint32_t sbt_size = groupCount * handleSizeAligned;
+    const uint32_t sbtUsageFlags = VK_BUFFER_USAGE_SHADER_BINDING_TABLE_BIT_KHR | VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+    const uint32_t sbtMemoryPropertyFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+
+    raygenShaderBindingTable = context->resource_builder->createBuffer(handleSize, sbtUsageFlags, sbtMemoryPropertyFlags);
+    missShaderBindingTable = context->resource_builder->createBuffer(handleSize, sbtUsageFlags, sbtMemoryPropertyFlags);
+    hitShaderBindingTable = context->resource_builder->createBuffer(handleSize, sbtUsageFlags, sbtMemoryPropertyFlags);
+    deletionQueue.pushFunction([&]() {
+        context->resource_builder->destroyBuffer(raygenShaderBindingTable);
+        context->resource_builder->destroyBuffer(missShaderBindingTable);
+        context->resource_builder->destroyBuffer(hitShaderBindingTable);
+    });
+
+    std::vector<uint8_t> shaderHandleStorage(sbt_size);
+    if (GetRayTracingShaderGroupHandlesKHR(context->device, handle, 0, groupCount, sbt_size, shaderHandleStorage.data()) != VK_SUCCESS) {
+        throw std::runtime_error("failed to get shader group handles!");
+    }
+
+    auto copyHandle = [&](AllocatedBuffer& buffer, std::vector<uint32_t>& indices, uint32_t stride) {
+        size_t offset = 0;
+        for (uint32_t index = 0; index < indices.size(); index++) {
+            buffer.update(context->device, shaderHandleStorage.data() + (indices[index] * handleSizeAligned), handleSize, offset);
+            offset += stride * sizeof(uint8_t);
+        }
+    };
+
+    copyHandle(raygenShaderBindingTable, rgen_indices, handleSizeAligned);
+    copyHandle(missShaderBindingTable, miss_indices, handleSizeAligned);
+    copyHandle(hitShaderBindingTable, hit_indices, handleSizeAligned);
 }
 
 void Pipeline::addShaderStage(VkShaderModule shaderModule, VkShaderStageFlagBits shaderStage, VkRayTracingShaderGroupTypeKHR shaderGroup) {
@@ -85,13 +140,12 @@ void Pipeline::clear() {
     pushConstants.clear();
 }
 
-void Pipeline::destroy(VkDevice device) {
-    vkDestroyPipelineLayout(device, layout, nullptr);
-    vkDestroyPipeline(device, pipeline, nullptr);
+void Pipeline::destroy() {
+    deletionQueue.flush();
 }
 
 VkPipeline Pipeline::getHandle() const {
-    return pipeline;
+    return handle;
 }
 
 VkPipelineLayout Pipeline::getLayoutHandle() const {

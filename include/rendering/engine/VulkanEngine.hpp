@@ -25,7 +25,6 @@
 #include <GuiWindow.hpp>
 #include <imgui_impl_vulkan.h>
 #include <PhongMaterial.hpp>
-#include <Pipeline.hpp>
 #include <Scene.hpp>
 #include <SceneManager.hpp>
 #include <Swapchain.hpp>
@@ -87,10 +86,6 @@ private:
 
     std::shared_ptr<SceneManager> scene_manager;
 
-    AllocatedBuffer raygenShaderBindingTable;
-    AllocatedBuffer missShaderBindingTable;
-    AllocatedBuffer hitShaderBindingTable;
-
     std::vector<VkSemaphore> imageAvailableSemaphores;
     std::vector<VkSemaphore> renderFinishedSemaphores;
     std::vector<VkFence> inFlightFences;
@@ -137,7 +132,6 @@ private:
 
 
     void createSwapchain();
-    void createShaderBindingTables();
 
     void createDescriptorAllocator();
     void createCommandBuffers();

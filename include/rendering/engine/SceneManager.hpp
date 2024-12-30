@@ -24,7 +24,7 @@ public:
     void updateScene(DrawContext& draw_context, uint32_t current_image_idx, AllocatedImage& current_image);
     void clearRessources();
 
-    PhongMaterial getMaterial(); // TODO make this material return type
+    std::shared_ptr<Material> getMaterial();
 
     void createBlas();
 

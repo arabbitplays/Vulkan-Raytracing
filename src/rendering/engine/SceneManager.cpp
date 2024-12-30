@@ -164,7 +164,6 @@ void SceneManager::updateScene(DrawContext& draw_context, uint32_t current_image
     }
     top_level_acceleration_structure->build();
 
-    // TODO do this in the scene manager
     context->descriptor_allocator->writeAccelerationStructure(0, top_level_acceleration_structure->getHandle(), VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR);
     context->descriptor_allocator->writeImage(1, current_image.imageView, VK_NULL_HANDLE, VK_IMAGE_LAYOUT_GENERAL, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
     context->descriptor_allocator->writeBuffer(2, sceneUniformBuffers[0].handle, sizeof(SceneData), 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
@@ -237,7 +236,7 @@ void SceneManager::createDefaultSamplers() {
 
 
 void SceneManager::createDefaultMaterials() {
-    phong_material = std::make_shared<PhongMaterial>(context->device, *context->resource_builder);
+    phong_material = std::make_shared<PhongMaterial>(context);
     phong_material->buildPipelines(scene_descsriptor_set_layout);
     main_deletion_queue.pushFunction([&]() {
         phong_material->clearRessources();
@@ -245,8 +244,8 @@ void SceneManager::createDefaultMaterials() {
     //default_phong = createPhongMaterial(glm::vec3{1, 0, 0}, 1, 1, 1);
 }
 
-PhongMaterial SceneManager::getMaterial() {
-    return *phong_material;
+std::shared_ptr<Material> SceneManager::getMaterial() {
+    return phong_material;
 }
 
 void SceneManager::clearRessources() {

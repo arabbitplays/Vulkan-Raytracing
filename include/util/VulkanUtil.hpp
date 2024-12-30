@@ -58,6 +58,10 @@ public:
         }
         return indices;
     }
+
+    static inline uint32_t alignedSize(uint32_t value, uint32_t alignment) {
+        return (value + (alignment - 1)) & ~(alignment - 1);
+    }
 private:
     static std::vector<char> readFile(const std::string& filename) {
         std::ifstream file(filename, std::ios::ate | std::ios::binary);

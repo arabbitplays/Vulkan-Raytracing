@@ -54,17 +54,6 @@ void DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT
     }
 }
 
-
-
-VkResult GetRayTracingShaderGroupHandlesKHR(VkDevice device, VkPipeline pipeline, uint32_t firstGroup, uint32_t groupCount, size_t dataSize, void* pData) {
-    auto func = (PFN_vkGetRayTracingShaderGroupHandlesKHR) vkGetDeviceProcAddr(device, "vkGetRayTracingShaderGroupHandlesKHR");
-    if (func != nullptr) {
-        return func(device, pipeline, firstGroup, groupCount, dataSize, pData);
-    } else {
-        return VK_ERROR_EXTENSION_NOT_PRESENT;
-    }
-}
-
 void CmdTraceRaysKHR(VkDevice device, VkCommandBuffer commandBuffer, const VkStridedDeviceAddressRegionKHR* pRaygenShaderBindingTable,
     const VkStridedDeviceAddressRegionKHR* pMissShaderBindingTable, const VkStridedDeviceAddressRegionKHR* pHitShaderBindingTable,
     const VkStridedDeviceAddressRegionKHR* pCallableShaderBindingTable, uint32_t width, uint32_t height, uint32_t depth) {
@@ -175,7 +164,7 @@ void VulkanEngine::initVulkan() {
     //scene_manager->createScene(renderer_options->scene_type);
     scene_manager->createScene(SceneType::CORNELL_BOX);
 
-    createShaderBindingTables();
+    scene_manager->getMaterial()->pipeline->createShaderBindingTables(raytracingProperties);
     createCommandBuffers();
     createSyncObjects();
 }
@@ -531,54 +520,6 @@ void VulkanEngine::createStorageImages() {
     }
 }
 
-
-inline uint32_t alignedSize(uint32_t value, uint32_t alignment) {
-    return (value + (alignment - 1)) & ~(alignment - 1);
-}
-
-void VulkanEngine::createShaderBindingTables() {
-    Pipeline pipeline = *scene_manager->getMaterial().pipeline;
-
-    std::vector<uint32_t> rgen_indices{0};
-    std::vector<uint32_t> miss_indices{1, 2};
-    std::vector<uint32_t> hit_indices{3};
-
-    const uint32_t handleSize = raytracingProperties.shaderGroupHandleSize;
-    const uint32_t handleAlignment = raytracingProperties.shaderGroupHandleAlignment;
-    const uint32_t handleSizeAligned = alignedSize(handleSize, handleAlignment);
-    const uint32_t groupCount = static_cast<uint32_t>(pipeline.getGroupCount());
-    const uint32_t sbt_size = groupCount * handleSizeAligned;
-    const uint32_t sbtUsageFlags = VK_BUFFER_USAGE_SHADER_BINDING_TABLE_BIT_KHR | VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
-    const uint32_t sbtMemoryPropertyFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
-
-    raygenShaderBindingTable = ressourceBuilder.createBuffer(handleSize, sbtUsageFlags, sbtMemoryPropertyFlags);
-    missShaderBindingTable = ressourceBuilder.createBuffer(handleSize, sbtUsageFlags, sbtMemoryPropertyFlags);
-    hitShaderBindingTable = ressourceBuilder.createBuffer(handleSize, sbtUsageFlags, sbtMemoryPropertyFlags);
-    mainDeletionQueue.pushFunction([&]() {
-        ressourceBuilder.destroyBuffer(raygenShaderBindingTable);
-        ressourceBuilder.destroyBuffer(missShaderBindingTable);
-        ressourceBuilder.destroyBuffer(hitShaderBindingTable);
-    });
-
-    std::vector<uint8_t> shaderHandleStorage(sbt_size);
-    if (GetRayTracingShaderGroupHandlesKHR(device, pipeline.getHandle(), 0, groupCount, sbt_size, shaderHandleStorage.data()) != VK_SUCCESS) {
-        throw std::runtime_error("failed to get shader group handles!");
-    }
-
-    auto copyHandle = [&](AllocatedBuffer& buffer, std::vector<uint32_t>& indices, uint32_t stride) {
-        size_t offset = 0;
-        for (uint32_t index = 0; index < indices.size(); index++) {
-            buffer.update(device, shaderHandleStorage.data() + (indices[index] * handleSizeAligned), handleSize, offset);
-            offset += stride * sizeof(uint8_t);
-        }
-    };
-
-    copyHandle(raygenShaderBindingTable, rgen_indices, handleSizeAligned);
-    copyHandle(missShaderBindingTable, miss_indices, handleSizeAligned);
-    copyHandle(hitShaderBindingTable, hit_indices, handleSizeAligned);
-}
-
-
 void VulkanEngine::createCommandBuffers() {
     commandBuffers.resize(MAX_FRAMES_IN_FLIGHT);
 
@@ -706,7 +647,7 @@ void VulkanEngine::refreshAfterResize() {
 }
 
 void VulkanEngine::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex, ImDrawData* gui_draw_data) {
-    Pipeline pipeline = *scene_manager->getMaterial().pipeline;
+    Pipeline pipeline = *scene_manager->getMaterial()->pipeline;
 
     VkCommandBufferBeginInfo beginInfo{};
     beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -715,20 +656,20 @@ void VulkanEngine::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t i
         throw std::runtime_error("failed to begin record command buffer!");
     }
 
-    const uint32_t handleSizeAligned = alignedSize(raytracingProperties.shaderGroupHandleSize, raytracingProperties.shaderGroupHandleAlignment);
+    const uint32_t handleSizeAligned = VulkanUtil::alignedSize(raytracingProperties.shaderGroupHandleSize, raytracingProperties.shaderGroupHandleAlignment);
 
     VkStridedDeviceAddressRegionKHR raygenShaderSbtEntry{};
-    raygenShaderSbtEntry.deviceAddress = raygenShaderBindingTable.deviceAddress;
+    raygenShaderSbtEntry.deviceAddress = pipeline.raygenShaderBindingTable.deviceAddress;
     raygenShaderSbtEntry.stride = handleSizeAligned;
     raygenShaderSbtEntry.size = handleSizeAligned;
 
     VkStridedDeviceAddressRegionKHR missShaderSbtEntry{};
-    missShaderSbtEntry.deviceAddress = missShaderBindingTable.deviceAddress;
+    missShaderSbtEntry.deviceAddress = pipeline.missShaderBindingTable.deviceAddress;
     missShaderSbtEntry.stride = handleSizeAligned;
     missShaderSbtEntry.size = handleSizeAligned;
 
     VkStridedDeviceAddressRegionKHR closestHitShaderSbtEntry{};
-    closestHitShaderSbtEntry.deviceAddress = hitShaderBindingTable.deviceAddress;
+    closestHitShaderSbtEntry.deviceAddress = pipeline.hitShaderBindingTable.deviceAddress;
     closestHitShaderSbtEntry.stride = handleSizeAligned;
     closestHitShaderSbtEntry.size = handleSizeAligned;
 
@@ -736,7 +677,7 @@ void VulkanEngine::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t i
 
     std::vector<VkDescriptorSet> descriptor_sets{};
     descriptor_sets.push_back(scene_manager->scene_descriptor_sets[0]);
-    descriptor_sets.push_back(scene_manager->getMaterial().materialDescriptorSet);
+    descriptor_sets.push_back(scene_manager->getMaterial()->materialDescriptorSet);
 
     vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, pipeline.getHandle());
     vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, pipeline.getLayoutHandle(),
