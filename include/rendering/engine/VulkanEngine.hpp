@@ -27,6 +27,7 @@
 #include <PhongMaterial.hpp>
 #include <Pipeline.hpp>
 #include <Scene.hpp>
+#include <SceneManager.hpp>
 #include <Swapchain.hpp>
 #include <unordered_map>
 #include "../Vertex.hpp"
@@ -38,17 +39,19 @@
 #include "../IRenderable.hpp"
 #include "../nodes/Node.hpp"
 #include "DeletionQueue.hpp"
+#include <VulkanContext.hpp>
 
 class VulkanEngine {
 public:
     static constexpr int MAX_FRAMES_IN_FLIGHT = 2;
 
     VkDevice device;
+    std::shared_ptr<CommandManager> pCommandManager;
     CommandManager commandManager;
+    std::shared_ptr<RessourceBuilder> pRessourceBuilder;
     RessourceBuilder ressourceBuilder;
     std::shared_ptr<MeshAssetBuilder> mesh_builder;
-
-    VkDescriptorSetLayout sceneDataDescriptorLayout;
+    std::shared_ptr<DescriptorAllocator> descriptorAllocator;
 
     void run();
     VkFormat getColorAttachmentFormat();
@@ -63,6 +66,8 @@ private:
     VkDebugUtilsMessengerEXT debugMessenger;
     DeletionQueue mainDeletionQueue;
 
+    std::shared_ptr<VulkanContext> context;
+
     VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
     VkQueue graphicsQueue, presentQueue;
 
@@ -72,7 +77,6 @@ private:
 
     std::vector<VkCommandBuffer> commandBuffers;
 
-    AllocatedBuffer vertex_buffer, index_buffer, instance_mapping_buffer, geometry_mapping_buffer;
     std::shared_ptr<AccelerationStructure> top_level_acceleration_structure;
 
     DrawContext mainDrawContext;
@@ -83,26 +87,11 @@ private:
 
     std::vector<AllocatedImage> storageImages;
 
-    std::shared_ptr<Scene> scene;
+    std::shared_ptr<SceneManager> scene_manager;
 
     AllocatedBuffer raygenShaderBindingTable;
     AllocatedBuffer missShaderBindingTable;
     AllocatedBuffer hitShaderBindingTable;
-
-    AllocatedImage whiteImage;
-    AllocatedImage greyImage;
-    AllocatedImage blackImage;
-    AllocatedImage errorCheckerboardImage;
-
-    VkSampler defaultSamplerLinear;
-    VkSampler defaultSamplerNearest;
-
-    std::vector<VkDescriptorSet> scene_descriptor_sets{};
-    VkDescriptorSetLayout scene_descsriptor_set_layout;
-    std::vector<AllocatedBuffer> sceneUniformBuffers;
-    std::vector<void*> sceneUniformBuffersMapped;
-
-    DescriptorAllocator descriptorAllocator;
 
     std::vector<VkSemaphore> imageAvailableSemaphores;
     std::vector<VkSemaphore> renderFinishedSemaphores;
@@ -112,21 +101,17 @@ private:
     bool framebufferResized = false;
 
     std::shared_ptr<MaterialInstance> default_phong;
-    std::shared_ptr<PhongMaterial> phong_material;
+    AllocatedBuffer instance_mapping_buffer;
 
     void initWindow();
-
-    void createSceneBuffers();
-
     void initVulkan();
+    void initGui();
     void mainLoop();
     void cleanup();
 
     static void framebufferResizeCallback(GLFWwindow *window, int width, int height);
     static void keyCallback(GLFWwindow *window, int key, int scancode, int action, int mods);
     static void mouseCallback(GLFWwindow *window, double xPos, double yPos);
-
-    void initGui();
 
     void createInstance();
     bool checkValidationLayerSupport();
@@ -152,23 +137,11 @@ private:
                                  VkFormatFeatureFlags features);
     bool hasStencilComponent(VkFormat format);
     AllocatedImage loadTextureImage(std::string path);
-    void initDefaultResources();
-    void createDefaultTextures();
-    void createDefaultSamplers();
-    void createDefaultMaterials();
+
 
     void createSwapchain();
-
-    void createScene();
-
-    void createAccelerationStructure();
     void createShaderBindingTables();
 
-    void createSceneDescriptorSets();
-
-    void createSceneLayout();
-
-    void createUniformBuffers();
     void createDescriptorAllocator();
     void createCommandBuffers();
     void createSyncObjects();

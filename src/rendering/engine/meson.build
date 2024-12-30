@@ -3,5 +3,6 @@ src += files(
     'DescriptorAllocator.cpp',
     'VulkanEngine.cpp',
     'Scene.cpp',
+    'SceneManager.cpp',
     'Swapchain.cpp',
 )
