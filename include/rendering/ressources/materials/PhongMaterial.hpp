@@ -25,20 +25,18 @@ public:
         // add images and samplers here
     };
 
-    PhongMaterial(VkDevice& device, RessourceBuilder& ressource_builder_) : Material(device), ressource_builder(ressource_builder_) {}
+    PhongMaterial(std::shared_ptr<VulkanContext> context) : Material(context) {}
 
     void buildPipelines(VkDescriptorSetLayout sceneLayout) override;
     void writeMaterial() override;
     std::shared_ptr<MaterialInstance> createInstance(glm::vec3 diffuse, glm::vec3 specular, glm::vec3 ambient, glm::vec3 reflection, glm::vec3 transmission, float n, glm::vec3 eta = glm::vec3(0.0));
-
+    void reset() override;
 private:
     AllocatedBuffer createMaterialBuffer();
 
     std::vector<std::shared_ptr<MaterialInstance>> instances;
     std::vector<std::shared_ptr<MaterialConstants>> constants_buffer;
     AllocatedBuffer materialBuffer;
-
-    RessourceBuilder ressource_builder;
 };
 
 

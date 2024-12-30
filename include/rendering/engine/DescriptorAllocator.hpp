@@ -22,13 +22,17 @@ public:
     void clearPools(VkDevice device);
     void destroyPools(VkDevice device);
     VkDescriptorSet allocate(VkDevice device, VkDescriptorSetLayout layout, void* pNext = nullptr);
+    VkDescriptorPool createPool(VkDevice device, std::vector<VkDescriptorPoolSize> pool_sizes, VkDescriptorPoolCreateFlags flags);
 
     void writeBuffer(uint32_t binding, VkBuffer buffer, VkDeviceSize size, uint32_t offset, VkDescriptorType type);
     void writeBuffer(uint32_t binding, VkBuffer buffer, uint32_t offset, VkDescriptorType type);
-    void writeImage(uint32_t binding, VkImageView imageView, VkSampler sampler, VkImageLayout layout, VkDescriptorType type);
+    void writeImage(uint32_t binding, VkImageView imageView, VkSampler sampler, VkImageLayout layout, VkDescriptorType type, uint32_t array_idx = 0);
+    void writeImages(uint32_t binding, std::vector<VkImageView> imageViews, VkSampler sampler, VkImageLayout layout, VkDescriptorType type);
     void writeAccelerationStructure(uint32_t binding, const VkAccelerationStructureKHR& accelerationStructure, VkDescriptorType type);
     void updateSet(VkDevice& device, VkDescriptorSet& set);
     void clearWrites();
+
+    VkDescriptorPool getGUIDescriptorPool();
 
 private:
     VkDescriptorPool getPool(VkDevice device);
@@ -39,7 +43,7 @@ private:
     std::vector<VkDescriptorPool> readyPools;
     uint32_t setsPerPool;
 
-    std::deque<VkDescriptorImageInfo> imageInfos;
+    std::vector<VkDescriptorImageInfo> imageInfos{};
     std::deque<VkDescriptorBufferInfo> bufferInfos;
     std::deque<VkWriteDescriptorSetAccelerationStructureKHR> accelerationStructureInfos;
     std::vector<VkWriteDescriptorSet> writes;

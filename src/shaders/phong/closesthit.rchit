@@ -3,14 +3,12 @@
 #extension GL_GOOGLE_include_directive : enable
 #extension GL_EXT_nonuniform_qualifier : enable
 
-#define MAX_RECURSION_DEPTH 2
+#define MAX_RECURSION_DEPTH 4
 
-#include "payload.glsl"
-#include "scene_data.glsl"
+#include "../common/payload.glsl"
+#include "../common/scene_data.glsl"
 
 layout(location = 0) rayPayloadInEXT Payload payload;
-
-#include "lighting.glsl"
 
 struct Vertex {
     vec3 position;
@@ -25,7 +23,7 @@ layout(binding = 3, set = 0) readonly buffer VertexBuffer {
 layout(binding = 4, set = 0) readonly buffer IndexBuffer {
     uint indices[];
 } index_buffer;
-layout(binding = 5, set = 0) readonly buffer GeometryappingBuffer {
+layout(binding = 5, set = 0) readonly buffer GeometryMappingBuffer {
     uint indices[];
 } geometry_mapping_buffer;
 layout(binding = 6, set = 0) readonly buffer InstanceMappingBuffer {
@@ -35,8 +33,16 @@ layout(binding = 0, set = 1) readonly buffer MaterialBuffer {
     vec4[] data;
 } material_buffer;
 
+layout(push_constant) uniform PushConstants {
+    int recursion_depth;
+    bool shadows;
+    bool fresnel;
+    bool dispersion;
+} options;
+
 hitAttributeEXT vec3 attribs;
 
+#include "lighting.glsl"
 
 Vertex getVertex(uint vertexOffset, uint index)
 {
@@ -122,18 +128,18 @@ void main() {
     int depth = payload.depth;
 
     vec3 reflection = vec3(0.0);
-    if (payload.depth < MAX_RECURSION_DEPTH && length(material.reflection) > 0.0) {
+    if (payload.depth < options.recursion_depth && length(material.reflection) > 0.0) {
         evaluateReflection(P, N, V, material, depth);
-        reflection = payload.direct_light;
+        reflection = payload.light;
     }
 
     vec3 transmission = vec3(0.0);
-    if (payload.depth < MAX_RECURSION_DEPTH && length(material.transmission) > 0.0) {
+    if (payload.depth < options.recursion_depth && length(material.transmission) > 0.0) {
         handleTransmissiveMaterial(P, N, V, material, depth);
-        transmission = payload.direct_light;
+        transmission = payload.light;
     }
 
     vec3 phong = evaluatePhong(P, N, L, incoming_light, distance_to_light, V, material);
 
-    payload.direct_light = phong + material.reflection * reflection + material.transmission * transmission + sceneData.ambientColor.xyz * material.diffuse;
+    payload.light = phong + material.reflection * reflection + material.transmission * transmission + sceneData.ambientColor.xyz * material.diffuse;
 }

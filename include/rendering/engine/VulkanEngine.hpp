@@ -21,9 +21,13 @@
 #include <stb_image.h>
 #define TINYOBJLOADER_IMPLEMENTATION
 #include <AccelerationStructure.hpp>
+#include <GuiManager.hpp>
+#include <GuiWindow.hpp>
+#include <imgui_impl_vulkan.h>
 #include <PhongMaterial.hpp>
-#include <Pipeline.hpp>
 #include <Scene.hpp>
+#include <SceneManager.hpp>
+#include <Swapchain.hpp>
 #include <unordered_map>
 #include "../Vertex.hpp"
 #include "DescriptorAllocator.hpp"
@@ -33,77 +37,54 @@
 #include "../../util/VulkanUtil.hpp"
 #include "../IRenderable.hpp"
 #include "../nodes/Node.hpp"
-#include "../../Analytics.hpp"
 #include "DeletionQueue.hpp"
-
-class VulkanEngine;
+#include <VulkanContext.hpp>
 
 class VulkanEngine {
 public:
+    static constexpr int MAX_FRAMES_IN_FLIGHT = 2;
+
     VkDevice device;
+    std::shared_ptr<CommandManager> pCommandManager;
     CommandManager commandManager;
+    std::shared_ptr<RessourceBuilder> pRessourceBuilder;
     RessourceBuilder ressourceBuilder;
     std::shared_ptr<MeshAssetBuilder> mesh_builder;
-
-    VkDescriptorSetLayout sceneDataDescriptorLayout;
+    std::shared_ptr<DescriptorAllocator> descriptorAllocator;
 
     void run();
     VkFormat getColorAttachmentFormat();
     VkFormat getDepthFormat();
 
 private:
+
     GLFWwindow* window;
+    std::shared_ptr<GuiManager> guiManager;
     VkInstance instance;
     VkSurfaceKHR surface;
     VkDebugUtilsMessengerEXT debugMessenger;
-    Analytics analytics;
     DeletionQueue mainDeletionQueue;
+
+    std::shared_ptr<VulkanContext> context;
 
     VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
     VkQueue graphicsQueue, presentQueue;
 
-    VkSwapchainKHR swapChain;
-    std::vector<VkImage> swapChainImages;
-    std::vector<VkImageView> swapChainImageViews;
-    VkFormat swapChainImageFormat;
-    VkExtent2D swapChainExtent;
+    std::shared_ptr<Swapchain> swapchain;
 
     AllocatedImage depthImage;
 
-    std::vector<VkFramebuffer> swapChainFrameBuffers;
     std::vector<VkCommandBuffer> commandBuffers;
 
-    AllocatedBuffer vertex_buffer, index_buffer, instance_mapping_buffer, geometry_mapping_buffer;
-    std::shared_ptr<AccelerationStructure> top_level_acceleration_structure;
-
     DrawContext mainDrawContext;
+    std::shared_ptr<RaytracingOptions> raytracing_options;
+    std::shared_ptr<RendererOptions> renderer_options;
 
     VkPhysicalDeviceRayTracingPipelinePropertiesKHR raytracingProperties{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_PROPERTIES_KHR};
 
-    AllocatedImage storageImage;
+    std::vector<AllocatedImage> storageImages;
 
-    std::shared_ptr<Scene> scene;
-
-
-
-    AllocatedBuffer raygenShaderBindingTable;
-    AllocatedBuffer missShaderBindingTable;
-    AllocatedBuffer hitShaderBindingTable;
-
-    AllocatedImage whiteImage;
-    AllocatedImage greyImage;
-    AllocatedImage blackImage;
-    AllocatedImage errorCheckerboardImage;
-
-    VkSampler defaultSamplerLinear;
-    VkSampler defaultSamplerNearest;
-
-    std::vector<VkDescriptorSet> scene_descriptor_sets{};
-    VkDescriptorSetLayout scene_descsriptor_set_layout;
-    std::vector<AllocatedBuffer> sceneUniformBuffers;
-    std::vector<void*> sceneUniformBuffersMapped;
-
-    DescriptorAllocator descriptorAllocator;
+    std::shared_ptr<SceneManager> scene_manager;
 
     std::vector<VkSemaphore> imageAvailableSemaphores;
     std::vector<VkSemaphore> renderFinishedSemaphores;
@@ -113,13 +94,10 @@ private:
     bool framebufferResized = false;
 
     std::shared_ptr<MaterialInstance> default_phong;
-    std::shared_ptr<PhongMaterial> phong_material;
 
     void initWindow();
-
-    void createSceneBuffers();
-
     void initVulkan();
+    void initGui();
     void mainLoop();
     void cleanup();
 
@@ -136,20 +114,11 @@ private:
     void pickPhysicalDevice();
     bool isDeviceSuitable(VkPhysicalDevice device);
     bool checkDeviceExtensionSupport(VkPhysicalDevice device);
-    QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device);
-    struct SwapChainSupportDetails {
-        VkSurfaceCapabilitiesKHR capabilities;
-        std::vector<VkSurfaceFormatKHR> formats;
-        std::vector<VkPresentModeKHR> presentModes;
-    };
-    SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice device);
+
     void createLogicalDevice();
-    void recreateSwapChain();
-    void createSwapChain();
-    VkSurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR> &availableFormats);
-    VkPresentModeKHR chooseSwapPresentMode(const std::vector<VkPresentModeKHR> &availablePresentModes);
-    VkExtent2D chooseSwapExtend(const VkSurfaceCapabilitiesKHR &capabilities);
     void createImageViews();
+
+    void createGuiFrameBuffers();
 
     void createCommandManager();
     void createRessourceBuilder();
@@ -160,20 +129,10 @@ private:
                                  VkFormatFeatureFlags features);
     bool hasStencilComponent(VkFormat format);
     AllocatedImage loadTextureImage(std::string path);
-    void initDefaultResources();
-    void createDefaultTextures();
-    void createDefaultSamplers();
-    void createDefaultMaterials();
-    void createScene();
 
-    void createAccelerationStructure();
-    void createShaderBindingTables();
 
-    void createSceneDescriptorSets();
+    void createSwapchain();
 
-    void createSceneLayout();
-
-    void createUniformBuffers();
     void createDescriptorAllocator();
     void createCommandBuffers();
     void createSyncObjects();
@@ -181,10 +140,11 @@ private:
     void pollSdlEvents();
 
     void drawFrame();
-    void cleanupSwapChain();
-    void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
 
-    void updateScene(uint32_t currentImage);
+    void refreshAfterResize();
+
+    void cleanupStorageImages();
+    void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex, ImDrawData* gui_draw_data);
 
     static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
             VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
@@ -197,7 +157,7 @@ private:
         return VK_FALSE;
     }
 
-    void createStorageImage();
+    void createStorageImages();
 };
 
 #endif //BASICS_VULKANENGINE_HPP

@@ -3,12 +3,15 @@
 
 #include <Camera.hpp>
 #include <DescriptorLayoutBuilder.hpp>
+#include <imgui.h>
+#include <imgui_impl_glfw.h>
+#include <imgui_impl_vulkan.h>
 #include <PhongMaterial.hpp>
+#include <RenderPassBuilder.hpp>
 #include <set>
 #include <deps/linmath.h>
 
 #include "../nodes/MeshNode.hpp"
-#include "../../Analytics.hpp"
 
 #include "miss.rmiss.spv.h"
 #include "shadow_miss.rmiss.spv.h"
@@ -51,17 +54,6 @@ void DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT
     }
 }
 
-
-
-VkResult GetRayTracingShaderGroupHandlesKHR(VkDevice device, VkPipeline pipeline, uint32_t firstGroup, uint32_t groupCount, size_t dataSize, void* pData) {
-    auto func = (PFN_vkGetRayTracingShaderGroupHandlesKHR) vkGetDeviceProcAddr(device, "vkGetRayTracingShaderGroupHandlesKHR");
-    if (func != nullptr) {
-        return func(device, pipeline, firstGroup, groupCount, dataSize, pData);
-    } else {
-        return VK_ERROR_EXTENSION_NOT_PRESENT;
-    }
-}
-
 void CmdTraceRaysKHR(VkDevice device, VkCommandBuffer commandBuffer, const VkStridedDeviceAddressRegionKHR* pRaygenShaderBindingTable,
     const VkStridedDeviceAddressRegionKHR* pMissShaderBindingTable, const VkStridedDeviceAddressRegionKHR* pHitShaderBindingTable,
     const VkStridedDeviceAddressRegionKHR* pCallableShaderBindingTable, uint32_t width, uint32_t height, uint32_t depth) {
@@ -75,11 +67,10 @@ void CmdTraceRaysKHR(VkDevice device, VkCommandBuffer commandBuffer, const VkStr
 const uint32_t WIDTH = 800;
 const uint32_t HEIGHT = 600;
 
-const int MAX_FRAMES_IN_FLIGHT = 2;
-
 void VulkanEngine::run() {
     initWindow();
     initVulkan();
+    initGui();
     mainLoop();
     cleanup();
 }
@@ -104,16 +95,32 @@ void VulkanEngine::framebufferResizeCallback(GLFWwindow* window, int width, int 
 
 void VulkanEngine::keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods) {
     auto app = reinterpret_cast<VulkanEngine*>(glfwGetWindowUserPointer(window));
-    if (app->scene != nullptr && app->scene->camera != nullptr) {
-        app->scene->camera->processGlfwKeyEvent(key, action);
+    if (app->scene_manager->scene != nullptr && app->scene_manager->scene->camera != nullptr) {
+        app->scene_manager->scene->camera->processGlfwKeyEvent(key, action);
     }
 }
 
 void VulkanEngine::mouseCallback(GLFWwindow* window, double xPos, double yPos) {
     auto app = reinterpret_cast<VulkanEngine*>(glfwGetWindowUserPointer(window));
-    if (app->scene != nullptr && app->scene->camera != nullptr) {
-        app->scene->camera->processGlfwMouseEvent(xPos, yPos);
+    if (app->scene_manager->scene != nullptr && app->scene_manager->scene->camera != nullptr) {
+        app->scene_manager->scene->camera->processGlfwMouseEvent(xPos, yPos);
     }
+}
+
+void VulkanEngine::initGui() {
+    QueueFamilyIndices indices = VulkanUtil::findQueueFamilies(physicalDevice, surface);
+    guiManager = std::make_shared<GuiManager>(device, physicalDevice, window, instance, *descriptorAllocator,
+        swapchain, indices.graphicsFamily.value(),
+        graphicsQueue);
+
+    mainDeletionQueue.pushFunction([&]() {
+        guiManager->destroy();
+    });
+
+    raytracing_options = std::make_shared<RaytracingOptions>();
+    renderer_options = std::make_shared<RendererOptions>();
+
+    guiManager->addWindow(std::make_shared<OptionsWindow>(raytracing_options, renderer_options));
 }
 
 void VulkanEngine::initVulkan() {
@@ -126,27 +133,38 @@ void VulkanEngine::initVulkan() {
     createCommandManager();
     createRessourceBuilder();
     createDescriptorAllocator();
+    mesh_builder = std::make_shared<MeshAssetBuilder>(device, ressourceBuilder);
 
-    createSwapChain();
-    createStorageImage();
+    createSwapchain();
+
+    context = std::make_shared<VulkanContext>();
+    context->device = device;
+    context->physicalDevice = physicalDevice;
+    context->instance = instance;
+    context->surface = surface;
+    context->swapchain = swapchain;
+    context->resource_builder = pRessourceBuilder;
+    context->mesh_builder = mesh_builder;
+    context->descriptor_allocator = descriptorAllocator;
+    context->command_manager = pCommandManager;
+
+    createStorageImages();
 
     mainDeletionQueue.pushFunction([&]() {
-        cleanupSwapChain();
+        cleanupStorageImages();
     });
 
-    createSceneLayout();
+    scene_manager = std::make_shared<SceneManager>(context, MAX_FRAMES_IN_FLIGHT);
+    mainDeletionQueue.pushFunction([&]() {
+        scene_manager->clearRessources();
+    });
 
     //createDepthResources();
-    initDefaultResources();
 
-    createScene();
-    createSceneBuffers();
-    createAccelerationStructure();
-    createUniformBuffers();
+    //scene_manager->createScene(renderer_options->scene_type);
+    scene_manager->createScene(SceneType::CORNELL_BOX);
 
-    createShaderBindingTables();
-    createSceneDescriptorSets();
-
+    scene_manager->getMaterial()->pipeline->createShaderBindingTables(raytracingProperties);
     createCommandBuffers();
     createSyncObjects();
 }
@@ -254,11 +272,6 @@ void VulkanEngine::setupDebugMessenger() {
     mainDeletionQueue.pushFunction([&]() {
         DestroyDebugUtilsMessengerEXT(instance, debugMessenger, nullptr);
     });
-
-    auto pAnalytics = new Analytics();
-    analytics = *pAnalytics;
-
-
 }
 
 void VulkanEngine::populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo) {
@@ -329,11 +342,11 @@ bool VulkanEngine::isDeviceSuitable(VkPhysicalDevice device) {
     // implement device checks here
 
     bool extensionsSupported = checkDeviceExtensionSupport(device);
-    QueueFamilyIndices indices = findQueueFamilies(device);
+    QueueFamilyIndices indices = VulkanUtil::findQueueFamilies(device, surface);
 
     bool swapChainAdequate = false;
     if (extensionsSupported) {
-        SwapChainSupportDetails swapChainSupport = querySwapChainSupport(device);
+        SwapChainSupportDetails swapChainSupport = Swapchain::querySwapChainSupport(device, surface);
         swapChainAdequate = !swapChainSupport.formats.empty() && !swapChainSupport.presentModes.empty();
     }
 
@@ -356,59 +369,8 @@ bool VulkanEngine::checkDeviceExtensionSupport(VkPhysicalDevice device) {
     return requiredExtensions.empty();
 }
 
-QueueFamilyIndices VulkanEngine::findQueueFamilies(VkPhysicalDevice device) {
-    QueueFamilyIndices indices;
-
-    uint32_t queueFamilyCount = 0;
-    vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, nullptr);
-    std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyCount);
-    vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, queueFamilies.data());
-
-    int i = 0;
-    for(const auto& queueFamily : queueFamilies) {
-        if (queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT) {
-            indices.graphicsFamily = i;
-        }
-
-        VkBool32 presentSupport = false;
-        vkGetPhysicalDeviceSurfaceSupportKHR(device, i, surface, &presentSupport);
-        if (presentSupport) {
-            indices.presentFamily = i;
-        }
-
-        if (indices.isComplete()) {
-            break;
-        }
-
-        i++;
-    }
-    return indices;
-}
-
-VulkanEngine::SwapChainSupportDetails VulkanEngine::querySwapChainSupport(VkPhysicalDevice device) {
-    SwapChainSupportDetails details;
-
-    vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, surface, &details.capabilities);
-
-    uint32_t formatCount = 0;
-    vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface, &formatCount, nullptr);
-    if (formatCount != 0) {
-        details.formats.resize(formatCount);
-        vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface, &formatCount, details.formats.data());
-    }
-
-    uint32_t presentModeCount = 0;
-    vkGetPhysicalDeviceSurfacePresentModesKHR(device, surface, &presentModeCount, nullptr);
-    if (presentModeCount != 0) {
-        details.presentModes.resize(presentModeCount);
-        vkGetPhysicalDeviceSurfacePresentModesKHR(device, surface, &presentModeCount, details.presentModes.data());
-    }
-
-    return details;
-}
-
 void VulkanEngine::createLogicalDevice() {
-    QueueFamilyIndices indices = findQueueFamilies(physicalDevice);
+    QueueFamilyIndices indices = VulkanUtil::findQueueFamilies(physicalDevice, surface);
 
     std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
     // so no family is created multiple times if it covers multiple types
@@ -469,139 +431,8 @@ void VulkanEngine::createLogicalDevice() {
     vkGetDeviceQueue(device, indices.presentFamily.value(), 0, &presentQueue);
 }
 
-void VulkanEngine::recreateSwapChain() {
-    int width = 0, height = 0;
-    glfwGetFramebufferSize(window, &width, &height);
-    while (width == 0 || height == 0) {
-        glfwGetFramebufferSize(window, &width, &height);
-        glfwWaitEvents();
-    }
-
-    vkDeviceWaitIdle(device);
-    cleanupSwapChain();
-
-    createSwapChain();
-    //createDepthResources();
-    createStorageImage();
-    scene->update(swapChainExtent.width, swapChainExtent.height);
-}
-
-void VulkanEngine::createSwapChain() {
-    SwapChainSupportDetails swapChainSupport = querySwapChainSupport(physicalDevice);
-
-    VkSurfaceFormatKHR surfaceFormat = chooseSwapSurfaceFormat(swapChainSupport.formats);
-    VkPresentModeKHR presentMode = chooseSwapPresentMode(swapChainSupport.presentModes);
-    VkExtent2D extent = chooseSwapExtend(swapChainSupport.capabilities);
-
-    uint32_t imageCount = swapChainSupport.capabilities.minImageCount + 1;
-    if (swapChainSupport.capabilities.maxImageCount > 0
-            && imageCount > swapChainSupport.capabilities.maxImageCount) {
-        imageCount = swapChainSupport.capabilities.maxImageCount;
-    }
-
-    VkSwapchainCreateInfoKHR createInfo{};
-    createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
-    createInfo.surface = surface;
-    createInfo.minImageCount = imageCount;
-    createInfo.imageFormat = surfaceFormat.format;
-    createInfo.imageColorSpace = surfaceFormat.colorSpace;
-    createInfo.imageExtent = extent;
-    createInfo.imageArrayLayers = 1;
-    createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-
-    QueueFamilyIndices indices = findQueueFamilies(physicalDevice);
-    uint32_t queueFamilyIndices[] = {indices.graphicsFamily.value(), indices.presentFamily.value()};
-
-    if (indices.graphicsFamily != indices.presentFamily) {
-        createInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
-        createInfo.queueFamilyIndexCount = 2;
-        createInfo.pQueueFamilyIndices = queueFamilyIndices;
-    } else {
-        createInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
-    }
-
-    createInfo.preTransform = swapChainSupport.capabilities.currentTransform;
-    createInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
-    createInfo.presentMode = presentMode;
-    createInfo.clipped = VK_TRUE;
-    createInfo.oldSwapchain = VK_NULL_HANDLE;
-
-    if (vkCreateSwapchainKHR(device, &createInfo, nullptr, &swapChain) != VK_SUCCESS) {
-        throw std::runtime_error("failed to create swap chain!");
-    }
-
-    vkGetSwapchainImagesKHR(device, swapChain, &imageCount, nullptr);
-    swapChainImages.resize(imageCount);
-    vkGetSwapchainImagesKHR(device, swapChain, &imageCount, swapChainImages.data());
-
-    swapChainImageFormat = surfaceFormat.format;
-    swapChainExtent = extent;
-
-    createImageViews();
-}
-
-VkSurfaceFormatKHR VulkanEngine::chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats) {
-    for (const auto& availableFormat : availableFormats) {
-        if (availableFormat.format == VK_FORMAT_B8G8R8A8_SRGB
-                && availableFormat.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
-            return availableFormat;
-        }
-    }
-
-    return availableFormats[0];
-}
-
-VkPresentModeKHR VulkanEngine::chooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes) {
-    for (const auto& availablePresentMode : availablePresentModes) {
-        if (availablePresentMode == VK_PRESENT_MODE_MAILBOX_KHR) {
-            return availablePresentMode;
-        }
-    }
-
-    return VK_PRESENT_MODE_FIFO_KHR;
-}
-
-VkExtent2D VulkanEngine::chooseSwapExtend(const VkSurfaceCapabilitiesKHR& capabilities) {
-    if (capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max())
-        return capabilities.currentExtent;
-    else {
-        int width, height;
-        glfwGetFramebufferSize(window, &width, &height);
-
-        VkExtent2D actualExtent {
-            static_cast<uint32_t>(width),
-            static_cast<uint32_t>(height)
-        };
-
-        actualExtent.width = std::clamp(actualExtent.width,
-                                        capabilities.minImageExtent.width,
-                                        capabilities.maxImageExtent.width);
-        actualExtent.height = std::clamp(actualExtent.height,
-                                        capabilities.minImageExtent.height,
-                                        capabilities.maxImageExtent.height);
-
-        return actualExtent;
-    }
-}
-
-void VulkanEngine::createImageViews() {
-    swapChainImageViews.resize(swapChainImages.size());
-    for (size_t i = 0; i < swapChainImageViews.size(); i++) {
-        swapChainImageViews[i] = ressourceBuilder.createImageView(swapChainImages[i], swapChainImageFormat, VK_IMAGE_ASPECT_COLOR_BIT);
-    }
-}
-
-/*void VulkanEngine::createDescriptorSetLayout() {
-
-    VkPushConstantRange range{};
-    range.size = sizeof(ObjectData);
-    range.offset = 0;
-    range.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-    objectDataCostantRange = range;
-}*/
-
 void VulkanEngine::createCommandManager() {
-    auto pCommandManager = new CommandManager(device, findQueueFamilies(physicalDevice));
+    pCommandManager = std::make_shared<CommandManager>(device, VulkanUtil::findQueueFamilies(physicalDevice, surface));
     commandManager = *pCommandManager;
 
     mainDeletionQueue.pushFunction([&]() {
@@ -610,7 +441,7 @@ void VulkanEngine::createCommandManager() {
 }
 
 void VulkanEngine::createRessourceBuilder() {
-    auto pRessourceBuilder = new RessourceBuilder(physicalDevice, device, commandManager);
+    pRessourceBuilder = std::make_shared<RessourceBuilder>(physicalDevice, device, commandManager);
     ressourceBuilder = *pRessourceBuilder;
 }
 
@@ -621,18 +452,20 @@ void VulkanEngine::createDescriptorAllocator() {
         { VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1 },
         { VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1 },
         { VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, 1 },
-};
-    descriptorAllocator.init(device, 4, poolRatios);
+    };
+
+    descriptorAllocator = std::make_shared<DescriptorAllocator>();
+    descriptorAllocator->init(device, 4, poolRatios);
 
     mainDeletionQueue.pushFunction([&]() {
-        descriptorAllocator.destroyPools(device);
+        descriptorAllocator->destroyPools(device);
     });
 }
 
 void VulkanEngine::createDepthResources() {
     VkFormat depthFormat = findDepthFormat();
 
-    depthImage = ressourceBuilder.createImage({swapChainExtent.width, swapChainExtent.height, 1}, depthFormat,
+    depthImage = ressourceBuilder.createImage({swapchain->extent.width, swapchain->extent.height, 1}, depthFormat,
                                               VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_IMAGE_ASPECT_DEPTH_BIT);
 
     mainDeletionQueue.pushFunction([&]() {
@@ -666,241 +499,24 @@ bool VulkanEngine::hasStencilComponent(VkFormat format) {
     return format == VK_FORMAT_D32_SFLOAT_S8_UINT || format == VK_FORMAT_D24_UNORM_S8_UINT;
 }
 
-AllocatedImage VulkanEngine::loadTextureImage(std::string path) {
-    int texWidth, texHeight, texChannels;
-    stbi_uc* pixels = stbi_load(path.c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
-    VkDeviceSize imageSize = texWidth * texHeight * 4;
-
-    if (!pixels) {
-        throw std::runtime_error("failed to load texture image!");
-    }
-
-    AllocatedImage textureImage = ressourceBuilder.createImage(pixels, {static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight), 1},
-                                                VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL,
-                                                VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_ASPECT_COLOR_BIT);
-
-    stbi_image_free(pixels);
-
-    mainDeletionQueue.pushFunction([=, this]() {
-        ressourceBuilder.destroyImage(textureImage);
-    });
-
-    return textureImage;
-}
-
-void VulkanEngine::initDefaultResources() {
-    createDefaultTextures();
-    createDefaultSamplers();
-    createDefaultMaterials();
-}
-
-void VulkanEngine::createDefaultTextures() {
-    uint32_t white = glm::packUnorm4x8(glm::vec4(1, 1, 1, 1));
-    whiteImage = ressourceBuilder.createImage((void*)&white, VkExtent3D{ 1, 1, 1 }, VK_FORMAT_R8G8B8A8_SRGB,
-                               VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_ASPECT_COLOR_BIT);
-
-    uint32_t grey = glm::packUnorm4x8(glm::vec4(0.66f, 0.66f, 0.66f, 1));
-    greyImage = ressourceBuilder.createImage((void*)&grey, VkExtent3D{ 1, 1, 1 }, VK_FORMAT_R8G8B8A8_SRGB,
-                                              VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_ASPECT_COLOR_BIT);
-
-    uint32_t black = glm::packUnorm4x8(glm::vec4(0, 0, 0, 0));
-    blackImage = ressourceBuilder.createImage((void*)&black, VkExtent3D{ 1, 1, 1 }, VK_FORMAT_R8G8B8A8_SRGB,
-                                               VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_ASPECT_COLOR_BIT);
-
-    //checkerboard image
-    uint32_t magenta = glm::packUnorm4x8(glm::vec4(1, 0, 1, 1));
-    std::array<uint32_t, 16 *16 > pixels; //for 16x16 checkerboard texture
-    for (int x = 0; x < 16; x++) {
-        for (int y = 0; y < 16; y++) {
-            pixels[y*16 + x] = ((x % 2) ^ (y % 2)) ? magenta : black;
-        }
-    }
-    errorCheckerboardImage = ressourceBuilder.createImage(pixels.data(), VkExtent3D{16, 16, 1}, VK_FORMAT_R8G8B8A8_SRGB,
-                                           VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_ASPECT_COLOR_BIT);
-
+void VulkanEngine::createSwapchain() {
+    swapchain = std::make_shared<Swapchain>(device, physicalDevice, window, surface, ressourceBuilder);
     mainDeletionQueue.pushFunction([&]() {
-        ressourceBuilder.destroyImage(whiteImage);
-        ressourceBuilder.destroyImage(greyImage);
-        ressourceBuilder.destroyImage(blackImage);
-        ressourceBuilder.destroyImage(errorCheckerboardImage);
+        swapchain->destroy();
     });
 }
 
-void VulkanEngine::createDefaultSamplers() {
-    VkSamplerCreateInfo samplerInfo = {.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO};
+void VulkanEngine::createStorageImages() {
+    storageImages.resize(MAX_FRAMES_IN_FLIGHT);
+    for (uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+        storageImages[i] = ressourceBuilder.createImage(
+            VkExtent3D{swapchain->extent.width, swapchain->extent.height, 1},
+            VK_FORMAT_B8G8R8A8_UNORM, VK_IMAGE_TILING_OPTIMAL,
+            VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_STORAGE_BIT,
+            VK_IMAGE_ASPECT_COLOR_BIT);
 
-    samplerInfo.magFilter = VK_FILTER_NEAREST;
-    samplerInfo.minFilter = VK_FILTER_NEAREST;
-
-    if (vkCreateSampler(device, &samplerInfo, nullptr, &defaultSamplerNearest) != VK_SUCCESS) {
-        throw std::runtime_error("failed to create texture sampler!");
-    }
-    samplerInfo.magFilter = VK_FILTER_LINEAR;
-    samplerInfo.minFilter = VK_FILTER_LINEAR;
-    if (vkCreateSampler(device, &samplerInfo, nullptr, &defaultSamplerLinear) != VK_SUCCESS) {
-        throw std::runtime_error("failed to create texture sampler!");
-    }
-
-    mainDeletionQueue.pushFunction([&]() {
-        vkDestroySampler(device, defaultSamplerLinear, nullptr);
-        vkDestroySampler(device, defaultSamplerNearest, nullptr);
-    });
-}
-
-void VulkanEngine::createDefaultMaterials() {
-    phong_material = std::make_shared<PhongMaterial>(device, ressourceBuilder);
-    phong_material->buildPipelines(scene_descsriptor_set_layout);
-    mainDeletionQueue.pushFunction([&]() {
-        phong_material->clearRessources();
-    });
-    //default_phong = createPhongMaterial(glm::vec3{1, 0, 0}, 1, 1, 1);
-}
-
-void VulkanEngine::createStorageImage() {
-    storageImage = ressourceBuilder.createImage(
-        VkExtent3D{swapChainExtent.width, swapChainExtent.height, 1},
-        VK_FORMAT_B8G8R8A8_UNORM, VK_IMAGE_TILING_OPTIMAL,
-        VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_STORAGE_BIT,
-        VK_IMAGE_ASPECT_COLOR_BIT);
-
-    ressourceBuilder.transitionImageLayout(storageImage.image, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
-        VK_ACCESS_NONE, VK_ACCESS_NONE, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
-}
-
-void VulkanEngine::createScene() {
-    QuickTimer timer{"Scene Creation", true};
-    mesh_builder = std::make_shared<MeshAssetBuilder>(device, ressourceBuilder);
-
-    //scene = std::make_shared<PlaneScene>(mesh_builder, swapChainExtent.width, swapChainExtent.height, phong_material);
-    scene = std::make_shared<CornellBox>(mesh_builder, swapChainExtent.width, swapChainExtent.height, phong_material);
-    mainDeletionQueue.pushFunction([&]() {
-        scene->clearRessources();
-    });
-}
-
-void VulkanEngine::createSceneBuffers() {
-    vertex_buffer = mesh_builder->createVertexBuffer(scene->meshes);
-    index_buffer = mesh_builder->createIndexBuffer(scene->meshes);
-    phong_material->writeMaterial();
-
-    geometry_mapping_buffer = mesh_builder->createGeometryMappingBuffer(scene->meshes);
-
-    mainDeletionQueue.pushFunction([&]() {
-        ressourceBuilder.destroyBuffer(vertex_buffer);
-        ressourceBuilder.destroyBuffer(index_buffer);
-        ressourceBuilder.destroyBuffer(geometry_mapping_buffer);
-    });
-}
-
-void VulkanEngine::createAccelerationStructure() {
-    QuickTimer timer{"BLAS Build", true};
-    uint32_t object_id = 0;
-    for (auto& meshAsset : scene->meshes) {
-        meshAsset->accelerationStructure = std::make_shared<AccelerationStructure>(device, ressourceBuilder, commandManager, VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_KHR);
-
-        meshAsset->accelerationStructure->addTriangleGeometry(vertex_buffer, index_buffer,
-            meshAsset->vertex_count - 1, meshAsset->triangle_count, sizeof(Vertex),
-            meshAsset->instance_data.vertex_offset, meshAsset->instance_data.triangle_offset);
-        meshAsset->accelerationStructure->build();
-        meshAsset->geometry_id = object_id++;
-    }
-}
-
-inline uint32_t alignedSize(uint32_t value, uint32_t alignment) {
-    return (value + (alignment - 1)) & ~(alignment - 1);
-}
-
-void VulkanEngine::createShaderBindingTables() {
-    Pipeline pipeline = *phong_material->pipeline;
-
-    std::vector<uint32_t> rgen_indices{0};
-    std::vector<uint32_t> miss_indices{1, 2};
-    std::vector<uint32_t> hit_indices{3};
-
-    const uint32_t handleSize = raytracingProperties.shaderGroupHandleSize;
-    const uint32_t handleAlignment = raytracingProperties.shaderGroupHandleAlignment;
-    const uint32_t handleSizeAligned = alignedSize(handleSize, handleAlignment);
-    const uint32_t groupCount = static_cast<uint32_t>(pipeline.getGroupCount());
-    const uint32_t sbt_size = groupCount * handleSizeAligned;
-    const uint32_t sbtUsageFlags = VK_BUFFER_USAGE_SHADER_BINDING_TABLE_BIT_KHR | VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
-    const uint32_t sbtMemoryPropertyFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
-
-    raygenShaderBindingTable = ressourceBuilder.createBuffer(handleSize, sbtUsageFlags, sbtMemoryPropertyFlags);
-    missShaderBindingTable = ressourceBuilder.createBuffer(handleSize, sbtUsageFlags, sbtMemoryPropertyFlags);
-    hitShaderBindingTable = ressourceBuilder.createBuffer(handleSize, sbtUsageFlags, sbtMemoryPropertyFlags);
-    mainDeletionQueue.pushFunction([&]() {
-        ressourceBuilder.destroyBuffer(raygenShaderBindingTable);
-        ressourceBuilder.destroyBuffer(missShaderBindingTable);
-        ressourceBuilder.destroyBuffer(hitShaderBindingTable);
-    });
-
-    std::vector<uint8_t> shaderHandleStorage(sbt_size);
-    if (GetRayTracingShaderGroupHandlesKHR(device, pipeline.getHandle(), 0, groupCount, sbt_size, shaderHandleStorage.data()) != VK_SUCCESS) {
-        throw std::runtime_error("failed to get shader group handles!");
-    }
-
-    auto copyHandle = [&](AllocatedBuffer& buffer, std::vector<uint32_t>& indices, uint32_t stride) {
-        size_t offset = 0;
-        for (uint32_t index = 0; index < indices.size(); index++) {
-            buffer.update(device, shaderHandleStorage.data() + (indices[index] * handleSizeAligned), handleSize, offset);
-            offset += stride * sizeof(uint8_t);
-        }
-    };
-
-    copyHandle(raygenShaderBindingTable, rgen_indices, handleSizeAligned);
-    copyHandle(missShaderBindingTable, miss_indices, handleSizeAligned);
-    copyHandle(hitShaderBindingTable, hit_indices, handleSizeAligned);
-}
-
-void VulkanEngine::createSceneDescriptorSets() {
-    // Binding 0 is the TLAS added in updateScene
-
-    descriptorAllocator.writeBuffer(3, vertex_buffer.handle, 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
-    descriptorAllocator.writeBuffer(4, index_buffer.handle, 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
-    descriptorAllocator.writeBuffer(5, geometry_mapping_buffer.handle, 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
-
-    for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-        scene_descriptor_sets.push_back(descriptorAllocator.allocate(device, scene_descsriptor_set_layout));
-        descriptorAllocator.updateSet(device, scene_descriptor_sets[i]);
-        descriptorAllocator.clearWrites();
-    }
-
-}
-
-void VulkanEngine::createSceneLayout() {
-    DescriptorLayoutBuilder layoutBuilder;
-
-    layoutBuilder.addBinding(0, VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR);
-    layoutBuilder.addBinding(1, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
-    layoutBuilder.addBinding(2, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
-    layoutBuilder.addBinding(3, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
-    layoutBuilder.addBinding(4, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
-    layoutBuilder.addBinding(5, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
-    layoutBuilder.addBinding(6, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
-    layoutBuilder.addBinding(7, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
-
-    scene_descsriptor_set_layout = layoutBuilder.build(device, VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR);
-    mainDeletionQueue.pushFunction([&]() {
-        vkDestroyDescriptorSetLayout(device, scene_descsriptor_set_layout, nullptr);
-    });
-}
-
-
-void VulkanEngine::createUniformBuffers() {
-    VkDeviceSize size = sizeof(SceneData);
-
-    sceneUniformBuffers.resize(MAX_FRAMES_IN_FLIGHT);
-    sceneUniformBuffersMapped.resize(MAX_FRAMES_IN_FLIGHT);
-
-    for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-        sceneUniformBuffers[i] = ressourceBuilder.createBuffer(size, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-                                   VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-
-        vkMapMemory(device, sceneUniformBuffers[i].bufferMemory, 0, size, 0, &sceneUniformBuffersMapped[i]);
-
-        mainDeletionQueue.pushFunction([&, i]() {
-            ressourceBuilder.destroyBuffer(sceneUniformBuffers[i]);
-        });
+        ressourceBuilder.transitionImageLayout(storageImages[i].image, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
+            VK_ACCESS_NONE, VK_ACCESS_NONE, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
     }
 }
 
@@ -948,6 +564,12 @@ void VulkanEngine::createSyncObjects() {
 void VulkanEngine::mainLoop() {
     while(!glfwWindowShouldClose(window)) {
         glfwPollEvents();
+
+        if (scene_manager->curr_scene_type != renderer_options->scene_type) {
+            vkDeviceWaitIdle(device);
+            scene_manager->createScene(renderer_options->scene_type);
+        }
+
         drawFrame();
     }
 
@@ -957,13 +579,11 @@ void VulkanEngine::mainLoop() {
 void VulkanEngine::drawFrame() {
     vkWaitForFences(device, 1, &inFlightFences[currentFrame], VK_TRUE, UINT64_MAX);
 
-    //analytics.endFrame();
     uint32_t imageIndex;
-    VkResult result = vkAcquireNextImageKHR(device, swapChain, UINT64_MAX, imageAvailableSemaphores[currentFrame], VK_NULL_HANDLE, &imageIndex);
-    //analytics.startFrame();
+    VkResult result = vkAcquireNextImageKHR(device, swapchain->handle, UINT64_MAX, imageAvailableSemaphores[currentFrame], VK_NULL_HANDLE, &imageIndex);
 
     if (result == VK_ERROR_OUT_OF_DATE_KHR) {
-        recreateSwapChain();
+        refreshAfterResize();
         return;
     } else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
         std::runtime_error("failed to acquire swap chain image!");
@@ -971,10 +591,10 @@ void VulkanEngine::drawFrame() {
 
     vkResetFences(device, 1, &inFlightFences[currentFrame]);
 
-    updateScene(currentFrame);
+    scene_manager->updateScene(mainDrawContext, currentFrame, storageImages[currentFrame]);
 
     vkResetCommandBuffer(commandBuffers[currentFrame], 0);
-    recordCommandBuffer(commandBuffers[currentFrame], imageIndex);
+    recordCommandBuffer(commandBuffers[currentFrame], imageIndex, nullptr);
 
     VkSubmitInfo submitInfo{};
     submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -998,7 +618,7 @@ void VulkanEngine::drawFrame() {
     presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
     presentInfo.waitSemaphoreCount = 1;
     presentInfo.pWaitSemaphores = signalSemaphore;
-    VkSwapchainKHR swapChains[] = {swapChain};
+    VkSwapchainKHR swapChains[] = {swapchain->handle};
     presentInfo.swapchainCount = 1;
     presentInfo.pSwapchains = swapChains;
     presentInfo.pImageIndices = &imageIndex;
@@ -1007,7 +627,7 @@ void VulkanEngine::drawFrame() {
 
     if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || framebufferResized) {
         framebufferResized = false;
-        recreateSwapChain();
+        refreshAfterResize();
         return;
     } else if (result != VK_SUCCESS) {
         std::runtime_error("failed to present swap chain image!");
@@ -1016,68 +636,18 @@ void VulkanEngine::drawFrame() {
     currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
 }
 
-void VulkanEngine::updateScene(uint32_t currentImage) {
-    //QuickTimer timer{"Scene Update", true};
+void VulkanEngine::refreshAfterResize() {
+    vkDeviceWaitIdle(device);
 
-    scene->update(swapChainExtent.width, swapChainExtent.height);
-
-    static auto startTime = std::chrono::high_resolution_clock::now();
-    auto currentTime = std::chrono::high_resolution_clock::now();
-    float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
-    glm::mat4 rotation = glm::rotate(glm::mat4{1.0f}, time * glm::radians(45.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-
-    if (top_level_acceleration_structure == nullptr) {
-        top_level_acceleration_structure = std::make_shared<AccelerationStructure>(device, ressourceBuilder, commandManager, VK_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL_KHR);
-
-        mainDeletionQueue.pushFunction([&]() {
-            top_level_acceleration_structure->destroy();
-        });
-    }
-
-    mainDrawContext.objects.clear();
-    for (auto& pair : scene->nodes) {
-        pair.second->draw(glm::mat4(1.0f), mainDrawContext);
-    }
-
-    if (instance_mapping_buffer.handle == VK_NULL_HANDLE) { // TODO make it dynamic
-        instance_mapping_buffer = mesh_builder->createInstanceMappingBuffer(mainDrawContext.objects);
-        mainDeletionQueue.pushFunction([&]() {
-            ressourceBuilder.destroyBuffer(instance_mapping_buffer);
-        });
-    }
-    uint32_t instance_id = 0;
-    for (auto& object : mainDrawContext.objects) {
-        top_level_acceleration_structure->addInstance(object.acceleration_structure, object.transform, instance_id++);
-    }
-
-    glm::mat4 translation = glm::translate(glm::mat4(1.0f), glm::vec3(1.5f, 0.0f, 0.0f));
-    glm::mat4 scale = glm::scale(glm::mat4(1.0f), glm::vec3(0.5f, 0.5f, 0.5f));
-
-    translation = glm::translate(glm::mat4(1.0f), glm::vec3(-1.0f, -0.5f, 0.0f));
-    scale = glm::scale(glm::mat4(1.0f), glm::vec3(0.8f, 0.8f, 0.8f));
-    rotation = glm::rotate(glm::mat4{1.0f}, glm::radians(-90.f), glm::vec3(0.0f, 0.0f, 1.0f));
-    glm::mat4 rotation2 = glm::rotate(glm::mat4{1.0f}, glm::radians(-90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
-
-    if (top_level_acceleration_structure->getHandle() == VK_NULL_HANDLE) {
-        top_level_acceleration_structure->addInstanceGeometry();
-    } else {
-        top_level_acceleration_structure->update_instance_geometry(0);
-    }
-    top_level_acceleration_structure->build();
-
-    descriptorAllocator.writeAccelerationStructure(0, top_level_acceleration_structure->getHandle(), VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR);
-    descriptorAllocator.writeImage(1, storageImage.imageView, VK_NULL_HANDLE, VK_IMAGE_LAYOUT_GENERAL, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
-    descriptorAllocator.writeBuffer(2, sceneUniformBuffers[0].handle, sizeof(SceneData), 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
-    descriptorAllocator.writeBuffer(6, instance_mapping_buffer.handle, 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
-    descriptorAllocator.updateSet(device, scene_descriptor_sets[0]);
-    descriptorAllocator.clearWrites();
-
-    std::shared_ptr<SceneData> scene_data = scene->createSceneData();
-    memcpy(sceneUniformBuffersMapped[0], scene_data.get(), sizeof(SceneData));
+    swapchain->recreate();
+    cleanupStorageImages();
+    createStorageImages();
+    guiManager->updateWindows(swapchain);
+    scene_manager->scene->update(swapchain->extent.width, swapchain->extent.height);
 }
 
-void VulkanEngine::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex) {
-    Pipeline pipeline = *phong_material->pipeline;
+void VulkanEngine::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex, ImDrawData* gui_draw_data) {
+    Pipeline pipeline = *scene_manager->getMaterial()->pipeline;
 
     VkCommandBufferBeginInfo beginInfo{};
     beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -1086,33 +656,35 @@ void VulkanEngine::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t i
         throw std::runtime_error("failed to begin record command buffer!");
     }
 
-    const uint32_t handleSizeAligned = alignedSize(raytracingProperties.shaderGroupHandleSize, raytracingProperties.shaderGroupHandleAlignment);
+    const uint32_t handleSizeAligned = VulkanUtil::alignedSize(raytracingProperties.shaderGroupHandleSize, raytracingProperties.shaderGroupHandleAlignment);
 
     VkStridedDeviceAddressRegionKHR raygenShaderSbtEntry{};
-    raygenShaderSbtEntry.deviceAddress = raygenShaderBindingTable.deviceAddress;
+    raygenShaderSbtEntry.deviceAddress = pipeline.raygenShaderBindingTable.deviceAddress;
     raygenShaderSbtEntry.stride = handleSizeAligned;
     raygenShaderSbtEntry.size = handleSizeAligned;
 
     VkStridedDeviceAddressRegionKHR missShaderSbtEntry{};
-    missShaderSbtEntry.deviceAddress = missShaderBindingTable.deviceAddress;
+    missShaderSbtEntry.deviceAddress = pipeline.missShaderBindingTable.deviceAddress;
     missShaderSbtEntry.stride = handleSizeAligned;
     missShaderSbtEntry.size = handleSizeAligned;
 
     VkStridedDeviceAddressRegionKHR closestHitShaderSbtEntry{};
-    closestHitShaderSbtEntry.deviceAddress = hitShaderBindingTable.deviceAddress;
+    closestHitShaderSbtEntry.deviceAddress = pipeline.hitShaderBindingTable.deviceAddress;
     closestHitShaderSbtEntry.stride = handleSizeAligned;
     closestHitShaderSbtEntry.size = handleSizeAligned;
 
     VkStridedDeviceAddressRegionKHR callableShaderSbtEntry{};
 
     std::vector<VkDescriptorSet> descriptor_sets{};
-    descriptor_sets.push_back(scene_descriptor_sets[0]);
-    descriptor_sets.push_back(phong_material->materialDescriptorSet);
+    descriptor_sets.push_back(scene_manager->scene_descriptor_sets[0]);
+    descriptor_sets.push_back(scene_manager->getMaterial()->materialDescriptorSet);
 
     vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, pipeline.getHandle());
     vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, pipeline.getLayoutHandle(),
         0, static_cast<uint32_t>(descriptor_sets.size()), descriptor_sets.data(),
         0, nullptr);
+
+    vkCmdPushConstants(commandBuffer, pipeline.getLayoutHandle(), VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR, 0, sizeof(RaytracingOptions), raytracing_options.get());
 
     CmdTraceRaysKHR(
         device,
@@ -1121,16 +693,16 @@ void VulkanEngine::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t i
         &missShaderSbtEntry,
         &closestHitShaderSbtEntry,
         &callableShaderSbtEntry,
-        swapChainExtent.width,
-        swapChainExtent.height,
+        swapchain->extent.width,
+        swapchain->extent.height,
         1);
 
-    ressourceBuilder.transitionImageLayout(commandBuffer, swapChainImages[imageIndex],
+    ressourceBuilder.transitionImageLayout(commandBuffer, swapchain->images[imageIndex],
         VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
         VK_ACCESS_NONE, VK_ACCESS_NONE,
         VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
-    ressourceBuilder.transitionImageLayout(commandBuffer, storageImage.image, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+    ressourceBuilder.transitionImageLayout(commandBuffer, storageImages[currentFrame].image, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
         VK_ACCESS_NONE, VK_ACCESS_TRANSFER_READ_BIT, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
 
     VkImageCopy copyRegion{};
@@ -1138,19 +710,21 @@ void VulkanEngine::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t i
     copyRegion.srcOffset = {0, 0, 0};
     copyRegion.dstSubresource = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1};
     copyRegion.dstOffset = {0, 0, 0};
-    copyRegion.extent = {swapChainExtent.width, swapChainExtent.height, 1};
-    vkCmdCopyImage(commandBuffer, storageImage.image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-        swapChainImages[imageIndex], VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copyRegion);
+    copyRegion.extent = {swapchain->extent.width, swapchain->extent.height, 1};
+    vkCmdCopyImage(commandBuffer, storageImages[currentFrame].image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+        swapchain->images[imageIndex], VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copyRegion);
 
-    ressourceBuilder.transitionImageLayout(commandBuffer, swapChainImages[imageIndex],
+    ressourceBuilder.transitionImageLayout(commandBuffer, swapchain->images[imageIndex],
         VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
         VK_ACCESS_NONE, VK_ACCESS_NONE,
         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
 
-    ressourceBuilder.transitionImageLayout(commandBuffer, storageImage.image,
+    ressourceBuilder.transitionImageLayout(commandBuffer, storageImages[currentFrame].image,
         VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
         VK_ACCESS_TRANSFER_READ_BIT, VK_ACCESS_NONE,
         VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL);
+
+    guiManager->recordGuiCommands(commandBuffer, gui_draw_data, imageIndex);
 
     if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS) {
         throw std::runtime_error("failed to record command buffer!");
@@ -1163,17 +737,14 @@ void VulkanEngine::cleanup() {
     glfwTerminate();
 }
 
-void VulkanEngine::cleanupSwapChain() {
-    for (auto imageView : swapChainImageViews) {
-        vkDestroyImageView(device, imageView, nullptr);
+void VulkanEngine::cleanupStorageImages() {
+    for (auto image : storageImages) {
+        ressourceBuilder.destroyImage(image);
     }
-    vkDestroySwapchainKHR(device, swapChain, nullptr);
-
-    ressourceBuilder.destroyImage(storageImage);
 }
 
 VkFormat VulkanEngine::getColorAttachmentFormat() {
-    return swapChainImageFormat;
+    return swapchain->imageFormat;
 }
 
 VkFormat VulkanEngine::getDepthFormat() {

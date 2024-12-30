@@ -49,9 +49,7 @@ struct DirectionalLight {
 
 class Scene {
 public:
-    Scene(std::shared_ptr<MeshAssetBuilder>& mesh_asset_builder) {
-        mesh_builder = mesh_asset_builder;
-    }
+    Scene(std::shared_ptr<MeshAssetBuilder>& mesh_asset_builder, RessourceBuilder& ressource_builder) : mesh_builder(mesh_asset_builder), ressource_builder(ressource_builder) {}
 
     std::shared_ptr<SceneData> createSceneData();
     virtual void update(uint32_t image_width, uint32_t image_height) {};
@@ -61,11 +59,13 @@ public:
 
     std::vector<std::shared_ptr<MeshAsset>> meshes;
     std::unordered_map<std::string, std::shared_ptr<Node>> nodes;
+    std::array<AllocatedImage, 6> environment_map{};
 
     DirectionalLight sun;
     std::array<PointLight, POINT_LIGHT_COUNT> pointLights{};
 
     std::shared_ptr<MeshAssetBuilder> mesh_builder;
+    RessourceBuilder ressource_builder;
     DeletionQueue deletion_queue{};
 
 protected:
@@ -76,7 +76,8 @@ protected:
 class PlaneScene : public Scene {
 public:
     PlaneScene() = default;
-    PlaneScene(std::shared_ptr<MeshAssetBuilder>& mesh_asset_builder, uint32_t image_width, uint32_t image_height, std::shared_ptr<PhongMaterial> phong_material) : Scene(mesh_asset_builder) {
+    PlaneScene(std::shared_ptr<MeshAssetBuilder>& mesh_asset_builder, RessourceBuilder& ressource_builder,
+            uint32_t image_width, uint32_t image_height, std::shared_ptr<PhongMaterial> phong_material) : Scene(mesh_asset_builder, ressource_builder) {
         initCamera(image_width, image_height);
         initScene(phong_material);
     };
@@ -90,7 +91,8 @@ protected:
 class CornellBox : public Scene {
 public:
     CornellBox() = default;
-    CornellBox(std::shared_ptr<MeshAssetBuilder>& mesh_asset_builder, uint32_t image_width, uint32_t image_height, std::shared_ptr<PhongMaterial> phong_material) : Scene(mesh_asset_builder) {
+    CornellBox(std::shared_ptr<MeshAssetBuilder>& mesh_asset_builder, RessourceBuilder& ressource_builder
+        , uint32_t image_width, uint32_t image_height, std::shared_ptr<PhongMaterial> phong_material) : Scene(mesh_asset_builder, ressource_builder) {
         initCamera(image_width, image_height);
         initScene(phong_material);
     };

@@ -2,10 +2,10 @@ subdir('builders')
 subdir('rendering')
 
 shaders = [
-    'shaders/miss.rmiss',
-    'shaders/shadow_miss.rmiss',
-    'shaders/closesthit.rchit',
-    'shaders/raygen.rgen',
+    'shaders/miss/miss.rmiss',
+    'shaders/miss/shadow_miss.rmiss',
+    'shaders/phong/closesthit.rchit',
+    'shaders/common/raygen.rgen',
 ]
 
 foreach s : shaders

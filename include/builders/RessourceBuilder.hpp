@@ -7,6 +7,7 @@
 
 
 #include <cstring>
+#include <string>
 #include <vulkan/vulkan_core.h>
 #include "../rendering/engine/CommandManager.hpp"
 
@@ -48,6 +49,9 @@ public:
                                VkImageAspectFlags aspectFlags);
     AllocatedImage createImage(void *data, VkExtent3D extent, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage,
                                VkImageAspectFlags aspectFlags);
+
+    AllocatedImage loadTextureImage(std::string path);
+
     VkImageView createImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags);
 
     void transitionImageLayout(VkCommandBuffer commandBuffer, VkImage image,

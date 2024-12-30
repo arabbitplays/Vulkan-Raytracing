@@ -8,6 +8,7 @@
 
 #include "Node.hpp"
 #include "../../builders/MeshAssetBuilder.hpp"
+#include "Material.hpp"
 
 struct MeshNode : public Node {
 public:

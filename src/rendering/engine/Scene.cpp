@@ -46,7 +46,7 @@ void PlaneScene::initCamera(uint32_t image_width, uint32_t image_height) {
         0.1f, 512.0f);
     proj[1][1] *= -1; // flip y-axis because glm is for openGL
     camera = std::make_shared<Camera>(
-        glm::translate(glm::mat4(1.0f), glm::vec3{ 0,0,-4.5f }),
+        glm::translate(glm::mat4(1.0f), glm::vec3{ 0,-1.0f,-5.5f }),
         proj
     );
 
@@ -66,41 +66,71 @@ void PlaneScene::initScene(std::shared_ptr<PhongMaterial> phong_material) {
             mesh_builder->destroyMeshAsset(*meshAsset);
         });
     }
+    float sphere_scale = 1.4f;
 
-    for (int i = 0; i < 5; i++) {
-        std::shared_ptr<MeshNode> sphere1 = std::make_shared<MeshNode>();
-        sphere1->localTransform = glm::translate(glm::mat4(1.0f), glm::vec3(-3.f + 6.0f / 4.0f * i, 0.0f, 0.0f)) * glm::scale(glm::mat4(1.0f), glm::vec3(0.5f));
-        sphere1->worldTransform = glm::mat4{1.0f};
-        sphere1->children = {};
-        sphere1->meshAsset = meshes[0];
-        sphere1->meshMaterial = phong_material->createInstance(
-            glm::vec3(0.0f, 0.5f, 0.5f),
-            glm::vec3(0.4f, 0.4f, 0.4f),
-            glm::vec3(0.0f, 0.2f, 0.2f),
-            glm::vec3(0.0f),
-            glm::vec3(0.0f),
-            std::pow(5.f, i));
-        sphere1->refreshTransform(glm::mat4(1.0f));
-        nodes["Sphere" + i] = std::move(sphere1);
-    }
-
-    std::shared_ptr<MeshNode> plane = std::make_shared<MeshNode>();
-    plane->localTransform = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, -1.0f, 0.0f)) * glm::scale( glm::mat4(1.0f), glm::vec3(8.f, 1.0f, 8.f));
-    plane->worldTransform = glm::mat4{1.0f};
-    plane->children = {};
-    plane->meshAsset = meshes[1];
-    plane->meshMaterial = phong_material->createInstance(
-        glm::vec3(0.5f, 0.0f, 0.0f),
-        glm::vec3(0.5f),
-        glm::vec3(0.02f, 0.0f, 0.0f),
+    std::shared_ptr<MeshNode> sphere = std::make_shared<MeshNode>();
+    sphere->localTransform = glm::translate(glm::mat4(1.0f), glm::vec3(-2.5f, 0.7f, 0.0))
+        * glm::scale( glm::mat4(1.0f), glm::vec3(sphere_scale));
+    sphere->worldTransform = glm::mat4{1.0f};
+    sphere->children = {};
+    sphere->meshAsset = meshes[0];
+    sphere->meshMaterial = phong_material->createInstance(
         glm::vec3(0.0f),
         glm::vec3(0.0f),
-        5.0f);
-    plane->refreshTransform(glm::mat4(1.0f));
-    nodes["Plane"] = std::move(plane);
+        glm::vec3(0.0f),
+        glm::vec3(1.0f),
+        glm::vec3(0.0f),
+        1);
+    sphere->refreshTransform(glm::mat4(1.0f));
+    nodes["MirrorSphere"] = std::move(sphere);
+
+    sphere = std::make_shared<MeshNode>();
+    sphere->localTransform = glm::translate(glm::mat4(1.0f), glm::vec3(2.5f, 0.7f, 0.0f))
+        * glm::scale( glm::mat4(1.0f), glm::vec3(sphere_scale));
+    sphere->worldTransform = glm::mat4{1.0f};
+    sphere->children = {};
+    sphere->meshAsset = meshes[0];
+    sphere->meshMaterial = phong_material->createInstance(
+        glm::vec3(0.0f),
+        glm::vec3(0.0f),
+        glm::vec3(0.0f),
+        glm::vec3(0.0f),
+        glm::vec3(0.9f),
+        1,
+        glm::vec3(1.f) / glm::vec3(1.03f, 1.04f, 1.05f));
+    sphere->refreshTransform(glm::mat4(1.0f));
+    nodes["GlassSphere"] = std::move(sphere);
+
+    std::shared_ptr<MeshNode> quad = std::make_shared<MeshNode>();
+    quad->localTransform = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, -1.0f, 0.0f)) * glm::scale( glm::mat4(1.0f), glm::vec3(8.f, 1.0f, 8.f));
+    quad->worldTransform = glm::mat4{1.0f};
+    quad->children = {};
+    quad->meshAsset = meshes[1];
+    quad->meshMaterial = phong_material->createInstance(
+        glm::vec3(0.2f),
+        glm::vec3(0.0f),
+        glm::vec3(0.02f),
+        glm::vec3(0.4f),
+        glm::vec3(0.0f),
+        1.0f);
+    quad->refreshTransform(glm::mat4(1.0f));
+    nodes["Floor"] = std::move(quad);
 
     pointLights[0] = PointLight(glm::vec3(0, 1.5f, 3), glm::vec3(1, 0, 0), 10);
     sun = DirectionalLight(glm::vec3(-1,-1,-1), glm::vec3(1.0f), 1.0f);
+
+    environment_map[0] = ressource_builder.loadTextureImage("../ressources/textures/environmentMaps/posx.jpg");
+    environment_map[1] = ressource_builder.loadTextureImage("../ressources/textures/environmentMaps/negx.jpg");
+    environment_map[2] = ressource_builder.loadTextureImage("../ressources/textures/environmentMaps/posy.jpg");
+    environment_map[3] = ressource_builder.loadTextureImage("../ressources/textures/environmentMaps/negy.jpg");
+    environment_map[4] = ressource_builder.loadTextureImage("../ressources/textures/environmentMaps/posz.jpg");
+    environment_map[5] = ressource_builder.loadTextureImage("../ressources/textures/environmentMaps/negz.jpg");
+
+    deletion_queue.pushFunction([&] () {
+        for (auto image : environment_map) {
+            ressource_builder.destroyImage(image);
+        }
+    });
 }
 
 void PlaneScene::update(uint32_t image_width, uint32_t image_height) {
@@ -330,6 +360,19 @@ void CornellBox::initScene(std::shared_ptr<PhongMaterial> phong_material) {
 
     pointLights[0] = PointLight(glm::vec3(0, 8.0f, 3), glm::vec3(1, 0, 0), 20);
     sun = DirectionalLight(glm::vec3(-1,-1,-1), glm::vec3(1.0f), 1.0f);
+
+    environment_map[0] = ressource_builder.loadTextureImage("../ressources/textures/environmentMaps/posx.jpg");
+    environment_map[1] = ressource_builder.loadTextureImage("../ressources/textures/environmentMaps/negx.jpg");
+    environment_map[2] = ressource_builder.loadTextureImage("../ressources/textures/environmentMaps/posy.jpg");
+    environment_map[3] = ressource_builder.loadTextureImage("../ressources/textures/environmentMaps/negy.jpg");
+    environment_map[4] = ressource_builder.loadTextureImage("../ressources/textures/environmentMaps/posz.jpg");
+    environment_map[5] = ressource_builder.loadTextureImage("../ressources/textures/environmentMaps/negz.jpg");
+
+    deletion_queue.pushFunction([&] () {
+        for (auto image : environment_map) {
+            ressource_builder.destroyImage(image);
+        }
+    });
 }
 
 void CornellBox::update(uint32_t image_width, uint32_t image_height) {
