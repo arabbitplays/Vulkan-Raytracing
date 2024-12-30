@@ -13,11 +13,6 @@
 
 #include "../nodes/MeshNode.hpp"
 
-#include "miss.rmiss.spv.h"
-#include "shadow_miss.rmiss.spv.h"
-#include "closesthit.rchit.spv.h"
-#include "raygen.rgen.spv.h"
-
 const std::vector<const char*> validationLayers = {
         "VK_LAYER_KHRONOS_validation"
 };

@@ -1,20 +1,18 @@
 //
-// Created by oschdi on 12/17/24.
+// Created by oschdi on 12/30/24.
 //
 
-#include "PhongMaterial.hpp"
+#include "MetalRoughMaterial.hpp"
 
 #include <DescriptorLayoutBuilder.hpp>
+#include <miss.rmiss.spv.h>
 #include <OptionsWindow.hpp>
+#include <raygen.rgen.spv.h>
+#include <shadow_miss.rmiss.spv.h>
+#include <metal_rough_closesthit.rchit.spv.h>
 #include <VulkanUtil.hpp>
-#include <glm/detail/type_mat4x3.hpp>
 
-#include "miss.rmiss.spv.h"
-#include "shadow_miss.rmiss.spv.h"
-#include "raygen.rgen.spv.h"
-#include <phong_closesthit.rchit.spv.h>
-
-void PhongMaterial::buildPipelines(VkDescriptorSetLayout sceneLayout) {
+void MetalRoughMaterial::buildPipelines(VkDescriptorSetLayout sceneLayout) {
     DescriptorLayoutBuilder layoutBuilder;
     pipeline = std::make_shared<Pipeline>(context);
 
@@ -33,7 +31,7 @@ void PhongMaterial::buildPipelines(VkDescriptorSetLayout sceneLayout) {
     VkShaderModule raygenShaderModule = VulkanUtil::createShaderModule(context->device, oschd_raygen_rgen_spv_size(), oschd_raygen_rgen_spv());
     VkShaderModule missShaderModule = VulkanUtil::createShaderModule(context->device, oschd_miss_rmiss_spv_size(), oschd_miss_rmiss_spv());
     VkShaderModule shadowMissShaderModule = VulkanUtil::createShaderModule(context->device, oschd_shadow_miss_rmiss_spv_size(), oschd_shadow_miss_rmiss_spv());
-    VkShaderModule closestHitShaderModule = VulkanUtil::createShaderModule(context->device, oschd_phong_closesthit_rchit_spv_size(), oschd_phong_closesthit_rchit_spv());
+    VkShaderModule closestHitShaderModule = VulkanUtil::createShaderModule(context->device, oschd_metal_rough_closesthit_rchit_spv_size(), oschd_metal_rough_closesthit_rchit_spv());
 
     pipeline->addShaderStage(raygenShaderModule, VK_SHADER_STAGE_RAYGEN_BIT_KHR, VK_RAY_TRACING_SHADER_GROUP_TYPE_GENERAL_KHR);
     pipeline->addShaderStage(missShaderModule, VK_SHADER_STAGE_MISS_BIT_KHR, VK_RAY_TRACING_SHADER_GROUP_TYPE_GENERAL_KHR);
@@ -52,7 +50,7 @@ void PhongMaterial::buildPipelines(VkDescriptorSetLayout sceneLayout) {
     vkDestroyShaderModule(context->device, closestHitShaderModule, nullptr);
 }
 
-void PhongMaterial::writeMaterial() {
+void MetalRoughMaterial::writeMaterial() {
     materialBuffer = createMaterialBuffer();
     resetQueue.pushFunction([&]() {
         context->resource_builder->destroyBuffer(materialBuffer);
@@ -64,20 +62,13 @@ void PhongMaterial::writeMaterial() {
     descriptorAllocator.clearWrites();
 }
 
-std::shared_ptr<MaterialInstance> PhongMaterial::createInstance(
-        glm::vec3 diffuse, glm::vec3 specular, glm::vec3 ambient,
-        glm::vec3 reflection, glm::vec3 transmission,
-        float n, glm::vec3 eta) {
-    auto constants = std::make_shared<PhongMaterial::MaterialConstants>();
-    constants->diffuse = diffuse;
-    constants->specular = specular;
-    constants->ambient = ambient;
-    constants->reflection = reflection;
-    constants->transmission = transmission;
-    constants->n = n;
+std::shared_ptr<MaterialInstance> MetalRoughMaterial::createInstance(glm::vec3 albedo, float metallic, float roughness, float ao, glm::vec3 eta) {
+    auto constants = std::make_shared<MetalRoughMaterial::MaterialConstants>();
+    constants->albedo = albedo;
+    constants->properties = glm::vec3(metallic, roughness, ao);
     constants-> eta = glm::vec4(eta, 0.0f);
 
-    auto resources = std::make_shared<PhongMaterial::MaterialRessources>();
+    auto resources = std::make_shared<MetalRoughMaterial::MaterialRessources>();
     resources->constants = constants;
 
     std::shared_ptr<MaterialInstance> instance = std::make_shared<MaterialInstance>();
@@ -86,7 +77,7 @@ std::shared_ptr<MaterialInstance> PhongMaterial::createInstance(
     return instance;
 }
 
-AllocatedBuffer PhongMaterial::createMaterialBuffer() {
+AllocatedBuffer MetalRoughMaterial::createMaterialBuffer() {
     assert(constants_buffer.size() == instances.size());
 
     std::vector<MaterialConstants> materialConstants{};
@@ -97,9 +88,8 @@ AllocatedBuffer PhongMaterial::createMaterialBuffer() {
     return context->resource_builder->stageMemoryToNewBuffer(materialConstants.data(), materialConstants.size() * sizeof(MaterialConstants), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
 }
 
-void PhongMaterial::reset() {
+void MetalRoughMaterial::reset() {
     constants_buffer.clear();
     instances.clear();
     Material::reset();
 }
-
