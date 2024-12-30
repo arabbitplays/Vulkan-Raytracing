@@ -5,6 +5,7 @@
 #ifndef SCENEMANAGER_HPP
 #define SCENEMANAGER_HPP
 
+#include <MetalRoughMaterial.hpp>
 #include <OptionsWindow.hpp>
 #include <vector>
 #include <vulkan/vulkan_core.h>
@@ -62,6 +63,8 @@ private:
     VkSampler defaultSamplerNearest;
 
     std::shared_ptr<PhongMaterial> phong_material;
+    std::shared_ptr<MetalRoughMaterial> metal_rough_material;
+
     AllocatedBuffer vertex_buffer, index_buffer, geometry_mapping_buffer, instance_mapping_buffer;
     std::shared_ptr<AccelerationStructure> top_level_acceleration_structure;
 

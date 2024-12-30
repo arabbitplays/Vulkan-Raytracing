@@ -10,6 +10,7 @@
 #include <InteractiveCamera.hpp>
 #include <MeshAsset.hpp>
 #include <MeshAssetBuilder.hpp>
+#include <MetalRoughMaterial.hpp>
 #include <Node.hpp>
 #include <PhongMaterial.hpp>
 #include <vector>
@@ -49,7 +50,8 @@ struct DirectionalLight {
 
 class Scene {
 public:
-    Scene(std::shared_ptr<MeshAssetBuilder>& mesh_asset_builder, RessourceBuilder& ressource_builder) : mesh_builder(mesh_asset_builder), ressource_builder(ressource_builder) {}
+    Scene(std::shared_ptr<MeshAssetBuilder>& mesh_asset_builder, RessourceBuilder& ressource_builder, std::shared_ptr<Material> material)
+        : mesh_builder(mesh_asset_builder), ressource_builder(ressource_builder), material(material) {}
 
     std::shared_ptr<SceneData> createSceneData();
     virtual void update(uint32_t image_width, uint32_t image_height) {};
@@ -68,39 +70,64 @@ public:
     RessourceBuilder ressource_builder;
     DeletionQueue deletion_queue{};
 
+    std::shared_ptr<Material> material;
+
 protected:
     virtual void initCamera(uint32_t image_width, uint32_t image_height) {};
-    virtual void initScene(std::shared_ptr<PhongMaterial> phong_material) {};
+    virtual void initScene() {};
 };
 
 class PlaneScene : public Scene {
 public:
     PlaneScene() = default;
     PlaneScene(std::shared_ptr<MeshAssetBuilder>& mesh_asset_builder, RessourceBuilder& ressource_builder,
-            uint32_t image_width, uint32_t image_height, std::shared_ptr<PhongMaterial> phong_material) : Scene(mesh_asset_builder, ressource_builder) {
+            uint32_t image_width, uint32_t image_height, std::shared_ptr<PhongMaterial> phong_material) : Scene(mesh_asset_builder, ressource_builder, phong_material), phong_material(phong_material) {
         initCamera(image_width, image_height);
-        initScene(phong_material);
+        initScene();
     };
     void update(uint32_t image_width, uint32_t image_height) override;
 
 protected:
     void initCamera(uint32_t image_width, uint32_t image_height) override;
-    void initScene(std::shared_ptr<PhongMaterial> phong_material) override;
+    void initScene() override;
+
+    std::shared_ptr<PhongMaterial> phong_material;
 };
 
 class CornellBox : public Scene {
 public:
     CornellBox() = default;
     CornellBox(std::shared_ptr<MeshAssetBuilder>& mesh_asset_builder, RessourceBuilder& ressource_builder
-        , uint32_t image_width, uint32_t image_height, std::shared_ptr<PhongMaterial> phong_material) : Scene(mesh_asset_builder, ressource_builder) {
+            , uint32_t image_width, uint32_t image_height, std::shared_ptr<PhongMaterial> phong_material) :
+            Scene(mesh_asset_builder, ressource_builder, phong_material), phong_material(phong_material) {
         initCamera(image_width, image_height);
-        initScene(phong_material);
+        initScene();
     };
     void update(uint32_t image_width, uint32_t image_height) override;
 
 protected:
     void initCamera(uint32_t image_width, uint32_t image_height) override;
-    void initScene(std::shared_ptr<PhongMaterial> phong_material) override;
+    void initScene() override;
+
+    std::shared_ptr<PhongMaterial> phong_material;
+};
+
+class PBR_CornellBox : public Scene {
+public:
+    PBR_CornellBox() = default;
+    PBR_CornellBox(std::shared_ptr<MeshAssetBuilder>& mesh_asset_builder, RessourceBuilder& ressource_builder
+            , uint32_t image_width, uint32_t image_height, std::shared_ptr<MetalRoughMaterial> metal_rough)
+            : Scene(mesh_asset_builder, ressource_builder, metal_rough), metal_rough(metal_rough) {
+        initCamera(image_width, image_height);
+        initScene();
+    };
+    void update(uint32_t image_width, uint32_t image_height) override;
+
+protected:
+    void initCamera(uint32_t image_width, uint32_t image_height) override;
+    void initScene() override;
+
+    std::shared_ptr<MetalRoughMaterial> metal_rough;
 };
 
 #endif //SCENE_HPP

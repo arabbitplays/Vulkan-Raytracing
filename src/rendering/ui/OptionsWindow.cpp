@@ -11,13 +11,16 @@ void OptionsWindow::createFrame() {
     if (show_window) {
         ImGui::Begin("Main Window", &show_window);
 
-        const char* items[] = { "Cornell Box", "Plane" };
+        const char* items[] = { "PBR Cornell Box", "Cornell Box", "Plane" };
         if (ImGui::Combo("Select an option", &imgui_options.currentScene, items, IM_ARRAYSIZE(items))) {
             switch (imgui_options.currentScene) {
                 case 0:
-                    renderer_options->scene_type = SceneType::CORNELL_BOX;
+                    renderer_options->scene_type = SceneType::PBR_CORNELL_BOX;
                     break;
                 case 1:
+                    renderer_options->scene_type = SceneType::CORNELL_BOX;
+                    break;
+                case 2:
                     renderer_options->scene_type = SceneType::PLANE;
                     break;
             }

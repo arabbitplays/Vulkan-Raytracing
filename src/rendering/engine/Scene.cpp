@@ -54,7 +54,7 @@ void PlaneScene::initCamera(uint32_t image_width, uint32_t image_height) {
     camera->image_height = image_height;
 }
 
-void PlaneScene::initScene(std::shared_ptr<PhongMaterial> phong_material) {
+void PlaneScene::initScene() {
     std::shared_ptr<MeshAsset> meshAsset = std::make_shared<MeshAsset>(mesh_builder->LoadMeshAsset("Sphere", "../ressources/models/sphere.obj"));
     meshes.push_back(meshAsset);
 
@@ -159,7 +159,7 @@ void CornellBox::initCamera(uint32_t image_width, uint32_t image_height) {
     camera->image_height = image_height;
 }
 
-void CornellBox::initScene(std::shared_ptr<PhongMaterial> phong_material) {
+void CornellBox::initScene() {
     std::shared_ptr<MeshAsset> meshAsset = std::make_shared<MeshAsset>(mesh_builder->LoadMeshAsset("Sphere", "../ressources/models/sphere.obj"));
     meshes.push_back(meshAsset);
 
@@ -376,6 +376,65 @@ void CornellBox::initScene(std::shared_ptr<PhongMaterial> phong_material) {
 }
 
 void CornellBox::update(uint32_t image_width, uint32_t image_height) {
+    if (image_width != camera->image_width || image_height != camera->image_height) {
+        initCamera(image_width, image_height);
+    }
+
+    camera->update();
+}
+
+// -----------------------------------------------------------------------------------------------------------------------
+
+void PBR_CornellBox::initCamera(uint32_t image_width, uint32_t image_height) {
+    glm::mat4 proj = glm::perspective(glm::radians(65.0f),
+        image_width / (float)image_height,
+        0.1f, 512.0f);
+    proj[1][1] *= -1; // flip y-axis because glm is for openGL
+    /*camera = std::make_shared<Camera>(
+        glm::lookAt(glm::vec3(0, 4, 8), glm::vec3(0, 2.5f, 0), glm::vec3(0, 1, 0)),
+        proj
+    );*/
+
+    auto interactive_camera = std::make_shared<InteractiveCamera>(proj);
+    interactive_camera->position = glm::vec3(0.0f, 5.0f, 0.0f);
+    camera = interactive_camera;
+
+    camera->image_width = image_width;
+    camera->image_height = image_height;
+}
+
+void PBR_CornellBox::initScene() {
+    std::shared_ptr<MeshAsset> meshAsset = std::make_shared<MeshAsset>(mesh_builder->LoadMeshAsset("Sphere", "../ressources/models/sphere.obj"));
+    meshes.push_back(meshAsset);
+
+    meshAsset = std::make_shared<MeshAsset>(mesh_builder->LoadMeshAsset("Plane", "../ressources/models/plane.obj"));
+    meshes.push_back(meshAsset);
+
+    for (auto& meshAsset : meshes) {
+        deletion_queue.pushFunction([&]() {
+            mesh_builder->destroyMeshAsset(*meshAsset);
+        });
+    }
+
+    for (int i = 0; i < 5; i++) {
+        auto sphere = std::make_shared<MeshNode>();
+        sphere->localTransform = glm::translate(glm::mat4(1.0f), glm::vec3(-4.0f + 8.0f / 4.0f * i, 0.5f, 2.0f)) * glm::scale(glm::mat4(1.0), glm::vec3(0.5f));
+        sphere->worldTransform = glm::mat4{1.0f};
+        sphere->children = {};
+        sphere->meshAsset = meshes[0];
+        sphere->meshMaterial = metal_rough->createInstance(
+            glm::vec3(0.0f),
+            0.5f, 0.5f, 0.5f,
+            glm::vec3(0.0f));
+        sphere->refreshTransform(glm::mat4(1.0f));
+        nodes["Sphere" + std::to_string(i)] = std::move(sphere);
+    }
+
+    pointLights[0] = PointLight(glm::vec3(0, 8.0f, 3), glm::vec3(1, 0, 0), 20);
+    sun = DirectionalLight(glm::vec3(-1,-1,-1), glm::vec3(1.0f), 1.0f);
+}
+
+void PBR_CornellBox::update(uint32_t image_width, uint32_t image_height) {
     if (image_width != camera->image_width || image_height != camera->image_height) {
         initCamera(image_width, image_height);
     }

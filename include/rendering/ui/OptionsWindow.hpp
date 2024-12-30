@@ -16,6 +16,7 @@ struct RaytracingOptions {
 };
 
 enum SceneType {
+    PBR_CORNELL_BOX,
     CORNELL_BOX,
     PLANE,
 };

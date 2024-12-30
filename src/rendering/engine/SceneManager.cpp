@@ -17,6 +17,9 @@ void SceneManager::createScene(SceneType scene_type) {
     }
 
     switch (scene_type) {
+        case SceneType::PBR_CORNELL_BOX:
+            scene = std::make_shared<PBR_CornellBox>(context->mesh_builder, *context->resource_builder, context->swapchain->extent.width, context->swapchain->extent.height, metal_rough_material);
+        break;
         case SceneType::CORNELL_BOX:
             scene = std::make_shared<CornellBox>(context->mesh_builder, *context->resource_builder, context->swapchain->extent.width, context->swapchain->extent.height, phong_material);
             break;
@@ -40,7 +43,7 @@ void SceneManager::createScene(SceneType scene_type) {
 void SceneManager::createSceneBuffers() {
     vertex_buffer = context->mesh_builder->createVertexBuffer(scene->meshes);
     index_buffer = context->mesh_builder->createIndexBuffer(scene->meshes);
-    phong_material->writeMaterial();
+    scene->material->writeMaterial();
 
     geometry_mapping_buffer = context->mesh_builder->createGeometryMappingBuffer(scene->meshes);
 
@@ -245,7 +248,7 @@ void SceneManager::createDefaultMaterials() {
 }
 
 std::shared_ptr<Material> SceneManager::getMaterial() {
-    return phong_material;
+    return scene->material;
 }
 
 void SceneManager::clearRessources() {
