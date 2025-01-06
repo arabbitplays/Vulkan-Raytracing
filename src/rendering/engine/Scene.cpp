@@ -494,8 +494,7 @@ void PBR_CornellBox::initScene() {
             sphere->meshAsset = meshes[0];
             sphere->meshMaterial = metal_rough->createInstance(
                 glm::vec3(0.5, 0, 0),
-                std::clamp(0.2f * i, 0.1f, 0.99f), std::clamp(0.2f * j, 0.1f, 0.99f), 0.5f,
-                glm::vec3(1.f) / glm::vec3(1.03f, 1.06f, 1.09f));
+                std::clamp(0.2f * i, 0.1f, 0.99f), std::clamp(0.2f * j, 0.1f, 0.99f), 0.5f);
             sphere->refreshTransform(glm::mat4(1.0f));
             nodes["Sphere" + std::to_string(i) + std::to_string(j)] = std::move(sphere);
         }
@@ -559,12 +558,10 @@ void Material_Showcase::initScene() {
     glm::vec3 diffuse_gray = glm::vec3(0.5f);
     float quad_scale = 5.0f;
 
-    std::shared_ptr<MeshNode> quad = nullptr;
-    std::shared_ptr<MaterialInstance> blue_instance = metal_rough->createInstance(glm::vec3(0.0f, 0.0f, 0.5f), 0.5f, 0.5f, 0.0f);
-    std::shared_ptr<MaterialInstance> grey_instance = metal_rough->createInstance(diffuse_gray, 0.5f, 0.5f, 0.0f);
-
     AllocatedImage albedo_tex = ressource_builder.loadTextureImage("../ressources/textures/rustyMetal/rusty-metal_albedo.png");
+    AllocatedImage metal_rough_ao_tex = ressource_builder.loadTextureImage("../ressources/textures/rustyMetal/rusty-metal_metal_rough_ao.png");
     textures.push_back(albedo_tex);
+    textures.push_back(metal_rough_ao_tex);
     deletion_queue.pushFunction([&]() {
         for (auto& texture : textures) {
             ressource_builder.destroyImage(texture);
@@ -576,11 +573,7 @@ void Material_Showcase::initScene() {
     sphere->worldTransform = glm::mat4{1.0f};
     sphere->children = {};
     sphere->meshAsset = meshes[0];
-    sphere->meshMaterial = metal_rough->createInstance(
-        glm::vec3(0.0, 0, 0),
-        albedo_tex,
-        0.5f, 0.5f, 0.5f,
-        glm::vec3(1.f) / glm::vec3(1.03f, 1.06f, 1.09f));
+    sphere->meshMaterial = metal_rough->createInstance(albedo_tex, metal_rough_ao_tex);
     sphere->refreshTransform(glm::mat4(1.0f));
     nodes["Sphere" ] = std::move(sphere);
 

@@ -12,7 +12,9 @@
 layout(binding = 0, set = 0) uniform accelerationStructureEXT topLevelAS;
 layout(location = 1) rayPayloadEXT bool isShadowed;
 
-layout(binding = 1, set = 1) uniform sampler2D textures[64];
+layout(binding = 1, set = 1) uniform sampler2D albedo_textures[64];
+layout(binding = 2, set = 1) uniform sampler2D metal_rough_ao_textures[64];
+
 
 hitAttributeEXT vec3 attribs;
 
@@ -116,8 +118,12 @@ void main() {
             in_radiance = sceneData.pointLightColors[0].xyz * sceneData.pointLightPositions[0].w * attenuation;
         }
     }
-    vec3 albedo = texture(textures[material_index], uv).xyz + material.albedo;
-    vec3 brdf = calcBRDF(N, V, L, H, albedo, material.metallic, material.roughness);
+    vec3 albedo = texture(albedo_textures[material_index], uv).xyz + material.albedo;
+    float metallic = texture(metal_rough_ao_textures[material_index], uv).x + material.metallic;
+    float roughness = texture(metal_rough_ao_textures[material_index], uv).y + material.roughness;
+    float ao = texture(metal_rough_ao_textures[material_index], uv).z + material.ao;
+
+    vec3 brdf = calcBRDF(N, V, L, H, albedo, metallic, roughness);
     out_radiance = brdf * in_radiance * max(dot(N, L), 0.0);
     vec3 ambient = vec3(0.01) * albedo;
     vec3 result = ambient + out_radiance;

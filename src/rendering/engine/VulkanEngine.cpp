@@ -157,7 +157,7 @@ void VulkanEngine::initVulkan() {
     //createDepthResources();
 
     //scene_manager->createScene(renderer_options->scene_type);
-    scene_manager->createScene(SceneType::PBR_CORNELL_BOX);
+    scene_manager->createScene(SceneType::SHOWCASE);
 
     scene_manager->getMaterial()->pipeline->createShaderBindingTables(raytracingProperties);
     createCommandBuffers();
