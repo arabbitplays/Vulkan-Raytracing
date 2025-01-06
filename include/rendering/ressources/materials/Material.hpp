@@ -48,6 +48,7 @@ protected:
 
 struct MaterialInstance {
     uint32_t material_index;
+    uint32_t albedo_texture_index;
 };
 
 #endif //MATERIAL_HPP

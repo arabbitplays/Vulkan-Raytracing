@@ -420,6 +420,9 @@ void PBR_CornellBox::initScene() {
     float quad_scale = 5.0f;
 
     std::shared_ptr<MeshNode> quad = nullptr;
+    std::shared_ptr<MaterialInstance> blue_instance = metal_rough->createInstance(glm::vec3(0.0f, 0.0f, 0.5f), 0.5f, 0.5f, 0.0f);
+    std::shared_ptr<MaterialInstance> grey_instance = metal_rough->createInstance(diffuse_gray, 0.5f, 0.5f, 0.0f);
+
     for (int i = 0; i < 10; ++i) {
         for (int j = 0; j < 10; ++j) {
             quad = std::make_shared<MeshNode>();
@@ -430,9 +433,9 @@ void PBR_CornellBox::initScene() {
             quad->children = {};
             quad->meshAsset = meshes[1];
             if ((i % 2 == 0 && j % 2 == 0) || (i % 2 == 1 && j % 2 == 1)) {
-                quad->meshMaterial = metal_rough->createInstance(glm::vec3(0.0f, 0.0f, 0.5f), 0.5f, 0.5f, 0.0f);
+                quad->meshMaterial = blue_instance;
             } else {
-                quad->meshMaterial = metal_rough->createInstance(diffuse_gray, 0.5f, 0.5f, 0.0f);
+                quad->meshMaterial = grey_instance;
             }
             quad->refreshTransform(glm::mat4(1.0f));
             int index = i * 10 + j;

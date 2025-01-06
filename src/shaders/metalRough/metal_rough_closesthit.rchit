@@ -12,6 +12,8 @@
 layout(binding = 0, set = 0) uniform accelerationStructureEXT topLevelAS;
 layout(location = 1) rayPayloadEXT bool isShadowed;
 
+layout(binding = 1, set = 1) uniform sampler2D textures[64];
+
 hitAttributeEXT vec3 attribs;
 
 #include "metal_rough_lighting.glsl"
@@ -31,7 +33,6 @@ Vertex getVertex(uint vertexOffset, uint index)
 
     return v;
 }
-
 
 uvec3 getIndices(uint index_offset, uint primitive_id) {
     uint base_index = index_offset + 3 * primitive_id;
@@ -113,13 +114,12 @@ void main() {
 
         if (!isShadowed || !options.shadows) {
             in_radiance = sceneData.pointLightColors[0].xyz * sceneData.pointLightPositions[0].w * attenuation;
-
         }
     }
-
-    vec3 brdf = calcBRDF(N, V, L, H, material.albedo, material.metallic, material.roughness);
+    vec3 albedo = texture(textures[material_index], uv).xyz + material.albedo;
+    vec3 brdf = calcBRDF(N, V, L, H, albedo, material.metallic, material.roughness);
     out_radiance = brdf * in_radiance * max(dot(N, L), 0.0);
-    vec3 ambient = vec3(0.01) * material.albedo;
+    vec3 ambient = vec3(0.01) * albedo;
     vec3 result = ambient + out_radiance;
 
     payload.light = result;

@@ -17,6 +17,7 @@ void MetalRoughMaterial::buildPipelines(VkDescriptorSetLayout sceneLayout) {
     pipeline = std::make_shared<Pipeline>(context);
 
     layoutBuilder.addBinding(0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+    layoutBuilder.addBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 64);
 
     materialLayout = layoutBuilder.build(context->device, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR);
     mainDeletionQueue.pushFunction([&]() {
@@ -58,11 +59,20 @@ void MetalRoughMaterial::writeMaterial() {
 
     materialDescriptorSet = descriptorAllocator.allocate(context->device, materialLayout);
     descriptorAllocator.writeBuffer(0, materialBuffer.handle, 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+    std::vector<VkImageView> views{};
+    for (auto& image : albedo_buffer) {
+        views.push_back(image.imageView);
+    }
+    descriptorAllocator.writeImages(1, views, sampler, VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
     descriptorAllocator.updateSet(context->device, materialDescriptorSet);
     descriptorAllocator.clearWrites();
 }
 
 std::shared_ptr<MaterialInstance> MetalRoughMaterial::createInstance(glm::vec3 albedo, float metallic, float roughness, float ao, glm::vec3 eta) {
+    return createInstance(albedo, default_tex, metallic, roughness, ao, eta);
+}
+
+std::shared_ptr<MaterialInstance> MetalRoughMaterial::createInstance(glm::vec3 albedo, AllocatedImage albedo_tex, float metallic, float roughness, float ao, glm::vec3 eta) {
     auto constants = std::make_shared<MetalRoughMaterial::MaterialConstants>();
     constants->albedo = albedo;
     constants->properties = glm::vec3(metallic, roughness, ao);
@@ -74,6 +84,7 @@ std::shared_ptr<MaterialInstance> MetalRoughMaterial::createInstance(glm::vec3 a
     std::shared_ptr<MaterialInstance> instance = std::make_shared<MaterialInstance>();
     instances.push_back(instance);
     constants_buffer.push_back(resources->constants);
+    albedo_buffer.push_back(albedo_tex);
     return instance;
 }
 
@@ -90,6 +101,7 @@ AllocatedBuffer MetalRoughMaterial::createMaterialBuffer() {
 
 void MetalRoughMaterial::reset() {
     constants_buffer.clear();
+    albedo_buffer.clear();
     instances.clear();
     Material::reset();
 }

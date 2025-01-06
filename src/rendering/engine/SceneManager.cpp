@@ -238,7 +238,6 @@ void SceneManager::createDefaultSamplers() {
     });
 }
 
-
 void SceneManager::createDefaultMaterials() {
     phong_material = std::make_shared<PhongMaterial>(context);
     phong_material->buildPipelines(scene_descsriptor_set_layout);
@@ -246,8 +245,7 @@ void SceneManager::createDefaultMaterials() {
         phong_material->clearRessources();
     });
 
-
-    metal_rough_material = std::make_shared<MetalRoughMaterial>(context);
+    metal_rough_material = std::make_shared<MetalRoughMaterial>(context, defaultSamplerNearest, blackImage);
     metal_rough_material->buildPipelines(scene_descsriptor_set_layout);
     main_deletion_queue.pushFunction([&]() {
         metal_rough_material->clearRessources();
