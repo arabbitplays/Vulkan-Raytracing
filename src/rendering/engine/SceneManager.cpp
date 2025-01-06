@@ -14,6 +14,7 @@ void SceneManager::createScene(SceneType scene_type) {
     if (scene != nullptr) {
         scene_ressource_deletion_queue.flush();
         phong_material->reset();
+        metal_rough_material->reset();
     }
 
     switch (scene_type) {
@@ -244,7 +245,13 @@ void SceneManager::createDefaultMaterials() {
     main_deletion_queue.pushFunction([&]() {
         phong_material->clearRessources();
     });
-    //default_phong = createPhongMaterial(glm::vec3{1, 0, 0}, 1, 1, 1);
+
+
+    metal_rough_material = std::make_shared<MetalRoughMaterial>(context);
+    metal_rough_material->buildPipelines(scene_descsriptor_set_layout);
+    main_deletion_queue.pushFunction([&]() {
+        metal_rough_material->clearRessources();
+    });
 }
 
 std::shared_ptr<Material> SceneManager::getMaterial() {

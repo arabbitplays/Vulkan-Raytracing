@@ -92,5 +92,6 @@ void main() {
 
     int depth = payload.depth;
 
-    payload.light = vec3(max(dot(N, L), 0.0));
+    //payload.light = vec3(max(dot(N, L), 0.0));
+    payload.light = vec3(material.roughness);
 }
