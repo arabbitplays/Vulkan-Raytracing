@@ -11,7 +11,7 @@ void OptionsWindow::createFrame() {
     if (show_window) {
         ImGui::Begin("Main Window", &show_window);
 
-        const char* items[] = { "Showcase", "PBR Cornell Box", "Cornell Box", "Plane"};
+        const char* items[] = { "PBR Cornell Box", "Cornell Box", "Plane", "Showcase" };
         if (ImGui::Combo("Select an option", &imgui_options.currentScene, items, IM_ARRAYSIZE(items))) {
             switch (imgui_options.currentScene) {
                 case 0:

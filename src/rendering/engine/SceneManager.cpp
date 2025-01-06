@@ -31,7 +31,6 @@ void SceneManager::createScene(SceneType scene_type) {
             scene = std::make_shared<Material_Showcase>(context->mesh_builder, *context->resource_builder, context->swapchain->extent.width, context->swapchain->extent.height, metal_rough_material);
         break;
     }
-
     scene_ressource_deletion_queue.pushFunction([&]() {
         scene->clearRessources();
     });
@@ -132,11 +131,6 @@ void SceneManager::updateScene(DrawContext& draw_context, uint32_t current_image
     //QuickTimer timer{"Scene Update", true};
 
     scene->update(context->swapchain->extent.width, context->swapchain->extent.height);
-
-    static auto startTime = std::chrono::high_resolution_clock::now();
-    auto currentTime = std::chrono::high_resolution_clock::now();
-    float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
-    glm::mat4 rotation = glm::rotate(glm::mat4{1.0f}, time * glm::radians(45.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 
     if (top_level_acceleration_structure == nullptr) {
         top_level_acceleration_structure = std::make_shared<AccelerationStructure>(context->device, *context->resource_builder, *context->command_manager, VK_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL_KHR);

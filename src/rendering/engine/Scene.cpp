@@ -578,6 +578,7 @@ void Material_Showcase::initScene() {
     nodes["Sphere" ] = std::move(sphere);
 
     pointLights[0] = PointLight(glm::vec3(2, 2.0f, 2), glm::vec3(1, 1, 1), 10);
+    pointLights[1] = PointLight(glm::vec3(-2, 0.5f, 3), glm::vec3(1, 1, 1), 10);
     sun = DirectionalLight(glm::vec3(-1,-1,-1), glm::vec3(1.0f), 1.0f);
 
     environment_map[0] = ressource_builder.loadTextureImage("../ressources/textures/environmentMaps/posx.jpg");
@@ -600,6 +601,13 @@ void Material_Showcase::update(uint32_t image_width, uint32_t image_height) {
     }
 
     camera->update();
+
+    static auto startTime = std::chrono::high_resolution_clock::now();
+    auto currentTime = std::chrono::high_resolution_clock::now();
+    float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
+    glm::mat4 rotation = glm::rotate(glm::mat4{1.0f}, time * glm::radians(10.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+
+    nodes["Sphere"]->refreshTransform(rotation);
 }
 
 

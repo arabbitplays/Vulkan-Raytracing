@@ -23,7 +23,7 @@ enum SceneType {
 };
 
 struct RendererOptions {
-    SceneType scene_type = SHOWCASE;
+    SceneType scene_type = PBR_CORNELL_BOX;
 };
 
 class OptionsWindow final : public GuiWindow {

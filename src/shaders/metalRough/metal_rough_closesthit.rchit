@@ -45,17 +45,15 @@ uvec3 getIndices(uint index_offset, uint primitive_id) {
 }
 
 Material getMaterial(uint material_id) {
-    uint base_index = 3 * material_id;
+    uint base_index = 2 * material_id;
     vec4 A = material_buffer.data[base_index];
     vec4 B = material_buffer.data[base_index + 1];
-    vec4 C = material_buffer.data[base_index + 2];
 
     Material m;
     m.albedo = A.xyz;
-    m.metallic = A.w;
-    m.roughness = B.x;
-    m.ao = B.y;
-    m.eta = vec3(B.zw, C.a);
+    m.metallic = B.x;
+    m.roughness = B.y;
+    m.ao = B.z;
 
     return m;
 }
@@ -89,42 +87,49 @@ void main() {
     vec3 P = vec3(gl_ObjectToWorldEXT * vec4(position, 1.0)); // transform position to world space
     vec3 N = normalize(vec3(normal * gl_WorldToObjectEXT)); // transform normal to world space
 
-    vec3 L = sceneData.pointLightPositions[0].xyz - P;
-    float distance_to_light = length(L);
-    float attenuation = 1.0 / (distance_to_light * distance_to_light);
-    L = normalize(L);
-
-    vec3 V = -normalize(gl_WorldRayDirectionEXT);
-    vec3 H = normalize(L + V);
-
-    int depth = payload.depth;
-
-    float NdotL = dot(N, L);
-
-    vec3 in_radiance = vec3(0);;
-    vec3 out_radiance = vec3(0);
-
-    if (NdotL > 0) {
-        float tmin = 0.001;
-        float tmax = distance_to_light;
-        vec3 origin = P + EPSILON * N;
-        vec3 direction = L;
-        uint flags = gl_RayFlagsTerminateOnFirstHitEXT | gl_RayFlagsOpaqueEXT | gl_RayFlagsSkipClosestHitShaderEXT;
-        isShadowed = true;
-
-        traceRayEXT(topLevelAS, flags, 0xff, 0, 0, 1, origin.xyz, tmin, direction.xyz, tmax, 1);
-
-        if (!isShadowed || !options.shadows) {
-            in_radiance = sceneData.pointLightColors[0].xyz * sceneData.pointLightPositions[0].w * attenuation;
-        }
-    }
     vec3 albedo = texture(albedo_textures[material_index], uv).xyz + material.albedo;
     float metallic = texture(metal_rough_ao_textures[material_index], uv).x + material.metallic;
     float roughness = texture(metal_rough_ao_textures[material_index], uv).y + material.roughness;
     float ao = texture(metal_rough_ao_textures[material_index], uv).z + material.ao;
 
-    vec3 brdf = calcBRDF(N, V, L, H, albedo, metallic, roughness);
-    out_radiance = brdf * in_radiance * max(dot(N, L), 0.0);
+    vec3 out_radiance = vec3(0);
+    for (int light_index = 0; light_index < 4; light_index++) {
+        if (sceneData.pointLightPositions[light_index].w == 0)
+            continue;
+
+        vec3 L = sceneData.pointLightPositions[light_index].xyz - P;
+        float distance_to_light = length(L);
+        float attenuation = 1.0 / (distance_to_light * distance_to_light);
+        L = normalize(L);
+
+        vec3 V = -normalize(gl_WorldRayDirectionEXT);
+        vec3 H = normalize(L + V);
+
+        int depth = payload.depth;
+
+        float NdotL = dot(N, L);
+
+        vec3 in_radiance = vec3(0);;
+
+        if (NdotL > 0) {
+            float tmin = 0.001;
+            float tmax = distance_to_light;
+            vec3 origin = P + EPSILON * N;
+            vec3 direction = L;
+            uint flags = gl_RayFlagsTerminateOnFirstHitEXT | gl_RayFlagsOpaqueEXT | gl_RayFlagsSkipClosestHitShaderEXT;
+            isShadowed = true;
+
+            traceRayEXT(topLevelAS, flags, 0xff, 0, 0, 1, origin.xyz, tmin, direction.xyz, tmax, 1);
+
+            if (!isShadowed || !options.shadows) {
+                in_radiance = sceneData.pointLightColors[light_index].xyz * sceneData.pointLightPositions[light_index].w * attenuation;
+            }
+        }
+
+        vec3 brdf = calcBRDF(N, V, L, H, albedo, metallic, roughness);
+        out_radiance += brdf * in_radiance * max(dot(N, L), 0.0);
+    }
+
     vec3 ambient = vec3(0.01) * albedo;
     vec3 result = ambient + out_radiance;
 

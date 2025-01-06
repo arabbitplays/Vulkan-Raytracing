@@ -11,10 +11,8 @@
 class MetalRoughMaterial : public Material {
 public:
     struct MaterialConstants {
-        glm::vec3 albedo;
-        glm::vec3 properties; // metallic roughness ao
-        glm::vec3 eta;
-        glm::vec3 padding;
+        glm::vec4 albedo;
+        glm::vec4 properties; // metallic roughness ao
     };
 
     struct MaterialRessources {

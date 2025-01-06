@@ -88,8 +88,8 @@ std::shared_ptr<MaterialInstance> MetalRoughMaterial::createInstance(const Alloc
 
 std::shared_ptr<MaterialInstance> MetalRoughMaterial::createInstance(glm::vec3 albedo, const AllocatedImage &albedo_tex, float metallic, float roughness, float ao, const AllocatedImage &metal_rough_ao_tex) {
     auto constants = std::make_shared<MaterialConstants>();
-    constants->albedo = albedo;
-    constants->properties = glm::vec3(metallic, roughness, ao);
+    constants->albedo = glm::vec4(albedo, 0.0f);
+    constants->properties = glm::vec4(metallic, roughness, ao, 0.0f);
 
     auto resources = std::make_shared<MaterialRessources>();
     resources->constants = constants;
