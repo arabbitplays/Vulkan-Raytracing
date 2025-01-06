@@ -390,14 +390,14 @@ void PBR_CornellBox::initCamera(uint32_t image_width, uint32_t image_height) {
         image_width / (float)image_height,
         0.1f, 512.0f);
     proj[1][1] *= -1; // flip y-axis because glm is for openGL
-    /*camera = std::make_shared<Camera>(
+    camera = std::make_shared<Camera>(
         glm::lookAt(glm::vec3(0, 4, 8), glm::vec3(0, 2.5f, 0), glm::vec3(0, 1, 0)),
         proj
-    );*/
+    );
 
-    auto interactive_camera = std::make_shared<InteractiveCamera>(proj);
+    /*auto interactive_camera = std::make_shared<InteractiveCamera>(proj);
     interactive_camera->position = glm::vec3(0.0f, 5.0f, 0.0f);
-    camera = interactive_camera;
+    camera = interactive_camera;*/
 
     camera->image_width = image_width;
     camera->image_height = image_height;
@@ -416,21 +416,89 @@ void PBR_CornellBox::initScene() {
         });
     }
 
-    for (int i = 0; i < 5; i++) {
-        auto sphere = std::make_shared<MeshNode>();
-        sphere->localTransform = glm::translate(glm::mat4(1.0f), glm::vec3(-4.0f + 8.0f / 4.0f * i, 0.5f, 2.0f)) * glm::scale(glm::mat4(1.0), glm::vec3(0.5f));
-        sphere->worldTransform = glm::mat4{1.0f};
-        sphere->children = {};
-        sphere->meshAsset = meshes[0];
-        sphere->meshMaterial = metal_rough->createInstance(
-            glm::vec3(0.0f),
-            0.5f, 0.199f * i, 0.5f,
-            glm::vec3(0.0f));
-        sphere->refreshTransform(glm::mat4(1.0f));
-        nodes["Sphere" + std::to_string(i)] = std::move(sphere);
+    glm::vec3 diffuse_gray = glm::vec3(0.5f);
+    float quad_scale = 5.0f;
+
+    std::shared_ptr<MeshNode> quad = nullptr;
+    for (int i = 0; i < 10; ++i) {
+        for (int j = 0; j < 10; ++j) {
+            quad = std::make_shared<MeshNode>();
+            quad->localTransform = glm::translate(glm::mat4(1.0f), glm::vec3(-4.5f + i, j + 0.5f, -5.0f))
+                * glm::rotate(glm::mat4(1.0f), glm::radians(90.0f), glm::vec3(1, 0, 0))
+                * glm::scale( glm::mat4(1.0f), glm::vec3(quad_scale / 10, 1.0f, quad_scale / 10));
+            quad->worldTransform = glm::mat4{1.0f};
+            quad->children = {};
+            quad->meshAsset = meshes[1];
+            if ((i % 2 == 0 && j % 2 == 0) || (i % 2 == 1 && j % 2 == 1)) {
+                quad->meshMaterial = metal_rough->createInstance(glm::vec3(0.0f, 0.0f, 0.5f), 0.5f, 0.5f, 0.0f);
+            } else {
+                quad->meshMaterial = metal_rough->createInstance(diffuse_gray, 0.5f, 0.5f, 0.0f);
+            }
+            quad->refreshTransform(glm::mat4(1.0f));
+            int index = i * 10 + j;
+            nodes["Back" + std::to_string(index)] = std::move(quad);
+        }
     }
 
-    pointLights[0] = PointLight(glm::vec3(0, 8.0f, 3), glm::vec3(1, 0, 0), 20);
+    quad = std::make_shared<MeshNode>();
+    quad->localTransform = glm::scale( glm::mat4(1.0f), glm::vec3(quad_scale, 1.0f, quad_scale));
+    quad->worldTransform = glm::mat4{1.0f};
+    quad->children = {};
+    quad->meshAsset = meshes[1];
+    quad->meshMaterial = metal_rough->createInstance(glm::vec3(0.2f), 0.5f, 0.5f, 0.0f);
+
+    quad->refreshTransform(glm::mat4(1.0f));
+    nodes["Floor"] = std::move(quad);
+
+    quad = std::make_shared<MeshNode>();
+    quad->localTransform = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 10.0f, 0.0f))
+        * glm::rotate(glm::mat4(1.0f), glm::radians(180.0f), glm::vec3(0, 0, 1))
+        * glm::scale( glm::mat4(1.0f), glm::vec3(quad_scale, 1.0f, quad_scale));    quad->worldTransform = glm::mat4{1.0f};
+    quad->children = {};
+    quad->meshAsset = meshes[1];
+    quad->meshMaterial = metal_rough->createInstance(diffuse_gray, 0.5f, 0.5f, 0.0f);
+    quad->refreshTransform(glm::mat4(1.0f));
+    nodes["Ciel"] = std::move(quad);
+
+    quad = std::make_shared<MeshNode>();
+    quad->localTransform = glm::translate(glm::mat4(1.0f), glm::vec3(-5.0f, 5.0f, 0.0f))
+        * glm::rotate(glm::mat4(1.0f), glm::radians(-90.0f), glm::vec3(0, 0, 1))
+        * glm::scale( glm::mat4(1.0f), glm::vec3(quad_scale, 1.0f, quad_scale));
+    quad->worldTransform = glm::mat4{1.0f};
+    quad->children = {};
+    quad->meshAsset = meshes[1];
+    quad->meshMaterial = metal_rough->createInstance(glm::vec3(0.5f, 0.0f, 0.0f), 0.5f, 0.5f, 0.0f);
+    quad->refreshTransform(glm::mat4(1.0f));
+    nodes["Left"] = std::move(quad);
+
+    quad = std::make_shared<MeshNode>();
+    quad->localTransform = glm::translate(glm::mat4(1.0f), glm::vec3(5.0f, 5.0f, 0.0f))
+        * glm::rotate(glm::mat4(1.0f), glm::radians(90.0f), glm::vec3(0, 0, 1))
+        * glm::scale( glm::mat4(1.0f), glm::vec3(quad_scale, 1.0f, quad_scale));
+    quad->worldTransform = glm::mat4{1.0f};
+    quad->children = {};
+    quad->meshAsset = meshes[1];
+    quad->meshMaterial = metal_rough->createInstance(glm::vec3(0.0f, 0.5f, 0.0f), 0.5f, 0.5f, 0.0f);
+    quad->refreshTransform(glm::mat4(1.0f));
+    nodes["Right"] = std::move(quad);
+
+    for (int i = 0; i < 5; i++) {
+        for (int j = 0; j < 5; j++) {
+            auto sphere = std::make_shared<MeshNode>();
+            sphere->localTransform = glm::translate(glm::mat4(1.0f), glm::vec3(-3.0f + 6.0f / 4.0f * i, 1.0f + 6.0f / 4.0f * j, -2.0f)) * glm::scale(glm::mat4(1.0), glm::vec3(0.5f));
+            sphere->worldTransform = glm::mat4{1.0f};
+            sphere->children = {};
+            sphere->meshAsset = meshes[0];
+            sphere->meshMaterial = metal_rough->createInstance(
+                glm::vec3(0.5, 0, 0),
+                std::clamp(0.2f * i, 0.1f, 0.99f), std::clamp(0.2f * j, 0.1f, 0.99f), 0.5f,
+                glm::vec3(1.f) / glm::vec3(1.03f, 1.06f, 1.09f));
+            sphere->refreshTransform(glm::mat4(1.0f));
+            nodes["Sphere" + std::to_string(i) + std::to_string(j)] = std::move(sphere);
+        }
+    }
+
+    pointLights[0] = PointLight(glm::vec3(0, 8.0f, 3), glm::vec3(1, 1, 1), 20);
     sun = DirectionalLight(glm::vec3(-1,-1,-1), glm::vec3(1.0f), 1.0f);
 
     environment_map[0] = ressource_builder.loadTextureImage("../ressources/textures/environmentMaps/posx.jpg");

@@ -9,6 +9,9 @@
 #include "../common/scene_data.glsl"
 #include "../common/layout.glsl"
 
+layout(binding = 0, set = 0) uniform accelerationStructureEXT topLevelAS;
+layout(location = 1) rayPayloadEXT bool isShadowed;
+
 hitAttributeEXT vec3 attribs;
 
 #include "metal_rough_lighting.glsl"
@@ -85,13 +88,43 @@ void main() {
 
     vec3 L = sceneData.pointLightPositions[0].xyz - P;
     float distance_to_light = length(L);
+    float attenuation = 1.0 / (distance_to_light * distance_to_light);
     L = normalize(L);
-    float incoming_light = sceneData.pointLightPositions[0].w / (distance_to_light * distance_to_light);
 
     vec3 V = -normalize(gl_WorldRayDirectionEXT);
+    vec3 H = normalize(L + V);
 
     int depth = payload.depth;
 
-    //payload.light = vec3(max(dot(N, L), 0.0));
-    payload.light = vec3(material.roughness);
+    float NdotL = dot(N, L);
+
+    vec3 in_radiance = vec3(0);;
+    vec3 out_radiance = vec3(0);
+
+    if (NdotL > 0) {
+        float tmin = 0.001;
+        float tmax = distance_to_light;
+        vec3 origin = P + EPSILON * N;
+        vec3 direction = L;
+        uint flags = gl_RayFlagsTerminateOnFirstHitEXT | gl_RayFlagsOpaqueEXT | gl_RayFlagsSkipClosestHitShaderEXT;
+        isShadowed = true;
+
+        traceRayEXT(topLevelAS, flags, 0xff, 0, 0, 1, origin.xyz, tmin, direction.xyz, tmax, 1);
+
+        if (!isShadowed || !options.shadows) {
+            in_radiance = sceneData.pointLightColors[0].xyz * sceneData.pointLightPositions[0].w * attenuation;
+
+        }
+    }
+
+    vec3 brdf = calcBRDF(N, V, L, H, material.albedo, material.metallic, material.roughness);
+    out_radiance = brdf * in_radiance * max(dot(N, L), 0.0);
+    vec3 ambient = vec3(0.01) * material.albedo;
+    vec3 result = ambient + out_radiance;
+
+    payload.light = result;
+
+    // gamma correction
+    //payload.light = payload.light / (payload.light + vec3(1.0));
+    //payload.light = pow(payload.light, vec3(1.0 / 2.2));
 }
