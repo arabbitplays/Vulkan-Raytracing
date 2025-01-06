@@ -16,9 +16,9 @@
 class SceneManager {
 public:
     SceneManager() = default;
-    SceneManager(std::shared_ptr<VulkanContext>& vulkanContext, uint32_t max_frames_in_flight) : context(vulkanContext), max_frames_in_flight(max_frames_in_flight) {
+    SceneManager(std::shared_ptr<VulkanContext>& vulkanContext, uint32_t max_frames_in_flight, VkPhysicalDeviceRayTracingPipelinePropertiesKHR raytracingProperties) : context(vulkanContext), max_frames_in_flight(max_frames_in_flight) {
         createSceneLayout();
-        initDefaultResources();
+        initDefaultResources(raytracingProperties);
     }
 
     void createScene(SceneType scene_type);
@@ -38,11 +38,11 @@ public:
 
 private:
     void createSceneLayout();
-    void initDefaultResources();
+    void initDefaultResources(VkPhysicalDeviceRayTracingPipelinePropertiesKHR raytracingProperties);
 
     void createDefaultTextures();
     void createDefaultSamplers();
-    void createDefaultMaterials();
+    void createDefaultMaterials(VkPhysicalDeviceRayTracingPipelinePropertiesKHR raytracingProperties);
 
     void createSceneDescriptorSets();
     void createSceneBuffers();

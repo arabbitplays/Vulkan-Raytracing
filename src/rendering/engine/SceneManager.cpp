@@ -176,10 +176,10 @@ void SceneManager::updateScene(DrawContext& draw_context, uint32_t current_image
     memcpy(sceneUniformBuffersMapped[current_image_idx], scene_data.get(), sizeof(SceneData));
 }
 
-void SceneManager::initDefaultResources() {
+void SceneManager::initDefaultResources(VkPhysicalDeviceRayTracingPipelinePropertiesKHR raytracingProperties) {
     createDefaultTextures();
     createDefaultSamplers();
-    createDefaultMaterials();
+    createDefaultMaterials(raytracingProperties);
 }
 
 void SceneManager::createDefaultTextures() {
@@ -235,18 +235,20 @@ void SceneManager::createDefaultSamplers() {
     });
 }
 
-void SceneManager::createDefaultMaterials() {
+void SceneManager::createDefaultMaterials(VkPhysicalDeviceRayTracingPipelinePropertiesKHR raytracingProperties) {
     phong_material = std::make_shared<PhongMaterial>(context);
     phong_material->buildPipelines(scene_descsriptor_set_layout);
     main_deletion_queue.pushFunction([&]() {
         phong_material->clearRessources();
     });
+    phong_material->pipeline->createShaderBindingTables(raytracingProperties);
 
     metal_rough_material = std::make_shared<MetalRoughMaterial>(context, defaultSamplerNearest, blackImage);
     metal_rough_material->buildPipelines(scene_descsriptor_set_layout);
     main_deletion_queue.pushFunction([&]() {
         metal_rough_material->clearRessources();
     });
+    metal_rough_material->pipeline->createShaderBindingTables(raytracingProperties);
 }
 
 std::shared_ptr<Material> SceneManager::getMaterial() {

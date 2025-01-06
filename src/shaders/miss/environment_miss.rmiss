@@ -36,5 +36,5 @@ vec3 evaluateCubeMap() {
 }
 
 void main() {
-    payload.direct_light = evaluateCubeMap();
+    payload.light = evaluateCubeMap();
 }
