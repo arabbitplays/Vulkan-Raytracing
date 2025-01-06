@@ -130,7 +130,7 @@ void main() {
         out_radiance += brdf * in_radiance * max(dot(N, L), 0.0);
     }
 
-    vec3 ambient = vec3(0.01) * albedo;
+    vec3 ambient = ao * vec3(0.01) * albedo;
     vec3 result = ambient + out_radiance;
 
     payload.light = result;

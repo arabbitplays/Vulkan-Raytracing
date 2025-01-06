@@ -420,8 +420,8 @@ void PBR_CornellBox::initScene() {
     float quad_scale = 5.0f;
 
     std::shared_ptr<MeshNode> quad = nullptr;
-    std::shared_ptr<MaterialInstance> blue_instance = metal_rough->createInstance(glm::vec3(0.0f, 0.0f, 0.5f), 0.5f, 0.5f, 0.0f);
-    std::shared_ptr<MaterialInstance> grey_instance = metal_rough->createInstance(diffuse_gray, 0.5f, 0.5f, 0.0f);
+    std::shared_ptr<MaterialInstance> blue_instance = metal_rough->createInstance(glm::vec3(0.0f, 0.0f, 0.5f), 0.5f, 0.5f, 1.0f);
+    std::shared_ptr<MaterialInstance> grey_instance = metal_rough->createInstance(diffuse_gray, 0.5f, 0.5f, 1.0f);
 
     for (int i = 0; i < 10; ++i) {
         for (int j = 0; j < 10; ++j) {
@@ -448,7 +448,7 @@ void PBR_CornellBox::initScene() {
     quad->worldTransform = glm::mat4{1.0f};
     quad->children = {};
     quad->meshAsset = meshes[1];
-    quad->meshMaterial = metal_rough->createInstance(glm::vec3(0.2f), 0.5f, 0.5f, 0.0f);
+    quad->meshMaterial = metal_rough->createInstance(glm::vec3(0.2f), 0.5f, 0.5f, 1.0f);
 
     quad->refreshTransform(glm::mat4(1.0f));
     nodes["Floor"] = std::move(quad);
@@ -459,7 +459,7 @@ void PBR_CornellBox::initScene() {
         * glm::scale( glm::mat4(1.0f), glm::vec3(quad_scale, 1.0f, quad_scale));    quad->worldTransform = glm::mat4{1.0f};
     quad->children = {};
     quad->meshAsset = meshes[1];
-    quad->meshMaterial = metal_rough->createInstance(diffuse_gray, 0.5f, 0.5f, 0.0f);
+    quad->meshMaterial = metal_rough->createInstance(diffuse_gray, 0.5f, 0.5f, 1.0f);
     quad->refreshTransform(glm::mat4(1.0f));
     nodes["Ciel"] = std::move(quad);
 
@@ -470,7 +470,7 @@ void PBR_CornellBox::initScene() {
     quad->worldTransform = glm::mat4{1.0f};
     quad->children = {};
     quad->meshAsset = meshes[1];
-    quad->meshMaterial = metal_rough->createInstance(glm::vec3(0.5f, 0.0f, 0.0f), 0.5f, 0.5f, 0.0f);
+    quad->meshMaterial = metal_rough->createInstance(glm::vec3(0.5f, 0.0f, 0.0f), 0.5f, 0.5f, 1.0f);
     quad->refreshTransform(glm::mat4(1.0f));
     nodes["Left"] = std::move(quad);
 
@@ -481,7 +481,7 @@ void PBR_CornellBox::initScene() {
     quad->worldTransform = glm::mat4{1.0f};
     quad->children = {};
     quad->meshAsset = meshes[1];
-    quad->meshMaterial = metal_rough->createInstance(glm::vec3(0.0f, 0.5f, 0.0f), 0.5f, 0.5f, 0.0f);
+    quad->meshMaterial = metal_rough->createInstance(glm::vec3(0.0f, 0.5f, 0.0f), 0.5f, 0.5f, 1.0f);
     quad->refreshTransform(glm::mat4(1.0f));
     nodes["Right"] = std::move(quad);
 
@@ -494,7 +494,7 @@ void PBR_CornellBox::initScene() {
             sphere->meshAsset = meshes[0];
             sphere->meshMaterial = metal_rough->createInstance(
                 glm::vec3(0.5, 0, 0),
-                std::clamp(0.2f * i, 0.1f, 0.99f), std::clamp(0.2f * j, 0.1f, 0.99f), 0.5f);
+                std::clamp(0.2f * i, 0.1f, 0.99f), std::clamp(0.2f * j, 0.1f, 0.99f), 1.0f);
             sphere->refreshTransform(glm::mat4(1.0f));
             nodes["Sphere" + std::to_string(i) + std::to_string(j)] = std::move(sphere);
         }
@@ -558,24 +558,39 @@ void Material_Showcase::initScene() {
     glm::vec3 diffuse_gray = glm::vec3(0.5f);
     float quad_scale = 5.0f;
 
-    AllocatedImage albedo_tex = ressource_builder.loadTextureImage("../ressources/textures/rustyMetal/rusty-metal_albedo.png");
-    AllocatedImage metal_rough_ao_tex = ressource_builder.loadTextureImage("../ressources/textures/rustyMetal/rusty-metal_metal_rough_ao.png");
-    textures.push_back(albedo_tex);
-    textures.push_back(metal_rough_ao_tex);
     deletion_queue.pushFunction([&]() {
         for (auto& texture : textures) {
             ressource_builder.destroyImage(texture);
         }
     });
 
+    AllocatedImage rusty_albedo_tex = ressource_builder.loadTextureImage("../ressources/textures/rustyMetal/rusty-metal_albedo.png");
+    AllocatedImage rusty_metal_rough_ao_tex = ressource_builder.loadTextureImage("../ressources/textures/rustyMetal/rusty-metal_metal_rough_ao.png");
+    textures.push_back(rusty_albedo_tex);
+    textures.push_back(rusty_metal_rough_ao_tex);
+
     auto sphere = std::make_shared<MeshNode>();
-    sphere->localTransform = glm::scale(glm::mat4(1.0), glm::vec3(1.0f));
+    sphere->localTransform = glm::translate(glm::mat4(1.0f), glm::vec3(0, 0, 0)) * glm::scale(glm::mat4(1.0), glm::vec3(1.0f));
     sphere->worldTransform = glm::mat4{1.0f};
     sphere->children = {};
     sphere->meshAsset = meshes[0];
-    sphere->meshMaterial = metal_rough->createInstance(albedo_tex, metal_rough_ao_tex);
+    sphere->meshMaterial = metal_rough->createInstance(rusty_albedo_tex, rusty_metal_rough_ao_tex);
     sphere->refreshTransform(glm::mat4(1.0f));
-    nodes["Sphere" ] = std::move(sphere);
+    nodes["Sphere1" ] = std::move(sphere);
+
+    /*AllocatedImage cog_albedo_tex = ressource_builder.loadTextureImage("../ressources/textures/cogPattern/cog-patterned-metal_albedo.png");
+    AllocatedImage cog_metal_rough_ao_tex = ressource_builder.loadTextureImage("../ressources/textures/cogPattern/cog-patterned-metal_rough_ao.png");
+    textures.push_back(cog_albedo_tex);
+    textures.push_back(cog_metal_rough_ao_tex);
+
+    sphere = std::make_shared<MeshNode>();
+    sphere->localTransform = glm::translate(glm::mat4(1.0f), glm::vec3(1, 0, 0)) * glm::scale(glm::mat4(1.0), glm::vec3(1.0f));
+    sphere->worldTransform = glm::mat4{1.0f};
+    sphere->children = {};
+    sphere->meshAsset = meshes[0];
+    sphere->meshMaterial = metal_rough->createInstance(cog_albedo_tex, cog_metal_rough_ao_tex);
+    sphere->refreshTransform(glm::mat4(1.0f));
+    nodes["Sphere2" ] = std::move(sphere);*/
 
     pointLights[0] = PointLight(glm::vec3(2, 2.0f, 2), glm::vec3(1, 1, 1), 10);
     pointLights[1] = PointLight(glm::vec3(-2, 0.5f, 3), glm::vec3(1, 1, 1), 10);
@@ -607,7 +622,7 @@ void Material_Showcase::update(uint32_t image_width, uint32_t image_height) {
     float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
     glm::mat4 rotation = glm::rotate(glm::mat4{1.0f}, time * glm::radians(10.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 
-    nodes["Sphere"]->refreshTransform(rotation);
+    nodes["Sphere1"]->refreshTransform(rotation);
 }
 
 

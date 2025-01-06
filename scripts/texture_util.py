@@ -49,8 +49,8 @@ def combine_rgb_channels(r_path, g_path, b_path, output_path):
     print(f"Combined image saved to {output_path}")
 
 
-r_path = 'ressources/textures/rustyMetal/rusty-metal_metallic.png'
-g_path = 'ressources/textures/rustyMetal/rusty-metal_roughness.png'
-b_path = 'ressources/textures/rustyMetal/rusty-metal_ao.png'
-output_path = 'ressources/textures/rustyMetal/rusty-metal_metal_rough_ao.png'  # Replace with desired output path
+r_path = 'ressources/textures/cogPattern/cog-patterned-metal_metallic.png'
+g_path = 'ressources/textures/cogPattern/cog-patterned-metal_roughness.png'
+b_path = 'ressources/textures/cogPattern/cog-patterned-metal_ao.png'
+output_path = 'ressources/textures/cogPattern/cog-patterned-metal_rough_ao.png'  # Replace with desired output path
 combine_rgb_channels(r_path, g_path, b_path, output_path)
