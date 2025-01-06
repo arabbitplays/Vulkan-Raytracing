@@ -14,6 +14,9 @@
 #include "../rendering/engine/CommandManager.hpp"
 #include "../rendering/Vertex.hpp"
 #include "RessourceBuilder.hpp"
+#include <assimp/Importer.hpp>
+#include <assimp/scene.h>
+#include <assimp/postprocess.h>
 
 class MeshAssetBuilder {
 public:
