@@ -526,4 +526,87 @@ void PBR_CornellBox::update(uint32_t image_width, uint32_t image_height) {
     camera->update();
 }
 
+// ---------------------------------------------------------------------------------------------------------------------
+
+void Material_Showcase::initCamera(uint32_t image_width, uint32_t image_height) {
+    glm::mat4 proj = glm::perspective(glm::radians(65.0f),
+        image_width / (float)image_height,
+        0.1f, 512.0f);
+    proj[1][1] *= -1; // flip y-axis because glm is for openGL
+    camera = std::make_shared<Camera>(
+        glm::translate(glm::mat4(1.0), glm::vec3(0.0f, 0.0f, -3.0f)),
+        proj
+    );
+
+    /*auto interactive_camera = std::make_shared<InteractiveCamera>(proj);
+    interactive_camera->position = glm::vec3(0.0f, 5.0f, 0.0f);
+    camera = interactive_camera;*/
+
+    camera->image_width = image_width;
+    camera->image_height = image_height;
+}
+
+void Material_Showcase::initScene() {
+    std::shared_ptr<MeshAsset> meshAsset = std::make_shared<MeshAsset>(mesh_builder->LoadMeshAsset("Sphere", "../ressources/models/sphere.obj"));
+    meshes.push_back(meshAsset);
+
+    for (auto& meshAsset : meshes) {
+        deletion_queue.pushFunction([&]() {
+            mesh_builder->destroyMeshAsset(*meshAsset);
+        });
+    }
+
+    glm::vec3 diffuse_gray = glm::vec3(0.5f);
+    float quad_scale = 5.0f;
+
+    std::shared_ptr<MeshNode> quad = nullptr;
+    std::shared_ptr<MaterialInstance> blue_instance = metal_rough->createInstance(glm::vec3(0.0f, 0.0f, 0.5f), 0.5f, 0.5f, 0.0f);
+    std::shared_ptr<MaterialInstance> grey_instance = metal_rough->createInstance(diffuse_gray, 0.5f, 0.5f, 0.0f);
+
+    AllocatedImage albedo_tex = ressource_builder.loadTextureImage("../ressources/textures/rustyMetal/rusty-metal_albedo.png");
+    textures.push_back(albedo_tex);
+    deletion_queue.pushFunction([&]() {
+        for (auto& texture : textures) {
+            ressource_builder.destroyImage(texture);
+        }
+    });
+
+    auto sphere = std::make_shared<MeshNode>();
+    sphere->localTransform = glm::scale(glm::mat4(1.0), glm::vec3(1.0f));
+    sphere->worldTransform = glm::mat4{1.0f};
+    sphere->children = {};
+    sphere->meshAsset = meshes[0];
+    sphere->meshMaterial = metal_rough->createInstance(
+        glm::vec3(0.0, 0, 0),
+        albedo_tex,
+        0.5f, 0.5f, 0.5f,
+        glm::vec3(1.f) / glm::vec3(1.03f, 1.06f, 1.09f));
+    sphere->refreshTransform(glm::mat4(1.0f));
+    nodes["Sphere" ] = std::move(sphere);
+
+    pointLights[0] = PointLight(glm::vec3(2, 2.0f, 2), glm::vec3(1, 1, 1), 10);
+    sun = DirectionalLight(glm::vec3(-1,-1,-1), glm::vec3(1.0f), 1.0f);
+
+    environment_map[0] = ressource_builder.loadTextureImage("../ressources/textures/environmentMaps/posx.jpg");
+    environment_map[1] = ressource_builder.loadTextureImage("../ressources/textures/environmentMaps/negx.jpg");
+    environment_map[2] = ressource_builder.loadTextureImage("../ressources/textures/environmentMaps/posy.jpg");
+    environment_map[3] = ressource_builder.loadTextureImage("../ressources/textures/environmentMaps/negy.jpg");
+    environment_map[4] = ressource_builder.loadTextureImage("../ressources/textures/environmentMaps/posz.jpg");
+    environment_map[5] = ressource_builder.loadTextureImage("../ressources/textures/environmentMaps/negz.jpg");
+
+    deletion_queue.pushFunction([&] () {
+        for (auto image : environment_map) {
+            ressource_builder.destroyImage(image);
+        }
+    });
+}
+
+void Material_Showcase::update(uint32_t image_width, uint32_t image_height) {
+    if (image_width != camera->image_width || image_height != camera->image_height) {
+        initCamera(image_width, image_height);
+    }
+
+    camera->update();
+}
+
 

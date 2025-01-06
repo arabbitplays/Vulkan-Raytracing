@@ -130,4 +130,23 @@ protected:
     std::shared_ptr<MetalRoughMaterial> metal_rough;
 };
 
+class Material_Showcase : public Scene {
+public:
+    Material_Showcase() = default;
+    Material_Showcase(std::shared_ptr<MeshAssetBuilder>& mesh_asset_builder, RessourceBuilder& ressource_builder
+            , uint32_t image_width, uint32_t image_height, std::shared_ptr<MetalRoughMaterial> metal_rough)
+            : Scene(mesh_asset_builder, ressource_builder, metal_rough), metal_rough(metal_rough) {
+        initCamera(image_width, image_height);
+        initScene();
+    };
+    void update(uint32_t image_width, uint32_t image_height) override;
+
+protected:
+    void initCamera(uint32_t image_width, uint32_t image_height) override;
+    void initScene() override;
+
+    std::shared_ptr<MetalRoughMaterial> metal_rough;
+    std::vector<AllocatedImage> textures;
+};
+
 #endif //SCENE_HPP

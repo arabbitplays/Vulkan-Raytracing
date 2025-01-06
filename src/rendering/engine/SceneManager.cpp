@@ -27,6 +27,9 @@ void SceneManager::createScene(SceneType scene_type) {
         case SceneType::PLANE:
             scene = std::make_shared<PlaneScene>(context->mesh_builder, *context->resource_builder, context->swapchain->extent.width, context->swapchain->extent.height, phong_material);
             break;
+        case SceneType::SHOWCASE:
+            scene = std::make_shared<Material_Showcase>(context->mesh_builder, *context->resource_builder, context->swapchain->extent.width, context->swapchain->extent.height, metal_rough_material);
+        break;
     }
 
     scene_ressource_deletion_queue.pushFunction([&]() {
