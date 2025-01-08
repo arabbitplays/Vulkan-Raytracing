@@ -501,7 +501,6 @@ void PBR_CornellBox::initScene() {
     }
 
     pointLights[0] = PointLight(glm::vec3(0, 8.0f, 3), glm::vec3(1, 1, 1), 20);
-    sun = DirectionalLight(glm::vec3(-1,-1,-1), glm::vec3(1.0f), 1.0f);
 
     environment_map[0] = ressource_builder.loadTextureImage("../ressources/textures/environmentMaps/posx.jpg");
     environment_map[1] = ressource_builder.loadTextureImage("../ressources/textures/environmentMaps/negx.jpg");
@@ -568,9 +567,9 @@ void Material_Showcase::initScene() {
         }
     });
 
-    AllocatedImage albedo_tex = ressource_builder.loadTextureImage("../ressources/textures/testing/base-map.png");
-    AllocatedImage metal_rough_ao_tex = ressource_builder.loadTextureImage("../ressources/textures/testing/base-map.png");
-    AllocatedImage normal_tex = ressource_builder.loadTextureImage("../ressources/textures/testing/normal-map.png");
+    AllocatedImage albedo_tex = ressource_builder.loadTextureImage("../ressources/textures/rustyMetal/rusty-metal_albedo.png");
+    AllocatedImage metal_rough_ao_tex = ressource_builder.loadTextureImage("../ressources/textures/rustyMetal/rusty-metal_metal_rough_ao.png");
+    AllocatedImage normal_tex = ressource_builder.loadTextureImage("../ressources/textures/rustyMetal/rusty-metal_normal-dx.png", VK_FORMAT_R8G8B8A8_UNORM);
     textures.push_back(albedo_tex);
     textures.push_back(metal_rough_ao_tex);
     textures.push_back(normal_tex);
@@ -637,9 +636,9 @@ void Material_Showcase::initScene() {
     sphere->refreshTransform(glm::mat4(1.0f));
     nodes["Sphere2" ] = std::move(sphere);*/
 
-    pointLights[0] = PointLight(glm::vec3(2, 5.0f, 2), glm::vec3(1, 1, 1), 20);
+    pointLights[0] = PointLight(glm::vec3(0, 5.0f, 0), glm::vec3(1, 1, 1), 20);
     //pointLights[1] = PointLight(glm::vec3(-2, 0.5f, 3), glm::vec3(1, 1, 1), 10);
-    sun = DirectionalLight(glm::vec3(-1,-1,-1), glm::vec3(1.0f), 1.0f);
+    //sun = DirectionalLight(glm::vec3(-1,-1,-1), glm::vec3(1.0f), 10.0f);
 
     environment_map[0] = ressource_builder.loadTextureImage("../ressources/textures/environmentMaps/posx.jpg");
     environment_map[1] = ressource_builder.loadTextureImage("../ressources/textures/environmentMaps/negx.jpg");

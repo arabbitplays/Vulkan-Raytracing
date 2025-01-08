@@ -64,15 +64,15 @@ void main() {
     vec2 uv = alpha * A.uv + beta * B.uv + gamma * C.uv;
 
     vec3 P = vec3(gl_ObjectToWorldEXT * vec4(position, 1.0)); // transform position to world space
-    vec3 N = normalize(vec3(normal * gl_WorldToObjectEXT)); // transform normal to world space
+    vec3 geometric_normal = normalize(vec3(normal * gl_WorldToObjectEXT)); // transform normal to world space
 
     vec3 tangent = normalize(alpha * A.tangent + beta * B.tangent + gamma * C.tangent);
-    tangent = normalize(vec3(tangent * gl_WorldToObjectEXT)); // transform normal to world space
-    vec3 bitangent = normalize(cross(N, tangent));
-    mat3 TBN = mat3(tangent, bitangent, N);
+    vec3 T = normalize(vec3(tangent * gl_WorldToObjectEXT)); // transform tangent to world space
+    vec3 bitangent = -normalize(cross(geometric_normal, T));
+    mat3 TBN = mat3(T, bitangent, geometric_normal);
     vec3 texNormal = texture(normal_textures[material_index], uv).xyz;
     texNormal = texNormal * 2.0 - 1.0;
-    N = normalize(TBN * texNormal);
+    vec3 N = normalize(TBN * texNormal);
 
     vec3 albedo = texture(albedo_textures[material_index], uv).xyz + material.albedo;
     float metallic = texture(metal_rough_ao_textures[material_index], uv).x + material.metallic;
@@ -95,17 +95,14 @@ void main() {
         vec3 V = -normalize(gl_WorldRayDirectionEXT);
         vec3 H = normalize(L + V);
 
-        int depth = payload.depth;
-
-        float NdotL = dot(N, L);
-
         vec3 in_radiance = vec3(0);;
 
+        float NdotL = dot(geometric_normal, L);
         if (NdotL > 0) {
             float tmin = 0.001;
             float tmax = distance_to_light;
-            vec3 origin = P + EPSILON * N;
             vec3 direction = L;
+            vec3 origin = P + EPSILON * L;
             uint flags = gl_RayFlagsTerminateOnFirstHitEXT | gl_RayFlagsOpaqueEXT | gl_RayFlagsSkipClosestHitShaderEXT;
             isShadowed = true;
 
@@ -113,6 +110,35 @@ void main() {
 
             if (!isShadowed || !options.shadows) {
                 in_radiance = sceneData.pointLightColors[light_index].xyz * sceneData.pointLightPositions[light_index].w * attenuation;
+            }
+        }
+
+        vec3 brdf = calcBRDF(N, V, L, H, albedo, metallic, roughness);
+        out_radiance += brdf * in_radiance * max(dot(geometric_normal, L), 0.0);
+    }
+
+    if (sceneData.sunlightDirection.w != 0) {
+        vec3 L = -sceneData.sunlightDirection.xyz;
+        L = normalize(L);
+
+        vec3 V = -normalize(gl_WorldRayDirectionEXT);
+        vec3 H = normalize(L + V);
+
+        vec3 in_radiance = vec3(0);;
+
+        float NdotL = dot(geometric_normal, L);
+        if (NdotL > 0) {
+            float tmin = 0.001;
+            float tmax = 10000;
+            vec3 direction = L;
+            vec3 origin = P + EPSILON * L;
+            uint flags = gl_RayFlagsTerminateOnFirstHitEXT | gl_RayFlagsOpaqueEXT | gl_RayFlagsSkipClosestHitShaderEXT;
+            isShadowed = true;
+
+            traceRayEXT(topLevelAS, flags, 0xff, 0, 0, 1, origin.xyz, tmin, direction.xyz, tmax, 1);
+
+            if (!isShadowed || !options.shadows) {
+                in_radiance = sceneData.sunlightColor * sceneData.sunlightDirection.w;
             }
         }
 

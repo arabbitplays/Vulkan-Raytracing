@@ -51,6 +51,20 @@ void MetalRoughMaterial::buildPipelines(VkDescriptorSetLayout sceneLayout) {
     vkDestroyShaderModule(context->device, missShaderModule, nullptr);
     vkDestroyShaderModule(context->device, shadowMissShaderModule, nullptr);
     vkDestroyShaderModule(context->device, closestHitShaderModule, nullptr);
+
+
+    uint32_t black = glm::packUnorm4x8(glm::vec4(0, 0, 0, 0));
+    default_tex = context->resource_builder->createImage((void*)&black, VkExtent3D{ 1, 1, 1 }, VK_FORMAT_R8G8B8A8_SRGB,
+                                               VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_ASPECT_COLOR_BIT);
+
+    uint32_t blue = glm::packUnorm4x8(glm::vec4(0.5f, 0.5f, 1, 0));
+    default_normal_tex = context->resource_builder->createImage((void*)&blue, VkExtent3D{ 1, 1, 1 }, VK_FORMAT_R8G8B8A8_UNORM,
+                                               VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_ASPECT_COLOR_BIT);
+
+    mainDeletionQueue.pushFunction([&]() {
+        context->resource_builder->destroyImage(default_tex);
+        context->resource_builder->destroyImage(default_normal_tex);
+    });
 }
 
 void MetalRoughMaterial::writeMaterial() {
@@ -86,7 +100,7 @@ void MetalRoughMaterial::writeMaterial() {
 }
 
 std::shared_ptr<MaterialInstance> MetalRoughMaterial::createInstance(glm::vec3 albedo, float metallic, float roughness, float ao) {
-    return createInstance(albedo, default_tex, metallic, roughness, ao, default_tex, default_tex);
+    return createInstance(albedo, default_tex, metallic, roughness, ao, default_tex, default_normal_tex);
 }
 
 std::shared_ptr<MaterialInstance> MetalRoughMaterial::createInstance(const AllocatedImage &albedo_tex, const AllocatedImage &metal_rough_ao_tex, const AllocatedImage& normal_tex) {

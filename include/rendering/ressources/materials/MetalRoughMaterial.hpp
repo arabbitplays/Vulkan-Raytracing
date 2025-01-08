@@ -15,7 +15,7 @@ public:
         glm::vec4 properties; // metallic roughness ao
     };
 
-    MetalRoughMaterial(std::shared_ptr<VulkanContext> context, VkSampler sampler, AllocatedImage default_texture) : Material(context), sampler(sampler), default_tex(default_texture) {
+    MetalRoughMaterial(std::shared_ptr<VulkanContext> context, VkSampler sampler) : Material(context), sampler(sampler) {
     }
 
     void buildPipelines(VkDescriptorSetLayout sceneLayout) override;
@@ -27,7 +27,7 @@ public:
 private:
     AllocatedBuffer createMaterialBuffer();
 
-    AllocatedImage default_tex;
+    AllocatedImage default_tex, default_normal_tex;
 
     std::vector<std::shared_ptr<MaterialInstance>> instances;
     std::vector<std::shared_ptr<MaterialConstants>> constants_buffer;

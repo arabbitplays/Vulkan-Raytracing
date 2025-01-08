@@ -14,6 +14,7 @@ def print_image_pixels(image_path):
     for y in range(pixel_data.shape[0]):
         for x in range(pixel_data.shape[1]):
             pixel = pixel_data[y, x]
+            pixel = pixel / 255 * 2 - 1;
             print(f"Pixel at ({x}, {y}): {pixel}")
 
 
@@ -53,4 +54,5 @@ r_path = 'ressources/textures/cogPattern/cog-patterned-metal_metallic.png'
 g_path = 'ressources/textures/cogPattern/cog-patterned-metal_roughness.png'
 b_path = 'ressources/textures/cogPattern/cog-patterned-metal_ao.png'
 output_path = 'ressources/textures/cogPattern/cog-patterned-metal_rough_ao.png'  # Replace with desired output path
-combine_rgb_channels(r_path, g_path, b_path, output_path)
+#combine_rgb_channels(r_path, g_path, b_path, output_path)
+print_image_pixels("ressources/textures/testing/normal-map.png")
