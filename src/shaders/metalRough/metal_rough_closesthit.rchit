@@ -20,29 +20,7 @@ hitAttributeEXT vec3 attribs;
 
 #include "metal_rough_lighting.glsl"
 
-Vertex getVertex(uint vertexOffset, uint index)
-{
-    uint base_index = 3 * (vertexOffset + index);
-    vec4 A = vertex_buffer.data[base_index];
-    vec4 B = vertex_buffer.data[base_index + 1];
-    vec4 C = vertex_buffer.data[base_index + 2];
 
-    Vertex v;
-    v.position = A.xyz;
-    v.normal = vec3(A.w, B.x, B.y);
-    v.color = vec3(B.zw, C.x);
-    v.uv = C.yz;
-
-    return v;
-}
-
-uvec3 getIndices(uint index_offset, uint primitive_id) {
-    uint base_index = index_offset + 3 * primitive_id;
-    uint index0 = index_buffer.indices[base_index];
-    uint index1 = index_buffer.indices[base_index + 1];
-    uint index2 = index_buffer.indices[base_index + 2];
-    return uvec3(index0, index1, index2);
-}
 
 Material getMaterial(uint material_id) {
     uint base_index = 2 * material_id;
