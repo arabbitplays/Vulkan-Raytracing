@@ -410,6 +410,8 @@ void PBR_CornellBox::initScene() {
     meshAsset = std::make_shared<MeshAsset>(mesh_builder->LoadMeshAsset("Plane", "../ressources/models/plane.obj"));
     meshes.push_back(meshAsset);
 
+    meshAsset = std::make_shared<MeshAsset>(mesh_builder->LoadMeshAsset("Box", "../ressources/models/viking_room.obj"));
+
     for (auto& meshAsset : meshes) {
         deletion_queue.pushFunction([&]() {
             mesh_builder->destroyMeshAsset(*meshAsset);
