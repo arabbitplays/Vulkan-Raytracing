@@ -13,6 +13,7 @@ struct RaytracingOptions {
     int32_t shadows = 1;
     int32_t fresnel = 1;
     int32_t dispersion = 0;
+    int32_t normal_mapping = 1;
 };
 
 enum SceneType {
@@ -39,7 +40,7 @@ public:
 
 private:
     struct ImguiOptions {
-        bool shadows, fresnel, dispersion;
+        bool shadows, fresnel, dispersion, normal_mapping;
         int currentScene;
     };
 
@@ -47,6 +48,7 @@ private:
         .shadows = true,
         .fresnel = true,
         .dispersion = false,
+        .normal_mapping = true,
     };
 
 protected:

@@ -39,6 +39,9 @@ void OptionsWindow::createFrame() {
         if (ImGui::Checkbox("Dispersion", &imgui_options.dispersion)) {
             raytracing_options->dispersion = imgui_options.dispersion ? 1 : 0;
         }
+        if (ImGui::Checkbox("Normal Mapping", &imgui_options.normal_mapping)) {
+            raytracing_options->normal_mapping = imgui_options.normal_mapping ? 1 : 0;
+        }
         ImGui::End();
     }
 }

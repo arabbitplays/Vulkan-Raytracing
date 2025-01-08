@@ -66,21 +66,21 @@ void main() {
     vec3 P = vec3(gl_ObjectToWorldEXT * vec4(position, 1.0)); // transform position to world space
     vec3 geometric_normal = normalize(vec3(normal * gl_WorldToObjectEXT)); // transform normal to world space
 
-    vec3 tangent = normalize(alpha * A.tangent + beta * B.tangent + gamma * C.tangent);
-    vec3 T = normalize(vec3(tangent * gl_WorldToObjectEXT)); // transform tangent to world space
-    vec3 bitangent = -normalize(cross(geometric_normal, T));
-    mat3 TBN = mat3(T, bitangent, geometric_normal);
-    vec3 texNormal = texture(normal_textures[material_index], uv).xyz;
-    texNormal = texNormal * 2.0 - 1.0;
-    vec3 N = normalize(TBN * texNormal);
+    vec3 N = geometric_normal;
+    if (options.normal_mapping) {
+        vec3 tangent = normalize(alpha * A.tangent + beta * B.tangent + gamma * C.tangent);
+        vec3 T = normalize(vec3(tangent * gl_WorldToObjectEXT)); // transform tangent to world space
+        vec3 bitangent = -normalize(cross(geometric_normal, T));
+        mat3 TBN = mat3(T, bitangent, geometric_normal);
+        vec3 texNormal = texture(normal_textures[material_index], uv).xyz;
+        texNormal = texNormal * 2.0 - 1.0;
+        N = normalize(TBN * texNormal);
+    }
 
     vec3 albedo = texture(albedo_textures[material_index], uv).xyz + material.albedo;
     float metallic = texture(metal_rough_ao_textures[material_index], uv).x + material.metallic;
     float roughness = texture(metal_rough_ao_textures[material_index], uv).y + material.roughness;
     float ao = texture(metal_rough_ao_textures[material_index], uv).z + material.ao;
-    metallic = 0.5;
-    roughness = 0.5;
-    ao = 1.0;
 
     vec3 out_radiance = vec3(0);
     for (int light_index = 0; light_index < 4; light_index++) {

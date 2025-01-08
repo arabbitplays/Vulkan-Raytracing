@@ -29,6 +29,7 @@ layout(push_constant) uniform PushConstants {
     bool shadows;
     bool fresnel;
     bool dispersion;
+    bool normal_mapping;
 } options;
 
 Vertex getVertex(uint vertexOffset, uint index)
