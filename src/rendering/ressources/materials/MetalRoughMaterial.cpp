@@ -19,6 +19,7 @@ void MetalRoughMaterial::buildPipelines(VkDescriptorSetLayout sceneLayout) {
     layoutBuilder.addBinding(0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
     layoutBuilder.addBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 64);
     layoutBuilder.addBinding(2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 64);
+    layoutBuilder.addBinding(3, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 64);
 
     materialLayout = layoutBuilder.build(context->device, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR);
     mainDeletionQueue.pushFunction([&]() {
@@ -74,31 +75,37 @@ void MetalRoughMaterial::writeMaterial() {
     }
     descriptorAllocator.writeImages(2, metal_rough_views, sampler, VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
 
+    std::vector<VkImageView> normal_views{};
+    for (auto& image : normal_textures) {
+        normal_views.push_back(image.imageView);
+    }
+    descriptorAllocator.writeImages(3, normal_views, sampler, VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+
     descriptorAllocator.updateSet(context->device, materialDescriptorSet);
     descriptorAllocator.clearWrites();
 }
 
 std::shared_ptr<MaterialInstance> MetalRoughMaterial::createInstance(glm::vec3 albedo, float metallic, float roughness, float ao) {
-    return createInstance(albedo, default_tex, metallic, roughness, ao, default_tex);
+    return createInstance(albedo, default_tex, metallic, roughness, ao, default_tex, default_tex);
 }
 
-std::shared_ptr<MaterialInstance> MetalRoughMaterial::createInstance(const AllocatedImage &albedo_tex, const AllocatedImage &metal_rough_ao_tex) {
-    return createInstance(glm::vec3(0), albedo_tex, 0, 0, 0, metal_rough_ao_tex);
+std::shared_ptr<MaterialInstance> MetalRoughMaterial::createInstance(const AllocatedImage &albedo_tex, const AllocatedImage &metal_rough_ao_tex, const AllocatedImage& normal_tex) {
+    return createInstance(glm::vec3(0), albedo_tex, 0, 0, 0, metal_rough_ao_tex, normal_tex);
 }
 
-std::shared_ptr<MaterialInstance> MetalRoughMaterial::createInstance(glm::vec3 albedo, const AllocatedImage &albedo_tex, float metallic, float roughness, float ao, const AllocatedImage &metal_rough_ao_tex) {
+std::shared_ptr<MaterialInstance> MetalRoughMaterial::createInstance(glm::vec3 albedo, const AllocatedImage &albedo_tex,
+        float metallic, float roughness, float ao, const AllocatedImage &metal_rough_ao_tex,
+        const AllocatedImage& normal_tex) {
     auto constants = std::make_shared<MaterialConstants>();
     constants->albedo = glm::vec4(albedo, 0.0f);
     constants->properties = glm::vec4(metallic, roughness, ao, 0.0f);
 
-    auto resources = std::make_shared<MaterialRessources>();
-    resources->constants = constants;
-
     std::shared_ptr<MaterialInstance> instance = std::make_shared<MaterialInstance>();
     instances.push_back(instance);
-    constants_buffer.push_back(resources->constants);
+    constants_buffer.push_back(constants);
     albedo_textures.push_back(albedo_tex);
     metal_rough_ao_textures.push_back(metal_rough_ao_tex);
+    normal_textures.push_back(normal_tex);
     return instance;
 }
 
@@ -117,6 +124,7 @@ void MetalRoughMaterial::reset() {
     constants_buffer.clear();
     albedo_textures.clear();
     metal_rough_ao_textures.clear();
+    normal_textures.clear();
     instances.clear();
     Material::reset();
 }

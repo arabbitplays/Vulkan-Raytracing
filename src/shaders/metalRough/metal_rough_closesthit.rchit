@@ -14,6 +14,7 @@ layout(location = 1) rayPayloadEXT bool isShadowed;
 
 layout(binding = 1, set = 1) uniform sampler2D albedo_textures[64];
 layout(binding = 2, set = 1) uniform sampler2D metal_rough_ao_textures[64];
+layout(binding = 3, set = 1) uniform sampler2D normal_textures[64];
 
 
 hitAttributeEXT vec3 attribs;
@@ -65,10 +66,21 @@ void main() {
     vec3 P = vec3(gl_ObjectToWorldEXT * vec4(position, 1.0)); // transform position to world space
     vec3 N = normalize(vec3(normal * gl_WorldToObjectEXT)); // transform normal to world space
 
+    vec3 tangent = normalize(alpha * A.tangent + beta * B.tangent + gamma * C.tangent);
+    tangent = normalize(vec3(tangent * gl_WorldToObjectEXT)); // transform normal to world space
+    vec3 bitangent = normalize(cross(N, tangent));
+    mat3 TBN = mat3(tangent, bitangent, N);
+    vec3 texNormal = texture(normal_textures[material_index], uv).xyz;
+    texNormal = texNormal * 2.0 - 1.0;
+    N = normalize(TBN * texNormal);
+
     vec3 albedo = texture(albedo_textures[material_index], uv).xyz + material.albedo;
     float metallic = texture(metal_rough_ao_textures[material_index], uv).x + material.metallic;
     float roughness = texture(metal_rough_ao_textures[material_index], uv).y + material.roughness;
     float ao = texture(metal_rough_ao_textures[material_index], uv).z + material.ao;
+    metallic = 0.5;
+    roughness = 0.5;
+    ao = 1.0;
 
     vec3 out_radiance = vec3(0);
     for (int light_index = 0; light_index < 4; light_index++) {
@@ -112,7 +124,6 @@ void main() {
     vec3 result = ambient + out_radiance;
 
     payload.light = result;
-
     // gamma correction
     //payload.light = payload.light / (payload.light + vec3(1.0));
     //payload.light = pow(payload.light, vec3(1.0 / 2.2));

@@ -410,8 +410,6 @@ void PBR_CornellBox::initScene() {
     meshAsset = std::make_shared<MeshAsset>(mesh_builder->LoadMeshAsset("Plane", "../ressources/models/plane.obj"));
     meshes.push_back(meshAsset);
 
-    meshAsset = std::make_shared<MeshAsset>(mesh_builder->LoadMeshAsset("Box", "../ressources/models/viking_room.obj"));
-
     for (auto& meshAsset : meshes) {
         deletion_queue.pushFunction([&]() {
             mesh_builder->destroyMeshAsset(*meshAsset);
@@ -535,7 +533,8 @@ void Material_Showcase::initCamera(uint32_t image_width, uint32_t image_height) 
         0.1f, 512.0f);
     proj[1][1] *= -1; // flip y-axis because glm is for openGL
     camera = std::make_shared<Camera>(
-        glm::translate(glm::mat4(1.0), glm::vec3(0.0f, 0.0f, -3.0f)),
+     //   glm::translate(glm::mat4(1.0), glm::vec3(0.0f, 0.0f, -3.0f)),
+     glm::lookAt(glm::vec3(0, 4, 8), glm::vec3(0, 2.5f, 0), glm::vec3(0, 1, 0)),
         proj
     );
 
@@ -549,6 +548,9 @@ void Material_Showcase::initCamera(uint32_t image_width, uint32_t image_height) 
 
 void Material_Showcase::initScene() {
     std::shared_ptr<MeshAsset> meshAsset = std::make_shared<MeshAsset>(mesh_builder->LoadMeshAsset("Sphere", "../ressources/models/sphere.obj"));
+    meshes.push_back(meshAsset);
+
+    meshAsset = std::make_shared<MeshAsset>(mesh_builder->LoadMeshAsset("Plane", "../ressources/models/plane.obj"));
     meshes.push_back(meshAsset);
 
     for (auto& meshAsset : meshes) {
@@ -566,7 +568,48 @@ void Material_Showcase::initScene() {
         }
     });
 
-    AllocatedImage rusty_albedo_tex = ressource_builder.loadTextureImage("../ressources/textures/rustyMetal/rusty-metal_albedo.png");
+    AllocatedImage albedo_tex = ressource_builder.loadTextureImage("../ressources/textures/testing/base-map.png");
+    AllocatedImage metal_rough_ao_tex = ressource_builder.loadTextureImage("../ressources/textures/testing/base-map.png");
+    AllocatedImage normal_tex = ressource_builder.loadTextureImage("../ressources/textures/testing/normal-map.png");
+    textures.push_back(albedo_tex);
+    textures.push_back(metal_rough_ao_tex);
+    textures.push_back(normal_tex);
+    auto mat = metal_rough->createInstance(albedo_tex, metal_rough_ao_tex, normal_tex);
+
+    auto quad = std::make_shared<MeshNode>();
+    quad->localTransform = glm::translate(glm::mat4(1.0f), glm::vec3(0, 5, -5.0f))
+        * glm::rotate(glm::mat4(1.0f), glm::radians(90.0f), glm::vec3(1, 0, 0))
+        * glm::scale( glm::mat4(1.0f), glm::vec3(quad_scale, 1.0f, quad_scale));
+    quad->worldTransform = glm::mat4{1.0f};
+    quad->children = {};
+    quad->meshAsset = meshes[1];
+    quad->meshMaterial = mat;
+    quad->refreshTransform(glm::mat4(1.0f));
+    nodes["Back" ] = std::move(quad);
+
+    quad = std::make_shared<MeshNode>();
+    quad->localTransform = glm::scale( glm::mat4(1.0f), glm::vec3(quad_scale, 1.0f, quad_scale));
+    quad->worldTransform = glm::mat4{1.0f};
+    quad->children = {};
+    quad->meshAsset = meshes[1];
+    quad->meshMaterial = mat;
+
+    quad->refreshTransform(glm::mat4(1.0f));
+    nodes["Floor"] = std::move(quad);
+
+    quad = std::make_shared<MeshNode>();
+    quad->localTransform = glm::translate(glm::mat4(1.0f), glm::vec3(-5.0f, 5.0f, 0.0f))
+        * glm::rotate(glm::mat4(1.0f), glm::radians(90.0f), glm::vec3(1, 0, 0))
+        * glm::rotate(glm::mat4(1.0f), glm::radians(-90.0f), glm::vec3(0, 0, 1))
+        * glm::scale( glm::mat4(1.0f), glm::vec3(quad_scale, 1.0f, quad_scale));
+    quad->worldTransform = glm::mat4{1.0f};
+    quad->children = {};
+    quad->meshAsset = meshes[1];
+    quad->meshMaterial = mat;
+    quad->refreshTransform(glm::mat4(1.0f));
+    nodes["Left"] = std::move(quad);
+
+    /*AllocatedImage rusty_albedo_tex = ressource_builder.loadTextureImage("../ressources/textures/rustyMetal/rusty-metal_albedo.png");
     AllocatedImage rusty_metal_rough_ao_tex = ressource_builder.loadTextureImage("../ressources/textures/rustyMetal/rusty-metal_metal_rough_ao.png");
     textures.push_back(rusty_albedo_tex);
     textures.push_back(rusty_metal_rough_ao_tex);
@@ -578,7 +621,7 @@ void Material_Showcase::initScene() {
     sphere->meshAsset = meshes[0];
     sphere->meshMaterial = metal_rough->createInstance(rusty_albedo_tex, rusty_metal_rough_ao_tex);
     sphere->refreshTransform(glm::mat4(1.0f));
-    nodes["Sphere1" ] = std::move(sphere);
+    nodes["Sphere1" ] = std::move(sphere);*/
 
     /*AllocatedImage cog_albedo_tex = ressource_builder.loadTextureImage("../ressources/textures/cogPattern/cog-patterned-metal_albedo.png");
     AllocatedImage cog_metal_rough_ao_tex = ressource_builder.loadTextureImage("../ressources/textures/cogPattern/cog-patterned-metal_rough_ao.png");
@@ -594,8 +637,8 @@ void Material_Showcase::initScene() {
     sphere->refreshTransform(glm::mat4(1.0f));
     nodes["Sphere2" ] = std::move(sphere);*/
 
-    pointLights[0] = PointLight(glm::vec3(2, 2.0f, 2), glm::vec3(1, 1, 1), 10);
-    pointLights[1] = PointLight(glm::vec3(-2, 0.5f, 3), glm::vec3(1, 1, 1), 10);
+    pointLights[0] = PointLight(glm::vec3(2, 5.0f, 2), glm::vec3(1, 1, 1), 20);
+    //pointLights[1] = PointLight(glm::vec3(-2, 0.5f, 3), glm::vec3(1, 1, 1), 10);
     sun = DirectionalLight(glm::vec3(-1,-1,-1), glm::vec3(1.0f), 1.0f);
 
     environment_map[0] = ressource_builder.loadTextureImage("../ressources/textures/environmentMaps/posx.jpg");
@@ -624,7 +667,7 @@ void Material_Showcase::update(uint32_t image_width, uint32_t image_height) {
     float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
     glm::mat4 rotation = glm::rotate(glm::mat4{1.0f}, time * glm::radians(10.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 
-    nodes["Sphere1"]->refreshTransform(rotation);
+    //nodes["Sphere1"]->refreshTransform(rotation);
 }
 
 

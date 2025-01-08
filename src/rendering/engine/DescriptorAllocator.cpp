@@ -76,7 +76,7 @@ void DescriptorAllocator::init(VkDevice device, uint32_t initialSetCount, std::s
 
     readyPools.push_back(newPool);
 
-    imageInfos.reserve(64); // TODO set the max material instances here
+    imageInfos.reserve(64 * 3); // TODO set the max material instances here
 }
 
 void DescriptorAllocator::clearPools(VkDevice device) {
