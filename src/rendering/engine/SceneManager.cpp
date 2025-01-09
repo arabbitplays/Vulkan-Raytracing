@@ -243,7 +243,7 @@ void SceneManager::createDefaultMaterials(VkPhysicalDeviceRayTracingPipelineProp
     });
     phong_material->pipeline->createShaderBindingTables(raytracingProperties);
 
-    metal_rough_material = std::make_shared<MetalRoughMaterial>(context, defaultSamplerNearest);
+    metal_rough_material = std::make_shared<MetalRoughMaterial>(context, defaultSamplerLinear);
     metal_rough_material->buildPipelines(scene_descsriptor_set_layout);
     main_deletion_queue.pushFunction([&]() {
         metal_rough_material->clearRessources();

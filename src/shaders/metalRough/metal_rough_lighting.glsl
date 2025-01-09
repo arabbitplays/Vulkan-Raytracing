@@ -60,3 +60,30 @@ vec3 calcBRDF(vec3 n, vec3 v, vec3 l, vec3 h, vec3 albedo, float metallic, float
 
     return diffuseFraction * albedo / PI + specular;
 }
+
+vec3 calcLightContribution(vec3 P, vec3 N, vec3 geom_N, vec3 L, float dist_to_light, float attenuation, vec3 light_color, float light_power,
+        vec3 albedo, float metallic, float roughness, float ao) {
+    vec3 V = -normalize(gl_WorldRayDirectionEXT);
+    vec3 H = normalize(L + V);
+
+    vec3 in_radiance = vec3(0);;
+
+    float NdotL = dot(N, L);
+    if (NdotL > 0) {
+        float tmin = 0.001;
+        float tmax = dist_to_light;
+        vec3 direction = L;
+        vec3 origin = P + EPSILON * geom_N;
+        uint flags = gl_RayFlagsTerminateOnFirstHitEXT | gl_RayFlagsOpaqueEXT | gl_RayFlagsSkipClosestHitShaderEXT;
+        isShadowed = true;
+
+        traceRayEXT(topLevelAS, flags, 0xff, 0, 0, 1, origin.xyz, tmin, direction.xyz, tmax, 1);
+
+        if (!isShadowed || !options.shadows) {
+            in_radiance = light_color * light_power * attenuation;
+        }
+    }
+
+    vec3 brdf = calcBRDF(N, V, L, H, albedo, metallic, roughness);
+    return brdf * in_radiance * max(dot(N, L), 0.0);
+}
