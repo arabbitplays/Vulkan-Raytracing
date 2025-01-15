@@ -447,7 +447,7 @@ void PBR_CornellBox::initScene() {
     quad->worldTransform = glm::mat4{1.0f};
     quad->children = {};
     quad->meshAsset = meshes[1];
-    quad->meshMaterial = metal_rough->createInstance({.albedo = glm::vec3(0.2f), .metallic = 0.5f, .roughness = 0.5f, .ao = 1.0f});
+    quad->meshMaterial = metal_rough->createInstance({.albedo = glm::vec3(1.f), .metallic = 0.5f, .roughness = 0.5f, .ao = 1.0f});
 
     quad->refreshTransform(glm::mat4(1.0f));
     nodes["Floor"] = std::move(quad);

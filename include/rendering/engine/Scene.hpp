@@ -34,18 +34,18 @@ struct PointLight {
     PointLight() = default;
     PointLight(const glm::vec3& position, const glm::vec3& color, float intensity) : position(position), color(color), intensity(intensity) {}
 
-    glm::vec3 position;
-    glm::vec3 color;
-    float intensity;
+    glm::vec3 position = glm::vec3(0.0f);
+    glm::vec3 color = glm::vec3(0.0f);
+    float intensity = 0.0f;
 };
 
 struct DirectionalLight {
     DirectionalLight() = default;
     DirectionalLight(glm::vec3 direction, glm::vec3 color, float intensity) : direction(direction), color(color), intensity(intensity) {}
 
-    glm::vec3 direction;
-    glm::vec3 color;
-    float intensity;
+    glm::vec3 direction = glm::vec3(0.0f);
+    glm::vec3 color = glm::vec3(0.0f);
+    float intensity = 0.0f;
 };
 
 class Scene {
