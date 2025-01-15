@@ -8,6 +8,7 @@
 #include "../common/payload.glsl"
 #include "../common/scene_data.glsl"
 #include "../common/layout.glsl"
+#include "../common/random.glsl"
 
 layout(binding = 0, set = 0) uniform accelerationStructureEXT topLevelAS;
 layout(location = 1) rayPayloadEXT bool isShadowed;
@@ -113,7 +114,5 @@ void main() {
     vec3 result = ambient + out_radiance;
 
     payload.light = result;
-    // gamma correction
-    //payload.light = payload.light / (payload.light + vec3(1.0));
-    //payload.light = pow(payload.light, vec3(1.0 / 2.2));
+    payload.light = vec3(stepAndOutputRNGFloat(payload.rng_state));
 }

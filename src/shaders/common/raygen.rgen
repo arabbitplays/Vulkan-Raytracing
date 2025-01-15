@@ -21,6 +21,7 @@ void main() {
 
     payload.depth = 0;
     payload.light = vec3(0.0);
+    payload.rng_state = gl_LaunchSizeEXT.x * gl_LaunchIDEXT.y + gl_LaunchIDEXT.x;
 
     float tmin = 0.01;
     float tmax = 10000.0;
