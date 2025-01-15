@@ -25,15 +25,18 @@ hitAttributeEXT vec3 attribs;
 
 
 Material getMaterial(uint material_id) {
-    uint base_index = 2 * material_id;
+    uint base_index = 3 * material_id;
     vec4 A = material_buffer.data[base_index];
     vec4 B = material_buffer.data[base_index + 1];
+    vec4 C = material_buffer.data[base_index + 2];
 
     Material m;
     m.albedo = A.xyz;
     m.metallic = B.x;
     m.roughness = B.y;
     m.ao = B.z;
+    m.emission_color = C.xyz;
+    m.emission_power = C.w;
 
     return m;
 }
@@ -111,8 +114,8 @@ void main() {
     }
 
     vec3 ambient = ao * vec3(0.01) * albedo;
-    vec3 result = ambient + out_radiance;
+    vec3 emission = material.emission_color * material.emission_power * 1.0 / (gl_HitTEXT * gl_HitTEXT);
+    vec3 result = emission + ambient + out_radiance;
 
     payload.light = result;
-    payload.light = vec3(stepAndOutputRNGFloat(payload.rng_state));
 }

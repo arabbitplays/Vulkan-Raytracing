@@ -7,6 +7,8 @@ struct Material {
     float roughness;
     float ao;
     vec3 eta;
+    vec3 emission_color;
+    float emission_power;
 };
 
 vec3 getLambertianDiffuse(vec3 albedo) {

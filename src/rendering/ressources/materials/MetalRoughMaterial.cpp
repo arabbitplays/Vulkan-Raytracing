@@ -99,27 +99,30 @@ void MetalRoughMaterial::writeMaterial() {
     descriptorAllocator.clearWrites();
 }
 
-std::shared_ptr<MaterialInstance> MetalRoughMaterial::createInstance(glm::vec3 albedo, float metallic, float roughness, float ao) {
-    return createInstance(albedo, default_tex, metallic, roughness, ao, default_tex, default_normal_tex);
-}
+std::shared_ptr<MaterialInstance> MetalRoughMaterial::createInstance(MetalRoughParameters parameters) {
+    if (parameters.albedo_tex.image == VK_NULL_HANDLE) {
+        parameters.albedo_tex = default_tex;
+    }
 
-std::shared_ptr<MaterialInstance> MetalRoughMaterial::createInstance(const AllocatedImage &albedo_tex, const AllocatedImage &metal_rough_ao_tex, const AllocatedImage& normal_tex) {
-    return createInstance(glm::vec3(0), albedo_tex, 0, 0, 0, metal_rough_ao_tex, normal_tex);
-}
+    if (parameters.metal_rough_ao_tex.image == VK_NULL_HANDLE) {
+        parameters.metal_rough_ao_tex = default_tex;
+    }
 
-std::shared_ptr<MaterialInstance> MetalRoughMaterial::createInstance(glm::vec3 albedo, const AllocatedImage &albedo_tex,
-        float metallic, float roughness, float ao, const AllocatedImage &metal_rough_ao_tex,
-        const AllocatedImage& normal_tex) {
+    if (parameters.normal_tex.image == VK_NULL_HANDLE) {
+        parameters.normal_tex = default_normal_tex;
+    }
+
     auto constants = std::make_shared<MaterialConstants>();
-    constants->albedo = glm::vec4(albedo, 0.0f);
-    constants->properties = glm::vec4(metallic, roughness, ao, 0.0f);
+    constants->albedo = glm::vec4(parameters.albedo, 0.0f);
+    constants->properties = glm::vec4(parameters.metallic, parameters.roughness, parameters.ao, 0.0f);
+    constants->emission = glm::vec4(parameters.emission_color, parameters.emission_power);
 
     std::shared_ptr<MaterialInstance> instance = std::make_shared<MaterialInstance>();
     instances.push_back(instance);
     constants_buffer.push_back(constants);
-    albedo_textures.push_back(albedo_tex);
-    metal_rough_ao_textures.push_back(metal_rough_ao_tex);
-    normal_textures.push_back(normal_tex);
+    albedo_textures.push_back(parameters.albedo_tex);
+    metal_rough_ao_textures.push_back(parameters.metal_rough_ao_tex);
+    normal_textures.push_back(parameters.normal_tex);
     return instance;
 }
 
