@@ -343,7 +343,7 @@ bool VulkanEngine::isDeviceSuitable(VkPhysicalDevice device) {
     }
 
     return extensionsSupported && indices.isComplete() && swapChainAdequate
-        && deviceFeatures.samplerAnisotropy
+        && deviceFeatures.samplerAnisotropy && deviceFeatures.shaderInt64 && deviceFeatures.shaderFloat64
         && raytracingPipelineFeatures.rayTracingPipeline && accelerationStructureFeatures.accelerationStructure;
 }
 
@@ -381,6 +381,8 @@ void VulkanEngine::createLogicalDevice() {
 
     VkPhysicalDeviceFeatures deviceFeatures{};
     deviceFeatures.samplerAnisotropy = VK_TRUE;
+    deviceFeatures.shaderInt64 = VK_TRUE;
+    deviceFeatures.shaderFloat64 = VK_TRUE;
 
     VkPhysicalDeviceAccelerationStructureFeaturesKHR accelerationStructureFeatures{};
     accelerationStructureFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_FEATURES_KHR;
@@ -583,8 +585,11 @@ void VulkanEngine::drawFrame() {
 
     vkResetFences(device, 1, &inFlightFences[currentFrame]);
 
+#ifdef REALTIME_MODE
     scene_manager->updateScene(mainDrawContext, currentFrame, storageImages[currentFrame]);
-
+#else
+    scene_manager->updateScene(mainDrawContext, currentFrame, storageImages[0]);
+#endif
     vkResetCommandBuffer(commandBuffers[currentFrame], 0);
     recordCommandBuffer(commandBuffers[currentFrame], imageIndex);
 
@@ -631,6 +636,7 @@ void VulkanEngine::drawFrame() {
 void VulkanEngine::refreshAfterResize() {
     vkDeviceWaitIdle(device);
 
+    raytracing_options->curr_sample_count = 0;
     swapchain->recreate();
     cleanupStorageImages();
     createStorageImages();
@@ -689,12 +695,20 @@ void VulkanEngine::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t i
         swapchain->extent.height,
         1);
 
+    raytracing_options->curr_sample_count++;
+
+#ifdef REALTIME_MODE
+    AllocatedImage storage_image = storageImages[currentFrame];
+#else
+    AllocatedImage storage_image = storageImages[0];
+#endif
+
     ressourceBuilder.transitionImageLayout(commandBuffer, swapchain->images[imageIndex],
         VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
         VK_ACCESS_NONE, VK_ACCESS_NONE,
         VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
-    ressourceBuilder.transitionImageLayout(commandBuffer, storageImages[currentFrame].image, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+    ressourceBuilder.transitionImageLayout(commandBuffer, storage_image.image, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
         VK_ACCESS_NONE, VK_ACCESS_TRANSFER_READ_BIT, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
 
     VkImageCopy copyRegion{};
@@ -703,7 +717,7 @@ void VulkanEngine::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t i
     copyRegion.dstSubresource = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1};
     copyRegion.dstOffset = {0, 0, 0};
     copyRegion.extent = {swapchain->extent.width, swapchain->extent.height, 1};
-    vkCmdCopyImage(commandBuffer, storageImages[currentFrame].image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+    vkCmdCopyImage(commandBuffer, storage_image.image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
         swapchain->images[imageIndex], VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copyRegion);
 
     ressourceBuilder.transitionImageLayout(commandBuffer, swapchain->images[imageIndex],
@@ -711,7 +725,7 @@ void VulkanEngine::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t i
         VK_ACCESS_NONE, VK_ACCESS_NONE,
         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
 
-    ressourceBuilder.transitionImageLayout(commandBuffer, storageImages[currentFrame].image,
+    ressourceBuilder.transitionImageLayout(commandBuffer, storage_image.image,
         VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
         VK_ACCESS_TRANSFER_READ_BIT, VK_ACCESS_NONE,
         VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL);

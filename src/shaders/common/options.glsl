@@ -4,4 +4,5 @@ layout(push_constant) uniform PushConstants {
     bool fresnel;
     bool dispersion;
     bool normal_mapping;
+    uint curr_sample_count;
 } options;

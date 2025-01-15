@@ -1,6 +1,7 @@
 #version 460
 #extension GL_EXT_ray_tracing : enable
 #extension GL_GOOGLE_include_directive : enable
+#extension GL_EXT_shader_explicit_arithmetic_types : enable
 
 #include "../common/payload.glsl"
 #include "../common/scene_data.glsl"
@@ -13,37 +14,41 @@ layout(binding = 1, set = 0, rgba8) uniform image2D image;
 layout(location = 0) rayPayloadEXT Payload payload;
 
 void main() {
-    uint rng_state = gl_LaunchSizeEXT.x * gl_LaunchIDEXT.y + gl_LaunchIDEXT.x;
+    payload.rng_state[0] = 1 * 128 + gl_LaunchSizeEXT.x * gl_LaunchIDEXT.y + gl_LaunchIDEXT.x + options.curr_sample_count * 100;
+    payload.rng_state[1] = 2 * 128 + gl_LaunchSizeEXT.x * gl_LaunchIDEXT.y + gl_LaunchIDEXT.x + options.curr_sample_count * 100;
+    payload.rng_state[2] = 3 * 128 + gl_LaunchSizeEXT.x * gl_LaunchIDEXT.y + gl_LaunchIDEXT.x + options.curr_sample_count * 100;
+    payload.rng_state[3] = 4 * 128 + gl_LaunchSizeEXT.x * gl_LaunchIDEXT.y + gl_LaunchIDEXT.x + options.curr_sample_count * 100;
 
-    uint SAMPLE_COUNT = 3;
+    const vec2 pixelCenter = vec2(gl_LaunchIDEXT.xy) + vec2(stepAndOutputRNGFloat(payload.rng_state), stepAndOutputRNGFloat(payload.rng_state));
+    const vec2 inUV = pixelCenter / vec2(gl_LaunchSizeEXT.xy);
+    vec2 d = inUV * 2.0 - 1.0;
+
+    payload.next_origin = (sceneData.inv_view * vec4(0,0,0,1)).xyz;
+    vec4 target = sceneData.inv_proj * vec4(d.x, d.y, 1, 1);
+    payload.next_direction = (sceneData.inv_view * vec4(normalize(target.xyz), 0)).xyz;
+    payload.light = vec3(0.0);
+
     vec3 color = vec3(0.0);
-    for (int sample_idx = 0; sample_idx < SAMPLE_COUNT; sample_idx++) {
-        const vec2 pixelCenter = vec2(gl_LaunchIDEXT.xy) + vec2(stepAndOutputRNGFloat(rng_state), stepAndOutputRNGFloat(rng_state));
-        const vec2 inUV = pixelCenter / vec2(gl_LaunchSizeEXT.xy);
-        vec2 d = inUV * 2.0 - 1.0;
+    vec3 cumulated_contribution = vec3(1.0);
+    float depth = 0;
 
-        payload.next_origin = (sceneData.inv_view * vec4(0,0,0,1)).xyz;
-        vec4 target = sceneData.inv_proj * vec4(d.x, d.y, 1, 1);
-        payload.next_direction = (sceneData.inv_view * vec4(normalize(target.xyz), 0)).xyz;
-        payload.light = vec3(0.0);
-        payload.rng_state = rng_state;
+    while (depth < options.recursion_depth && length(cumulated_contribution) > 0.001 && payload.next_direction != vec3(0.0)) {
+        float tmin = 0.01;
+        float tmax = 10000.0;
 
-        vec3 cumulated_contribution = vec3(1.0);
-        float depth = 0;
-        while (depth < options.recursion_depth && length(cumulated_contribution) > 0.001 && payload.next_direction != vec3(0.0)) {
-            float tmin = 0.01;
-            float tmax = 10000.0;
-
-            traceRayEXT(topLevelAS, gl_RayFlagsOpaqueEXT | gl_RayFlagsCullBackFacingTrianglesEXT, 0xff, 0, 0, 0, payload.next_origin, tmin, payload.next_direction, tmax, 0);
-            color += cumulated_contribution * payload.light;
-            cumulated_contribution *= payload.contribution;
-            depth++;
-        }
+        traceRayEXT(topLevelAS, gl_RayFlagsOpaqueEXT | gl_RayFlagsCullBackFacingTrianglesEXT, 0xff, 0, 0, 0, payload.next_origin, tmin, payload.next_direction, tmax, 0);
+        color += cumulated_contribution * payload.light;
+        cumulated_contribution *= payload.contribution;
+        depth++;
     }
 
-    color = color / SAMPLE_COUNT;
-    color = color / (color + vec3(1.0));
-    color = pow(color, vec3(1.0/2.2));
+    vec3 prev_color = imageLoad(image, ivec2(gl_LaunchIDEXT.xy)).xyz;
+    color = (options.curr_sample_count * prev_color + color) / (options.curr_sample_count + 1);
 
+    // Gamma correction
+    //color = color / (color + vec3(1.0));
+    //color = pow(color, vec3(1.0/2.2));
+
+    //color = vec3(stepAndOutputRNGFloat(payload.rng_state));
     imageStore(image, ivec2(gl_LaunchIDEXT.xy), vec4(color, 0.0));
 }

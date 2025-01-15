@@ -2,6 +2,7 @@
 #extension GL_EXT_ray_tracing : enable
 #extension GL_GOOGLE_include_directive : enable
 #extension GL_EXT_nonuniform_qualifier : enable
+#extension GL_EXT_shader_explicit_arithmetic_types : enable
 
 #define MAX_RECURSION_DEPTH 4
 
@@ -116,7 +117,7 @@ void main() {
     }
 
     vec3 ambient = ao * vec3(0.01) * albedo;
-    vec3 emission = material.emission_color * material.emission_power * 1.0 / (gl_HitTEXT * gl_HitTEXT);
+    vec3 emission = material.emission_color * material.emission_power;
     vec3 result = emission + ambient + out_radiance;
 
     payload.light = result;

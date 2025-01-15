@@ -391,7 +391,7 @@ void PBR_CornellBox::initCamera(uint32_t image_width, uint32_t image_height) {
         0.1f, 512.0f);
     proj[1][1] *= -1; // flip y-axis because glm is for openGL
     camera = std::make_shared<Camera>(
-        glm::lookAt(glm::vec3(0, 4, 8), glm::vec3(0, 2.5f, 0), glm::vec3(0, 1, 0)),
+        glm::lookAt(glm::vec3(0, 4, 10), glm::vec3(0, 3.5f, 0), glm::vec3(0, 1, 0)),
         proj
     );
 
@@ -503,17 +503,19 @@ void PBR_CornellBox::initScene() {
 
     float light_scale = 1;
     quad = std::make_shared<MeshNode>();
-    quad->localTransform = glm::translate(glm::mat4(1.0f), glm::vec3(0, 0.2f, 0)) * glm::scale( glm::mat4(1.0f), glm::vec3(light_scale, 1.0f, light_scale));
+    quad->localTransform = glm::translate(glm::mat4(1.0f), glm::vec3(0, 9.8f, 0))
+        * glm::rotate(glm::mat4(1.0f), glm::radians(180.0f), glm::vec3(0, 0, 1))
+        * glm::scale( glm::mat4(1.0f), glm::vec3(light_scale, 1.0f, light_scale));
     quad->worldTransform = glm::mat4{1.0f};
     quad->children = {};
     quad->meshAsset = meshes[1];
-    quad->meshMaterial = metal_rough->createInstance({.albedo = glm::vec3(0.0f), .metallic = 0.5f, .roughness = 0.5f, .ao = 1.0f, .emission_color = glm::vec3(1.0f, 0.96f, 0.71f), .emission_power = 20});
-
+    quad->meshMaterial = metal_rough->createInstance({.albedo = glm::vec3(0.0f), .metallic = 0.5f, .roughness = 0.5f, .ao = 1.0f,
+        .emission_color = glm::vec3(1.0f, 0.96f, 0.71f), .emission_power = 50});
     quad->refreshTransform(glm::mat4(1.0f));
     nodes["AreaLight"] = std::move(quad);
 
     pointLights[0] = PointLight(glm::vec3(0, 8.0f, 3), glm::vec3(1, 1, 1), 20);
-    sun = DirectionalLight(glm::vec3(-1,-1,-1), glm::vec3(1.0f), 5.0f);
+    //sun = DirectionalLight(glm::vec3(-1,-1,-1), glm::vec3(1.0f), 5.0f);
 
     environment_map[0] = ressource_builder.loadTextureImage("../ressources/textures/environmentMaps/posx.jpg");
     environment_map[1] = ressource_builder.loadTextureImage("../ressources/textures/environmentMaps/negx.jpg");

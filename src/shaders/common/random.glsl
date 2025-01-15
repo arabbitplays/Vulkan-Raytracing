@@ -1,19 +1,30 @@
 #define PI 3.14159265
+// from https://developer.nvidia.com/gpugems/gpugems3/part-vi-gpu-computing/chapter-37-efficient-random-number-generation-and-application
 
-// Random number generation using pcg32i_random_t, using inc = 1. Our random state is a uint.
-uint stepRNG(uint rngState) {
-    return rngState * 747796405 + 1;
+// S1, S2, S3, and M are all constants, and z is part of the
+// private per-thread generator state.
+uint TausStep(inout uint z, uint S1, uint S2, uint S3, uint M)
+{
+    uint b = (((z << S1) ^ z) >> S2);
+    return z = (((z & M) << S3) ^ b);
+}
+
+// A and C are constants
+uint LCGStep(inout uint z, uint A, uint C)
+{
+    return z = (A * z + C);
 }
 
 // Steps the RNG and returns a floating-point value between 0 and 1 inclusive.
-float stepAndOutputRNGFloat(inout uint rngState) {
-    rngState = stepRNG(rngState);
-    uint word = ((rngState >> ((rngState >> 28) + 4)) ^ rngState) * 277803737;
-    word      = (word >> 22) ^ word;
-    return float(word) / 4294967295.0f;
+float stepAndOutputRNGFloat(inout uint rngState[4]) {
+    return 2.3283064365387e-10 * float(
+        TausStep(rngState[0], 13, 19, 12, 4294967294)
+        ^ TausStep(rngState[1], 2, 25, 4, 4294967288)
+        ^ TausStep(rngState[2], 3, 11, 17, 4294967280)
+        ^ LCGStep(rngState[3], 1664525, 1013904223));
 }
 
-vec3 sampleCosHemisphere(inout uint rngState) {
+vec3 sampleCosHemisphere(inout uint rngState[4]) {
     vec2 u = vec2(stepAndOutputRNGFloat(rngState), stepAndOutputRNGFloat(rngState));
 
     float theta = acos(sqrt(u.x));
