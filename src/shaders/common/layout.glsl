@@ -24,14 +24,6 @@ layout(binding = 0, set = 1) readonly buffer MaterialBuffer {
     vec4[] data;
 } material_buffer;
 
-layout(push_constant) uniform PushConstants {
-    int recursion_depth;
-    bool shadows;
-    bool fresnel;
-    bool dispersion;
-    bool normal_mapping;
-} options;
-
 Vertex getVertex(uint vertexOffset, uint index)
 {
     uint base_index = 4 * (vertexOffset + index);

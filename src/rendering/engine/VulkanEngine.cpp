@@ -676,7 +676,7 @@ void VulkanEngine::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t i
         0, static_cast<uint32_t>(descriptor_sets.size()), descriptor_sets.data(),
         0, nullptr);
 
-    vkCmdPushConstants(commandBuffer, pipeline.getLayoutHandle(), VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR, 0, sizeof(RaytracingOptions), raytracing_options.get());
+    vkCmdPushConstants(commandBuffer, pipeline.getLayoutHandle(), VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR | VK_SHADER_STAGE_RAYGEN_BIT_KHR, 0, sizeof(RaytracingOptions), raytracing_options.get());
 
     CmdTraceRaysKHR(
         device,

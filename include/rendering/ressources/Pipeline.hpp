@@ -20,7 +20,7 @@ public:
 
     void addShaderStage(VkShaderModule shaderModule, VkShaderStageFlagBits shaderStage, VkRayTracingShaderGroupTypeKHR shaderGroup);
     void setDescriptorSetLayouts(std::vector<VkDescriptorSetLayout>& descriptorSetLayouts);
-    void addPushConstant(uint32_t size, VkShaderStageFlagBits shaderStage);
+    void addPushConstant(uint32_t size, VkShaderStageFlags shaderStage);
     void clear();
     void destroy();
 

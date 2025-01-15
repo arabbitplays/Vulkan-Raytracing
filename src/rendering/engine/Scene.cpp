@@ -513,6 +513,7 @@ void PBR_CornellBox::initScene() {
     nodes["AreaLight"] = std::move(quad);
 
     pointLights[0] = PointLight(glm::vec3(0, 8.0f, 3), glm::vec3(1, 1, 1), 20);
+    sun = DirectionalLight(glm::vec3(-1,-1,-1), glm::vec3(1.0f), 5.0f);
 
     environment_map[0] = ressource_builder.loadTextureImage("../ressources/textures/environmentMaps/posx.jpg");
     environment_map[1] = ressource_builder.loadTextureImage("../ressources/textures/environmentMaps/negx.jpg");

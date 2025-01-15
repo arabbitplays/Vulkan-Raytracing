@@ -8,6 +8,7 @@
 #include "../common/payload.glsl"
 #include "../common/scene_data.glsl"
 #include "../common/layout.glsl"
+#include "../common/options.glsl"
 #include "../common/random.glsl"
 
 layout(binding = 0, set = 0) uniform accelerationStructureEXT topLevelAS;
@@ -71,11 +72,11 @@ void main() {
     vec3 geometric_normal = normalize(vec3(normal * gl_WorldToObjectEXT)); // transform normal to world space
 
     vec3 N = geometric_normal;
+    vec3 tangent = normalize(alpha * A.tangent + beta * B.tangent + gamma * C.tangent);
+    vec3 T = normalize(vec3(tangent * gl_WorldToObjectEXT)); // transform tangent to world space
+    vec3 bitangent = -normalize(cross(geometric_normal, T));
+    mat3 TBN = mat3(T, bitangent, geometric_normal);
     if (options.normal_mapping) {
-        vec3 tangent = normalize(alpha * A.tangent + beta * B.tangent + gamma * C.tangent);
-        vec3 T = normalize(vec3(tangent * gl_WorldToObjectEXT)); // transform tangent to world space
-        vec3 bitangent = -normalize(cross(geometric_normal, T));
-        mat3 TBN = mat3(T, bitangent, geometric_normal);
         vec3 texNormal = texture(normal_textures[material_index], uv).xyz;
         texNormal = texNormal * 2.0 - 1.0;
         N = normalize(TBN * texNormal);
@@ -100,6 +101,7 @@ void main() {
                                               sceneData.pointLightColors[light_index].xyz,
                                               sceneData.pointLightPositions[light_index].w,
                                               albedo, metallic, roughness, ao);
+        break;
     }
 
     // handle directional light (sun)
@@ -118,4 +120,11 @@ void main() {
     vec3 result = emission + ambient + out_radiance;
 
     payload.light = result;
+    payload.light = emission;
+
+    payload.next_origin = P;
+    payload.next_direction = TBN * sampleCosHemisphere(payload.rng_state);
+    vec3 V = -normalize(gl_WorldRayDirectionEXT);
+    vec3 H = normalize(payload.next_direction + V);
+    payload.contribution = calcBRDF(N, V, payload.next_direction, H, albedo, metallic, roughness) * max(dot(N, payload.next_direction), 0.0);
 }

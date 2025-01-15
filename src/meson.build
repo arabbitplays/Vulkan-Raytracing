@@ -7,7 +7,8 @@ shaders = [
     'shaders/miss/shadow_miss.rmiss',
     'shaders/phong/phong_closesthit.rchit',
     'shaders/metalRough/metal_rough_closesthit.rchit',
-    'shaders/common/raygen.rgen',
+    'shaders/phong/phong_raygen.rgen',
+    'shaders/metalRough/metal_rough_raygen.rgen',
 ]
 
 foreach s : shaders
