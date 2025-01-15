@@ -30,8 +30,6 @@ public:
     AllocatedBuffer createInstanceMappingBuffer(std::vector<RenderObject> &objects);
 
 private:
-    void loadModel(std::string path, std::vector<Vertex>& vertices, std::vector<uint32_t>& indices);
-
 
     VkDevice device;
     RessourceBuilder ressource_builder;

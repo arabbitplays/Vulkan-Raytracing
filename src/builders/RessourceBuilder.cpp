@@ -186,7 +186,7 @@ AllocatedImage RessourceBuilder::createImage(void* data, VkExtent3D extent, VkFo
     return image;
 }
 
-AllocatedImage RessourceBuilder::loadTextureImage(std::string path) {
+AllocatedImage RessourceBuilder::loadTextureImage(std::string path, VkFormat format) {
     int texWidth, texHeight, texChannels;
     stbi_uc* pixels = stbi_load(path.c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
 
@@ -195,7 +195,7 @@ AllocatedImage RessourceBuilder::loadTextureImage(std::string path) {
     }
 
     AllocatedImage textureImage = createImage(pixels, {static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight), 1},
-                                                VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL,
+                                                format, VK_IMAGE_TILING_OPTIMAL,
                                                 VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_ASPECT_COLOR_BIT);
 
     stbi_image_free(pixels);

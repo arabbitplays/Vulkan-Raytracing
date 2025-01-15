@@ -14,17 +14,23 @@ void SceneManager::createScene(SceneType scene_type) {
     if (scene != nullptr) {
         scene_ressource_deletion_queue.flush();
         phong_material->reset();
+        metal_rough_material->reset();
     }
 
     switch (scene_type) {
+        case SceneType::PBR_CORNELL_BOX:
+            scene = std::make_shared<PBR_CornellBox>(context->mesh_builder, *context->resource_builder, context->swapchain->extent.width, context->swapchain->extent.height, metal_rough_material);
+        break;
         case SceneType::CORNELL_BOX:
             scene = std::make_shared<CornellBox>(context->mesh_builder, *context->resource_builder, context->swapchain->extent.width, context->swapchain->extent.height, phong_material);
             break;
         case SceneType::PLANE:
             scene = std::make_shared<PlaneScene>(context->mesh_builder, *context->resource_builder, context->swapchain->extent.width, context->swapchain->extent.height, phong_material);
             break;
+        case SceneType::SHOWCASE:
+            scene = std::make_shared<Material_Showcase>(context->mesh_builder, *context->resource_builder, context->swapchain->extent.width, context->swapchain->extent.height, metal_rough_material);
+        break;
     }
-
     scene_ressource_deletion_queue.pushFunction([&]() {
         scene->clearRessources();
     });
@@ -40,7 +46,7 @@ void SceneManager::createScene(SceneType scene_type) {
 void SceneManager::createSceneBuffers() {
     vertex_buffer = context->mesh_builder->createVertexBuffer(scene->meshes);
     index_buffer = context->mesh_builder->createIndexBuffer(scene->meshes);
-    phong_material->writeMaterial();
+    scene->material->writeMaterial();
 
     geometry_mapping_buffer = context->mesh_builder->createGeometryMappingBuffer(scene->meshes);
 
@@ -126,11 +132,6 @@ void SceneManager::updateScene(DrawContext& draw_context, uint32_t current_image
 
     scene->update(context->swapchain->extent.width, context->swapchain->extent.height);
 
-    static auto startTime = std::chrono::high_resolution_clock::now();
-    auto currentTime = std::chrono::high_resolution_clock::now();
-    float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
-    glm::mat4 rotation = glm::rotate(glm::mat4{1.0f}, time * glm::radians(45.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-
     if (top_level_acceleration_structure == nullptr) {
         top_level_acceleration_structure = std::make_shared<AccelerationStructure>(context->device, *context->resource_builder, *context->command_manager, VK_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL_KHR);
 
@@ -175,10 +176,10 @@ void SceneManager::updateScene(DrawContext& draw_context, uint32_t current_image
     memcpy(sceneUniformBuffersMapped[current_image_idx], scene_data.get(), sizeof(SceneData));
 }
 
-void SceneManager::initDefaultResources() {
+void SceneManager::initDefaultResources(VkPhysicalDeviceRayTracingPipelinePropertiesKHR raytracingProperties) {
     createDefaultTextures();
     createDefaultSamplers();
-    createDefaultMaterials();
+    createDefaultMaterials(raytracingProperties);
 }
 
 void SceneManager::createDefaultTextures() {
@@ -218,34 +219,51 @@ void SceneManager::createDefaultSamplers() {
 
     samplerInfo.magFilter = VK_FILTER_NEAREST;
     samplerInfo.minFilter = VK_FILTER_NEAREST;
-
     if (vkCreateSampler(context->device, &samplerInfo, nullptr, &defaultSamplerNearest) != VK_SUCCESS) {
         throw std::runtime_error("failed to create texture sampler!");
     }
+
     samplerInfo.magFilter = VK_FILTER_LINEAR;
     samplerInfo.minFilter = VK_FILTER_LINEAR;
     if (vkCreateSampler(context->device, &samplerInfo, nullptr, &defaultSamplerLinear) != VK_SUCCESS) {
         throw std::runtime_error("failed to create texture sampler!");
     }
 
+    VkPhysicalDeviceProperties properties{};
+    vkGetPhysicalDeviceProperties(context->physicalDevice, &properties);
+    samplerInfo.anisotropyEnable = VK_TRUE;
+    samplerInfo.maxAnisotropy = properties.limits.maxSamplerAnisotropy;
+    samplerInfo.magFilter = VK_FILTER_NEAREST;
+    samplerInfo.minFilter = VK_FILTER_NEAREST;
+    if (vkCreateSampler(context->device, &samplerInfo, nullptr, &defaultSamplerAnisotropic) != VK_SUCCESS) {
+        throw std::runtime_error("failed to create texture sampler!");
+    }
+
     main_deletion_queue.pushFunction([&]() {
         vkDestroySampler(context->device, defaultSamplerLinear, nullptr);
         vkDestroySampler(context->device, defaultSamplerNearest, nullptr);
+        vkDestroySampler(context->device, defaultSamplerAnisotropic, nullptr);
     });
 }
 
-
-void SceneManager::createDefaultMaterials() {
+void SceneManager::createDefaultMaterials(VkPhysicalDeviceRayTracingPipelinePropertiesKHR raytracingProperties) {
     phong_material = std::make_shared<PhongMaterial>(context);
     phong_material->buildPipelines(scene_descsriptor_set_layout);
     main_deletion_queue.pushFunction([&]() {
         phong_material->clearRessources();
     });
-    //default_phong = createPhongMaterial(glm::vec3{1, 0, 0}, 1, 1, 1);
+    phong_material->pipeline->createShaderBindingTables(raytracingProperties);
+
+    metal_rough_material = std::make_shared<MetalRoughMaterial>(context, defaultSamplerLinear);
+    metal_rough_material->buildPipelines(scene_descsriptor_set_layout);
+    main_deletion_queue.pushFunction([&]() {
+        metal_rough_material->clearRessources();
+    });
+    metal_rough_material->pipeline->createShaderBindingTables(raytracingProperties);
 }
 
 std::shared_ptr<Material> SceneManager::getMaterial() {
-    return phong_material;
+    return scene->material;
 }
 
 void SceneManager::clearRessources() {

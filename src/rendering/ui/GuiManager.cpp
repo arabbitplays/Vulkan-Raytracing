@@ -115,7 +115,7 @@ void GuiManager::updateWindows(std::shared_ptr<Swapchain> swapchain) {
     createFrameBuffers();
 }
 
-void GuiManager::recordGuiCommands(VkCommandBuffer commandBuffer, ImDrawData* gui_draw2_data, uint32_t imageIndex) {
+void GuiManager::recordGuiCommands(VkCommandBuffer commandBuffer, uint32_t imageIndex) {
     ImGui_ImplVulkan_NewFrame();
     ImGui_ImplGlfw_NewFrame();
     ImGui::NewFrame();

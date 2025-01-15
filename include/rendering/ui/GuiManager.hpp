@@ -23,7 +23,7 @@ public:
 
     void addWindow(std::shared_ptr<GuiWindow> window);
     void updateWindows(std::shared_ptr<Swapchain> swapchain);
-    void recordGuiCommands(VkCommandBuffer commandBuffer, ImDrawData *gui_draw_data, uint32_t imageIndex);
+    void recordGuiCommands(VkCommandBuffer commandBuffer, uint32_t imageIndex);
     void destroy();
 
     VkRenderPass render_pass;

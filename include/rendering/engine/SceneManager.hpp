@@ -5,6 +5,7 @@
 #ifndef SCENEMANAGER_HPP
 #define SCENEMANAGER_HPP
 
+#include <MetalRoughMaterial.hpp>
 #include <OptionsWindow.hpp>
 #include <vector>
 #include <vulkan/vulkan_core.h>
@@ -15,9 +16,9 @@
 class SceneManager {
 public:
     SceneManager() = default;
-    SceneManager(std::shared_ptr<VulkanContext>& vulkanContext, uint32_t max_frames_in_flight) : context(vulkanContext), max_frames_in_flight(max_frames_in_flight) {
+    SceneManager(std::shared_ptr<VulkanContext>& vulkanContext, uint32_t max_frames_in_flight, VkPhysicalDeviceRayTracingPipelinePropertiesKHR raytracingProperties) : context(vulkanContext), max_frames_in_flight(max_frames_in_flight) {
         createSceneLayout();
-        initDefaultResources();
+        initDefaultResources(raytracingProperties);
     }
 
     void createScene(SceneType scene_type);
@@ -37,11 +38,11 @@ public:
 
 private:
     void createSceneLayout();
-    void initDefaultResources();
+    void initDefaultResources(VkPhysicalDeviceRayTracingPipelinePropertiesKHR raytracingProperties);
 
     void createDefaultTextures();
     void createDefaultSamplers();
-    void createDefaultMaterials();
+    void createDefaultMaterials(VkPhysicalDeviceRayTracingPipelinePropertiesKHR raytracingProperties);
 
     void createSceneDescriptorSets();
     void createSceneBuffers();
@@ -60,8 +61,11 @@ private:
 
     VkSampler defaultSamplerLinear;
     VkSampler defaultSamplerNearest;
+    VkSampler defaultSamplerAnisotropic;
 
     std::shared_ptr<PhongMaterial> phong_material;
+    std::shared_ptr<MetalRoughMaterial> metal_rough_material;
+
     AllocatedBuffer vertex_buffer, index_buffer, geometry_mapping_buffer, instance_mapping_buffer;
     std::shared_ptr<AccelerationStructure> top_level_acceleration_structure;
 

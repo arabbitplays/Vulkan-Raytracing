@@ -13,11 +13,6 @@
 
 #include "../nodes/MeshNode.hpp"
 
-#include "miss.rmiss.spv.h"
-#include "shadow_miss.rmiss.spv.h"
-#include "closesthit.rchit.spv.h"
-#include "raygen.rgen.spv.h"
-
 const std::vector<const char*> validationLayers = {
         "VK_LAYER_KHRONOS_validation"
 };
@@ -154,17 +149,14 @@ void VulkanEngine::initVulkan() {
         cleanupStorageImages();
     });
 
-    scene_manager = std::make_shared<SceneManager>(context, MAX_FRAMES_IN_FLIGHT);
+    scene_manager = std::make_shared<SceneManager>(context, MAX_FRAMES_IN_FLIGHT, raytracingProperties);
     mainDeletionQueue.pushFunction([&]() {
         scene_manager->clearRessources();
     });
 
     //createDepthResources();
 
-    //scene_manager->createScene(renderer_options->scene_type);
-    scene_manager->createScene(SceneType::CORNELL_BOX);
-
-    scene_manager->getMaterial()->pipeline->createShaderBindingTables(raytracingProperties);
+    scene_manager->createScene(SceneType::PBR_CORNELL_BOX);
     createCommandBuffers();
     createSyncObjects();
 }
@@ -594,7 +586,7 @@ void VulkanEngine::drawFrame() {
     scene_manager->updateScene(mainDrawContext, currentFrame, storageImages[currentFrame]);
 
     vkResetCommandBuffer(commandBuffers[currentFrame], 0);
-    recordCommandBuffer(commandBuffers[currentFrame], imageIndex, nullptr);
+    recordCommandBuffer(commandBuffers[currentFrame], imageIndex);
 
     VkSubmitInfo submitInfo{};
     submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -646,7 +638,7 @@ void VulkanEngine::refreshAfterResize() {
     scene_manager->scene->update(swapchain->extent.width, swapchain->extent.height);
 }
 
-void VulkanEngine::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex, ImDrawData* gui_draw_data) {
+void VulkanEngine::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex) {
     Pipeline pipeline = *scene_manager->getMaterial()->pipeline;
 
     VkCommandBufferBeginInfo beginInfo{};
@@ -724,7 +716,7 @@ void VulkanEngine::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t i
         VK_ACCESS_TRANSFER_READ_BIT, VK_ACCESS_NONE,
         VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL);
 
-    guiManager->recordGuiCommands(commandBuffer, gui_draw_data, imageIndex);
+    guiManager->recordGuiCommands(commandBuffer, imageIndex);
 
     if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS) {
         throw std::runtime_error("failed to record command buffer!");

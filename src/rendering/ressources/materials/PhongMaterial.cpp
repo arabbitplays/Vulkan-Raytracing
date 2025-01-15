@@ -11,8 +11,9 @@
 
 #include "miss.rmiss.spv.h"
 #include "shadow_miss.rmiss.spv.h"
-#include "closesthit.rchit.spv.h"
 #include "raygen.rgen.spv.h"
+#include <phong_closesthit.rchit.spv.h>
+#include <environment_miss.rmiss.spv.h>
 
 void PhongMaterial::buildPipelines(VkDescriptorSetLayout sceneLayout) {
     DescriptorLayoutBuilder layoutBuilder;
@@ -31,9 +32,9 @@ void PhongMaterial::buildPipelines(VkDescriptorSetLayout sceneLayout) {
     pipeline->addPushConstant(sizeof(RaytracingOptions), VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR);
 
     VkShaderModule raygenShaderModule = VulkanUtil::createShaderModule(context->device, oschd_raygen_rgen_spv_size(), oschd_raygen_rgen_spv());
-    VkShaderModule missShaderModule = VulkanUtil::createShaderModule(context->device, oschd_miss_rmiss_spv_size(), oschd_miss_rmiss_spv());
+    VkShaderModule missShaderModule = VulkanUtil::createShaderModule(context->device, oschd_environment_miss_rmiss_spv_size(), oschd_environment_miss_rmiss_spv());
     VkShaderModule shadowMissShaderModule = VulkanUtil::createShaderModule(context->device, oschd_shadow_miss_rmiss_spv_size(), oschd_shadow_miss_rmiss_spv());
-    VkShaderModule closestHitShaderModule = VulkanUtil::createShaderModule(context->device, oschd_closesthit_rchit_spv_size(), oschd_closesthit_rchit_spv());
+    VkShaderModule closestHitShaderModule = VulkanUtil::createShaderModule(context->device, oschd_phong_closesthit_rchit_spv_size(), oschd_phong_closesthit_rchit_spv());
 
     pipeline->addShaderStage(raygenShaderModule, VK_SHADER_STAGE_RAYGEN_BIT_KHR, VK_RAY_TRACING_SHADER_GROUP_TYPE_GENERAL_KHR);
     pipeline->addShaderStage(missShaderModule, VK_SHADER_STAGE_MISS_BIT_KHR, VK_RAY_TRACING_SHADER_GROUP_TYPE_GENERAL_KHR);

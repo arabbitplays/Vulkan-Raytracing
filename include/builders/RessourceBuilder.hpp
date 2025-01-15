@@ -50,7 +50,7 @@ public:
     AllocatedImage createImage(void *data, VkExtent3D extent, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage,
                                VkImageAspectFlags aspectFlags);
 
-    AllocatedImage loadTextureImage(std::string path);
+    AllocatedImage loadTextureImage(std::string path, VkFormat format = VK_FORMAT_R8G8B8A8_SRGB);
 
     VkImageView createImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags);
 

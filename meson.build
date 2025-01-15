@@ -23,12 +23,11 @@ vulkan = dependency('vulkan', version: ['>=1.3.0'], required: false)
 if not vulkan.found()
     vulkan = dependency('vulkan')
 endif
-
 glfw = dependency('glfw3', version: ['>=3.4.0'], fallback: ['glfw', 'glfw_dep'])
 glm = dependency('glm', fallback : ['glm', 'glm_dep'], version: ['>=0.9.9.8'])
 imgui = dependency('imgui', fallback: ['imgui', 'imgui_dep'])
 stb = dependency('stb', fallback: ['stb', 'stb_dep'], default_options : ['stb_libraries=[\'stb_image\', \'stb_image_write\']'])
-tol = dependency('tinyobjloader', fallback : ['tinyobjloader', 'tinyobjloader_dep'])
+assimp_dep = dependency('assimp')
 
 project_root = meson.current_source_dir()
 
@@ -80,8 +79,8 @@ exe = executable(
         glm,
         imgui,
         stb,
-        tol,
         vulkan,
+        assimp_dep,
     ],
     include_directories: incdirs,
     install : true
