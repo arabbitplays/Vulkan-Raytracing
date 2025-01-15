@@ -96,7 +96,7 @@ void AccelerationStructure::addInstance(std::shared_ptr<AccelerationStructure>& 
     accelerationStructureInstance.instanceCustomIndex = instanceId;
     accelerationStructureInstance.mask = 0xFF;
     accelerationStructureInstance.instanceShaderBindingTableRecordOffset = 0;
-    accelerationStructureInstance.flags = VK_GEOMETRY_INSTANCE_TRIANGLE_FACING_CULL_DISABLE_BIT_KHR;
+    //accelerationStructureInstance.flags = VK_GEOMETRY_INSTANCE_TRIANGLE_FACING_CULL_DISABLE_BIT_KHR;
     accelerationStructureInstance.accelerationStructureReference = instance->getDeviceAddress();
     instances.push_back(accelerationStructureInstance);
 }

@@ -219,19 +219,30 @@ void SceneManager::createDefaultSamplers() {
 
     samplerInfo.magFilter = VK_FILTER_NEAREST;
     samplerInfo.minFilter = VK_FILTER_NEAREST;
-
     if (vkCreateSampler(context->device, &samplerInfo, nullptr, &defaultSamplerNearest) != VK_SUCCESS) {
         throw std::runtime_error("failed to create texture sampler!");
     }
+
     samplerInfo.magFilter = VK_FILTER_LINEAR;
     samplerInfo.minFilter = VK_FILTER_LINEAR;
     if (vkCreateSampler(context->device, &samplerInfo, nullptr, &defaultSamplerLinear) != VK_SUCCESS) {
         throw std::runtime_error("failed to create texture sampler!");
     }
 
+    VkPhysicalDeviceProperties properties{};
+    vkGetPhysicalDeviceProperties(context->physicalDevice, &properties);
+    samplerInfo.anisotropyEnable = VK_TRUE;
+    samplerInfo.maxAnisotropy = properties.limits.maxSamplerAnisotropy;
+    samplerInfo.magFilter = VK_FILTER_NEAREST;
+    samplerInfo.minFilter = VK_FILTER_NEAREST;
+    if (vkCreateSampler(context->device, &samplerInfo, nullptr, &defaultSamplerAnisotropic) != VK_SUCCESS) {
+        throw std::runtime_error("failed to create texture sampler!");
+    }
+
     main_deletion_queue.pushFunction([&]() {
         vkDestroySampler(context->device, defaultSamplerLinear, nullptr);
         vkDestroySampler(context->device, defaultSamplerNearest, nullptr);
+        vkDestroySampler(context->device, defaultSamplerAnisotropic, nullptr);
     });
 }
 

@@ -61,6 +61,7 @@ private:
 
     VkSampler defaultSamplerLinear;
     VkSampler defaultSamplerNearest;
+    VkSampler defaultSamplerAnisotropic;
 
     std::shared_ptr<PhongMaterial> phong_material;
     std::shared_ptr<MetalRoughMaterial> metal_rough_material;
