@@ -87,7 +87,6 @@ void SceneManager::createSceneDescriptorSets() {
         context->descriptor_allocator->updateSet(context->device, scene_descriptor_sets[i]);
         context->descriptor_allocator->clearWrites();
     }
-
 }
 
 void SceneManager::createSceneLayout() {
@@ -101,6 +100,7 @@ void SceneManager::createSceneLayout() {
     layoutBuilder.addBinding(5, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
     layoutBuilder.addBinding(6, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
     layoutBuilder.addBinding(7, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 6); // env map
+    layoutBuilder.addBinding(8, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE); // rng tex
 
     scene_descsriptor_set_layout = layoutBuilder.build(context->device, VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR | VK_SHADER_STAGE_MISS_BIT_KHR);
     main_deletion_queue.pushFunction([&]() {
@@ -127,7 +127,7 @@ void SceneManager::createUniformBuffers() {
     }
 }
 
-void SceneManager::updateScene(DrawContext& draw_context, uint32_t current_image_idx, AllocatedImage& current_image) {
+void SceneManager::updateScene(DrawContext& draw_context, uint32_t current_image_idx, AllocatedImage& current_image, AllocatedImage& rng_tex) {
     //QuickTimer timer{"Scene Update", true};
 
     scene->update(context->swapchain->extent.width, context->swapchain->extent.height);
@@ -169,6 +169,7 @@ void SceneManager::updateScene(DrawContext& draw_context, uint32_t current_image
     context->descriptor_allocator->writeImage(1, current_image.imageView, VK_NULL_HANDLE, VK_IMAGE_LAYOUT_GENERAL, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
     context->descriptor_allocator->writeBuffer(2, sceneUniformBuffers[0].handle, sizeof(SceneData), 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
     context->descriptor_allocator->writeBuffer(6, instance_mapping_buffer.handle, 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+    context->descriptor_allocator->writeImage(8, rng_tex.imageView, VK_NULL_HANDLE, VK_IMAGE_LAYOUT_GENERAL, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
     context->descriptor_allocator->updateSet(context->device, scene_descriptor_sets[0]);
     context->descriptor_allocator->clearWrites();
 

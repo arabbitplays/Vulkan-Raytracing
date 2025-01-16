@@ -48,7 +48,7 @@ public:
     AllocatedImage createImage(VkExtent3D extent, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage,
                                VkImageAspectFlags aspectFlags);
     AllocatedImage createImage(void *data, VkExtent3D extent, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage,
-                               VkImageAspectFlags aspectFlags);
+                               VkImageAspectFlags aspectFlags, VkImageLayout target_layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
     AllocatedImage loadTextureImage(std::string path, VkFormat format = VK_FORMAT_R8G8B8A8_SRGB);
 

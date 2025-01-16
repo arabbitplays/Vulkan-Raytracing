@@ -447,7 +447,7 @@ void PBR_CornellBox::initScene() {
     quad->worldTransform = glm::mat4{1.0f};
     quad->children = {};
     quad->meshAsset = meshes[1];
-    quad->meshMaterial = metal_rough->createInstance({.albedo = glm::vec3(1.f), .metallic = 0.5f, .roughness = 0.5f, .ao = 1.0f});
+    quad->meshMaterial = metal_rough->createInstance({.albedo = glm::vec3(.6f), .metallic = 0.5f, .roughness = 0.5f, .ao = 1.0f});
 
     quad->refreshTransform(glm::mat4(1.0f));
     nodes["Floor"] = std::move(quad);
@@ -501,7 +501,7 @@ void PBR_CornellBox::initScene() {
         }
     }
 
-    float light_scale = 1;
+    float light_scale = 4;
     quad = std::make_shared<MeshNode>();
     quad->localTransform = glm::translate(glm::mat4(1.0f), glm::vec3(0, 9.8f, 0))
         * glm::rotate(glm::mat4(1.0f), glm::radians(180.0f), glm::vec3(0, 0, 1))
@@ -510,7 +510,7 @@ void PBR_CornellBox::initScene() {
     quad->children = {};
     quad->meshAsset = meshes[1];
     quad->meshMaterial = metal_rough->createInstance({.albedo = glm::vec3(0.0f), .metallic = 0.5f, .roughness = 0.5f, .ao = 1.0f,
-        .emission_color = glm::vec3(1.0f, 0.96f, 0.71f), .emission_power = 50});
+        .emission_color = glm::vec3(1.0f, 0.96f, 0.71f), .emission_power = 5});
     quad->refreshTransform(glm::mat4(1.0f));
     nodes["AreaLight"] = std::move(quad);
 
@@ -640,8 +640,30 @@ void Material_Showcase::initScene() {
     sphere->refreshTransform(glm::mat4(1.0f));
     nodes["Sphere1" ] = std::move(sphere);
 
-    pointLights[0] = PointLight(glm::vec3(2, 2.0f, 2), glm::vec3(1, 1, 1), 20);
-    pointLights[1] = PointLight(glm::vec3(-2, 0.5f, 3), glm::vec3(1, 1, 1), 10);
+    float light_size = 1;
+
+    sphere = std::make_shared<MeshNode>();
+    sphere->localTransform = glm::translate(glm::mat4(1.0f), glm::vec3(2, 1, 3)) * glm::scale(glm::mat4(1.0), glm::vec3(light_size));
+    sphere->worldTransform = glm::mat4{1.0f};
+    sphere->children = {};
+    sphere->meshAsset = meshes[0];
+    sphere->meshMaterial = metal_rough->createInstance({.albedo = glm::vec3(0.0f), .metallic = 0.5f, .roughness = 0.5f, .ao = 1.0f,
+        .emission_color = glm::vec3(1), .emission_power = 10});
+    sphere->refreshTransform(glm::mat4(1.0f));
+    nodes["Light1" ] = std::move(sphere);
+
+    sphere = std::make_shared<MeshNode>();
+    sphere->localTransform = glm::translate(glm::mat4(1.0f), glm::vec3(-2, 0.5f, 3)) * glm::scale(glm::mat4(1.0), glm::vec3(light_size));
+    sphere->worldTransform = glm::mat4{1.0f};
+    sphere->children = {};
+    sphere->meshAsset = meshes[0];
+    sphere->meshMaterial = metal_rough->createInstance({.albedo = glm::vec3(0.0f), .metallic = 0.5f, .roughness = 0.5f, .ao = 1.0f,
+        .emission_color = glm::vec3(1), .emission_power = 10});
+    sphere->refreshTransform(glm::mat4(1.0f));
+    nodes["Light2" ] = std::move(sphere);
+
+    //pointLights[0] = PointLight(glm::vec3(2, 2.0f, 2), glm::vec3(1, 1, 1), 20);
+    //pointLights[1] = PointLight(glm::vec3(-2, 0.5f, 3), glm::vec3(1, 1, 1), 10);
     //sun = DirectionalLight(glm::vec3(-1,-1,-1), glm::vec3(1.0f), 10.0f);
 
     environment_map[0] = ressource_builder.loadTextureImage("../ressources/textures/environmentMaps/posx.jpg");
@@ -670,7 +692,7 @@ void Material_Showcase::update(uint32_t image_width, uint32_t image_height) {
     float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
     glm::mat4 rotation = glm::rotate(glm::mat4{1.0f}, time * glm::radians(10.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 
-    nodes["Sphere1"]->refreshTransform(rotation);
+    //nodes["Sphere1"]->refreshTransform(rotation);
 }
 
 

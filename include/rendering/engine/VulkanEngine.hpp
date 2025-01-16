@@ -83,6 +83,7 @@ private:
     VkPhysicalDeviceRayTracingPipelinePropertiesKHR raytracingProperties{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_PROPERTIES_KHR};
 
     std::vector<AllocatedImage> storageImages;
+    AllocatedImage rng_tex;
 
     std::shared_ptr<SceneManager> scene_manager;
 
@@ -92,8 +93,6 @@ private:
 
     uint32_t currentFrame = 0;
     bool framebufferResized = false;
-
-    std::shared_ptr<MaterialInstance> default_phong;
 
     void initWindow();
     void initVulkan();
@@ -143,7 +142,7 @@ private:
 
     void refreshAfterResize();
 
-    void cleanupStorageImages();
+    void cleanupRenderingImages();
     void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
 
     static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
@@ -157,7 +156,7 @@ private:
         return VK_FALSE;
     }
 
-    void createStorageImages();
+    void createRenderingImages();
 };
 
 #endif //BASICS_VULKANENGINE_HPP

@@ -14,10 +14,7 @@ layout(binding = 1, set = 0, rgba8) uniform image2D image;
 layout(location = 0) rayPayloadEXT Payload payload;
 
 void main() {
-    payload.rng_state[0] = 1 * 128 + gl_LaunchSizeEXT.x * gl_LaunchIDEXT.y + gl_LaunchIDEXT.x + options.curr_sample_count * 100;
-    payload.rng_state[1] = 2 * 128 + gl_LaunchSizeEXT.x * gl_LaunchIDEXT.y + gl_LaunchIDEXT.x + options.curr_sample_count * 100;
-    payload.rng_state[2] = 3 * 128 + gl_LaunchSizeEXT.x * gl_LaunchIDEXT.y + gl_LaunchIDEXT.x + options.curr_sample_count * 100;
-    payload.rng_state[3] = 4 * 128 + gl_LaunchSizeEXT.x * gl_LaunchIDEXT.y + gl_LaunchIDEXT.x + options.curr_sample_count * 100;
+    payload.rng_state = imageLoad(rng_tex, ivec2(gl_LaunchIDEXT.xy));
 
     const vec2 pixelCenter = vec2(gl_LaunchIDEXT.xy) + vec2(stepAndOutputRNGFloat(payload.rng_state), stepAndOutputRNGFloat(payload.rng_state));
     const vec2 inUV = pixelCenter / vec2(gl_LaunchSizeEXT.xy);
@@ -50,5 +47,6 @@ void main() {
     //color = pow(color, vec3(1.0/2.2));
 
     //color = vec3(stepAndOutputRNGFloat(payload.rng_state));
+    imageStore(rng_tex, ivec2(gl_LaunchIDEXT.xy), payload.rng_state);
     imageStore(image, ivec2(gl_LaunchIDEXT.xy), vec4(color, 0.0));
 }

@@ -127,5 +127,6 @@ void main() {
     payload.next_direction = TBN * sampleCosHemisphere(payload.rng_state);
     vec3 V = -normalize(gl_WorldRayDirectionEXT);
     vec3 H = normalize(payload.next_direction + V);
-    payload.contribution = calcBRDF(N, V, payload.next_direction, H, albedo, metallic, roughness) * max(dot(N, payload.next_direction), 0.0);
+    // f * cos / PDF
+    payload.contribution = calcBRDF(N, V, payload.next_direction, H, albedo, metallic, roughness) * PI ;
 }

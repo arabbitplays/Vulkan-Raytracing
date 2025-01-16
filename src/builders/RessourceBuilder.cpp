@@ -155,12 +155,14 @@ AllocatedImage RessourceBuilder::createImage(VkExtent3D extent, VkFormat format,
     return image;}
 
 AllocatedImage RessourceBuilder::createImage(void* data, VkExtent3D extent, VkFormat format, VkImageTiling tiling,
-                                             VkImageUsageFlags usage, VkImageAspectFlags aspectFlags) {
+                                             VkImageUsageFlags usage, VkImageAspectFlags aspectFlags, VkImageLayout target_layout) {
     VkDeviceSize imageSize = extent.width * extent.height * extent.depth;
     if (format == VK_FORMAT_R8G8B8_SRGB) {
         imageSize *= 3;
-    } else if (format == VK_FORMAT_R8G8B8A8_SRGB || format == VK_FORMAT_R8G8B8A8_UNORM){
+    } else if (format == VK_FORMAT_R8G8B8A8_SRGB || format == VK_FORMAT_R8G8B8A8_UNORM) {
         imageSize *= 4;
+    } else if (format == VK_FORMAT_R32G32B32A32_UINT) {
+        imageSize *= 16;
     } else {
         throw std::invalid_argument("Image format not supported!");
     }
@@ -180,7 +182,7 @@ AllocatedImage RessourceBuilder::createImage(void* data, VkExtent3D extent, VkFo
         VK_ACCESS_NONE, VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
     copyBufferToImage(stagingBuffer.handle, image.image, extent);
     transitionImageLayout(image.image, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-        VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+        VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, target_layout);
 
     destroyBuffer(stagingBuffer);
     return image;
