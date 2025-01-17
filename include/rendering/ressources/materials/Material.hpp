@@ -37,6 +37,9 @@ class Material {
 
     virtual void buildPipelines(VkDescriptorSetLayout sceneLayout) = 0;
     virtual void writeMaterial() = 0;
+    virtual glm::vec4 getEmissionForInstance(uint32_t material_instance_id) {
+        return glm::vec4(0.0f);
+    }
     void clearRessources();
     virtual void reset();
 

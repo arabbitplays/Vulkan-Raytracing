@@ -5,7 +5,7 @@
 
 #include "../common/payload.glsl"
 
-layout(set = 0, binding = 7) uniform sampler2D textures[6];
+layout(set = 0, binding = 8) uniform sampler2D textures[6];
 
 layout(location = 0) rayPayloadInEXT Payload payload;
 

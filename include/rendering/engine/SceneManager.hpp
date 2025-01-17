@@ -23,6 +23,7 @@ public:
 
     void createScene(SceneType scene_type);
     void updateScene(DrawContext& draw_context, uint32_t current_image_idx, AllocatedImage& current_image, AllocatedImage& rng_tex);
+
     void clearRessources();
 
     std::shared_ptr<Material> getMaterial();
@@ -46,6 +47,11 @@ private:
 
     void createSceneDescriptorSets();
     void createSceneBuffers();
+    AllocatedBuffer createVertexBuffer(std::vector<std::shared_ptr<MeshAsset>>& mesh_assets);
+    AllocatedBuffer createIndexBuffer(std::vector<std::shared_ptr<MeshAsset>>& mesh_assets);
+    AllocatedBuffer createGeometryMappingBuffer(std::vector<std::shared_ptr<MeshAsset>>& mesh_assets);
+    AllocatedBuffer createInstanceMappingBuffer(std::vector<RenderObject> &objects);
+    AllocatedBuffer createEmittingInstancesBuffer(std::vector<RenderObject> &objects, std::shared_ptr<Material> material);
     void createUniformBuffers();
 
     std::shared_ptr<VulkanContext> context;
@@ -66,7 +72,7 @@ private:
     std::shared_ptr<PhongMaterial> phong_material;
     std::shared_ptr<MetalRoughMaterial> metal_rough_material;
 
-    AllocatedBuffer vertex_buffer, index_buffer, geometry_mapping_buffer, instance_mapping_buffer;
+    AllocatedBuffer vertex_buffer, index_buffer, geometry_mapping_buffer, instance_mapping_buffer, emitting_instances_buffer;
     std::shared_ptr<AccelerationStructure> top_level_acceleration_structure;
 
 };

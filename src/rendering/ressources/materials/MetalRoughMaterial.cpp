@@ -126,6 +126,11 @@ std::shared_ptr<MaterialInstance> MetalRoughMaterial::createInstance(MetalRoughP
     return instance;
 }
 
+glm::vec4 MetalRoughMaterial::getEmissionForInstance(uint32_t material_instance_id) {
+    return constants_buffer[material_instance_id]->emission;
+}
+
+
 AllocatedBuffer MetalRoughMaterial::createMaterialBuffer() {
     assert(constants_buffer.size() == instances.size());
 

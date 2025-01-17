@@ -20,6 +20,15 @@ layout(binding = 5, set = 0) readonly buffer GeometryMappingBuffer {
 layout(binding = 6, set = 0) readonly buffer InstanceMappingBuffer {
     uint indices[];
 } instance_mapping_buffer;
+struct EmittingInstance {
+    mat4 transform;
+    vec4 emission;
+    uint instance_idx;
+    uint padding[3];
+};
+layout(binding = 7, set = 0) buffer EmittingInstanceBuffer {
+    EmittingInstance instances[];
+} emitting_instance_buffer;
 layout(binding = 0, set = 1) readonly buffer MaterialBuffer {
     vec4[] data;
 } material_buffer;

@@ -1,7 +1,7 @@
 #define PI 3.14159265
 // from https://developer.nvidia.com/gpugems/gpugems3/part-vi-gpu-computing/chapter-37-efficient-random-number-generation-and-application
 
-layout(binding = 8, set = 0, rgba32ui) uniform uimage2D rng_tex;
+layout(binding = 9, set = 0, rgba32ui) uniform uimage2D rng_tex;
 
 // S1, S2, S3, and M are all constants, and z is part of the
 // private per-thread generator state.

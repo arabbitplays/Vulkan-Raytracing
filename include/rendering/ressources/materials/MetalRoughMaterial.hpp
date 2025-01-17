@@ -29,6 +29,7 @@ public:
 
     void buildPipelines(VkDescriptorSetLayout sceneLayout) override;
     void writeMaterial() override;
+    glm::vec4 getEmissionForInstance(uint32_t material_instance_id) override;
     std::shared_ptr<MaterialInstance> createInstance(MetalRoughParameters parameters);
     void reset() override;
 private:

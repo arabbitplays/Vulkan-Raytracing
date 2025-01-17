@@ -67,9 +67,9 @@ AllocatedBuffer RessourceBuilder::createBuffer(VkDeviceSize size, VkBufferUsageF
     return allocatedBuffer;
 }
 
-AllocatedBuffer RessourceBuilder::stageMemoryToNewBuffer(void* data, size_t size, VkBufferUsageFlagBits usage) {
-    AllocatedBuffer stagingBuffer = createBuffer(size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT
-            , VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+AllocatedBuffer RessourceBuilder::stageMemoryToNewBuffer(void* data, size_t size, VkBufferUsageFlags usage) {
+    AllocatedBuffer stagingBuffer = createBuffer(size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 
     void* mapped_data;
     vkMapMemory(device, stagingBuffer.bufferMemory, 0, size, 0, &mapped_data);

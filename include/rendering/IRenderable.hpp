@@ -13,6 +13,13 @@ struct InstanceData {
     uint32_t material_index;
 };
 
+struct EmittingInstanceData {
+    glm::mat4 model_matrix;
+    glm::vec4 emission;
+    uint32_t instance_id;
+    uint32_t padding[3];
+};
+
 struct RenderObject {
     InstanceData instance_data;
     std::shared_ptr<AccelerationStructure> acceleration_structure;
