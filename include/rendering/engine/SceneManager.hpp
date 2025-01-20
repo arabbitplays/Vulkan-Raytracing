@@ -22,13 +22,13 @@ public:
     }
 
     void createScene(SceneType scene_type);
+    void createBlas();
     void updateScene(DrawContext& draw_context, uint32_t current_image_idx, AllocatedImage& current_image, AllocatedImage& rng_tex);
 
     void clearRessources();
 
     std::shared_ptr<Material> getMaterial();
-
-    void createBlas();
+    uint32_t getEmittingInstancesCount();
 
     std::shared_ptr<Scene> scene;
     SceneType curr_scene_type;
@@ -75,6 +75,7 @@ private:
     AllocatedBuffer vertex_buffer, index_buffer, geometry_mapping_buffer, instance_mapping_buffer, emitting_instances_buffer;
     std::shared_ptr<AccelerationStructure> top_level_acceleration_structure;
 
+    uint32_t emitting_instances_count;
 };
 
 

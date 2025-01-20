@@ -89,3 +89,8 @@ vec3 calcLightContribution(vec3 P, vec3 N, vec3 geom_N, vec3 L, float dist_to_li
     vec3 brdf = calcBRDF(N, V, L, H, albedo, metallic, roughness);
     return brdf * in_radiance * max(dot(N, L), 0.0);
 }
+
+struct LightSample {
+    vec3 light;
+    float pdf;
+};

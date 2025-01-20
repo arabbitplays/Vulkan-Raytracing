@@ -147,7 +147,8 @@ void SceneManager::updateScene(DrawContext& draw_context, uint32_t current_image
         pair.second->draw(glm::mat4(1.0f), draw_context);
     }
 
-    if (instance_mapping_buffer.handle == VK_NULL_HANDLE) { // TODO make it dynamic
+    // TODO move this to scene creation time
+    if (instance_mapping_buffer.handle == VK_NULL_HANDLE) {
         instance_mapping_buffer = createInstanceMappingBuffer(draw_context.objects);
         emitting_instances_buffer = createEmittingInstancesBuffer(draw_context.objects, getMaterial());
         scene_ressource_deletion_queue.pushFunction([&]() {
@@ -255,13 +256,13 @@ AllocatedBuffer SceneManager::createEmittingInstancesBuffer(std::vector<RenderOb
         instance_data.instance_id = i;
         instance_data.model_matrix = objects[i].transform;
         instance_data.emission = material->getEmissionForInstance(objects[i].instance_data.material_index);
+        instance_data.primitive_count = objects[i].primitive_count;
         if (instance_data.emission.w > 0.0f) {
-            emitting_instances.push_back(instance_data);
-            instance_data.emission.x = 0;
             emitting_instances.push_back(instance_data);
         }
     }
-    std::cout << sizeof(EmittingInstanceData) << std::endl;
+
+    emitting_instances_count = emitting_instances.size();
     return context->resource_builder->stageMemoryToNewBuffer(emitting_instances.data(), emitting_instances.size() * sizeof(EmittingInstanceData), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
 }
 
@@ -354,6 +355,12 @@ void SceneManager::createDefaultMaterials(VkPhysicalDeviceRayTracingPipelineProp
 std::shared_ptr<Material> SceneManager::getMaterial() {
     return scene->material;
 }
+
+uint32_t SceneManager::getEmittingInstancesCount() {
+    assert(emitting_instances_buffer.handle != VK_NULL_HANDLE);
+    return emitting_instances_count;
+}
+
 
 void SceneManager::clearRessources() {
     scene_ressource_deletion_queue.flush();

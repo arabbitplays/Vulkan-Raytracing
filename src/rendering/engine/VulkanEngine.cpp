@@ -114,7 +114,6 @@ void VulkanEngine::initGui() {
         guiManager->destroy();
     });
 
-    raytracing_options = std::make_shared<RaytracingOptions>();
     renderer_options = std::make_shared<RendererOptions>();
 
     guiManager->addWindow(std::make_shared<OptionsWindow>(raytracing_options, renderer_options));
@@ -126,6 +125,8 @@ void VulkanEngine::initVulkan() {
     createSurface();
     pickPhysicalDevice();
     createLogicalDevice();
+
+    raytracing_options = std::make_shared<RaytracingOptions>();
 
     createCommandManager();
     createRessourceBuilder();
@@ -159,6 +160,7 @@ void VulkanEngine::initVulkan() {
     //createDepthResources();
 
     scene_manager->createScene(SceneType::PBR_CORNELL_BOX);
+
     createCommandBuffers();
     createSyncObjects();
 }
@@ -458,39 +460,6 @@ void VulkanEngine::createDescriptorAllocator() {
     });
 }
 
-void VulkanEngine::createDepthResources() {
-    VkFormat depthFormat = findDepthFormat();
-
-    depthImage = ressourceBuilder.createImage({swapchain->extent.width, swapchain->extent.height, 1}, depthFormat,
-                                              VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_IMAGE_ASPECT_DEPTH_BIT);
-
-    mainDeletionQueue.pushFunction([&]() {
-        ressourceBuilder.destroyImage(depthImage);
-    });
-}
-
-VkFormat VulkanEngine::findDepthFormat() {
-    return findSupportedFormat(
-            {VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT},
-            VK_IMAGE_TILING_OPTIMAL,
-            VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
-}
-
-VkFormat VulkanEngine::findSupportedFormat(const std::vector<VkFormat> candidates, VkImageTiling tiling,
-                             VkFormatFeatureFlags features) {
-    for (VkFormat format : candidates) {
-        VkFormatProperties properties;
-        vkGetPhysicalDeviceFormatProperties(physicalDevice, format, &properties);
-        if (tiling == VK_IMAGE_TILING_LINEAR && (properties.linearTilingFeatures & features) == features) {
-            return format;
-        } else if (tiling == VK_IMAGE_TILING_OPTIMAL && (properties.optimalTilingFeatures & features) == features) {
-            return format;
-        }
-    }
-
-    throw std::runtime_error("no supported format found!");
-}
-
 bool VulkanEngine::hasStencilComponent(VkFormat format) {
     return format == VK_FORMAT_D32_SFLOAT_S8_UINT || format == VK_FORMAT_D24_UNORM_S8_UINT;
 }
@@ -569,6 +538,7 @@ void VulkanEngine::createSyncObjects() {
     }
 }
 
+
 void VulkanEngine::mainLoop() {
     while(!glfwWindowShouldClose(window)) {
         glfwPollEvents();
@@ -605,6 +575,8 @@ void VulkanEngine::drawFrame() {
 #else
     scene_manager->updateScene(mainDrawContext, currentFrame, storageImages[0], rng_tex);
 #endif
+    raytracing_options->emitting_instances_count = scene_manager->getEmittingInstancesCount(); // TODO move this together with the creation of the instance buffers
+
     vkResetCommandBuffer(commandBuffers[currentFrame], 0);
     recordCommandBuffer(commandBuffers[currentFrame], imageIndex);
 
@@ -763,12 +735,4 @@ void VulkanEngine::cleanupRenderingImages() {
         ressourceBuilder.destroyImage(image);
     }
     ressourceBuilder.destroyImage(rng_tex);
-}
-
-VkFormat VulkanEngine::getColorAttachmentFormat() {
-    return swapchain->imageFormat;
-}
-
-VkFormat VulkanEngine::getDepthFormat() {
-    return findDepthFormat();
 }

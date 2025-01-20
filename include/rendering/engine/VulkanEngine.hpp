@@ -53,9 +53,6 @@ public:
     std::shared_ptr<DescriptorAllocator> descriptorAllocator;
 
     void run();
-    VkFormat getColorAttachmentFormat();
-    VkFormat getDepthFormat();
-
 private:
 
     GLFWwindow* window;
@@ -71,8 +68,6 @@ private:
     VkQueue graphicsQueue, presentQueue;
 
     std::shared_ptr<Swapchain> swapchain;
-
-    AllocatedImage depthImage;
 
     std::vector<VkCommandBuffer> commandBuffers;
 
@@ -122,10 +117,6 @@ private:
     void createCommandManager();
     void createRessourceBuilder();
 
-    void createDepthResources();
-    VkFormat findDepthFormat();
-    VkFormat findSupportedFormat(const std::vector<VkFormat> candidates, VkImageTiling tiling,
-                                 VkFormatFeatureFlags features);
     bool hasStencilComponent(VkFormat format);
     AllocatedImage loadTextureImage(std::string path);
 

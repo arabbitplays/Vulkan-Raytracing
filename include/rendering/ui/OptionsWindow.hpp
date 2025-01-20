@@ -7,15 +7,7 @@
 #include <GuiWindow.hpp>
 #include <bits/shared_ptr.h>
 #include <glm/fwd.hpp>
-
-struct RaytracingOptions {
-    int32_t recursion_depth = 3;
-    int32_t shadows = 1;
-    int32_t fresnel = 1;
-    int32_t dispersion = 0;
-    int32_t normal_mapping = 1;
-    uint32_t curr_sample_count = 0;
-};
+#include <RaytracingOptions.hpp>
 
 enum SceneType {
     PBR_CORNELL_BOX,

@@ -24,7 +24,8 @@ struct EmittingInstance {
     mat4 transform;
     vec4 emission;
     uint instance_idx;
-    uint padding[3];
+    uint prmitive_count;
+    uint padding[2];
 };
 layout(binding = 7, set = 0) buffer EmittingInstanceBuffer {
     EmittingInstance instances[];

@@ -46,11 +46,6 @@ Material getMaterial(uint material_id) {
 void main() {
     uint index = gl_InstanceCustomIndexEXT;
 
-    payload.light = emitting_instance_buffer.instances[1].emission.xyz;
-    payload.next_direction = vec3(0.0);
-    payload.contribution = vec3(1.0);
-    return;
-
     uint geometry_index = instance_mapping_buffer.indices[2 * index];
     uint material_index = instance_mapping_buffer.indices[2 * index + 1];
 
@@ -125,7 +120,7 @@ void main() {
     vec3 emission = material.emission_color * material.emission_power;
     vec3 result = emission + ambient + out_radiance;
 
-    payload.light = result;
+    //payload.light = result; // only if direct light is considered
     payload.light = emission;
 
     payload.next_origin = P;
