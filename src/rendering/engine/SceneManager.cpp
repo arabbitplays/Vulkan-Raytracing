@@ -5,7 +5,6 @@
 #include "SceneManager.hpp"
 
 #include <DescriptorLayoutBuilder.hpp>
-#include <MeshNode.hpp>
 #include <OptionsWindow.hpp>
 #include <QuickTimer.hpp>
 
@@ -51,13 +50,10 @@ void SceneManager::createSceneBuffers() {
 
     geometry_mapping_buffer = createGeometryMappingBuffer(scene->meshes);
 
-    instance_mapping_buffer = createInstanceMappingBuffer(scene->nodes);
-
     scene_ressource_deletion_queue.pushFunction([&]() {
         context->resource_builder->destroyBuffer(vertex_buffer);
         context->resource_builder->destroyBuffer(index_buffer);
         context->resource_builder->destroyBuffer(geometry_mapping_buffer);
-        context->resource_builder->destroyBuffer(instance_mapping_buffer);
     });
 }
 
@@ -152,17 +148,18 @@ void SceneManager::updateScene(DrawContext& draw_context, uint32_t current_image
     }
 
     // TODO move this to scene creation time
-    if (emitting_instances_buffer.handle == VK_NULL_HANDLE) {
-        //instance_mapping_buffer = createInstanceMappingBuffer(draw_context.objects);
+    if (instance_mapping_buffer.handle == VK_NULL_HANDLE) {
+        instance_mapping_buffer = createInstanceMappingBuffer(draw_context.objects);
         emitting_instances_buffer = createEmittingInstancesBuffer(draw_context.objects, getMaterial());
         scene_ressource_deletion_queue.pushFunction([&]() {
-           // context->resource_builder->destroyBuffer(instance_mapping_buffer);
+            context->resource_builder->destroyBuffer(instance_mapping_buffer);
             context->resource_builder->destroyBuffer(emitting_instances_buffer);
             instance_mapping_buffer.handle = VK_NULL_HANDLE;
         });
     }
+    uint32_t instance_id = 0;
     for (auto& object : draw_context.objects) {
-        top_level_acceleration_structure->addInstance(object.acceleration_structure, object.transform, object.instance_id);
+        top_level_acceleration_structure->addInstance(object.acceleration_structure, object.transform, instance_id++);
     }
 
     if (top_level_acceleration_structure->getHandle() == VK_NULL_HANDLE) {
@@ -239,18 +236,12 @@ AllocatedBuffer SceneManager::createGeometryMappingBuffer(std::vector<std::share
     return context->resource_builder->stageMemoryToNewBuffer(geometry_datas.data(), mesh_assets.size() * sizeof(GeometryData), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
 }
 
-AllocatedBuffer SceneManager::createInstanceMappingBuffer(std::unordered_map<std::string, std::shared_ptr<Node>> nodes) {
-    assert(!nodes.empty());
+AllocatedBuffer SceneManager::createInstanceMappingBuffer(std::vector<RenderObject>& objects) {
+    assert(!objects.empty());
 
     std::vector<InstanceData> instance_datas;
-    uint32_t instance_id = 0;
-    for (const auto& pair : nodes) {
-        if (typeid(*pair.second.get()) == typeid(MeshNode)) {
-            auto mesh_node = dynamic_cast<MeshNode*>(pair.second.get());
-            InstanceData instance_data {mesh_node->meshAsset->geometry_id, mesh_node->meshMaterial->material_index};
-            instance_datas.push_back(instance_data);
-            mesh_node->instance_id = instance_id++;
-        }
+    for (int i = 0; i < objects.size(); i++) {
+        instance_datas.push_back(objects[i].instance_data);
     }
 
     return context->resource_builder->stageMemoryToNewBuffer(instance_datas.data(), instance_datas.size() * sizeof(InstanceData), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
@@ -262,9 +253,9 @@ AllocatedBuffer SceneManager::createEmittingInstancesBuffer(std::vector<RenderOb
     std::vector<EmittingInstanceData> emitting_instances;
     for (int i = 0; i < objects.size(); i++) {
         EmittingInstanceData instance_data;
-        instance_data.instance_id = objects[i].instance_id;
+        instance_data.instance_id = i;
         instance_data.model_matrix = objects[i].transform;
-        float power = material->getEmissionForInstance(objects[i].material_idx).w;
+        float power = material->getEmissionForInstance(objects[i].instance_data.material_index).w;
         instance_data.primitive_count = objects[i].primitive_count;
         if (power > 0.0f) {
             emitting_instances.push_back(instance_data);

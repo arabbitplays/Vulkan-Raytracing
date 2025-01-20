@@ -50,7 +50,7 @@ private:
     AllocatedBuffer createVertexBuffer(std::vector<std::shared_ptr<MeshAsset>>& mesh_assets);
     AllocatedBuffer createIndexBuffer(std::vector<std::shared_ptr<MeshAsset>>& mesh_assets);
     AllocatedBuffer createGeometryMappingBuffer(std::vector<std::shared_ptr<MeshAsset>>& mesh_assets);
-    AllocatedBuffer createInstanceMappingBuffer(std::unordered_map<std::string, std::shared_ptr<Node>> nodes);
+    AllocatedBuffer createInstanceMappingBuffer(std::vector<RenderObject> &objects);
     AllocatedBuffer createEmittingInstancesBuffer(std::vector<RenderObject> &objects, std::shared_ptr<Material> material);
     void createUniformBuffers();
 
