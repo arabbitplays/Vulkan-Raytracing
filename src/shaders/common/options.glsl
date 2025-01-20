@@ -4,6 +4,7 @@ layout(push_constant) uniform PushConstants {
     bool fresnel;
     bool dispersion;
     bool normal_mapping;
+    bool sample_light;
     uint curr_sample_count;
     uint emitting_instances_count;
 } options;

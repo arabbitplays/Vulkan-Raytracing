@@ -509,8 +509,8 @@ void PBR_CornellBox::initScene() {
     quad->worldTransform = glm::mat4{1.0f};
     quad->children = {};
     quad->meshAsset = meshes[1];
-    quad->meshMaterial = metal_rough->createInstance({.albedo = glm::vec3(0.0f), .metallic = 0.5f, .roughness = 0.5f, .ao = 1.0f,
-        .emission_color = glm::vec3(1.0f, 0.96f, 0.71f), .emission_power = 5});
+    quad->meshMaterial = metal_rough->createInstance({.albedo = glm::vec3(1.0f, 0.96f, 0.71f), .metallic = 0.5f, .roughness = 0.5f, .ao = 1.0f,
+        .emission_color = glm::vec3(1.0f, 0.96f, 0.71f), .emission_power = 1});
     quad->refreshTransform(glm::mat4(1.0f));
     nodes["AreaLight"] = std::move(quad);
 

@@ -63,9 +63,8 @@ void main() {
     float roughness = texture(metal_rough_ao_textures[triangle.material_idx], uv).y + material.roughness;
     float ao = texture(metal_rough_ao_textures[triangle.material_idx], uv).z + material.ao;
 
-    bool sample_light = true;
     vec3 direct_light = vec3(0.0);
-    if (sample_light) {
+    if (options.sample_light) {
         LightSample light_sample = sampleEmittingPrimitive(P);
         vec3 L = light_sample.P - P;
         float distance_to_light = length(L);
@@ -78,7 +77,7 @@ void main() {
     }
 
     vec3 result = vec3(0.0);
-    if (sample_light) {
+    if (options.sample_light) {
         result = direct_light;
     } else {
         result = material.emission_color * material.emission_power;
