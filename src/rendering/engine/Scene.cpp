@@ -501,7 +501,7 @@ void PBR_CornellBox::initScene() {
         }
     }
 
-    float light_scale = 4;
+    float light_scale = 1;
     quad = std::make_shared<MeshNode>();
     quad->localTransform = glm::translate(glm::mat4(1.0f), glm::vec3(0, 9.8f, 0))
         * glm::rotate(glm::mat4(1.0f), glm::radians(180.0f), glm::vec3(0, 0, 1))

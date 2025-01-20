@@ -22,9 +22,8 @@ layout(binding = 6, set = 0) readonly buffer InstanceMappingBuffer {
 } instance_mapping_buffer;
 struct EmittingInstance {
     mat4 transform;
-    vec4 emission;
     uint instance_idx;
-    uint prmitive_count;
+    uint primitive_count;
     uint padding[2];
 };
 layout(binding = 7, set = 0) buffer EmittingInstanceBuffer {
@@ -58,4 +57,29 @@ uvec3 getIndices(uint index_offset, uint primitive_id) {
     uint index1 = index_buffer.indices[base_index + 1];
     uint index2 = index_buffer.indices[base_index + 2];
     return uvec3(index0, index1, index2);
+}
+
+struct Triangle {
+    Vertex A, B, C;
+    uint material_idx;
+};
+
+Triangle getTriangle(uint32_t instance_idx, uint32_t primitive_idx) {
+    uint index = instance_idx;
+
+    uint geometry_index = instance_mapping_buffer.indices[2 * index];
+    uint material_index = instance_mapping_buffer.indices[2 * index + 1];
+
+    uint vertex_offset = geometry_mapping_buffer.indices[2 * geometry_index];
+    uint index_offset = geometry_mapping_buffer.indices[2 * geometry_index + 1];
+
+    uvec3 indices = getIndices(index_offset, primitive_idx);
+
+    Triangle triangle;
+    triangle.A = getVertex(vertex_offset, indices.x);
+    triangle.B = getVertex(vertex_offset, indices.y);
+    triangle.C = getVertex(vertex_offset, indices.z);
+    triangle.material_idx = material_index;
+
+    return triangle;
 }

@@ -11,6 +11,23 @@ struct Material {
     float emission_power;
 };
 
+Material getMaterial(uint material_id) {
+    uint base_index = 3 * material_id;
+    vec4 A = material_buffer.data[base_index];
+    vec4 B = material_buffer.data[base_index + 1];
+    vec4 C = material_buffer.data[base_index + 2];
+
+    Material m;
+    m.albedo = A.xyz;
+    m.metallic = B.x;
+    m.roughness = B.y;
+    m.ao = B.z;
+    m.emission_color = C.xyz;
+    m.emission_power = C.w;
+
+    return m;
+}
+
 vec3 getLambertianDiffuse(vec3 albedo) {
     return albedo / PI;
 }
@@ -43,7 +60,9 @@ vec3 fresnelSchlick(vec3 h, vec3 v, vec3 albedo, float metallic) {
     return f0 + (1.0 - f0) * pow(clamp(1.0 - HdotV, 0.0, 1.0), 5.0);
 }
 
-vec3 calcBRDF(vec3 n, vec3 v, vec3 l, vec3 h, vec3 albedo, float metallic, float roughness) {
+vec3 calcBRDF(vec3 n, vec3 v, vec3 l, vec3 albedo, float metallic, float roughness) {
+    vec3 h = normalize(l + v);
+
     // cook-torance brdf
     float normalDistributionFunction = distributionGGX(n, h, roughness);
     float geometryFunction = geometrySchlick(n, v, l, roughness);
@@ -66,7 +85,6 @@ vec3 calcBRDF(vec3 n, vec3 v, vec3 l, vec3 h, vec3 albedo, float metallic, float
 vec3 calcLightContribution(vec3 P, vec3 N, vec3 geom_N, vec3 L, float dist_to_light, float attenuation, vec3 light_color, float light_power,
         vec3 albedo, float metallic, float roughness, float ao) {
     vec3 V = -normalize(gl_WorldRayDirectionEXT);
-    vec3 H = normalize(L + V);
 
     vec3 in_radiance = vec3(0);;
 
@@ -86,11 +104,67 @@ vec3 calcLightContribution(vec3 P, vec3 N, vec3 geom_N, vec3 L, float dist_to_li
         }
     }
 
-    vec3 brdf = calcBRDF(N, V, L, H, albedo, metallic, roughness);
+    vec3 brdf = calcBRDF(N, V, L, albedo, metallic, roughness);
     return brdf * in_radiance * max(dot(N, L), 0.0);
 }
 
 struct LightSample {
+    vec3 P;
     vec3 light;
     float pdf;
 };
+
+LightSample sampleEmittingPrimitive(vec3 P) {
+    float u = stepAndOutputRNGFloat(payload.rng_state);
+    uint emitting_instance_idx = min(uint(u * options.emitting_instances_count), options.emitting_instances_count - 1);
+    float pmf_light = 1.0 / options.emitting_instances_count;
+
+    EmittingInstance emitting_instance = emitting_instance_buffer.instances[emitting_instance_idx];
+
+    u = stepAndOutputRNGFloat(payload.rng_state);
+    uint primitive_idx = uint(min(u * emitting_instance.primitive_count, emitting_instance.primitive_count - 1));
+    float pmf_primitive = 1.0 / emitting_instance.primitive_count;
+
+    Triangle triangle = getTriangle(emitting_instance.instance_idx, primitive_idx);
+
+    u = stepAndOutputRNGFloat(payload.rng_state);
+    float v = stepAndOutputRNGFloat(payload.rng_state);
+    if (u + v > 1.0) {
+        u = 1 - u;
+        v = 1 - v;
+    }
+
+    vec3 sampled_P = (1 - u - v) * triangle.A.position + u * triangle.B.position + v * triangle.C.position;
+    sampled_P = vec3(emitting_instance.transform * vec4(sampled_P, 1.0));
+    float area = 0.5 * length(cross(triangle.B.position - triangle.A.position, triangle.C.position - triangle.A.position));
+    float pdf = 1.0 / area;
+
+    vec3 N = normalize((1 - u - v) * triangle.A.normal + u * triangle.B.normal + v * triangle.C.normal);
+    N = normalize(vec3(vec4(N, 1.0) * emitting_instance.transform));
+
+    Material material = getMaterial(triangle.material_idx);
+    vec3 li = vec3(0.0);
+    if (dot(P - sampled_P, N) > 0.0) {
+        li = material.emission_color * material.emission_power;
+    }
+
+    LightSample result;
+    result.P = sampled_P;
+    result.light = li;
+    result.pdf = pmf_light * pmf_primitive * pdf;
+
+    return result;
+}
+
+bool unoccluded(vec3 P, vec3 L, float distance_to_light, vec3 geom_N) {
+    float tmin = 0.001;
+    float tmax = distance_to_light - EPSILON;
+    vec3 direction = L;
+    vec3 origin = P + EPSILON * L;
+    uint flags = gl_RayFlagsTerminateOnFirstHitEXT | gl_RayFlagsOpaqueEXT | gl_RayFlagsSkipClosestHitShaderEXT | gl_RayFlagsCullBackFacingTrianglesEXT;
+    isShadowed = true;
+
+    traceRayEXT(topLevelAS, flags, 0xff, 0, 0, 1, origin.xyz, tmin, direction.xyz, tmax, 1);
+
+    return !isShadowed;
+}

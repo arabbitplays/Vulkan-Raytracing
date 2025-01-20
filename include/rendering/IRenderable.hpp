@@ -15,7 +15,6 @@ struct InstanceData {
 
 struct EmittingInstanceData {
     glm::mat4 model_matrix;
-    glm::vec4 emission;
     uint32_t instance_id;
     uint32_t primitive_count;
     uint32_t padding[2];

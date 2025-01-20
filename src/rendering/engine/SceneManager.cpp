@@ -255,9 +255,9 @@ AllocatedBuffer SceneManager::createEmittingInstancesBuffer(std::vector<RenderOb
         EmittingInstanceData instance_data;
         instance_data.instance_id = i;
         instance_data.model_matrix = objects[i].transform;
-        instance_data.emission = material->getEmissionForInstance(objects[i].instance_data.material_index);
+        float power = material->getEmissionForInstance(objects[i].instance_data.material_index).w;
         instance_data.primitive_count = objects[i].primitive_count;
-        if (instance_data.emission.w > 0.0f) {
+        if (power > 0.0f) {
             emitting_instances.push_back(instance_data);
         }
     }

@@ -5,5 +5,5 @@ layout(push_constant) uniform PushConstants {
     bool dispersion;
     bool normal_mapping;
     uint curr_sample_count;
-    uint emitting_primitive_count;
+    uint emitting_instances_count;
 } options;
