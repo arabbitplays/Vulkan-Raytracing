@@ -21,7 +21,8 @@ struct EmittingInstanceData {
 };
 
 struct RenderObject {
-    InstanceData instance_data;
+    uint32_t instance_id;
+    uint32_t material_idx;
     std::shared_ptr<AccelerationStructure> acceleration_structure;
     glm::mat4 transform;
     uint32_t primitive_count;
@@ -32,6 +33,10 @@ struct DrawContext {
 };
 
 class IRenderable {
+public:
+    virtual ~IRenderable() = default;
+
+private:
     virtual void draw(const glm::mat4& topMatrix, DrawContext& ctx) = 0;
 };
 
