@@ -112,6 +112,7 @@ struct LightSample {
     vec3 P;
     vec3 light;
     float pdf;
+    bool same_surface; // point P is on an emissive surface -> no shadow ray
 };
 
 LightSample sampleEmittingPrimitive(vec3 P) {
@@ -144,7 +145,7 @@ LightSample sampleEmittingPrimitive(vec3 P) {
 
     Material material = getMaterial(triangle.material_idx);
     vec3 li = vec3(0.0);
-    if (dot(P - sampled_P, N) > 0.0) {
+    if (gl_InstanceCustomIndexEXT == emitting_instance_idx || dot(P - sampled_P, N) > 0.0) {
         li = material.emission_color * material.emission_power;
     }
 
@@ -153,15 +154,21 @@ LightSample sampleEmittingPrimitive(vec3 P) {
     result.light = li;
     result.pdf = pmf_light * pmf_primitive * pdf;
 
+    if (gl_InstanceCustomIndexEXT == emitting_instance_idx) {
+        result.same_surface = true;
+    } else {
+        result.same_surface = false;
+    }
+
     return result;
 }
 
 bool unoccluded(vec3 P, vec3 L, float distance_to_light, vec3 geom_N) {
-    float tmin = 0.001;
-    float tmax = distance_to_light - EPSILON;
+    float tmin = 0.0;
+    float tmax = distance_to_light - 2 * EPSILON;
     vec3 direction = L;
     vec3 origin = P + EPSILON * L;
-    uint flags = gl_RayFlagsTerminateOnFirstHitEXT | gl_RayFlagsOpaqueEXT | gl_RayFlagsSkipClosestHitShaderEXT | gl_RayFlagsCullBackFacingTrianglesEXT;
+    uint flags = gl_RayFlagsTerminateOnFirstHitEXT | gl_RayFlagsOpaqueEXT | gl_RayFlagsSkipClosestHitShaderEXT;
     isShadowed = true;
 
     traceRayEXT(topLevelAS, flags, 0xff, 0, 0, 1, origin.xyz, tmin, direction.xyz, tmax, 1);

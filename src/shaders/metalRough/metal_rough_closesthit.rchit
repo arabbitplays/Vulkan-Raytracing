@@ -70,9 +70,13 @@ void main() {
         float distance_to_light = length(L);
         L = normalize(L);
 
-        vec3 f = calcBRDF(N, V, L, albedo, metallic, roughness) * max(dot(N, L), 0.0);
-        if (length(f) > 0.0 && unoccluded(P, L, distance_to_light, geometric_normal)) {
-            direct_light = f * light_sample.light / light_sample.pdf;
+        if (light_sample.same_surface) {
+            direct_light = light_sample.light;
+        } else {
+            vec3 f = calcBRDF(N, V, L, albedo, metallic, roughness) * max(dot(N, L), 0.0);
+            if (length(f) > 0.0 && unoccluded(P, L, distance_to_light, geometric_normal)) {
+                direct_light = f * light_sample.light / light_sample.pdf;
+            }
         }
     }
 
