@@ -186,10 +186,6 @@ void VulkanEngine::createInstance() {
     vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, nullptr);
     std::vector<VkExtensionProperties> extensions(extensionCount);
     vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, extensions.data());
-    std::cout << "available extensions:\n";
-    for (const auto& extension : extensions) {
-        std::cout << "\t" << extension.extensionName << "\n";
-    }
 
     std::vector<const char*> glfwExtensions = getRequiredExtensions();
     createInfo.enabledExtensionCount = static_cast<uint32_t>(glfwExtensions.size());
