@@ -22,7 +22,7 @@ struct QuickTimer {
       if (print_on_exit) {
         using namespace std::chrono;
         const auto dur = duration_cast<microseconds>(clock::now() - start).count();
-        spdlog::debug("{}; {} ms", name, dur / 1000.0f);
+        spdlog::debug("{}: {} ms", name, dur / 1000.0f);
       }
     }
 };
