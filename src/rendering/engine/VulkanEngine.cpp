@@ -1,4 +1,3 @@
-#define STB_IMAGE_IMPLEMENTATION
 #include "rendering/engine/VulkanEngine.hpp"
 
 #include <Camera.hpp>
@@ -11,7 +10,6 @@
 #include <set>
 #include <deps/linmath.h>
 #include <cstdlib>
-
 #include "../scene_graph/MeshNode.hpp"
 
 const std::vector<const char*> validationLayers = {
@@ -71,6 +69,7 @@ void VulkanEngine::run(RendererOptions& renderer_options) {
     initVulkan();
     initGui();
     mainLoop();
+
     cleanup();
 }
 
@@ -159,7 +158,7 @@ void VulkanEngine::initVulkan() {
 
     //createDepthResources();
 
-    scene_manager->createScene(SceneType::PBR_CORNELL_BOX);
+    loadScene();
 
     createCommandBuffers();
     createSyncObjects();
@@ -492,6 +491,13 @@ void VulkanEngine::createRenderingImages() {
             VK_IMAGE_LAYOUT_GENERAL);
 }
 
+void VulkanEngine::loadScene()
+{
+    vkDeviceWaitIdle(device);
+    raytracing_options->curr_sample_count = 0;
+    scene_manager->createScene(renderer_options->scene_type);
+}
+
 
 void VulkanEngine::createCommandBuffers() {
     commandBuffers.resize(MAX_FRAMES_IN_FLIGHT);
@@ -537,12 +543,18 @@ void VulkanEngine::createSyncObjects() {
 
 void VulkanEngine::mainLoop() {
     while(!glfwWindowShouldClose(window)) {
+        // render one image and then output it if output path is defined
+        if (!renderer_options->output_path.empty() && renderer_options->sample_count == raytracing_options->curr_sample_count)
+        {
+            vkDeviceWaitIdle(device);
+            outputStorageImage();
+            break;
+        }
+
         glfwPollEvents();
 
         if (scene_manager->curr_scene_type != renderer_options->scene_type) {
-            vkDeviceWaitIdle(device);
-            raytracing_options->curr_sample_count = 0;
-            scene_manager->createScene(renderer_options->scene_type);
+            loadScene();
         }
 
         drawFrame();
@@ -718,6 +730,12 @@ void VulkanEngine::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t i
     if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS) {
         throw std::runtime_error("failed to record command buffer!");
     }
+}
+
+void VulkanEngine::outputStorageImage()
+{
+    void* data = context->resource_builder->downloadImage(storageImages[0]);
+    context->resource_builder->writePNG(renderer_options->output_path, data, storageImages[0].imageExtent.width, storageImages[0].imageExtent.height);
 }
 
 void VulkanEngine::cleanup() {

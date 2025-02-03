@@ -48,5 +48,5 @@ void main() {
 
     //color = vec3(stepAndOutputRNGFloat(payload.rng_state));
     imageStore(rng_tex, ivec2(gl_LaunchIDEXT.xy), payload.rng_state);
-    imageStore(image, ivec2(gl_LaunchIDEXT.xy), vec4(color, 0.0));
+    imageStore(image, ivec2(gl_LaunchIDEXT.xy), vec4(color, 1.0));
 }

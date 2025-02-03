@@ -135,6 +135,7 @@ private:
 
     void cleanupRenderingImages();
     void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
+    void outputStorageImage();
 
     static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
             VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
@@ -148,6 +149,7 @@ private:
     }
 
     void createRenderingImages();
+    void loadScene();
 };
 
 #endif //BASICS_VULKANENGINE_HPP
