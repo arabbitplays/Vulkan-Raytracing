@@ -36,7 +36,7 @@
 #include "../../util/QuickTimer.hpp"
 #include "../../util/VulkanUtil.hpp"
 #include "../IRenderable.hpp"
-#include "../nodes/Node.hpp"
+#include "../scene_graph/Node.hpp"
 #include "DeletionQueue.hpp"
 #include <VulkanContext.hpp>
 
@@ -52,7 +52,7 @@ public:
     std::shared_ptr<MeshAssetBuilder> mesh_builder;
     std::shared_ptr<DescriptorAllocator> descriptorAllocator;
 
-    void run();
+    void run(RendererOptions& options);
 private:
 
     GLFWwindow* window;

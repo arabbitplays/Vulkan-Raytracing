@@ -12,7 +12,7 @@
 #include <deps/linmath.h>
 #include <cstdlib>
 
-#include "../nodes/MeshNode.hpp"
+#include "../scene_graph/MeshNode.hpp"
 
 const std::vector<const char*> validationLayers = {
     "VK_LAYER_KHRONOS_validation",
@@ -64,7 +64,9 @@ void CmdTraceRaysKHR(VkDevice device, VkCommandBuffer commandBuffer, const VkStr
 const uint32_t WIDTH = 800;
 const uint32_t HEIGHT = 600;
 
-void VulkanEngine::run() {
+void VulkanEngine::run(RendererOptions& renderer_options) {
+    this->renderer_options = std::make_shared<RendererOptions>(renderer_options);
+
     initWindow();
     initVulkan();
     initGui();
@@ -113,8 +115,6 @@ void VulkanEngine::initGui() {
     mainDeletionQueue.pushFunction([&]() {
         guiManager->destroy();
     });
-
-    renderer_options = std::make_shared<RendererOptions>();
 
     guiManager->addWindow(std::make_shared<OptionsWindow>(raytracing_options, renderer_options));
 }

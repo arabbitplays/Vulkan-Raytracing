@@ -8,17 +8,7 @@
 #include <bits/shared_ptr.h>
 #include <glm/fwd.hpp>
 #include <RaytracingOptions.hpp>
-
-enum SceneType {
-    PBR_CORNELL_BOX,
-    CORNELL_BOX,
-    PLANE,
-    SHOWCASE,
-};
-
-struct RendererOptions {
-    SceneType scene_type = PBR_CORNELL_BOX;
-};
+#include <RendererOptions.h>
 
 class OptionsWindow final : public GuiWindow {
 public:

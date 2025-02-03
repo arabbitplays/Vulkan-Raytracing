@@ -20,6 +20,12 @@ class CommandLineParser {
         std::string description;
     };
 
+    struct StringArgument
+    {
+        std::string* variable;
+        std::string description;
+    };
+
   public:
     CommandLineParser() = default;
 
@@ -31,6 +37,9 @@ class CommandLineParser {
                 i++;
             } else if (bool_arguments.find(args[i]) != bool_arguments.end()) {
                 *bool_arguments[args[i]].variable = true;
+            } else if (string_arguments.find(args[i]) != string_arguments.end()) {
+                *string_arguments[args[i]].variable = args[i + 1];
+                i++;
             } else {
                 spdlog::error("Invalid argument: {}", args[i]);
             }
@@ -47,16 +56,49 @@ class CommandLineParser {
         bool_arguments[key] = argument;
     }
 
+    void addString(std::string key, std::string* variable, std::string description)
+    {
+        StringArgument argument = StringArgument(variable, description);
+        string_arguments[key] = argument;
+    }
+
     void printHelp() {
-        spdlog::info("Options:");
+        std::vector<std::string> options{};
+        std::vector<std::string> descriptions{};
+
         for (auto argument : bool_arguments) {
-            spdlog::info("{} \t\t\t {}", argument.first, argument.second.description);
+            options.push_back(argument.first);
+            descriptions.push_back(argument.second.description);
+        }
+
+        for (auto argument : int_arguments) {
+            options.push_back(argument.first);
+            descriptions.push_back(argument.second.description);
+        }
+
+        for (auto argument : string_arguments) {
+            options.push_back(argument.first);
+            descriptions.push_back(argument.second.description);
+        }
+
+        // calculate the length of the longest options to properly pad all the others
+        size_t max_option_length = 0;
+        for (auto option : options)
+        {
+            max_option_length = std::max(max_option_length, option.size());
+        }
+
+        spdlog::info("Options:");
+        for (int i = 0; i < options.size(); i++)
+        {
+            spdlog::info("{} {}{}", options[i], std::string(max_option_length - options[i].size(), ' '), descriptions[i]);
         }
     }
 
 private:
     std::unordered_map<std::string, IntArgument> int_arguments;
     std::unordered_map<std::string, BoolArgument> bool_arguments;
+    std::unordered_map<std::string, StringArgument> string_arguments;
 };
 
 #endif //COMMANDLINEPARSER_HPP

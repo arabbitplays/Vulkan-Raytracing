@@ -4,13 +4,15 @@
 #include <CommandLineParser.hpp>
 
 int main(int argc, char* argv[]) {
+    RendererOptions options;
+
     CommandLineParser cli_parser = CommandLineParser();
-    int32_t samples = 0;
     bool help = false, verbose = false;
 
     cli_parser.addFlag("--help", &help, "Show this message.");
-    cli_parser.addInt("--samples", &samples, "Number of samples taken per pixel.");
-    cli_parser.addFlag("-v", &verbose, "Debug messages should be displayed.");
+    cli_parser.addInt("--samples", &options.sample_count, "Number of samples taken per pixel.");
+    cli_parser.addString("--output", &options.output_path, "Generate one image and save it to the given file.");
+    cli_parser.addFlag("-v", &verbose, "Display debug messages.");
     cli_parser.parse(argc, argv);
 
     if (help) {
@@ -24,7 +26,7 @@ int main(int argc, char* argv[]) {
 
     VulkanEngine app;
     try {
-        app.run();
+        app.run(options);
     } catch (const std::exception& e) {
         spdlog::error(e.what());
         return EXIT_FAILURE;

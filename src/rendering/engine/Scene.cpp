@@ -599,7 +599,7 @@ void Material_Showcase::initScene() {
     quad->meshAsset = meshes[1];
     quad->meshMaterial = mat;
     quad->refreshTransform(glm::mat4(1.0f));
-    nodes["Back" ] = std::move(quad);
+    scene_graph["Back" ] = std::move(quad);
 
     quad = std::make_shared<MeshNode>();
     quad->localTransform = glm::scale( glm::mat4(1.0f), glm::vec3(quad_scale, 1.0f, quad_scale));
@@ -609,7 +609,7 @@ void Material_Showcase::initScene() {
     quad->meshMaterial = mat;
 
     quad->refreshTransform(glm::mat4(1.0f));
-    nodes["Floor"] = std::move(quad);
+    scene_graph["Floor"] = std::move(quad);
 
     quad = std::make_shared<MeshNode>();
     quad->localTransform = glm::translate(glm::mat4(1.0f), glm::vec3(-5.0f, 5.0f, 0.0f))
@@ -621,7 +621,7 @@ void Material_Showcase::initScene() {
     quad->meshAsset = meshes[1];
     quad->meshMaterial = mat;
     quad->refreshTransform(glm::mat4(1.0f));
-    nodes["Left"] = std::move(quad);*/
+    scene_graph["Left"] = std::move(quad);*/
 
     AllocatedImage rusty_albedo_tex = ressource_builder.loadTextureImage("../ressources/textures/rustyMetal/rusty-metal_albedo.png");
     AllocatedImage rusty_metal_rough_ao_tex = ressource_builder.loadTextureImage("../ressources/textures/rustyMetal/rusty-metal_metal_rough_ao.png");
@@ -692,7 +692,7 @@ void Material_Showcase::update(uint32_t image_width, uint32_t image_height) {
     float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
     glm::mat4 rotation = glm::rotate(glm::mat4{1.0f}, time * glm::radians(10.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 
-    //nodes["Sphere1"]->refreshTransform(rotation);
+    //scene_graph["Sphere1"]->refreshTransform(rotation);
 }
 
 
