@@ -1,6 +1,6 @@
 subdir('camera')
 subdir('engine')
-subdir('nodes')
+subdir('scene_graph')
 subdir('ressources')
 subdir('ui')
 

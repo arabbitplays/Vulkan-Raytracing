@@ -2,12 +2,15 @@
 #extension GL_EXT_ray_tracing : enable
 #extension GL_GOOGLE_include_directive : enable
 #extension GL_EXT_nonuniform_qualifier : enable
+#extension GL_EXT_shader_explicit_arithmetic_types : enable
 
 #define MAX_RECURSION_DEPTH 4
 
 #include "../common/payload.glsl"
 #include "../common/scene_data.glsl"
 #include "../common/layout.glsl"
+#include "../common/options.glsl"
+#include "../common/random.glsl"
 
 layout(binding = 0, set = 0) uniform accelerationStructureEXT topLevelAS;
 layout(location = 1) rayPayloadEXT bool isShadowed;
@@ -21,37 +24,13 @@ hitAttributeEXT vec3 attribs;
 
 #include "metal_rough_lighting.glsl"
 
-
-
-Material getMaterial(uint material_id) {
-    uint base_index = 2 * material_id;
-    vec4 A = material_buffer.data[base_index];
-    vec4 B = material_buffer.data[base_index + 1];
-
-    Material m;
-    m.albedo = A.xyz;
-    m.metallic = B.x;
-    m.roughness = B.y;
-    m.ao = B.z;
-
-    return m;
-}
-
 void main() {
-    uint index = gl_InstanceCustomIndexEXT;
+    Triangle triangle = getTriangle(gl_InstanceCustomIndexEXT, gl_PrimitiveID);
+    Vertex A = triangle.A;
+    Vertex B = triangle.B;
+    Vertex C = triangle.C;
 
-    uint geometry_index = instance_mapping_buffer.indices[2 * index];
-    uint material_index = instance_mapping_buffer.indices[2 * index + 1];
-
-    uint vertex_offset = geometry_mapping_buffer.indices[2 * geometry_index];
-    uint index_offset = geometry_mapping_buffer.indices[2 * geometry_index + 1];
-
-    uvec3 indices = getIndices(index_offset, gl_PrimitiveID);
-    Vertex A = getVertex(vertex_offset, indices.x);
-    Vertex B = getVertex(vertex_offset, indices.y);
-    Vertex C = getVertex(vertex_offset, indices.z);
-
-    Material material = getMaterial(material_index);
+    Material material = getMaterial(triangle.material_idx);
 
     const vec3 barycentricCoords = vec3(1.0f - attribs.x - attribs.y, attribs.x, attribs.y);
     float alpha = barycentricCoords.x;
@@ -67,53 +46,50 @@ void main() {
     vec3 geometric_normal = normalize(vec3(normal * gl_WorldToObjectEXT)); // transform normal to world space
 
     vec3 N = geometric_normal;
+    vec3 tangent = normalize(alpha * A.tangent + beta * B.tangent + gamma * C.tangent);
+    vec3 T = normalize(vec3(tangent * gl_WorldToObjectEXT)); // transform tangent to world space
+    vec3 bitangent = -normalize(cross(geometric_normal, T));
+    mat3 TBN = mat3(T, bitangent, geometric_normal);
     if (options.normal_mapping) {
-        vec3 tangent = normalize(alpha * A.tangent + beta * B.tangent + gamma * C.tangent);
-        vec3 T = normalize(vec3(tangent * gl_WorldToObjectEXT)); // transform tangent to world space
-        vec3 bitangent = -normalize(cross(geometric_normal, T));
-        mat3 TBN = mat3(T, bitangent, geometric_normal);
-        vec3 texNormal = texture(normal_textures[material_index], uv).xyz;
+        vec3 texNormal = texture(normal_textures[triangle.material_idx], uv).xyz;
         texNormal = texNormal * 2.0 - 1.0;
         N = normalize(TBN * texNormal);
     }
 
-    vec3 albedo = texture(albedo_textures[material_index], uv).xyz + material.albedo;
-    float metallic = texture(metal_rough_ao_textures[material_index], uv).x + material.metallic;
-    float roughness = texture(metal_rough_ao_textures[material_index], uv).y + material.roughness;
-    float ao = texture(metal_rough_ao_textures[material_index], uv).z + material.ao;
+    vec3 V = -normalize(gl_WorldRayDirectionEXT);
 
-    // handle point light
-    vec3 out_radiance = vec3(0);
-    for (int light_index = 0; light_index < 4; light_index++) {
-        if (sceneData.pointLightPositions[light_index].w == 0)
-            continue;
+    vec3 albedo = texture(albedo_textures[triangle.material_idx], uv).xyz + material.albedo;
+    float metallic = texture(metal_rough_ao_textures[triangle.material_idx], uv).x + material.metallic;
+    float roughness = texture(metal_rough_ao_textures[triangle.material_idx], uv).y + material.roughness;
+    float ao = texture(metal_rough_ao_textures[triangle.material_idx], uv).z + material.ao;
 
-        vec3 L = sceneData.pointLightPositions[light_index].xyz - P;
+    vec3 direct_light = vec3(0.0);
+    if (options.sample_light) {
+        LightSample light_sample = sampleEmittingPrimitive(P);
+        vec3 L = light_sample.P - P;
         float distance_to_light = length(L);
-        float attenuation = 1.0 / (distance_to_light * distance_to_light);
         L = normalize(L);
-        out_radiance += calcLightContribution(P, N, geometric_normal, L, distance_to_light, attenuation,
-                                              sceneData.pointLightColors[light_index].xyz,
-                                              sceneData.pointLightPositions[light_index].w,
-                                              albedo, metallic, roughness, ao);
+
+        if (light_sample.same_surface) {
+            direct_light = light_sample.light;
+        } else {
+            vec3 f = calcBRDF(N, V, L, albedo, metallic, roughness) * max(dot(N, L), 0.0);
+            if (length(f) > 0.0 && unoccluded(P, L, distance_to_light, geometric_normal)) {
+                direct_light = f * light_sample.light / light_sample.pdf;
+            }
+        }
     }
 
-    // handle directional light (sun)
-    if (sceneData.sunlightDirection.w != 0) {
-        vec3 L = -normalize(sceneData.sunlightDirection.xyz);
-        float distance_to_light = length(L);
-        float attenuation = 1.0 / (distance_to_light * distance_to_light);
-        out_radiance += calcLightContribution(P, N, geometric_normal, L, distance_to_light, attenuation,
-                                              sceneData.sunlightColor,
-                                              sceneData.sunlightDirection.w,
-                                              albedo, metallic, roughness, ao);
+    vec3 result = vec3(0.0);
+    if (options.sample_light) {
+        result = direct_light;
+    } else {
+        result = material.emission_color * material.emission_power;
     }
-
-    vec3 ambient = ao * vec3(0.01) * albedo;
-    vec3 result = ambient + out_radiance;
 
     payload.light = result;
-    // gamma correction
-    //payload.light = payload.light / (payload.light + vec3(1.0));
-    //payload.light = pow(payload.light, vec3(1.0 / 2.2));
+    payload.next_origin = P;
+    payload.next_direction = TBN * sampleCosHemisphere(payload.rng_state);
+    // f * cos / PDF
+    payload.contribution = calcBRDF(N, V, payload.next_direction, albedo, metallic, roughness) * PI ;
 }

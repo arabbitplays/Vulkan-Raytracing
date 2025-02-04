@@ -8,11 +8,20 @@
 #include <Material.hpp>
 #include <glm/vec3.hpp>
 
+struct MetalRoughParameters {
+    AllocatedImage albedo_tex, metal_rough_ao_tex, normal_tex;
+    glm::vec3 albedo = glm::vec3(0.0f);
+    float metallic, roughness, ao;
+    glm::vec3 emission_color = glm::vec3(1.0);
+    float emission_power = 0;
+};
+
 class MetalRoughMaterial : public Material {
 public:
     struct MaterialConstants {
         glm::vec4 albedo;
         glm::vec4 properties; // metallic roughness ao
+        glm::vec4 emission;
     };
 
     MetalRoughMaterial(std::shared_ptr<VulkanContext> context, VkSampler sampler) : Material(context), sampler(sampler) {
@@ -20,9 +29,8 @@ public:
 
     void buildPipelines(VkDescriptorSetLayout sceneLayout) override;
     void writeMaterial() override;
-    std::shared_ptr<MaterialInstance> createInstance(glm::vec3 albedo, float metallic, float roughness, float ao);
-    std::shared_ptr<MaterialInstance> createInstance(const AllocatedImage &albedo_tex, const AllocatedImage &metal_rough_ao_tex, const AllocatedImage& normal_tex);
-    std::shared_ptr<MaterialInstance> createInstance(glm::vec3 albedo, const AllocatedImage &albedo_tex, float metallic, float roughness, float ao, const AllocatedImage &metal_rough_ao_tex, const AllocatedImage& normal_tex);
+    glm::vec4 getEmissionForInstance(uint32_t material_instance_id) override;
+    std::shared_ptr<MaterialInstance> createInstance(MetalRoughParameters parameters);
     void reset() override;
 private:
     AllocatedBuffer createMaterialBuffer();

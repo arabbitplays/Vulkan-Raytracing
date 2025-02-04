@@ -391,7 +391,7 @@ void PBR_CornellBox::initCamera(uint32_t image_width, uint32_t image_height) {
         0.1f, 512.0f);
     proj[1][1] *= -1; // flip y-axis because glm is for openGL
     camera = std::make_shared<Camera>(
-        glm::lookAt(glm::vec3(0, 4, 8), glm::vec3(0, 2.5f, 0), glm::vec3(0, 1, 0)),
+        glm::lookAt(glm::vec3(0, 4, 10), glm::vec3(0, 3.5f, 0), glm::vec3(0, 1, 0)),
         proj
     );
 
@@ -418,10 +418,9 @@ void PBR_CornellBox::initScene() {
 
     glm::vec3 diffuse_gray = glm::vec3(0.5f);
     float quad_scale = 5.0f;
-
     std::shared_ptr<MeshNode> quad = nullptr;
-    std::shared_ptr<MaterialInstance> blue_instance = metal_rough->createInstance(glm::vec3(0.0f, 0.0f, 0.5f), 0.5f, 0.5f, 1.0f);
-    std::shared_ptr<MaterialInstance> grey_instance = metal_rough->createInstance(diffuse_gray, 0.5f, 0.5f, 1.0f);
+    std::shared_ptr<MaterialInstance> blue_instance = metal_rough->createInstance({.albedo = glm::vec3(0.0f, 0.0f, 0.5f), .metallic = 0.5f, .roughness = 0.5f, .ao = 1.0f});
+    std::shared_ptr<MaterialInstance> grey_instance = metal_rough->createInstance({.albedo = diffuse_gray, .metallic = 0.5f, .roughness = 0.5f, .ao = 1.0f});
 
     for (int i = 0; i < 10; ++i) {
         for (int j = 0; j < 10; ++j) {
@@ -448,7 +447,7 @@ void PBR_CornellBox::initScene() {
     quad->worldTransform = glm::mat4{1.0f};
     quad->children = {};
     quad->meshAsset = meshes[1];
-    quad->meshMaterial = metal_rough->createInstance(glm::vec3(0.2f), 0.5f, 0.5f, 1.0f);
+    quad->meshMaterial = metal_rough->createInstance({.albedo = glm::vec3(.6f), .metallic = 0.5f, .roughness = 0.5f, .ao = 1.0f});
 
     quad->refreshTransform(glm::mat4(1.0f));
     nodes["Floor"] = std::move(quad);
@@ -459,7 +458,7 @@ void PBR_CornellBox::initScene() {
         * glm::scale( glm::mat4(1.0f), glm::vec3(quad_scale, 1.0f, quad_scale));    quad->worldTransform = glm::mat4{1.0f};
     quad->children = {};
     quad->meshAsset = meshes[1];
-    quad->meshMaterial = metal_rough->createInstance(diffuse_gray, 0.5f, 0.5f, 1.0f);
+    quad->meshMaterial = metal_rough->createInstance({.albedo = diffuse_gray, .metallic = 0.5f, .roughness = 0.5f, .ao = 1.0f});
     quad->refreshTransform(glm::mat4(1.0f));
     nodes["Ciel"] = std::move(quad);
 
@@ -470,7 +469,7 @@ void PBR_CornellBox::initScene() {
     quad->worldTransform = glm::mat4{1.0f};
     quad->children = {};
     quad->meshAsset = meshes[1];
-    quad->meshMaterial = metal_rough->createInstance(glm::vec3(0.5f, 0.0f, 0.0f), 0.5f, 0.5f, 1.0f);
+    quad->meshMaterial = metal_rough->createInstance({.albedo = glm::vec3(0.5f, 0.0f, 0.0f), .metallic = 0.5f, .roughness = 0.5f, .ao = 1.0f});
     quad->refreshTransform(glm::mat4(1.0f));
     nodes["Left"] = std::move(quad);
 
@@ -481,7 +480,7 @@ void PBR_CornellBox::initScene() {
     quad->worldTransform = glm::mat4{1.0f};
     quad->children = {};
     quad->meshAsset = meshes[1];
-    quad->meshMaterial = metal_rough->createInstance(glm::vec3(0.0f, 0.5f, 0.0f), 0.5f, 0.5f, 1.0f);
+    quad->meshMaterial = metal_rough->createInstance({.albedo = glm::vec3(0.0f, 0.5f, 0.0f), .metallic = 0.5f, .roughness = 0.5f, .ao = 1.0f});
     quad->refreshTransform(glm::mat4(1.0f));
     nodes["Right"] = std::move(quad);
 
@@ -492,15 +491,31 @@ void PBR_CornellBox::initScene() {
             sphere->worldTransform = glm::mat4{1.0f};
             sphere->children = {};
             sphere->meshAsset = meshes[0];
-            sphere->meshMaterial = metal_rough->createInstance(
-                glm::vec3(0.5, 0, 0),
-                std::clamp(0.2f * i, 0.1f, 0.99f), std::clamp(0.2f * j, 0.1f, 0.99f), 1.0f);
+            sphere->meshMaterial = metal_rough->createInstance({
+                .albedo = glm::vec3(0.5f, 0.0f, 0.0f),
+                .metallic = std::clamp(0.2f * i, 0.1f, 0.99f),
+                .roughness = std::clamp(0.2f * j, 0.1f, 0.99f),
+                .ao = 1.0f});
             sphere->refreshTransform(glm::mat4(1.0f));
             nodes["Sphere" + std::to_string(i) + std::to_string(j)] = std::move(sphere);
         }
     }
 
+    float light_scale = 1;
+    quad = std::make_shared<MeshNode>();
+    quad->localTransform = glm::translate(glm::mat4(1.0f), glm::vec3(0, 9.95f, 0))
+        * glm::rotate(glm::mat4(1.0f), glm::radians(180.0f), glm::vec3(0, 0, 1))
+        * glm::scale( glm::mat4(1.0f), glm::vec3(light_scale, 1.0f, light_scale));
+    quad->worldTransform = glm::mat4{1.0f};
+    quad->children = {};
+    quad->meshAsset = meshes[1];
+    quad->meshMaterial = metal_rough->createInstance({.albedo = glm::vec3(1.0f, 0.96f, 0.71f), .metallic = 0.5f, .roughness = 0.5f, .ao = 1.0f,
+        .emission_color = glm::vec3(1.0f, 0.96f, 0.71f), .emission_power = 1});
+    quad->refreshTransform(glm::mat4(1.0f));
+    nodes["AreaLight"] = std::move(quad);
+
     pointLights[0] = PointLight(glm::vec3(0, 8.0f, 3), glm::vec3(1, 1, 1), 20);
+    //sun = DirectionalLight(glm::vec3(-1,-1,-1), glm::vec3(1.0f), 5.0f);
 
     environment_map[0] = ressource_builder.loadTextureImage("../ressources/textures/environmentMaps/posx.jpg");
     environment_map[1] = ressource_builder.loadTextureImage("../ressources/textures/environmentMaps/negx.jpg");
@@ -584,7 +599,7 @@ void Material_Showcase::initScene() {
     quad->meshAsset = meshes[1];
     quad->meshMaterial = mat;
     quad->refreshTransform(glm::mat4(1.0f));
-    nodes["Back" ] = std::move(quad);
+    scene_graph["Back" ] = std::move(quad);
 
     quad = std::make_shared<MeshNode>();
     quad->localTransform = glm::scale( glm::mat4(1.0f), glm::vec3(quad_scale, 1.0f, quad_scale));
@@ -594,7 +609,7 @@ void Material_Showcase::initScene() {
     quad->meshMaterial = mat;
 
     quad->refreshTransform(glm::mat4(1.0f));
-    nodes["Floor"] = std::move(quad);
+    scene_graph["Floor"] = std::move(quad);
 
     quad = std::make_shared<MeshNode>();
     quad->localTransform = glm::translate(glm::mat4(1.0f), glm::vec3(-5.0f, 5.0f, 0.0f))
@@ -606,7 +621,7 @@ void Material_Showcase::initScene() {
     quad->meshAsset = meshes[1];
     quad->meshMaterial = mat;
     quad->refreshTransform(glm::mat4(1.0f));
-    nodes["Left"] = std::move(quad);*/
+    scene_graph["Left"] = std::move(quad);*/
 
     AllocatedImage rusty_albedo_tex = ressource_builder.loadTextureImage("../ressources/textures/rustyMetal/rusty-metal_albedo.png");
     AllocatedImage rusty_metal_rough_ao_tex = ressource_builder.loadTextureImage("../ressources/textures/rustyMetal/rusty-metal_metal_rough_ao.png");
@@ -621,12 +636,34 @@ void Material_Showcase::initScene() {
     sphere->worldTransform = glm::mat4{1.0f};
     sphere->children = {};
     sphere->meshAsset = meshes[0];
-    sphere->meshMaterial = metal_rough->createInstance(rusty_albedo_tex, rusty_metal_rough_ao_tex, rusty_normal_tex);
+    sphere->meshMaterial = metal_rough->createInstance({.albedo_tex = rusty_albedo_tex, .metal_rough_ao_tex = rusty_metal_rough_ao_tex, .normal_tex = rusty_normal_tex});
     sphere->refreshTransform(glm::mat4(1.0f));
     nodes["Sphere1" ] = std::move(sphere);
 
-    pointLights[0] = PointLight(glm::vec3(2, 2.0f, 2), glm::vec3(1, 1, 1), 20);
-    pointLights[1] = PointLight(glm::vec3(-2, 0.5f, 3), glm::vec3(1, 1, 1), 10);
+    float light_size = 1;
+
+    sphere = std::make_shared<MeshNode>();
+    sphere->localTransform = glm::translate(glm::mat4(1.0f), glm::vec3(2, 1, 3)) * glm::scale(glm::mat4(1.0), glm::vec3(light_size));
+    sphere->worldTransform = glm::mat4{1.0f};
+    sphere->children = {};
+    sphere->meshAsset = meshes[0];
+    sphere->meshMaterial = metal_rough->createInstance({.albedo = glm::vec3(0.0f), .metallic = 0.5f, .roughness = 0.5f, .ao = 1.0f,
+        .emission_color = glm::vec3(1), .emission_power = 10});
+    sphere->refreshTransform(glm::mat4(1.0f));
+    nodes["Light1" ] = std::move(sphere);
+
+    sphere = std::make_shared<MeshNode>();
+    sphere->localTransform = glm::translate(glm::mat4(1.0f), glm::vec3(-2, 0.5f, 3)) * glm::scale(glm::mat4(1.0), glm::vec3(light_size));
+    sphere->worldTransform = glm::mat4{1.0f};
+    sphere->children = {};
+    sphere->meshAsset = meshes[0];
+    sphere->meshMaterial = metal_rough->createInstance({.albedo = glm::vec3(0.0f), .metallic = 0.5f, .roughness = 0.5f, .ao = 1.0f,
+        .emission_color = glm::vec3(1), .emission_power = 10});
+    sphere->refreshTransform(glm::mat4(1.0f));
+    nodes["Light2" ] = std::move(sphere);
+
+    //pointLights[0] = PointLight(glm::vec3(2, 2.0f, 2), glm::vec3(1, 1, 1), 20);
+    //pointLights[1] = PointLight(glm::vec3(-2, 0.5f, 3), glm::vec3(1, 1, 1), 10);
     //sun = DirectionalLight(glm::vec3(-1,-1,-1), glm::vec3(1.0f), 10.0f);
 
     environment_map[0] = ressource_builder.loadTextureImage("../ressources/textures/environmentMaps/posx.jpg");
@@ -655,7 +692,7 @@ void Material_Showcase::update(uint32_t image_width, uint32_t image_height) {
     float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
     glm::mat4 rotation = glm::rotate(glm::mat4{1.0f}, time * glm::radians(10.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 
-    nodes["Sphere1"]->refreshTransform(rotation);
+    //scene_graph["Sphere1"]->refreshTransform(rotation);
 }
 
 

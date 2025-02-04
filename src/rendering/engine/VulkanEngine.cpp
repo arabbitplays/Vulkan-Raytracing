@@ -1,4 +1,3 @@
-#define STB_IMAGE_IMPLEMENTATION
 #include "rendering/engine/VulkanEngine.hpp"
 
 #include <Camera.hpp>
@@ -10,11 +9,12 @@
 #include <RenderPassBuilder.hpp>
 #include <set>
 #include <deps/linmath.h>
-
-#include "../nodes/MeshNode.hpp"
+#include <cstdlib>
+#include "../scene_graph/MeshNode.hpp"
 
 const std::vector<const char*> validationLayers = {
-        "VK_LAYER_KHRONOS_validation"
+    "VK_LAYER_KHRONOS_validation",
+    "VK_LAYER_PROFILER_unified",
 };
 
 const std::vector<const char*> deviceExtensions = {
@@ -62,11 +62,14 @@ void CmdTraceRaysKHR(VkDevice device, VkCommandBuffer commandBuffer, const VkStr
 const uint32_t WIDTH = 800;
 const uint32_t HEIGHT = 600;
 
-void VulkanEngine::run() {
+void VulkanEngine::run(RendererOptions& renderer_options) {
+    this->renderer_options = std::make_shared<RendererOptions>(renderer_options);
+
     initWindow();
     initVulkan();
     initGui();
     mainLoop();
+
     cleanup();
 }
 
@@ -112,9 +115,6 @@ void VulkanEngine::initGui() {
         guiManager->destroy();
     });
 
-    raytracing_options = std::make_shared<RaytracingOptions>();
-    renderer_options = std::make_shared<RendererOptions>();
-
     guiManager->addWindow(std::make_shared<OptionsWindow>(raytracing_options, renderer_options));
 }
 
@@ -124,6 +124,8 @@ void VulkanEngine::initVulkan() {
     createSurface();
     pickPhysicalDevice();
     createLogicalDevice();
+
+    raytracing_options = std::make_shared<RaytracingOptions>();
 
     createCommandManager();
     createRessourceBuilder();
@@ -143,10 +145,10 @@ void VulkanEngine::initVulkan() {
     context->descriptor_allocator = descriptorAllocator;
     context->command_manager = pCommandManager;
 
-    createStorageImages();
+    createRenderingImages();
 
     mainDeletionQueue.pushFunction([&]() {
-        cleanupStorageImages();
+        cleanupRenderingImages();
     });
 
     scene_manager = std::make_shared<SceneManager>(context, MAX_FRAMES_IN_FLIGHT, raytracingProperties);
@@ -156,7 +158,8 @@ void VulkanEngine::initVulkan() {
 
     //createDepthResources();
 
-    scene_manager->createScene(SceneType::PBR_CORNELL_BOX);
+    loadScene();
+
     createCommandBuffers();
     createSyncObjects();
 }
@@ -182,10 +185,6 @@ void VulkanEngine::createInstance() {
     vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, nullptr);
     std::vector<VkExtensionProperties> extensions(extensionCount);
     vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, extensions.data());
-    std::cout << "available extensions:\n";
-    for (const auto& extension : extensions) {
-        std::cout << "\t" << extension.extensionName << "\n";
-    }
 
     std::vector<const char*> glfwExtensions = getRequiredExtensions();
     createInfo.enabledExtensionCount = static_cast<uint32_t>(glfwExtensions.size());
@@ -343,7 +342,7 @@ bool VulkanEngine::isDeviceSuitable(VkPhysicalDevice device) {
     }
 
     return extensionsSupported && indices.isComplete() && swapChainAdequate
-        && deviceFeatures.samplerAnisotropy
+        && deviceFeatures.samplerAnisotropy && deviceFeatures.shaderInt64 && deviceFeatures.shaderFloat64
         && raytracingPipelineFeatures.rayTracingPipeline && accelerationStructureFeatures.accelerationStructure;
 }
 
@@ -381,6 +380,8 @@ void VulkanEngine::createLogicalDevice() {
 
     VkPhysicalDeviceFeatures deviceFeatures{};
     deviceFeatures.samplerAnisotropy = VK_TRUE;
+    deviceFeatures.shaderInt64 = VK_TRUE;
+    deviceFeatures.shaderFloat64 = VK_TRUE;
 
     VkPhysicalDeviceAccelerationStructureFeaturesKHR accelerationStructureFeatures{};
     accelerationStructureFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_FEATURES_KHR;
@@ -454,39 +455,6 @@ void VulkanEngine::createDescriptorAllocator() {
     });
 }
 
-void VulkanEngine::createDepthResources() {
-    VkFormat depthFormat = findDepthFormat();
-
-    depthImage = ressourceBuilder.createImage({swapchain->extent.width, swapchain->extent.height, 1}, depthFormat,
-                                              VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_IMAGE_ASPECT_DEPTH_BIT);
-
-    mainDeletionQueue.pushFunction([&]() {
-        ressourceBuilder.destroyImage(depthImage);
-    });
-}
-
-VkFormat VulkanEngine::findDepthFormat() {
-    return findSupportedFormat(
-            {VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT},
-            VK_IMAGE_TILING_OPTIMAL,
-            VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
-}
-
-VkFormat VulkanEngine::findSupportedFormat(const std::vector<VkFormat> candidates, VkImageTiling tiling,
-                             VkFormatFeatureFlags features) {
-    for (VkFormat format : candidates) {
-        VkFormatProperties properties;
-        vkGetPhysicalDeviceFormatProperties(physicalDevice, format, &properties);
-        if (tiling == VK_IMAGE_TILING_LINEAR && (properties.linearTilingFeatures & features) == features) {
-            return format;
-        } else if (tiling == VK_IMAGE_TILING_OPTIMAL && (properties.optimalTilingFeatures & features) == features) {
-            return format;
-        }
-    }
-
-    throw std::runtime_error("no supported format found!");
-}
-
 bool VulkanEngine::hasStencilComponent(VkFormat format) {
     return format == VK_FORMAT_D32_SFLOAT_S8_UINT || format == VK_FORMAT_D24_UNORM_S8_UINT;
 }
@@ -498,7 +466,7 @@ void VulkanEngine::createSwapchain() {
     });
 }
 
-void VulkanEngine::createStorageImages() {
+void VulkanEngine::createRenderingImages() {
     storageImages.resize(MAX_FRAMES_IN_FLIGHT);
     for (uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
         storageImages[i] = ressourceBuilder.createImage(
@@ -510,7 +478,26 @@ void VulkanEngine::createStorageImages() {
         ressourceBuilder.transitionImageLayout(storageImages[i].image, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
             VK_ACCESS_NONE, VK_ACCESS_NONE, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
     }
+
+    std::vector<uint32_t> pixels(swapchain->extent.width * swapchain->extent.height * 4);
+    for (int i = 0; i < swapchain->extent.width * swapchain->extent.height * 4; i++) {
+        pixels[i] = std::rand();
+    }
+    rng_tex = ressourceBuilder.createImage(pixels.data(),
+            VkExtent3D{swapchain->extent.width, swapchain->extent.height, 1},
+            VK_FORMAT_R32G32B32A32_UINT, VK_IMAGE_TILING_OPTIMAL,
+            VK_IMAGE_USAGE_STORAGE_BIT,
+            VK_IMAGE_ASPECT_COLOR_BIT,
+            VK_IMAGE_LAYOUT_GENERAL);
 }
+
+void VulkanEngine::loadScene()
+{
+    vkDeviceWaitIdle(device);
+    raytracing_options->curr_sample_count = 0;
+    scene_manager->createScene(renderer_options->scene_type);
+}
+
 
 void VulkanEngine::createCommandBuffers() {
     commandBuffers.resize(MAX_FRAMES_IN_FLIGHT);
@@ -553,13 +540,21 @@ void VulkanEngine::createSyncObjects() {
     }
 }
 
+
 void VulkanEngine::mainLoop() {
     while(!glfwWindowShouldClose(window)) {
+        // render one image and then output it if output path is defined
+        if (!renderer_options->output_path.empty() && renderer_options->sample_count == raytracing_options->curr_sample_count)
+        {
+            vkDeviceWaitIdle(device);
+            outputStorageImage();
+            break;
+        }
+
         glfwPollEvents();
 
         if (scene_manager->curr_scene_type != renderer_options->scene_type) {
-            vkDeviceWaitIdle(device);
-            scene_manager->createScene(renderer_options->scene_type);
+            loadScene();
         }
 
         drawFrame();
@@ -583,7 +578,12 @@ void VulkanEngine::drawFrame() {
 
     vkResetFences(device, 1, &inFlightFences[currentFrame]);
 
+#ifdef REALTIME_MODE
     scene_manager->updateScene(mainDrawContext, currentFrame, storageImages[currentFrame]);
+#else
+    scene_manager->updateScene(mainDrawContext, currentFrame, storageImages[0], rng_tex);
+#endif
+    raytracing_options->emitting_instances_count = scene_manager->getEmittingInstancesCount(); // TODO move this together with the creation of the instance buffers
 
     vkResetCommandBuffer(commandBuffers[currentFrame], 0);
     recordCommandBuffer(commandBuffers[currentFrame], imageIndex);
@@ -631,9 +631,10 @@ void VulkanEngine::drawFrame() {
 void VulkanEngine::refreshAfterResize() {
     vkDeviceWaitIdle(device);
 
+    raytracing_options->curr_sample_count = 0;
     swapchain->recreate();
-    cleanupStorageImages();
-    createStorageImages();
+    cleanupRenderingImages();
+    createRenderingImages();
     guiManager->updateWindows(swapchain);
     scene_manager->scene->update(swapchain->extent.width, swapchain->extent.height);
 }
@@ -676,7 +677,7 @@ void VulkanEngine::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t i
         0, static_cast<uint32_t>(descriptor_sets.size()), descriptor_sets.data(),
         0, nullptr);
 
-    vkCmdPushConstants(commandBuffer, pipeline.getLayoutHandle(), VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR, 0, sizeof(RaytracingOptions), raytracing_options.get());
+    vkCmdPushConstants(commandBuffer, pipeline.getLayoutHandle(), VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR | VK_SHADER_STAGE_RAYGEN_BIT_KHR, 0, sizeof(RaytracingOptions), raytracing_options.get());
 
     CmdTraceRaysKHR(
         device,
@@ -689,12 +690,20 @@ void VulkanEngine::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t i
         swapchain->extent.height,
         1);
 
+    raytracing_options->curr_sample_count++;
+
+#ifdef REALTIME_MODE
+    AllocatedImage storage_image = storageImages[currentFrame];
+#else
+    AllocatedImage storage_image = storageImages[0];
+#endif
+
     ressourceBuilder.transitionImageLayout(commandBuffer, swapchain->images[imageIndex],
         VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
         VK_ACCESS_NONE, VK_ACCESS_NONE,
         VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
-    ressourceBuilder.transitionImageLayout(commandBuffer, storageImages[currentFrame].image, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+    ressourceBuilder.transitionImageLayout(commandBuffer, storage_image.image, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
         VK_ACCESS_NONE, VK_ACCESS_TRANSFER_READ_BIT, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
 
     VkImageCopy copyRegion{};
@@ -703,7 +712,7 @@ void VulkanEngine::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t i
     copyRegion.dstSubresource = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1};
     copyRegion.dstOffset = {0, 0, 0};
     copyRegion.extent = {swapchain->extent.width, swapchain->extent.height, 1};
-    vkCmdCopyImage(commandBuffer, storageImages[currentFrame].image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+    vkCmdCopyImage(commandBuffer, storage_image.image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
         swapchain->images[imageIndex], VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copyRegion);
 
     ressourceBuilder.transitionImageLayout(commandBuffer, swapchain->images[imageIndex],
@@ -711,7 +720,7 @@ void VulkanEngine::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t i
         VK_ACCESS_NONE, VK_ACCESS_NONE,
         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
 
-    ressourceBuilder.transitionImageLayout(commandBuffer, storageImages[currentFrame].image,
+    ressourceBuilder.transitionImageLayout(commandBuffer, storage_image.image,
         VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
         VK_ACCESS_TRANSFER_READ_BIT, VK_ACCESS_NONE,
         VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL);
@@ -723,22 +732,39 @@ void VulkanEngine::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t i
     }
 }
 
+void VulkanEngine::outputStorageImage()
+{
+    void* data = context->resource_builder->downloadImage(storageImages[0]);
+    fixImageFormatForStorage(static_cast<unsigned char*>(data), storageImages[0].imageExtent.width * storageImages[0].imageExtent.height, storageImages[0].imageFormat);
+    context->resource_builder->writePNG(std::to_string(renderer_options->sample_count) + "_" + renderer_options->output_path, data, storageImages[0].imageExtent.width, storageImages[0].imageExtent.height);
+}
+
+// target format is R8G8B8A8
+void VulkanEngine::fixImageFormatForStorage(unsigned char* image_data, size_t pixel_count, VkFormat originalFormat)
+{
+    if (originalFormat == VK_FORMAT_R8G8B8A8_UNORM)
+        return;
+
+    if (originalFormat == VK_FORMAT_B8G8R8A8_UNORM)
+    {
+        for (size_t i = 0; i < pixel_count; i++) {
+            std::swap(image_data[i * 4], image_data[i * 4 + 2]);  // Swap B (0) and R (2)
+        }
+    } else
+    {
+        spdlog::error("Image format of the storage image is not supported to be stored correctly!");
+    }
+}
+
 void VulkanEngine::cleanup() {
     mainDeletionQueue.flush();
     glfwDestroyWindow(window);
     glfwTerminate();
 }
 
-void VulkanEngine::cleanupStorageImages() {
+void VulkanEngine::cleanupRenderingImages() {
     for (auto image : storageImages) {
         ressourceBuilder.destroyImage(image);
     }
-}
-
-VkFormat VulkanEngine::getColorAttachmentFormat() {
-    return swapchain->imageFormat;
-}
-
-VkFormat VulkanEngine::getDepthFormat() {
-    return findDepthFormat();
+    ressourceBuilder.destroyImage(rng_tex);
 }

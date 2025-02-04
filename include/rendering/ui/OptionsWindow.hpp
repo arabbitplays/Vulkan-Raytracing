@@ -7,25 +7,8 @@
 #include <GuiWindow.hpp>
 #include <bits/shared_ptr.h>
 #include <glm/fwd.hpp>
-
-struct RaytracingOptions {
-    int32_t recursion_depth = 3;
-    int32_t shadows = 1;
-    int32_t fresnel = 1;
-    int32_t dispersion = 0;
-    int32_t normal_mapping = 1;
-};
-
-enum SceneType {
-    PBR_CORNELL_BOX,
-    CORNELL_BOX,
-    PLANE,
-    SHOWCASE,
-};
-
-struct RendererOptions {
-    SceneType scene_type = PBR_CORNELL_BOX;
-};
+#include <RaytracingOptions.hpp>
+#include <RendererOptions.h>
 
 class OptionsWindow final : public GuiWindow {
 public:
@@ -41,6 +24,7 @@ public:
 private:
     struct ImguiOptions {
         bool shadows, fresnel, dispersion, normal_mapping;
+        bool sample_light;
         int currentScene;
     };
 
@@ -49,6 +33,7 @@ private:
         .fresnel = true,
         .dispersion = false,
         .normal_mapping = true,
+        .sample_light = true,
     };
 
 protected:

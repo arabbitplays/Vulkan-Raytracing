@@ -7,6 +7,7 @@
 
 #include <chrono>
 #include <iostream>
+#include "spdlog/spdlog.h"
 
 struct QuickTimer {
     using clock = std::chrono::high_resolution_clock;
@@ -21,7 +22,7 @@ struct QuickTimer {
       if (print_on_exit) {
         using namespace std::chrono;
         const auto dur = duration_cast<microseconds>(clock::now() - start).count();
-        std::cout << name << ": " << dur / 1000. << " ms" << std::endl;
+        spdlog::debug("{}: {} ms", name, dur / 1000.0f);
       }
     }
 };

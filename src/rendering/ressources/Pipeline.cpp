@@ -124,7 +124,7 @@ void Pipeline::setDescriptorSetLayouts(std::vector<VkDescriptorSetLayout>& descr
     pipelineLayoutInfo.pSetLayouts = descriptorSetLayouts.data();
 }
 
-void Pipeline::addPushConstant(uint32_t size, VkShaderStageFlagBits shaderStage) {
+void Pipeline::addPushConstant(uint32_t size, VkShaderStageFlags shaderStage) {
     VkPushConstantRange pushConstantRange = {};
     pushConstantRange.stageFlags = shaderStage;
     pushConstantRange.offset = 0;

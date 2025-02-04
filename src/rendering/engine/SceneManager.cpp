@@ -44,11 +44,11 @@ void SceneManager::createScene(SceneType scene_type) {
 }
 
 void SceneManager::createSceneBuffers() {
-    vertex_buffer = context->mesh_builder->createVertexBuffer(scene->meshes);
-    index_buffer = context->mesh_builder->createIndexBuffer(scene->meshes);
+    vertex_buffer = createVertexBuffer(scene->meshes);
+    index_buffer = createIndexBuffer(scene->meshes);
     scene->material->writeMaterial();
 
-    geometry_mapping_buffer = context->mesh_builder->createGeometryMappingBuffer(scene->meshes);
+    geometry_mapping_buffer = createGeometryMappingBuffer(scene->meshes);
 
     scene_ressource_deletion_queue.pushFunction([&]() {
         context->resource_builder->destroyBuffer(vertex_buffer);
@@ -80,27 +80,28 @@ void SceneManager::createSceneDescriptorSets() {
     for (uint32_t i = 0; i < 6; i++) {
         views.push_back(scene->environment_map[i].imageView);
     }
-    context->descriptor_allocator->writeImages(7, views, defaultSamplerLinear, VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+    context->descriptor_allocator->writeImages(8, views, defaultSamplerLinear, VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
 
     for (int i = 0; i < max_frames_in_flight; i++) {
         scene_descriptor_sets.push_back(context->descriptor_allocator->allocate(context->device, scene_descsriptor_set_layout));
         context->descriptor_allocator->updateSet(context->device, scene_descriptor_sets[i]);
         context->descriptor_allocator->clearWrites();
     }
-
 }
 
 void SceneManager::createSceneLayout() {
     DescriptorLayoutBuilder layoutBuilder;
 
-    layoutBuilder.addBinding(0, VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR);
-    layoutBuilder.addBinding(1, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
-    layoutBuilder.addBinding(2, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
-    layoutBuilder.addBinding(3, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
-    layoutBuilder.addBinding(4, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
-    layoutBuilder.addBinding(5, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
-    layoutBuilder.addBinding(6, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
-    layoutBuilder.addBinding(7, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 6); // env map
+    layoutBuilder.addBinding(0, VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR); // TLAS
+    layoutBuilder.addBinding(1, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE); // render image
+    layoutBuilder.addBinding(2, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER); // scene data
+    layoutBuilder.addBinding(3, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER); // vertex buffer
+    layoutBuilder.addBinding(4, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER); // index buffer
+    layoutBuilder.addBinding(5, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER); // geometry buffer
+    layoutBuilder.addBinding(6, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER); // instance buffer
+    layoutBuilder.addBinding(7, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER); // emitting instances buffer
+    layoutBuilder.addBinding(8, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 6); // env map
+    layoutBuilder.addBinding(9, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE); // rng tex
 
     scene_descsriptor_set_layout = layoutBuilder.build(context->device, VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR | VK_SHADER_STAGE_MISS_BIT_KHR);
     main_deletion_queue.pushFunction([&]() {
@@ -127,7 +128,7 @@ void SceneManager::createUniformBuffers() {
     }
 }
 
-void SceneManager::updateScene(DrawContext& draw_context, uint32_t current_image_idx, AllocatedImage& current_image) {
+void SceneManager::updateScene(DrawContext& draw_context, uint32_t current_image_idx, AllocatedImage& current_image, AllocatedImage& rng_tex) {
     //QuickTimer timer{"Scene Update", true};
 
     scene->update(context->swapchain->extent.width, context->swapchain->extent.height);
@@ -146,10 +147,13 @@ void SceneManager::updateScene(DrawContext& draw_context, uint32_t current_image
         pair.second->draw(glm::mat4(1.0f), draw_context);
     }
 
-    if (instance_mapping_buffer.handle == VK_NULL_HANDLE) { // TODO make it dynamic
-        instance_mapping_buffer = context->mesh_builder->createInstanceMappingBuffer(draw_context.objects);
+    // TODO move this to scene creation time
+    if (instance_mapping_buffer.handle == VK_NULL_HANDLE) {
+        instance_mapping_buffer = createInstanceMappingBuffer(draw_context.objects);
+        emitting_instances_buffer = createEmittingInstancesBuffer(draw_context.objects, getMaterial());
         scene_ressource_deletion_queue.pushFunction([&]() {
             context->resource_builder->destroyBuffer(instance_mapping_buffer);
+            context->resource_builder->destroyBuffer(emitting_instances_buffer);
             instance_mapping_buffer.handle = VK_NULL_HANDLE;
         });
     }
@@ -169,11 +173,97 @@ void SceneManager::updateScene(DrawContext& draw_context, uint32_t current_image
     context->descriptor_allocator->writeImage(1, current_image.imageView, VK_NULL_HANDLE, VK_IMAGE_LAYOUT_GENERAL, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
     context->descriptor_allocator->writeBuffer(2, sceneUniformBuffers[0].handle, sizeof(SceneData), 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
     context->descriptor_allocator->writeBuffer(6, instance_mapping_buffer.handle, 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+    context->descriptor_allocator->writeBuffer(7, emitting_instances_buffer.handle, 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+    context->descriptor_allocator->writeImage(9, rng_tex.imageView, VK_NULL_HANDLE, VK_IMAGE_LAYOUT_GENERAL, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
     context->descriptor_allocator->updateSet(context->device, scene_descriptor_sets[0]);
     context->descriptor_allocator->clearWrites();
 
     std::shared_ptr<SceneData> scene_data = scene->createSceneData();
     memcpy(sceneUniformBuffersMapped[current_image_idx], scene_data.get(), sizeof(SceneData));
+}
+
+AllocatedBuffer SceneManager::createVertexBuffer(std::vector<std::shared_ptr<MeshAsset>>& mesh_assets) {
+    assert(!mesh_assets.empty());
+
+    VkDeviceSize size =  0;
+    for (auto& mesh_asset : mesh_assets) {
+        size += mesh_asset->meshBuffers.vertices.size();
+    }
+
+    std::vector<Vertex> vertices(size);
+
+    uint32_t vertex_offset = 0;
+    for (auto& mesh_asset : mesh_assets) {
+        vertices.insert(vertices.begin() + vertex_offset, mesh_asset->meshBuffers.vertices.begin(), mesh_asset->meshBuffers.vertices.end());
+
+        mesh_asset->instance_data.vertex_offset = vertex_offset;
+        vertex_offset += mesh_asset->meshBuffers.vertices.size();
+    }
+
+    return context->resource_builder->stageMemoryToNewBuffer(vertices.data(), vertices.size() * sizeof(Vertex), VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR
+        | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
+}
+
+AllocatedBuffer SceneManager::createIndexBuffer(std::vector<std::shared_ptr<MeshAsset>>& mesh_assets) {
+    assert(!mesh_assets.empty());
+
+    VkDeviceSize size =  0;
+    for (auto& mesh_asset : mesh_assets) {
+        size += mesh_asset->meshBuffers.indices.size();
+    }
+
+    std::vector<uint32_t> indices(size);
+
+    uint32_t index_offset = 0;
+    for (auto& mesh_asset : mesh_assets) {
+        indices.insert(indices.begin() + index_offset, mesh_asset->meshBuffers.indices.begin(), mesh_asset->meshBuffers.indices.end());
+
+        mesh_asset->instance_data.triangle_offset = index_offset;
+        index_offset += mesh_asset->meshBuffers.indices.size();
+    }
+
+    return context->resource_builder->stageMemoryToNewBuffer(indices.data(), indices.size() * sizeof(uint32_t), VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR
+        | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
+}
+
+AllocatedBuffer SceneManager::createGeometryMappingBuffer(std::vector<std::shared_ptr<MeshAsset>>& mesh_assets) {
+    assert(!mesh_assets.empty());
+
+    std::vector<GeometryData> geometry_datas;
+    for (auto& mesh_asset : mesh_assets) {
+        geometry_datas.push_back(mesh_asset->instance_data);
+    }
+    return context->resource_builder->stageMemoryToNewBuffer(geometry_datas.data(), mesh_assets.size() * sizeof(GeometryData), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
+}
+
+AllocatedBuffer SceneManager::createInstanceMappingBuffer(std::vector<RenderObject>& objects) {
+    assert(!objects.empty());
+
+    std::vector<InstanceData> instance_datas;
+    for (int i = 0; i < objects.size(); i++) {
+        instance_datas.push_back(objects[i].instance_data);
+    }
+
+    return context->resource_builder->stageMemoryToNewBuffer(instance_datas.data(), instance_datas.size() * sizeof(InstanceData), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
+}
+
+AllocatedBuffer SceneManager::createEmittingInstancesBuffer(std::vector<RenderObject>& objects, std::shared_ptr<Material> material) {
+    assert(!objects.empty());
+
+    std::vector<EmittingInstanceData> emitting_instances;
+    for (int i = 0; i < objects.size(); i++) {
+        EmittingInstanceData instance_data;
+        instance_data.instance_id = i;
+        instance_data.model_matrix = objects[i].transform;
+        float power = material->getEmissionForInstance(objects[i].instance_data.material_index).w;
+        instance_data.primitive_count = objects[i].primitive_count;
+        if (power > 0.0f || (i == objects.size() - 1 && emitting_instances.empty())) {
+            emitting_instances.push_back(instance_data);
+        }
+    }
+
+    emitting_instances_count = emitting_instances.size();
+    return context->resource_builder->stageMemoryToNewBuffer(emitting_instances.data(), emitting_instances.size() * sizeof(EmittingInstanceData), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
 }
 
 void SceneManager::initDefaultResources(VkPhysicalDeviceRayTracingPipelinePropertiesKHR raytracingProperties) {
@@ -265,6 +355,12 @@ void SceneManager::createDefaultMaterials(VkPhysicalDeviceRayTracingPipelineProp
 std::shared_ptr<Material> SceneManager::getMaterial() {
     return scene->material;
 }
+
+uint32_t SceneManager::getEmittingInstancesCount() {
+    assert(emitting_instances_buffer.handle != VK_NULL_HANDLE);
+    return emitting_instances_count;
+}
+
 
 void SceneManager::clearRessources() {
     scene_ressource_deletion_queue.flush();

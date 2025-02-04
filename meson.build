@@ -11,9 +11,10 @@ incdirs = [
     include_directories('include/builders'),
     include_directories('include/rendering/camera'),
     include_directories('include/rendering/engine'),
-    include_directories('include/rendering/nodes'),
+    include_directories('include/rendering/options'),
     include_directories('include/rendering/ressources'),
     include_directories('include/rendering/ressources/materials'),
+    include_directories('include/rendering/scene_graph'),
     include_directories('include/rendering/ui'),
     include_directories('include/rendering'),
     include_directories('include/util'),
@@ -27,6 +28,7 @@ glfw = dependency('glfw3', version: ['>=3.4.0'], fallback: ['glfw', 'glfw_dep'])
 glm = dependency('glm', fallback : ['glm', 'glm_dep'], version: ['>=0.9.9.8'])
 imgui = dependency('imgui', fallback: ['imgui', 'imgui_dep'])
 stb = dependency('stb', fallback: ['stb', 'stb_dep'], default_options : ['stb_libraries=[\'stb_image\', \'stb_image_write\']'])
+spdlog = dependency('spdlog')
 assimp_dep = dependency('assimp')
 
 project_root = meson.current_source_dir()
@@ -79,6 +81,7 @@ exe = executable(
         glm,
         imgui,
         stb,
+        spdlog,
         vulkan,
         assimp_dep,
     ],

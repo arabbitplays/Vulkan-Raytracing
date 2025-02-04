@@ -6,8 +6,14 @@
 #include "RessourceBuilder.hpp"
 
 #include <cstring>
+
+#define STB_IMAGE_IMPLEMENTATION
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include <stb_image_write.h>
 #include <stb_image.h>
+
 #include <glm/vector_relational.hpp>
+#include <spdlog/spdlog.h>
 
 VkDeviceAddress GetBufferDeviceAddressKHR(VkDevice device, const VkBufferDeviceAddressInfoKHR* address_info) {
     auto func = (PFN_vkGetBufferDeviceAddressKHR) vkGetDeviceProcAddr(device, "vkGetBufferDeviceAddressKHR");
@@ -67,9 +73,9 @@ AllocatedBuffer RessourceBuilder::createBuffer(VkDeviceSize size, VkBufferUsageF
     return allocatedBuffer;
 }
 
-AllocatedBuffer RessourceBuilder::stageMemoryToNewBuffer(void* data, size_t size, VkBufferUsageFlagBits usage) {
-    AllocatedBuffer stagingBuffer = createBuffer(size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT
-            , VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+AllocatedBuffer RessourceBuilder::stageMemoryToNewBuffer(void* data, size_t size, VkBufferUsageFlags usage) {
+    AllocatedBuffer stagingBuffer = createBuffer(size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 
     void* mapped_data;
     vkMapMemory(device, stagingBuffer.bufferMemory, 0, size, 0, &mapped_data);
@@ -155,12 +161,14 @@ AllocatedImage RessourceBuilder::createImage(VkExtent3D extent, VkFormat format,
     return image;}
 
 AllocatedImage RessourceBuilder::createImage(void* data, VkExtent3D extent, VkFormat format, VkImageTiling tiling,
-                                             VkImageUsageFlags usage, VkImageAspectFlags aspectFlags) {
+                                             VkImageUsageFlags usage, VkImageAspectFlags aspectFlags, VkImageLayout target_layout) {
     VkDeviceSize imageSize = extent.width * extent.height * extent.depth;
     if (format == VK_FORMAT_R8G8B8_SRGB) {
         imageSize *= 3;
-    } else if (format == VK_FORMAT_R8G8B8A8_SRGB || format == VK_FORMAT_R8G8B8A8_UNORM){
+    } else if (format == VK_FORMAT_R8G8B8A8_SRGB || format == VK_FORMAT_R8G8B8A8_UNORM) {
         imageSize *= 4;
+    } else if (format == VK_FORMAT_R32G32B32A32_UINT) {
+        imageSize *= 16;
     } else {
         throw std::invalid_argument("Image format not supported!");
     }
@@ -180,7 +188,7 @@ AllocatedImage RessourceBuilder::createImage(void* data, VkExtent3D extent, VkFo
         VK_ACCESS_NONE, VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
     copyBufferToImage(stagingBuffer.handle, image.image, extent);
     transitionImageLayout(image.image, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-        VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+        VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, target_layout);
 
     destroyBuffer(stagingBuffer);
     return image;
@@ -201,6 +209,30 @@ AllocatedImage RessourceBuilder::loadTextureImage(std::string path, VkFormat for
     stbi_image_free(pixels);
 
     return textureImage;
+}
+
+void* RessourceBuilder::downloadImage(AllocatedImage image)
+{
+    size_t buffer_size = image.imageExtent.width * image.imageExtent.height * image.imageExtent.depth * 4;
+    AllocatedBuffer staging_buffer = createBuffer(buffer_size, VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+
+    // TODO weird shader stages
+    transitionImageLayout(image.image, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+        VK_ACCESS_NONE, VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+    copyImageToBuffer(image.image, staging_buffer.handle, image.imageExtent);
+    transitionImageLayout(image.image, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+        VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL);
+
+    void* mapped_data;
+    unsigned char* imageData = new unsigned char[buffer_size];  // Assuming RGBA (4 bytes per pixel)
+    vkMapMemory(device, staging_buffer.bufferMemory, 0, buffer_size, 0, &mapped_data);
+    memcpy(imageData, mapped_data, buffer_size);
+    vkUnmapMemory(device, staging_buffer.bufferMemory);
+
+    destroyBuffer(staging_buffer);
+
+    return imageData;
 }
 
 void RessourceBuilder::transitionImageLayout(VkCommandBuffer commandBuffer, VkImage image,
@@ -264,6 +296,27 @@ void RessourceBuilder::copyBufferToImage(VkBuffer buffer, VkImage image, VkExten
     commandManager.endSingleTimeCommand(commandBuffer);
 }
 
+void RessourceBuilder::copyImageToBuffer(VkImage image, VkBuffer buffer, VkExtent3D extent) {
+    VkCommandBuffer commandBuffer = commandManager.beginSingleTimeCommands();
+
+    VkBufferImageCopy region{};
+    region.bufferOffset = 0;
+    region.bufferRowLength = 0;
+    region.bufferImageHeight = 0;
+
+    region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    region.imageSubresource.mipLevel = 0;
+    region.imageSubresource.baseArrayLayer = 0;
+    region.imageSubresource.layerCount = 1;
+
+    region.imageOffset = {0, 0, 0};
+    region.imageExtent = extent;
+
+    vkCmdCopyImageToBuffer(commandBuffer, image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, buffer, 1, &region);
+
+    commandManager.endSingleTimeCommand(commandBuffer);
+}
+
 VkImageView RessourceBuilder::createImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags) {
     VkImageViewCreateInfo createInfo{};
     createInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
@@ -294,4 +347,15 @@ void RessourceBuilder::destroyImage(AllocatedImage image) {
     vkDestroyImageView(device, image.imageView, nullptr);
     vkDestroyImage(device, image.image, nullptr);
     vkFreeMemory(device, image.imageMemory, nullptr);
+}
+
+void RessourceBuilder::writePNG(std::string path, void* data, uint32_t width, uint32_t height)
+{
+    if (stbi_write_png(path.c_str(), width, height, 4, data, width * 4))
+    {
+        spdlog::info("Saved rendered image to {}!", path);
+    } else
+    {
+        spdlog::error("failed to save output image to {}!", path);
+    }
 }

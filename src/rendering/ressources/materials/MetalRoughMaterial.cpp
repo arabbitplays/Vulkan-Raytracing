@@ -7,9 +7,9 @@
 #include <DescriptorLayoutBuilder.hpp>
 #include <miss.rmiss.spv.h>
 #include <OptionsWindow.hpp>
-#include <raygen.rgen.spv.h>
 #include <shadow_miss.rmiss.spv.h>
 #include <metal_rough_closesthit.rchit.spv.h>
+#include <metal_rough_raygen.rgen.spv.h>
 #include <VulkanUtil.hpp>
 
 void MetalRoughMaterial::buildPipelines(VkDescriptorSetLayout sceneLayout) {
@@ -29,9 +29,9 @@ void MetalRoughMaterial::buildPipelines(VkDescriptorSetLayout sceneLayout) {
     std::vector<VkDescriptorSetLayout> descriptorSetLayouts{sceneLayout, materialLayout};
     pipeline->setDescriptorSetLayouts(descriptorSetLayouts);
 
-    pipeline->addPushConstant(sizeof(RaytracingOptions), VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR);
+    pipeline->addPushConstant(sizeof(RaytracingOptions), VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR | VK_SHADER_STAGE_RAYGEN_BIT_KHR);
 
-    VkShaderModule raygenShaderModule = VulkanUtil::createShaderModule(context->device, oschd_raygen_rgen_spv_size(), oschd_raygen_rgen_spv());
+    VkShaderModule raygenShaderModule = VulkanUtil::createShaderModule(context->device, oschd_metal_rough_raygen_rgen_spv_size(), oschd_metal_rough_raygen_rgen_spv());
     VkShaderModule missShaderModule = VulkanUtil::createShaderModule(context->device, oschd_miss_rmiss_spv_size(), oschd_miss_rmiss_spv());
     VkShaderModule shadowMissShaderModule = VulkanUtil::createShaderModule(context->device, oschd_shadow_miss_rmiss_spv_size(), oschd_shadow_miss_rmiss_spv());
     VkShaderModule closestHitShaderModule = VulkanUtil::createShaderModule(context->device, oschd_metal_rough_closesthit_rchit_spv_size(), oschd_metal_rough_closesthit_rchit_spv());
@@ -99,29 +99,37 @@ void MetalRoughMaterial::writeMaterial() {
     descriptorAllocator.clearWrites();
 }
 
-std::shared_ptr<MaterialInstance> MetalRoughMaterial::createInstance(glm::vec3 albedo, float metallic, float roughness, float ao) {
-    return createInstance(albedo, default_tex, metallic, roughness, ao, default_tex, default_normal_tex);
-}
+std::shared_ptr<MaterialInstance> MetalRoughMaterial::createInstance(MetalRoughParameters parameters) {
+    if (parameters.albedo_tex.image == VK_NULL_HANDLE) {
+        parameters.albedo_tex = default_tex;
+    }
 
-std::shared_ptr<MaterialInstance> MetalRoughMaterial::createInstance(const AllocatedImage &albedo_tex, const AllocatedImage &metal_rough_ao_tex, const AllocatedImage& normal_tex) {
-    return createInstance(glm::vec3(0), albedo_tex, 0, 0, 0, metal_rough_ao_tex, normal_tex);
-}
+    if (parameters.metal_rough_ao_tex.image == VK_NULL_HANDLE) {
+        parameters.metal_rough_ao_tex = default_tex;
+    }
 
-std::shared_ptr<MaterialInstance> MetalRoughMaterial::createInstance(glm::vec3 albedo, const AllocatedImage &albedo_tex,
-        float metallic, float roughness, float ao, const AllocatedImage &metal_rough_ao_tex,
-        const AllocatedImage& normal_tex) {
+    if (parameters.normal_tex.image == VK_NULL_HANDLE) {
+        parameters.normal_tex = default_normal_tex;
+    }
+
     auto constants = std::make_shared<MaterialConstants>();
-    constants->albedo = glm::vec4(albedo, 0.0f);
-    constants->properties = glm::vec4(metallic, roughness, ao, 0.0f);
+    constants->albedo = glm::vec4(parameters.albedo, 0.0f);
+    constants->properties = glm::vec4(parameters.metallic, parameters.roughness, parameters.ao, 0.0f);
+    constants->emission = glm::vec4(parameters.emission_color, parameters.emission_power);
 
     std::shared_ptr<MaterialInstance> instance = std::make_shared<MaterialInstance>();
     instances.push_back(instance);
     constants_buffer.push_back(constants);
-    albedo_textures.push_back(albedo_tex);
-    metal_rough_ao_textures.push_back(metal_rough_ao_tex);
-    normal_textures.push_back(normal_tex);
+    albedo_textures.push_back(parameters.albedo_tex);
+    metal_rough_ao_textures.push_back(parameters.metal_rough_ao_tex);
+    normal_textures.push_back(parameters.normal_tex);
     return instance;
 }
+
+glm::vec4 MetalRoughMaterial::getEmissionForInstance(uint32_t material_instance_id) {
+    return constants_buffer[material_instance_id]->emission;
+}
+
 
 AllocatedBuffer MetalRoughMaterial::createMaterialBuffer() {
     assert(constants_buffer.size() == instances.size());

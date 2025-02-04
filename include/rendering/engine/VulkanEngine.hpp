@@ -36,7 +36,7 @@
 #include "../../util/QuickTimer.hpp"
 #include "../../util/VulkanUtil.hpp"
 #include "../IRenderable.hpp"
-#include "../nodes/Node.hpp"
+#include "../scene_graph/Node.hpp"
 #include "DeletionQueue.hpp"
 #include <VulkanContext.hpp>
 
@@ -52,10 +52,7 @@ public:
     std::shared_ptr<MeshAssetBuilder> mesh_builder;
     std::shared_ptr<DescriptorAllocator> descriptorAllocator;
 
-    void run();
-    VkFormat getColorAttachmentFormat();
-    VkFormat getDepthFormat();
-
+    void run(RendererOptions& options);
 private:
 
     GLFWwindow* window;
@@ -72,8 +69,6 @@ private:
 
     std::shared_ptr<Swapchain> swapchain;
 
-    AllocatedImage depthImage;
-
     std::vector<VkCommandBuffer> commandBuffers;
 
     DrawContext mainDrawContext;
@@ -83,6 +78,7 @@ private:
     VkPhysicalDeviceRayTracingPipelinePropertiesKHR raytracingProperties{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_PROPERTIES_KHR};
 
     std::vector<AllocatedImage> storageImages;
+    AllocatedImage rng_tex;
 
     std::shared_ptr<SceneManager> scene_manager;
 
@@ -92,8 +88,6 @@ private:
 
     uint32_t currentFrame = 0;
     bool framebufferResized = false;
-
-    std::shared_ptr<MaterialInstance> default_phong;
 
     void initWindow();
     void initVulkan();
@@ -123,10 +117,6 @@ private:
     void createCommandManager();
     void createRessourceBuilder();
 
-    void createDepthResources();
-    VkFormat findDepthFormat();
-    VkFormat findSupportedFormat(const std::vector<VkFormat> candidates, VkImageTiling tiling,
-                                 VkFormatFeatureFlags features);
     bool hasStencilComponent(VkFormat format);
     AllocatedImage loadTextureImage(std::string path);
 
@@ -143,8 +133,10 @@ private:
 
     void refreshAfterResize();
 
-    void cleanupStorageImages();
+    void cleanupRenderingImages();
     void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
+    void outputStorageImage();
+    void fixImageFormatForStorage(unsigned char* image_data, size_t pixel_count, VkFormat originalFormat);
 
     static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
             VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
@@ -157,7 +149,8 @@ private:
         return VK_FALSE;
     }
 
-    void createStorageImages();
+    void createRenderingImages();
+    void loadScene();
 };
 
 #endif //BASICS_VULKANENGINE_HPP
