@@ -14,6 +14,9 @@ public:
   SceneWriter() = default;
 
   void writeScene(const std::string& filename, std::shared_ptr<Scene> scene);
+
+private:
+  void writeSceneNode(YAML::Emitter& out, const std::string& node_name, const std::shared_ptr<Node>& node);
 };
 
 

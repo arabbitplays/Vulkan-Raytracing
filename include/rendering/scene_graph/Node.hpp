@@ -19,7 +19,7 @@ public:
 
     std::weak_ptr<Node> parent;
     std::vector<std::shared_ptr<Node>> children;
-
+    
     glm::mat4 localTransform;
     glm::mat4 worldTransform;
 };
