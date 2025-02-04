@@ -136,6 +136,7 @@ private:
     void cleanupRenderingImages();
     void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
     void outputStorageImage();
+    void fixImageFormatForStorage(unsigned char* image_data, size_t pixel_count, VkFormat originalFormat);
 
     static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
             VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
