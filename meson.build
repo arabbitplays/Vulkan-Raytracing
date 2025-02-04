@@ -9,6 +9,7 @@ project('Raytracing',
 incdirs = [
     include_directories('include'),
     include_directories('include/builders'),
+    include_directories('include/io'),
     include_directories('include/rendering/camera'),
     include_directories('include/rendering/engine'),
     include_directories('include/rendering/options'),
@@ -30,6 +31,7 @@ imgui = dependency('imgui', fallback: ['imgui', 'imgui_dep'])
 stb = dependency('stb', fallback: ['stb', 'stb_dep'], default_options : ['stb_libraries=[\'stb_image\', \'stb_image_write\']'])
 spdlog = dependency('spdlog')
 assimp_dep = dependency('assimp')
+yaml = dependency('yaml-cpp')
 
 project_root = meson.current_source_dir()
 
@@ -84,6 +86,7 @@ exe = executable(
         spdlog,
         vulkan,
         assimp_dep,
+        yaml,
     ],
     include_directories: incdirs,
     install : true

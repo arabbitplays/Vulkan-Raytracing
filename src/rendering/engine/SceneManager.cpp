@@ -7,6 +7,7 @@
 #include <DescriptorLayoutBuilder.hpp>
 #include <OptionsWindow.hpp>
 #include <QuickTimer.hpp>
+#include <SceneWriter.hpp>
 
 void SceneManager::createScene(SceneType scene_type) {
     QuickTimer timer{"Scene Creation", true};
@@ -41,6 +42,10 @@ void SceneManager::createScene(SceneType scene_type) {
     createSceneDescriptorSets();
 
     curr_scene_type = scene_type;
+
+    // TODO remove this test
+    SceneWriter writer;
+    writer.writeScene("test.yaml", scene);
 }
 
 void SceneManager::createSceneBuffers() {

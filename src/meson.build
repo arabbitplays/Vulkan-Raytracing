@@ -1,4 +1,5 @@
 subdir('builders')
+subdir('io')
 subdir('rendering')
 
 shaders = [

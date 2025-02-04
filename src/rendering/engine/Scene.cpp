@@ -386,13 +386,11 @@ void CornellBox::update(uint32_t image_width, uint32_t image_height) {
 // -----------------------------------------------------------------------------------------------------------------------
 
 void PBR_CornellBox::initCamera(uint32_t image_width, uint32_t image_height) {
-    glm::mat4 proj = glm::perspective(glm::radians(65.0f),
-        image_width / (float)image_height,
-        0.1f, 512.0f);
-    proj[1][1] *= -1; // flip y-axis because glm is for openGL
     camera = std::make_shared<Camera>(
-        glm::lookAt(glm::vec3(0, 4, 10), glm::vec3(0, 3.5f, 0), glm::vec3(0, 1, 0)),
-        proj
+        image_width / (float)image_height,
+        65.0f,
+        glm::vec3(0, 4, 10),
+        glm::vec3(0, -0.5f, -10)
     );
 
     /*auto interactive_camera = std::make_shared<InteractiveCamera>(proj);
@@ -542,14 +540,11 @@ void PBR_CornellBox::update(uint32_t image_width, uint32_t image_height) {
 // ---------------------------------------------------------------------------------------------------------------------
 
 void Material_Showcase::initCamera(uint32_t image_width, uint32_t image_height) {
-    glm::mat4 proj = glm::perspective(glm::radians(65.0f),
-        image_width / (float)image_height,
-        0.1f, 512.0f);
-    proj[1][1] *= -1; // flip y-axis because glm is for openGL
     camera = std::make_shared<Camera>(
-        glm::translate(glm::mat4(1.0), glm::vec3(0.0f, 0.0f, -3.0f)),
-     //glm::lookAt(glm::vec3(0, 4, 8), glm::vec3(0, 2.5f, 0), glm::vec3(0, 1, 0)),
-        proj
+        image_width / (float)image_height,
+        65.0f,
+        glm::vec3(0, 4, 3),
+        glm::vec3(0, 0, -1)
     );
 
     /*auto interactive_camera = std::make_shared<InteractiveCamera>(proj);
