@@ -194,12 +194,21 @@ AllocatedImage RessourceBuilder::createImage(void* data, VkExtent3D extent, VkFo
     return image;
 }
 
-AllocatedImage RessourceBuilder::loadTextureImage(std::string path, VkFormat format) {
+Texture RessourceBuilder::loadTextureImage(std::string path, TextureType type) {
     int texWidth, texHeight, texChannels;
     stbi_uc* pixels = stbi_load(path.c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
 
     if (!pixels) {
         throw std::runtime_error("failed to load texture image!");
+    }
+
+    VkFormat format;
+    if (type == NORMAL)
+    {
+        format = VK_FORMAT_R8G8B8A8_UNORM;
+    } else if (type == PARAMETER)
+    {
+        format = VK_FORMAT_R8G8B8A8_SRGB;
     }
 
     AllocatedImage textureImage = createImage(pixels, {static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight), 1},
@@ -208,7 +217,13 @@ AllocatedImage RessourceBuilder::loadTextureImage(std::string path, VkFormat for
 
     stbi_image_free(pixels);
 
-    return textureImage;
+    size_t lastSlash = path.find_last_of("/\\");
+    std::string filename = (lastSlash == std::string::npos) ? path : path.substr(lastSlash + 1);
+    size_t lastDot = filename.find_last_of(".");
+    filename = (lastDot == std::string::npos) ? filename : filename.substr(0, lastDot);
+
+
+    return Texture(filename, type, path, textureImage);
 }
 
 void* RessourceBuilder::downloadImage(AllocatedImage image)

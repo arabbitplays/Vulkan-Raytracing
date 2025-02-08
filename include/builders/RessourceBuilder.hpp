@@ -10,6 +10,7 @@
 #include <string>
 #include <vulkan/vulkan_core.h>
 #include "../rendering/engine/CommandManager.hpp"
+#include <Texture.hpp>
 
 struct AllocatedBuffer {
     VkBuffer handle = VK_NULL_HANDLE;
@@ -23,14 +24,6 @@ struct AllocatedBuffer {
         memcpy(mapped_data, data, size);
         vkUnmapMemory(device, bufferMemory);
     }
-};
-
-struct AllocatedImage {
-    VkImage image;
-    VkDeviceMemory imageMemory;
-    VkImageView imageView;
-    VkFormat imageFormat;
-    VkExtent3D imageExtent;
 };
 
 class RessourceBuilder {
@@ -47,7 +40,7 @@ public:
                                VkImageAspectFlags aspectFlags);
     AllocatedImage createImage(void *data, VkExtent3D extent, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage,
                                VkImageAspectFlags aspectFlags, VkImageLayout target_layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-    AllocatedImage loadTextureImage(std::string path, VkFormat format = VK_FORMAT_R8G8B8A8_SRGB);
+    Texture loadTextureImage(std::string path, TextureType type = PARAMETER);
     void* downloadImage(AllocatedImage image);
     void writePNG(std::string path, void* data, uint32_t width, uint32_t height);
 

@@ -2,5 +2,6 @@ subdir('materials')
 
 src += files(
     'AccelerationStructure.cpp',
-    'Pipeline.cpp'
+    'Pipeline.cpp',
+    'Texture.cpp',
 )

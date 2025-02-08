@@ -49,11 +49,12 @@ void SceneManager::createScene(SceneType scene_type) {
 }
 
 void SceneManager::createSceneBuffers() {
-    vertex_buffer = createVertexBuffer(scene->meshes);
-    index_buffer = createIndexBuffer(scene->meshes);
+    std::vector<std::shared_ptr<MeshAsset>> meshes = scene->getMeshes();
+    vertex_buffer = createVertexBuffer(meshes);
+    index_buffer = createIndexBuffer(meshes);
     scene->material->writeMaterial();
 
-    geometry_mapping_buffer = createGeometryMappingBuffer(scene->meshes);
+    geometry_mapping_buffer = createGeometryMappingBuffer(meshes);
 
     scene_ressource_deletion_queue.pushFunction([&]() {
         context->resource_builder->destroyBuffer(vertex_buffer);
@@ -65,7 +66,8 @@ void SceneManager::createSceneBuffers() {
 void SceneManager::createBlas() {
     QuickTimer timer{"BLAS Build", true};
     uint32_t object_id = 0;
-    for (auto& meshAsset : scene->meshes) {
+    std::vector<std::shared_ptr<MeshAsset>> meshes = scene->getMeshes();
+    for (auto& meshAsset : meshes) {
         meshAsset->accelerationStructure = std::make_shared<AccelerationStructure>(context->device, *context->resource_builder, *context->command_manager, VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_KHR);
 
         meshAsset->accelerationStructure->addTriangleGeometry(vertex_buffer, index_buffer,

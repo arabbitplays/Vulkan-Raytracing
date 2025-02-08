@@ -55,11 +55,14 @@ public:
 
     std::shared_ptr<SceneData> createSceneData();
     virtual void update(uint32_t image_width, uint32_t image_height) {};
+    std::vector<std::shared_ptr<MeshAsset>> getMeshes();
     void clearRessources();
 
     std::shared_ptr<Camera> camera;
 
-    std::vector<std::shared_ptr<MeshAsset>> meshes;
+    std::unordered_map<std::string, std::shared_ptr<MeshAsset>> meshes;
+    std::unordered_map<std::string, std::shared_ptr<Texture>> textures;
+
     std::unordered_map<std::string, std::shared_ptr<Node>> nodes;
     std::array<AllocatedImage, 6> environment_map{};
 
@@ -75,6 +78,9 @@ public:
 protected:
     virtual void initCamera(uint32_t image_width, uint32_t image_height) {};
     virtual void initScene() {};
+    void addMesh(std::string name, std::string path);
+    void addTexture(std::string path, TextureType type);
+
 };
 
 class PlaneScene : public Scene {
@@ -146,7 +152,6 @@ protected:
     void initScene() override;
 
     std::shared_ptr<MetalRoughMaterial> metal_rough;
-    std::vector<AllocatedImage> textures;
 };
 
 #endif //SCENE_HPP

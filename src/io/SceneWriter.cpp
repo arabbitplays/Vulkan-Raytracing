@@ -5,6 +5,7 @@
 #include "SceneWriter.hpp"
 #include <iostream>
 #include <fstream>
+#include <MeshNode.hpp>
 #include <spdlog/spdlog.h>
 
 // Custom emitter to serialize glm::vec3
@@ -49,9 +50,18 @@ void SceneWriter::writeScene(const std::string& filename, std::shared_ptr<Scene>
     out << YAML::Key << "meshes" << YAML::Value << YAML::BeginSeq;
     for (const auto& mesh : scene->meshes) {
       out << YAML::BeginMap;
-      out << YAML::Key << "name" << YAML::Value << mesh->name;
-      out << YAML::Key << "path" << YAML::Value << mesh->path;
+      out << YAML::Key << "name" << YAML::Value << mesh.first;
+      out << YAML::Key << "path" << YAML::Value << mesh.second->path;
       out << YAML::EndMap;
+    }
+    out << YAML::EndSeq;
+
+    out << YAML::Key << "textures" << YAML::Value << YAML::BeginSeq;
+    for (const auto& texture : scene->textures) {
+        out << YAML::BeginMap;
+        out << YAML::Key << "name" << YAML::Value << texture.first;
+        out << YAML::Key << "path" << YAML::Value << texture.second->path;
+        out << YAML::EndMap;
     }
     out << YAML::EndSeq;
 
@@ -108,8 +118,10 @@ DecomposedTransform decomposeMatrix(const glm::mat4& transform) {
 
     // Convert rotation matrix to quaternion
     glm::quat rotation = glm::quat_cast(rotationMatrix);
+    glm::vec3 eulerAngles = glm::eulerAngles(rotation);
+    eulerAngles = glm::degrees(eulerAngles);
 
-    DecomposedTransform result(translation, glm::vec3(0), scale);
+    DecomposedTransform result(translation, eulerAngles, scale);
     return result;
 }
 
@@ -122,6 +134,12 @@ void SceneWriter::writeSceneNode(YAML::Emitter& out, const std::string& node_nam
     out << YAML::Key << "translation" << YAML::Value << YAML::convert<glm::vec3>::encode(transform.translation);
     out << YAML::Key << "rotation" << YAML::Value << YAML::convert<glm::vec3>::encode(transform.rotation);
     out << YAML::Key << "scale" << YAML::Value << YAML::convert<glm::vec3>::encode(transform.scale);
+
+    if (typeid(*node) == typeid(MeshNode) )
+    {
+        auto mesh_node = dynamic_cast<MeshNode*>(node.get());
+        out << YAML::Key << "mesh" << YAML::Value << mesh_node->meshAsset->name;
+    }
 
     out << YAML::Key << "children" << YAML::Value << YAML::BeginSeq;
     for (const auto& child : node->children)
