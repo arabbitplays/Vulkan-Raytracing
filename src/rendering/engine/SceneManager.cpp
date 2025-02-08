@@ -43,9 +43,11 @@ void SceneManager::createScene(SceneType scene_type) {
 
     curr_scene_type = scene_type;
 
+    const std::string name_string[] = {"PBR_CORNELL_BOX", "CORNELL_BOX", "PLANE", "SHOWCASE" };
+    size_t index = static_cast<size_t>(scene_type);
     // TODO remove this test
     SceneWriter writer;
-    writer.writeScene("test.yaml", scene);
+    writer.writeScene(name_string[index] + ".yaml", scene);
 }
 
 void SceneManager::createSceneBuffers() {

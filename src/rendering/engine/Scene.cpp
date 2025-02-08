@@ -622,16 +622,15 @@ void Material_Showcase::initScene() {
     addTexture("../ressources/textures/peeling_paint/peeling-painted-metal_metal_rough_ao.png", PARAMETER);
     addTexture("../ressources/textures/peeling_paint/peeling-painted-metal_normal-dx.png", NORMAL);
 
-    AllocatedImage rusty_albedo_tex = textures["rusty-metal_albedo"]->image;
-    AllocatedImage rusty_metal_rough_ao_tex = textures["rusty-metal_metal_rough_ao"]->image;
-    AllocatedImage rusty_normal_tex = textures["rusty-metal_normal-dx"]->image;
-
     auto sphere = std::make_shared<MeshNode>();
     sphere->localTransform = glm::translate(glm::mat4(1.0f), glm::vec3(0, 0, 0)) * glm::scale(glm::mat4(1.0), glm::vec3(1.0f));
     sphere->worldTransform = glm::mat4{1.0f};
     sphere->children = {};
     sphere->meshAsset = meshes["Sphere"];
-    sphere->meshMaterial = metal_rough->createInstance({.albedo_tex = rusty_albedo_tex, .metal_rough_ao_tex = rusty_metal_rough_ao_tex, .normal_tex = rusty_normal_tex});
+    sphere->meshMaterial = metal_rough->createInstance({
+        .albedo_tex = textures["rusty-metal_albedo"],
+        .metal_rough_ao_tex = textures["rusty-metal_metal_rough_ao"],
+        .normal_tex = textures["rusty-metal_normal-dx"]});
     sphere->refreshTransform(glm::mat4(1.0f));
     nodes["Sphere1" ] = std::move(sphere);
 

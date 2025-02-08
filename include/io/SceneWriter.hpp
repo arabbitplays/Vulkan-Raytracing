@@ -16,7 +16,7 @@ public:
   void writeScene(const std::string& filename, std::shared_ptr<Scene> scene);
 
 private:
-  void writeSceneNode(YAML::Emitter& out, const std::string& node_name, const std::shared_ptr<Node>& node);
+  void writeSceneNode(YAML::Emitter& out, const std::string& node_name, const std::shared_ptr<Node>& node, const std::shared_ptr<Material>& Material);
 };
 
 
