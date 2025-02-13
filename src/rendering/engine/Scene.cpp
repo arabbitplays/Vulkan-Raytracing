@@ -55,6 +55,13 @@ std::vector<std::shared_ptr<MeshAsset>> Scene::getMeshes()
     return values;
 }
 
+void Scene::update(uint32_t image_width, uint32_t image_height) {
+    if (image_width != camera->image_width || image_height != camera->image_height) {
+        initCamera(image_width, image_height);
+    }
+
+    camera->update();
+}
 
 void Scene::clearRessources() {
     deletion_queue.flush();
@@ -160,12 +167,6 @@ void PlaneScene::initScene() {
             ressource_builder.destroyImage(image);
         }
     });
-}
-
-void PlaneScene::update(uint32_t image_width, uint32_t image_height) {
-    if (image_width != camera->image_width || image_height != camera->image_height) {
-        initCamera(image_width, image_height);
-    }
 }
 
 // -----------------------------------------------------------------------------------------------------------------------
@@ -395,14 +396,6 @@ void CornellBox::initScene() {
     });
 }
 
-void CornellBox::update(uint32_t image_width, uint32_t image_height) {
-    if (image_width != camera->image_width || image_height != camera->image_height) {
-        initCamera(image_width, image_height);
-    }
-
-    camera->update();
-}
-
 // -----------------------------------------------------------------------------------------------------------------------
 
 void PBR_CornellBox::initCamera(uint32_t image_width, uint32_t image_height) {
@@ -540,14 +533,6 @@ void PBR_CornellBox::initScene() {
     });
 }
 
-void PBR_CornellBox::update(uint32_t image_width, uint32_t image_height) {
-    if (image_width != camera->image_width || image_height != camera->image_height) {
-        initCamera(image_width, image_height);
-    }
-
-    camera->update();
-}
-
 // ---------------------------------------------------------------------------------------------------------------------
 
 void Material_Showcase::initCamera(uint32_t image_width, uint32_t image_height) {
@@ -672,21 +657,6 @@ void Material_Showcase::initScene() {
             ressource_builder.destroyImage(image);
         }
     });
-}
-
-void Material_Showcase::update(uint32_t image_width, uint32_t image_height) {
-    if (image_width != camera->image_width || image_height != camera->image_height) {
-        initCamera(image_width, image_height);
-    }
-
-    camera->update();
-
-    static auto startTime = std::chrono::high_resolution_clock::now();
-    auto currentTime = std::chrono::high_resolution_clock::now();
-    float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
-    glm::mat4 rotation = glm::rotate(glm::mat4{1.0f}, time * glm::radians(10.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-
-    //scene_graph["Sphere1"]->refreshTransform(rotation);
 }
 
 

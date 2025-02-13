@@ -12,8 +12,13 @@
 class SceneReader {
 public:
     SceneReader() = default;
+    SceneReader(std::shared_ptr<VulkanContext>& vulkanContext)
+        : context(vulkanContext) {}
 
-    void writeScene(const std::string& filename, std::shared_ptr<Scene> scene);
+    std::shared_ptr<Scene> readScene(const std::string& filename, std::shared_ptr<Material> material);
+
+private:
+    std::shared_ptr<VulkanContext> context;
 };
 
 

@@ -53,8 +53,10 @@ public:
     Scene(std::shared_ptr<MeshAssetBuilder>& mesh_asset_builder, RessourceBuilder& ressource_builder, std::shared_ptr<Material> material)
         : mesh_builder(mesh_asset_builder), ressource_builder(ressource_builder), material(material) {}
 
+    virtual ~Scene() = default;
+
     std::shared_ptr<SceneData> createSceneData();
-    virtual void update(uint32_t image_width, uint32_t image_height) {};
+    void update(uint32_t image_width, uint32_t image_height);
     std::vector<std::shared_ptr<MeshAsset>> getMeshes();
     void clearRessources();
 
@@ -91,7 +93,6 @@ public:
         initCamera(image_width, image_height);
         initScene();
     };
-    void update(uint32_t image_width, uint32_t image_height) override;
 
 protected:
     void initCamera(uint32_t image_width, uint32_t image_height) override;
@@ -109,7 +110,6 @@ public:
         initCamera(image_width, image_height);
         initScene();
     };
-    void update(uint32_t image_width, uint32_t image_height) override;
 
 protected:
     void initCamera(uint32_t image_width, uint32_t image_height) override;
@@ -127,7 +127,6 @@ public:
         initCamera(image_width, image_height);
         initScene();
     };
-    void update(uint32_t image_width, uint32_t image_height) override;
 
 protected:
     void initCamera(uint32_t image_width, uint32_t image_height) override;
@@ -145,7 +144,6 @@ public:
         initCamera(image_width, image_height);
         initScene();
     };
-    void update(uint32_t image_width, uint32_t image_height) override;
 
 protected:
     void initCamera(uint32_t image_width, uint32_t image_height) override;

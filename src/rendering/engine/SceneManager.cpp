@@ -7,6 +7,7 @@
 #include <DescriptorLayoutBuilder.hpp>
 #include <OptionsWindow.hpp>
 #include <QuickTimer.hpp>
+#include <SceneReader.hpp>
 #include <SceneWriter.hpp>
 
 void SceneManager::createScene(SceneType scene_type) {
@@ -18,10 +19,12 @@ void SceneManager::createScene(SceneType scene_type) {
         metal_rough_material->reset();
     }
 
-    switch (scene_type) {
+    if (true)
+    {
+        switch (scene_type) {
         case SceneType::PBR_CORNELL_BOX:
             scene = std::make_shared<PBR_CornellBox>(context->mesh_builder, *context->resource_builder, context->swapchain->extent.width, context->swapchain->extent.height, metal_rough_material);
-        break;
+            break;
         case SceneType::CORNELL_BOX:
             scene = std::make_shared<CornellBox>(context->mesh_builder, *context->resource_builder, context->swapchain->extent.width, context->swapchain->extent.height, phong_material);
             break;
@@ -30,8 +33,15 @@ void SceneManager::createScene(SceneType scene_type) {
             break;
         case SceneType::SHOWCASE:
             scene = std::make_shared<Material_Showcase>(context->mesh_builder, *context->resource_builder, context->swapchain->extent.width, context->swapchain->extent.height, metal_rough_material);
-        break;
+            break;
+        }
+    } else
+    {
+        SceneReader reader = SceneReader(context);
+        scene = reader.readScene("../ressources/scenes/PBR_CORNELL_BOX.yaml", metal_rough_material);
     }
+
+
     scene_ressource_deletion_queue.pushFunction([&]() {
         scene->clearRessources();
     });
