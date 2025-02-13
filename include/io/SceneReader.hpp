@@ -18,6 +18,8 @@ public:
     std::shared_ptr<Scene> readScene(const std::string& filename, std::shared_ptr<Material> material);
 
 private:
+    void processSceneNodesRecursiv(const YAML::Node& yaml_node, const std::shared_ptr<Scene>& scene, const std::shared_ptr<Material>& material);
+
     std::shared_ptr<VulkanContext> context;
 };
 

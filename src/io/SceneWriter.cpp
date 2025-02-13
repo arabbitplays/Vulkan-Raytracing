@@ -7,30 +7,7 @@
 #include <fstream>
 #include <MeshNode.hpp>
 #include <spdlog/spdlog.h>
-
-// Custom emitter to serialize glm::vec3
-namespace YAML {
-    template <>
-    struct convert<glm::vec3> {
-        static Node encode(const glm::vec3& v) {
-            Node node;
-            node.push_back(v.x);
-            node.push_back(v.y);
-            node.push_back(v.z);
-            return node;
-        }
-
-        static bool decode(const Node& node, glm::vec3& v) {
-            if (!node.IsSequence() || node.size() != 3) {
-                return false;
-            }
-            v.x = node[0].as<float>();
-            v.y = node[1].as<float>();
-            v.z = node[2].as<float>();
-            return true;
-        }
-    };
-}
+#include <YAML_glm.hpp>
 
 
 void SceneWriter::writeScene(const std::string& filename, std::shared_ptr<Scene> scene) {
@@ -147,17 +124,17 @@ void SceneWriter::writeSceneNode(YAML::Emitter& out, const std::string& node_nam
 
             out << YAML::Key << "material" << YAML::Value << YAML::BeginMap;
 
-            if (!resources->albedo_tex.name.empty() || !resources->metal_rough_ao_tex.name.empty() | !resources->normal_tex.name.empty())
-            {
-                out << YAML::Key << "albedo_tex" << YAML::Value << resources->albedo_tex.name;
-                out << YAML::Key << "metal_rough_ao_tex" << YAML::Value << resources->metal_rough_ao_tex.name;
-                out << YAML::Key << "normal_tex" << YAML::Value << resources->normal_tex.name;
-            } else
+            if (resources->albedo_tex.name.empty() && resources->metal_rough_ao_tex.name.empty() && resources->normal_tex.name.empty())
             {
                 out << YAML::Key << "albedo" << YAML::Value << YAML::convert<glm::vec3>::encode(resources->constants->albedo);
                 out << YAML::Key << "metallic" << YAML::Value << resources->constants->properties.x;
                 out << YAML::Key << "roughness" << YAML::Value << resources->constants->properties.y;
                 out << YAML::Key << "ao" << YAML::Value << resources->constants->properties.z;
+            } else
+            {
+                out << YAML::Key << "albedo_tex" << YAML::Value << resources->albedo_tex.name;
+                out << YAML::Key << "metal_rough_ao_tex" << YAML::Value << resources->metal_rough_ao_tex.name;
+                out << YAML::Key << "normal_tex" << YAML::Value << resources->normal_tex.name;
             }
 
             if (resources->constants->emission.w != 0)

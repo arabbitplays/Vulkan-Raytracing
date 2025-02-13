@@ -39,11 +39,24 @@ void Scene::addMesh(std::string name, std::string path)
     meshes[name] = std::make_shared<MeshAsset>(mesh_asset);
 }
 
+std::shared_ptr<MeshAsset> Scene::getMesh(std::string name)
+{
+    return meshes[name];
+}
+
+
 void Scene::addTexture(std::string path, TextureType type)
 {
     Texture tex = ressource_builder.loadTextureImage(path, type);
     textures[tex.name] = std::make_shared<Texture>(tex);
 }
+
+void Scene::addNode(std::string name, std::shared_ptr<Node> node)
+{
+    assert(!nodes.contains(name));
+    nodes[name] = std::move(node);
+}
+
 
 std::vector<std::shared_ptr<MeshAsset>> Scene::getMeshes()
 {
