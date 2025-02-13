@@ -167,6 +167,13 @@ void SceneWriter::writeSceneNode(YAML::Emitter& out, const std::string& node_nam
             }
 
             out << YAML::EndMap;
+        } else
+        {
+            if (material != nullptr)
+            {
+                std::string material_name = typeid(*material).name();
+                spdlog::error("Writing " + material_name + " not suported");
+            }
         }
     }
 

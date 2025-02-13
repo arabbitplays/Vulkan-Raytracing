@@ -183,11 +183,10 @@ AllocatedImage RessourceBuilder::createImage(void* data, VkExtent3D extent, VkFo
 
     AllocatedImage image = createImage(extent, format, tiling, VK_BUFFER_USAGE_2_TRANSFER_DST_BIT_KHR | usage, aspectFlags);
 
-    // TODO weird shader stages
     transitionImageLayout(image.image, VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
         VK_ACCESS_NONE, VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
     copyBufferToImage(stagingBuffer.handle, image.image, extent);
-    transitionImageLayout(image.image, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+    transitionImageLayout(image.image, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR,
         VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, target_layout);
 
     destroyBuffer(stagingBuffer);
@@ -232,11 +231,10 @@ void* RessourceBuilder::downloadImage(AllocatedImage image)
     AllocatedBuffer staging_buffer = createBuffer(buffer_size, VK_BUFFER_USAGE_TRANSFER_DST_BIT,
         VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 
-    // TODO weird shader stages
     transitionImageLayout(image.image, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
         VK_ACCESS_NONE, VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
     copyImageToBuffer(image.image, staging_buffer.handle, image.imageExtent);
-    transitionImageLayout(image.image, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+    transitionImageLayout(image.image, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR,
         VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL);
 
     void* mapped_data;
