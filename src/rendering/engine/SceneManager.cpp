@@ -177,8 +177,8 @@ void SceneManager::updateScene(DrawContext& draw_context, uint32_t current_image
         });
     }
     uint32_t instance_id = 0;
-    for (auto& object : draw_context.objects) {
-        top_level_acceleration_structure->addInstance(object.acceleration_structure, object.transform, instance_id++);
+    for (int i = 0; i < draw_context.objects.size(); i++) {
+        top_level_acceleration_structure->addInstance(draw_context.objects[i].acceleration_structure, draw_context.objects[i].transform, instance_id++);
     }
 
     if (top_level_acceleration_structure->getHandle() == VK_NULL_HANDLE) {

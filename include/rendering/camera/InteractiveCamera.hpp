@@ -23,7 +23,7 @@ public:
 
     void processGlfwKeyEvent(int key, int action) override;
     void processGlfwMouseEvent(double xPos, double yPos) override;
-    void update() override;
+    void update(uint32_t image_width, uint32_t image_height) override;
 
     glm::vec3 velocity;
     glm::vec3 position;

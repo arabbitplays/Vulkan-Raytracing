@@ -145,7 +145,7 @@ LightSample sampleEmittingPrimitive(vec3 P) {
 
     Material material = getMaterial(triangle.material_idx);
     vec3 li = vec3(0.0);
-    if (gl_InstanceCustomIndexEXT == emitting_instance_idx || dot(P - sampled_P, N) > 0.0) {
+    if (gl_InstanceCustomIndexEXT == emitting_instance.instance_idx || dot(P - sampled_P, N) > 0.0) {
         li = material.emission_color * material.emission_power;
     }
 
@@ -154,7 +154,7 @@ LightSample sampleEmittingPrimitive(vec3 P) {
     result.light = li;
     result.pdf = pmf_light * pmf_primitive * pdf;
 
-    if (gl_InstanceCustomIndexEXT == emitting_instance_idx) {
+    if (gl_InstanceCustomIndexEXT == emitting_instance.instance_idx) {
         result.same_surface = true;
     } else {
         result.same_surface = false;

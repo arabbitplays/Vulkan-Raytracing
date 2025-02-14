@@ -69,11 +69,7 @@ std::vector<std::shared_ptr<MeshAsset>> Scene::getMeshes()
 }
 
 void Scene::update(uint32_t image_width, uint32_t image_height) {
-    if (image_width != camera->image_width || image_height != camera->image_height) {
-        initCamera(image_width, image_height);
-    }
-
-    camera->update();
+    camera->update(image_width, image_height);
 }
 
 void Scene::clearRessources() {
@@ -93,17 +89,7 @@ void Scene::clearRessources() {
 // -------------------------------------------------------------------------------------------------------------------------
 
 void PlaneScene::initCamera(uint32_t image_width, uint32_t image_height) {
-    glm::mat4 proj = glm::perspective(glm::radians(60.0f),
-        image_width / (float)image_height,
-        0.1f, 512.0f);
-    proj[1][1] *= -1; // flip y-axis because glm is for openGL
-    camera = std::make_shared<Camera>(
-        glm::translate(glm::mat4(1.0f), glm::vec3{ 0,-1.0f,-5.5f }),
-        proj
-    );
-
-    camera->image_width = image_width;
-    camera->image_height = image_height;
+    camera = std::make_shared<Camera>(image_width, image_height, 60.0f, glm::vec3(0, 1, 5.5f), glm::vec3(0, 0, -1));
 }
 
 void PlaneScene::initScene() {
@@ -167,19 +153,6 @@ void PlaneScene::initScene() {
 
     pointLights[0] = PointLight(glm::vec3(0, 1.5f, 3), glm::vec3(1, 0, 0), 10);
     sun = DirectionalLight(glm::vec3(-1,-1,-1), glm::vec3(1.0f), 1.0f);
-
-    environment_map[0] = ressource_builder.loadTextureImage("../ressources/textures/environmentMaps/posx.jpg").image;
-    environment_map[1] = ressource_builder.loadTextureImage("../ressources/textures/environmentMaps/negx.jpg").image;
-    environment_map[2] = ressource_builder.loadTextureImage("../ressources/textures/environmentMaps/posy.jpg").image;
-    environment_map[3] = ressource_builder.loadTextureImage("../ressources/textures/environmentMaps/negy.jpg").image;
-    environment_map[4] = ressource_builder.loadTextureImage("../ressources/textures/environmentMaps/posz.jpg").image;
-    environment_map[5] = ressource_builder.loadTextureImage("../ressources/textures/environmentMaps/negz.jpg").image;
-
-    deletion_queue.pushFunction([&] () {
-        for (auto image : environment_map) {
-            ressource_builder.destroyImage(image);
-        }
-    });
 }
 
 // -----------------------------------------------------------------------------------------------------------------------
@@ -197,9 +170,6 @@ void CornellBox::initCamera(uint32_t image_width, uint32_t image_height) {
     auto interactive_camera = std::make_shared<InteractiveCamera>(proj);
     interactive_camera->position = glm::vec3(0.0f, 5.0f, 0.0f);
     camera = interactive_camera;
-
-    camera->image_width = image_width;
-    camera->image_height = image_height;
 }
 
 void CornellBox::initScene() {
@@ -394,26 +364,13 @@ void CornellBox::initScene() {
 
     pointLights[0] = PointLight(glm::vec3(0, 8.0f, 3), glm::vec3(1, 0, 0), 20);
     sun = DirectionalLight(glm::vec3(-1,-1,-1), glm::vec3(1.0f), 1.0f);
-
-    environment_map[0] = ressource_builder.loadTextureImage("../ressources/textures/environmentMaps/posx.jpg").image;
-    environment_map[1] = ressource_builder.loadTextureImage("../ressources/textures/environmentMaps/negx.jpg").image;
-    environment_map[2] = ressource_builder.loadTextureImage("../ressources/textures/environmentMaps/posy.jpg").image;
-    environment_map[3] = ressource_builder.loadTextureImage("../ressources/textures/environmentMaps/negy.jpg").image;
-    environment_map[4] = ressource_builder.loadTextureImage("../ressources/textures/environmentMaps/posz.jpg").image;
-    environment_map[5] = ressource_builder.loadTextureImage("../ressources/textures/environmentMaps/negz.jpg").image;
-
-    deletion_queue.pushFunction([&] () {
-        for (auto image : environment_map) {
-            ressource_builder.destroyImage(image);
-        }
-    });
 }
 
 // -----------------------------------------------------------------------------------------------------------------------
 
 void PBR_CornellBox::initCamera(uint32_t image_width, uint32_t image_height) {
     camera = std::make_shared<Camera>(
-        image_width / (float)image_height,
+        image_width, image_height,
         65.0f,
         glm::vec3(0, 4, 10),
         glm::vec3(0, -0.5f, -10)
@@ -422,9 +379,6 @@ void PBR_CornellBox::initCamera(uint32_t image_width, uint32_t image_height) {
     /*auto interactive_camera = std::make_shared<InteractiveCamera>(proj);
     interactive_camera->position = glm::vec3(0.0f, 5.0f, 0.0f);
     camera = interactive_camera;*/
-
-    camera->image_width = image_width;
-    camera->image_height = image_height;
 }
 
 void PBR_CornellBox::initScene() {
@@ -531,26 +485,13 @@ void PBR_CornellBox::initScene() {
 
     pointLights[0] = PointLight(glm::vec3(0, 8.0f, 3), glm::vec3(1, 1, 1), 20);
     //sun = DirectionalLight(glm::vec3(-1,-1,-1), glm::vec3(1.0f), 5.0f);
-
-    environment_map[0] = ressource_builder.loadTextureImage("../ressources/textures/environmentMaps/posx.jpg").image;
-    environment_map[1] = ressource_builder.loadTextureImage("../ressources/textures/environmentMaps/negx.jpg").image;
-    environment_map[2] = ressource_builder.loadTextureImage("../ressources/textures/environmentMaps/posy.jpg").image;
-    environment_map[3] = ressource_builder.loadTextureImage("../ressources/textures/environmentMaps/negy.jpg").image;
-    environment_map[4] = ressource_builder.loadTextureImage("../ressources/textures/environmentMaps/posz.jpg").image;
-    environment_map[5] = ressource_builder.loadTextureImage("../ressources/textures/environmentMaps/negz.jpg").image;
-
-    deletion_queue.pushFunction([&] () {
-        for (auto image : environment_map) {
-            ressource_builder.destroyImage(image);
-        }
-    });
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
 
 void Material_Showcase::initCamera(uint32_t image_width, uint32_t image_height) {
     camera = std::make_shared<Camera>(
-        image_width / (float)image_height,
+        image_width, image_height,
         65.0f,
         glm::vec3(0, 4, 3),
         glm::vec3(0, 0, -1)
@@ -559,9 +500,6 @@ void Material_Showcase::initCamera(uint32_t image_width, uint32_t image_height) 
     /*auto interactive_camera = std::make_shared<InteractiveCamera>(proj);
     interactive_camera->position = glm::vec3(0.0f, 5.0f, 0.0f);
     camera = interactive_camera;*/
-
-    camera->image_width = image_width;
-    camera->image_height = image_height;
 }
 
 void Material_Showcase::initScene() {
@@ -657,19 +595,6 @@ void Material_Showcase::initScene() {
     //pointLights[0] = PointLight(glm::vec3(2, 2.0f, 2), glm::vec3(1, 1, 1), 20);
     //pointLights[1] = PointLight(glm::vec3(-2, 0.5f, 3), glm::vec3(1, 1, 1), 10);
     //sun = DirectionalLight(glm::vec3(-1,-1,-1), glm::vec3(1.0f), 10.0f);
-
-    environment_map[0] = ressource_builder.loadTextureImage("../ressources/textures/environmentMaps/posx.jpg").image;
-    environment_map[1] = ressource_builder.loadTextureImage("../ressources/textures/environmentMaps/negx.jpg").image;
-    environment_map[2] = ressource_builder.loadTextureImage("../ressources/textures/environmentMaps/posy.jpg").image;
-    environment_map[3] = ressource_builder.loadTextureImage("../ressources/textures/environmentMaps/negy.jpg").image;
-    environment_map[4] = ressource_builder.loadTextureImage("../ressources/textures/environmentMaps/posz.jpg").image;
-    environment_map[5] = ressource_builder.loadTextureImage("../ressources/textures/environmentMaps/negz.jpg").image;
-
-    deletion_queue.pushFunction([&] () {
-        for (auto image : environment_map) {
-            ressource_builder.destroyImage(image);
-        }
-    });
 }
 
 

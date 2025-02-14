@@ -21,13 +21,11 @@ std::shared_ptr<Scene> SceneReader::readScene(const std::string& filename, std::
 
         YAML::Node camera_node = scene_node["camera"];
         scene->camera = std::make_shared<Camera>(
-            context->swapchain->extent.width / context->swapchain->extent.height,
+            context->swapchain->extent.width, context->swapchain->extent.height,
             camera_node["fov"].as<float>(),
             camera_node["position"].as<glm::vec3>(),
             camera_node["view_dir"].as<glm::vec3>()
         );
-        scene->camera->image_width = context->swapchain->extent.width;
-        scene->camera->image_height = context->swapchain->extent.height;
 
         for (const auto& mesh_node : scene_node["meshes"]) {
             scene->addMesh(mesh_node["name"].as<std::string>(), mesh_node["path"].as<std::string>());

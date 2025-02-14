@@ -9,7 +9,7 @@
 #include <glm/detail/type_quat.hpp>
 #include <glm/gtx/quaternion.hpp>
 
-void InteractiveCamera::update() {
+void InteractiveCamera::update(uint32_t image_width, uint32_t image_height) {
     glm::mat4 cameraRotation = getRotationMatrix();
     position += glm::vec3(cameraRotation * glm::vec4(velocity * 0.5f, 0.f));
 }
