@@ -128,10 +128,16 @@ glm::vec4 MetalRoughMaterial::getEmissionForInstance(uint32_t material_instance_
     return resources_buffer[material_instance_id]->constants->emission;
 }
 
-std::shared_ptr<MetalRoughMaterial::MaterialResources> MetalRoughMaterial::getResourcesForInstance(uint32_t material_instance_id)
+std::vector<std::shared_ptr<MetalRoughMaterial::MaterialResources>> MetalRoughMaterial::getResources()
 {
-    return resources_buffer[material_instance_id];
+    return resources_buffer;
 }
+
+std::vector<std::shared_ptr<MaterialInstance>> MetalRoughMaterial::getInstances()
+{
+    return instances;
+}
+
 
 AllocatedBuffer MetalRoughMaterial::createMaterialBuffer() {
     assert(resources_buffer.size() == instances.size());

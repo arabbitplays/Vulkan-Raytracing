@@ -19,7 +19,7 @@ void SceneManager::createScene(SceneType scene_type) {
         metal_rough_material->reset();
     }
 
-    if (false)
+    if (true)
     {
         switch (scene_type) {
         case SceneType::PBR_CORNELL_BOX:

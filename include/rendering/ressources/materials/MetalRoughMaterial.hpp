@@ -34,10 +34,13 @@ public:
 
     MetalRoughMaterial(std::shared_ptr<VulkanContext> context, VkSampler sampler) : Material(context), sampler(sampler) {}
 
+
     void buildPipelines(VkDescriptorSetLayout sceneLayout) override;
     void writeMaterial() override;
     glm::vec4 getEmissionForInstance(uint32_t material_instance_id) override;
-    std::shared_ptr<MaterialResources> getResourcesForInstance(uint32_t material_instance_id);
+    std::vector<std::shared_ptr<MaterialResources>> getResources();
+    std::vector<std::shared_ptr<MaterialInstance>> getInstances();
+
     std::shared_ptr<MaterialInstance> createInstance(MetalRoughParameters parameters);
     void reset() override;
 private:

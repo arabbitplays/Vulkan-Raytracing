@@ -31,9 +31,43 @@ std::shared_ptr<Scene> SceneReader::readScene(const std::string& filename, std::
             scene->addMesh(mesh_node["name"].as<std::string>(), mesh_node["path"].as<std::string>());
         }
 
+        std::vector<std::shared_ptr<MaterialInstance>> instances;
+        if (typeid(*material) == typeid(MetalRoughMaterial) )
+        {
+            auto metal_rough_material = dynamic_cast<MetalRoughMaterial*>(material.get());
+
+            for (const auto& material_node : scene_node["materials"])
+            {
+                MetalRoughParameters parameters{};
+
+                if (material_node["albedo"])
+                {
+                    parameters.albedo = material_node["albedo"].as<glm::vec3>();
+                    parameters.metallic = material_node["metallic"].as<float>();
+                    parameters.roughness = material_node["roughness"].as<float>();
+                    parameters.ao = material_node["ao"].as<float>();
+                }
+
+                if (material_node["emission_power"])
+                {
+                    parameters.emission_color = material_node["emission_color"].as<glm::vec3>();
+                    parameters.emission_power = material_node["emission_power"].as<float>();
+                }
+
+                metal_rough_material->createInstance(parameters);
+            }
+            instances = metal_rough_material->getInstances();
+        } else {
+            if (material != nullptr)
+            {
+                std::string material_name = typeid(*material).name();
+                spdlog::error("Reading " + material_name + " not suported");
+            }
+        }
+
         for (const auto& yaml_mesh_node : scene_node["nodes"])
         {
-            processSceneNodesRecursiv(static_cast<YAML::Node>(yaml_mesh_node), scene, material);
+            processSceneNodesRecursiv(static_cast<YAML::Node>(yaml_mesh_node), scene, instances);
         }
 
         return scene;
@@ -58,7 +92,7 @@ glm::mat4 recomposeMatrix(glm::vec3 translation, glm::vec3 rotation, glm::vec3 s
     return translationMatrix * rotationMatrix * scaleMatrix;
 }
 
-void SceneReader::processSceneNodesRecursiv(const YAML::Node& yaml_node, const std::shared_ptr<Scene>& scene, const std::shared_ptr<Material>& material)
+void SceneReader::processSceneNodesRecursiv(const YAML::Node& yaml_node, const std::shared_ptr<Scene>& scene, const std::vector<std::shared_ptr<MaterialInstance>>& instances)
 {
     // todo support non mesh nodes
     std::shared_ptr<MeshNode> scene_graph_node = std::make_shared<MeshNode>();
@@ -67,30 +101,8 @@ void SceneReader::processSceneNodesRecursiv(const YAML::Node& yaml_node, const s
     // todo process children recursivly
     scene_graph_node->children = {};
     scene_graph_node->meshAsset = scene->getMesh(yaml_node["mesh"].as<std::string>());
-    if (typeid(*material) == typeid(MetalRoughMaterial) )
-    {
-        auto metal_rough_material = dynamic_cast<MetalRoughMaterial*>(material.get());
+    scene_graph_node->meshMaterial = instances.at(yaml_node["material_idx"].as<int>());
 
-        MetalRoughParameters parameters{};
-
-        YAML::Node material_node = yaml_node["material"];
-        if (material_node["albedo"])
-        {
-            parameters.albedo = material_node["albedo"].as<glm::vec3>();
-            parameters.metallic = material_node["metallic"].as<float>();
-            parameters.roughness = material_node["roughness"].as<float>();
-            parameters.ao = material_node["ao"].as<float>();
-        }
-
-        if (material_node["emission_power"])
-        {
-            parameters.emission_color = material_node["emission_color"].as<glm::vec3>();
-            parameters.emission_power = material_node["emission_power"].as<float>();
-        }
-
-        scene_graph_node->meshMaterial = metal_rough_material->createInstance(parameters);
-
-    }
     scene_graph_node->refreshTransform(glm::mat4(1.0f));
     scene->addNode(yaml_node["name"].as<std::string>(), scene_graph_node);
 }

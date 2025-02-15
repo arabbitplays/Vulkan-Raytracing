@@ -42,9 +42,11 @@ void SceneWriter::writeScene(const std::string& filename, std::shared_ptr<Scene>
     }
     out << YAML::EndSeq;
 
+    writeMaterial(out, scene->material);
+
     out << YAML::Key << "nodes" << YAML::Value << YAML::BeginSeq;
     for (const auto& node : scene->nodes) {
-        writeSceneNode(out, node.first, node.second, scene->material);
+        writeSceneNode(out, node.first, node.second);
     }
     out << YAML::EndSeq;
 
@@ -57,6 +59,50 @@ void SceneWriter::writeScene(const std::string& filename, std::shared_ptr<Scene>
 
     spdlog::info("Scene successfully written to {}", filename);
 }
+
+void SceneWriter::writeMaterial(YAML::Emitter& out, const std::shared_ptr<Material>& material)
+{
+    if (typeid(*material) == typeid(MetalRoughMaterial))
+    {
+        auto metal_rough_material = dynamic_cast<MetalRoughMaterial*>(material.get());
+
+        out << YAML::Key << "materials" << YAML::Value << YAML::BeginSeq;
+        for (auto& resources : metal_rough_material->getResources())
+        {
+            out << YAML::BeginMap;
+
+            if (resources->albedo_tex.name.empty() && resources->metal_rough_ao_tex.name.empty() && resources->normal_tex.name.empty())
+            {
+                out << YAML::Key << "albedo" << YAML::Value << YAML::convert<glm::vec3>::encode(resources->constants->albedo);
+                out << YAML::Key << "metallic" << YAML::Value << resources->constants->properties.x;
+                out << YAML::Key << "roughness" << YAML::Value << resources->constants->properties.y;
+                out << YAML::Key << "ao" << YAML::Value << resources->constants->properties.z;
+            } else
+            {
+                out << YAML::Key << "albedo_tex" << YAML::Value << resources->albedo_tex.name;
+                out << YAML::Key << "metal_rough_ao_tex" << YAML::Value << resources->metal_rough_ao_tex.name;
+                out << YAML::Key << "normal_tex" << YAML::Value << resources->normal_tex.name;
+            }
+
+            if (resources->constants->emission.w != 0)
+            {
+                out << YAML::Key << "emission_color" << YAML::Value << YAML::convert<glm::vec3>::encode(resources->constants->emission);
+                out << YAML::Key << "emission_power" << YAML::Value << resources->constants->emission.w;
+            }
+
+            out << YAML::EndMap;
+        }
+        out << YAML::EndSeq;
+    } else
+    {
+        if (material != nullptr)
+        {
+            std::string material_name = typeid(*material).name();
+            spdlog::error("Writing " + material_name + " not suported");
+        }
+    }
+}
+
 
 struct DecomposedTransform
 {
@@ -102,7 +148,7 @@ DecomposedTransform decomposeMatrix(const glm::mat4& transform) {
     return result;
 }
 
-void SceneWriter::writeSceneNode(YAML::Emitter& out, const std::string& node_name, const std::shared_ptr<Node>& node, const std::shared_ptr<Material>& material)
+void SceneWriter::writeSceneNode(YAML::Emitter& out, const std::string& node_name, const std::shared_ptr<Node>& node)
 {
     out << YAML::BeginMap;
     out << YAML::Key << "name" << YAML::Value << node_name;
@@ -116,42 +162,7 @@ void SceneWriter::writeSceneNode(YAML::Emitter& out, const std::string& node_nam
     {
         auto mesh_node = dynamic_cast<MeshNode*>(node.get());
         out << YAML::Key << "mesh" << YAML::Value << mesh_node->meshAsset->name;
-
-        if (typeid(*material) == typeid(MetalRoughMaterial) )
-        {
-            auto metal_rough_material = dynamic_cast<MetalRoughMaterial*>(material.get());
-            std::shared_ptr<MetalRoughMaterial::MaterialResources> resources = metal_rough_material->getResourcesForInstance(mesh_node->meshMaterial->material_index);
-
-            out << YAML::Key << "material" << YAML::Value << YAML::BeginMap;
-
-            if (resources->albedo_tex.name.empty() && resources->metal_rough_ao_tex.name.empty() && resources->normal_tex.name.empty())
-            {
-                out << YAML::Key << "albedo" << YAML::Value << YAML::convert<glm::vec3>::encode(resources->constants->albedo);
-                out << YAML::Key << "metallic" << YAML::Value << resources->constants->properties.x;
-                out << YAML::Key << "roughness" << YAML::Value << resources->constants->properties.y;
-                out << YAML::Key << "ao" << YAML::Value << resources->constants->properties.z;
-            } else
-            {
-                out << YAML::Key << "albedo_tex" << YAML::Value << resources->albedo_tex.name;
-                out << YAML::Key << "metal_rough_ao_tex" << YAML::Value << resources->metal_rough_ao_tex.name;
-                out << YAML::Key << "normal_tex" << YAML::Value << resources->normal_tex.name;
-            }
-
-            if (resources->constants->emission.w != 0)
-            {
-                out << YAML::Key << "emission_color" << YAML::Value << YAML::convert<glm::vec3>::encode(resources->constants->emission);
-                out << YAML::Key << "emission_power" << YAML::Value << resources->constants->emission.w;
-            }
-
-            out << YAML::EndMap;
-        } else
-        {
-            if (material != nullptr)
-            {
-                std::string material_name = typeid(*material).name();
-                spdlog::error("Writing " + material_name + " not suported");
-            }
-        }
+        out << YAML::Key << "material_idx" << YAML::Value << mesh_node->meshMaterial->material_index;
     }
 
     out << YAML::Key << "children" << YAML::Value << YAML::BeginSeq;
@@ -159,7 +170,7 @@ void SceneWriter::writeSceneNode(YAML::Emitter& out, const std::string& node_nam
     {
         // TODO do recursion
         break;
-        writeSceneNode(out, node_name, child, material);
+        writeSceneNode(out, node_name, child);
     }
     out << YAML::EndSeq;
     out << YAML::EndMap;
