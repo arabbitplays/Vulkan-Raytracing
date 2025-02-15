@@ -40,7 +40,7 @@ void SceneManager::createScene(SceneType scene_type) {
     } else
     {
         SceneReader reader = SceneReader(context);
-        scene = reader.readScene("../ressources/scenes/SHOWCASE.yaml", defaultMaterials);
+        scene = reader.readScene("../ressources/scenes/PBR_CORNELL_BOX.yaml", defaultMaterials);
     }
 
 

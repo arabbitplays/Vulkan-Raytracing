@@ -101,9 +101,6 @@ protected:
                 ressource_builder.destroyImage(image);
             }
         });
-
-        pointLights[0] = PointLight(glm::vec3(0, 8.0f, 3), glm::vec3(1, 0, 0), 20);
-        sun = DirectionalLight(glm::vec3(-1,-1,-1), glm::vec3(1.0f), 0.0f);
     };
 
 

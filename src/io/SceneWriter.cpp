@@ -26,6 +26,8 @@ void SceneWriter::writeScene(const std::string& filename, std::shared_ptr<Scene>
     out << YAML::Key << "interactive" << YAML::Value << (typeid(*scene->camera) == typeid(InteractiveCamera));
     out << YAML::EndMap;
 
+    writeSceneLights(out, scene);
+
     out << YAML::Key << "meshes" << YAML::Value << YAML::BeginSeq;
     for (const auto& mesh : scene->meshes) {
       out << YAML::BeginMap;
@@ -123,6 +125,35 @@ void SceneWriter::writeMaterial(YAML::Emitter& out, const std::shared_ptr<Materi
     }
 }
 
+void SceneWriter::writeSceneLights(YAML::Emitter& out, const std::shared_ptr<Scene>& scene)
+{
+    out << YAML::Key << "lights" << YAML::Value << YAML::BeginMap;
+
+    if (scene->sun.intensity != 0)
+    {
+        out << YAML::Key << "sun" << YAML::Value << YAML::BeginMap;
+        out << YAML::Key << "direction" << YAML::Value << YAML::convert<glm::vec3>::encode(scene->sun.direction);
+        out << YAML::Key << "color" << YAML::Value << YAML::convert<glm::vec3>::encode(scene->sun.color);
+        out << YAML::Key << "intensity" << YAML::Value << scene->sun.intensity;
+        out << YAML::EndMap;
+    }
+
+    out << YAML::Key << "point_lights" << YAML::Value << YAML::BeginSeq;
+    for (const auto& light : scene->pointLights) {
+        if (light.intensity != 0)
+        {
+            out << YAML::BeginMap;
+            out << YAML::Key << "position" << YAML::Value << YAML::convert<glm::vec3>::encode(light.position);
+            out << YAML::Key << "color" << YAML::Value << YAML::convert<glm::vec3>::encode(light.color);
+            out << YAML::Key << "intensity" << YAML::Value << light.intensity;
+            out << YAML::EndMap;
+
+        }
+    }
+    out << YAML::EndSeq;
+
+    out << YAML::EndMap;
+}
 
 struct DecomposedTransform
 {

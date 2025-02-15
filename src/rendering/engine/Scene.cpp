@@ -350,6 +350,9 @@ void CornellBox::initScene() {
         sphere->refreshTransform(glm::mat4(1.0f));
         nodes["Sphere" + std::to_string(i)] = std::move(sphere);
     }
+
+    pointLights[0] = PointLight(glm::vec3(0, 8.0f, 3), glm::vec3(1, 0, 0), 20);
+    sun = DirectionalLight(glm::vec3(-1,-1,-1), glm::vec3(1.0f), 1.0f);
 }
 
 // -----------------------------------------------------------------------------------------------------------------------
@@ -468,9 +471,6 @@ void PBR_CornellBox::initScene() {
         .emission_color = glm::vec3(1.0f, 0.96f, 0.71f), .emission_power = 1});
     quad->refreshTransform(glm::mat4(1.0f));
     nodes["AreaLight"] = std::move(quad);
-
-    pointLights[0] = PointLight(glm::vec3(0, 8.0f, 3), glm::vec3(1, 1, 1), 20);
-    //sun = DirectionalLight(glm::vec3(-1,-1,-1), glm::vec3(1.0f), 5.0f);
 }
 
 // ---------------------------------------------------------------------------------------------------------------------

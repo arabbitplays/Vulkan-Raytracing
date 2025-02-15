@@ -21,12 +21,14 @@ std::shared_ptr<Scene> SceneReader::readScene(const std::string& filename, std::
         std::shared_ptr<Scene> scene = std::make_shared<Scene>(context->mesh_builder, *context->resource_builder, materials[material_name]);
 
         scene->camera = loadCamera(scene_node["camera"]);
+        loadSceneLights(scene_node["lights"], scene);
 
         for (const auto& mesh_node : scene_node["meshes"]) {
             scene->addMesh(mesh_node["name"].as<std::string>(), mesh_node["path"].as<std::string>());
         }
 
         for (const auto& texture_node : scene_node["textures"]) {
+            // todo handle more types
             TextureType type = texture_node["is_normal"].as<bool>() ? NORMAL : PARAMETER;
             scene->addTexture(texture_node["path"].as<std::string>(), type);
         }
@@ -63,6 +65,27 @@ std::shared_ptr<Camera> SceneReader::loadCamera(const YAML::Node& camera_node) c
             camera_node["position"].as<glm::vec3>(),
             camera_node["view_dir"].as<glm::vec3>()
         );
+    }
+}
+
+void SceneReader::loadSceneLights(const YAML::Node& lights_node, std::shared_ptr<Scene>& scene)
+{
+    if (lights_node["sun"])
+    {
+        YAML::Node sun_node = lights_node["sun"];
+        scene->sun = DirectionalLight(
+            sun_node["direction"].as<glm::vec3>(),
+            sun_node["color"].as<glm::vec3>(),
+            sun_node["intensity"].as<float>());
+    }
+
+    uint32_t point_light_index = 0;
+    for (auto& point_light_node : lights_node["point_lights"])
+    {
+        scene->pointLights[point_light_index++] = PointLight(
+            point_light_node["position"].as<glm::vec3>(),
+            point_light_node["color"].as<glm::vec3>(),
+            point_light_node["intensity"].as<float>());
     }
 }
 
