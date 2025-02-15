@@ -151,24 +151,13 @@ void PlaneScene::initScene() {
     quad->refreshTransform(glm::mat4(1.0f));
     nodes["Floor"] = std::move(quad);
 
-    pointLights[0] = PointLight(glm::vec3(0, 1.5f, 3), glm::vec3(1, 0, 0), 10);
-    sun = DirectionalLight(glm::vec3(-1,-1,-1), glm::vec3(1.0f), 1.0f);
+
 }
 
 // -----------------------------------------------------------------------------------------------------------------------
 
 void CornellBox::initCamera(uint32_t image_width, uint32_t image_height) {
-    glm::mat4 proj = glm::perspective(glm::radians(65.0f),
-        image_width / (float)image_height,
-        0.1f, 512.0f);
-    proj[1][1] *= -1; // flip y-axis because glm is for openGL
-    /*camera = std::make_shared<Camera>(
-        glm::lookAt(glm::vec3(0, 4, 8), glm::vec3(0, 2.5f, 0), glm::vec3(0, 1, 0)),
-        proj
-    );*/
-
-    auto interactive_camera = std::make_shared<InteractiveCamera>(proj);
-    interactive_camera->position = glm::vec3(0.0f, 5.0f, 0.0f);
+    auto interactive_camera = std::make_shared<InteractiveCamera>(image_width, image_height, 65, glm::vec3(0.0f, 5.0f, 0.0f), glm::vec3(0, 0, 1));
     camera = interactive_camera;
 }
 
@@ -361,9 +350,6 @@ void CornellBox::initScene() {
         sphere->refreshTransform(glm::mat4(1.0f));
         nodes["Sphere" + std::to_string(i)] = std::move(sphere);
     }
-
-    pointLights[0] = PointLight(glm::vec3(0, 8.0f, 3), glm::vec3(1, 0, 0), 20);
-    sun = DirectionalLight(glm::vec3(-1,-1,-1), glm::vec3(1.0f), 1.0f);
 }
 
 // -----------------------------------------------------------------------------------------------------------------------

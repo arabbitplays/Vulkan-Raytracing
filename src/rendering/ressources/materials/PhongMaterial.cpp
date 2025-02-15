@@ -69,7 +69,7 @@ std::shared_ptr<MaterialInstance> PhongMaterial::createInstance(
         glm::vec3 diffuse, glm::vec3 specular, glm::vec3 ambient,
         glm::vec3 reflection, glm::vec3 transmission,
         float n, glm::vec3 eta) {
-    auto constants = std::make_shared<PhongMaterial::MaterialConstants>();
+    auto constants = std::make_shared<PhongMaterial::PhongMaterialConstants>();
     constants->diffuse = diffuse;
     constants->specular = specular;
     constants->ambient = ambient;
@@ -78,28 +78,34 @@ std::shared_ptr<MaterialInstance> PhongMaterial::createInstance(
     constants->n = n;
     constants-> eta = glm::vec4(eta, 0.0f);
 
-    auto resources = std::make_shared<PhongMaterial::MaterialRessources>();
+    auto resources = std::make_shared<PhongMaterial::MaterialResources>();
     resources->constants = constants;
 
     std::shared_ptr<MaterialInstance> instance = std::make_shared<MaterialInstance>();
     instances.push_back(instance);
-    constants_buffer.push_back(resources->constants);
+    resources_buffer.push_back(resources);
     return instance;
 }
 
 AllocatedBuffer PhongMaterial::createMaterialBuffer() {
-    assert(constants_buffer.size() == instances.size());
+    assert(resources_buffer.size() == instances.size());
 
-    std::vector<MaterialConstants> materialConstants{};
-    for (uint32_t i = 0; i < constants_buffer.size(); i++) {
+    std::vector<PhongMaterialConstants> materialConstants{};
+    for (uint32_t i = 0; i < resources_buffer.size(); i++) {
         instances[i]->material_index = i;
-        materialConstants.push_back(*constants_buffer[i]);
+        materialConstants.push_back(*resources_buffer[i]->constants);
     }
-    return context->resource_builder->stageMemoryToNewBuffer(materialConstants.data(), materialConstants.size() * sizeof(MaterialConstants), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
+    return context->resource_builder->stageMemoryToNewBuffer(materialConstants.data(), materialConstants.size() * sizeof(PhongMaterialConstants), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
 }
 
+std::vector<std::shared_ptr<PhongMaterial::MaterialResources>> PhongMaterial::getResources()
+{
+    return resources_buffer;
+}
+
+
 void PhongMaterial::reset() {
-    constants_buffer.clear();
+    resources_buffer.clear();
     instances.clear();
     Material::reset();
 }

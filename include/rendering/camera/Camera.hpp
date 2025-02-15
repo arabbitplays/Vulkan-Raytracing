@@ -19,13 +19,6 @@ public:
         initCamera(static_cast<float>(image_width) / static_cast<float>(image_height));
     }
 
-    Camera(glm::mat4 view, glm::mat4 projection)
-    {
-        inverse_view = glm::inverse(view);
-        inverse_projection = glm::inverse(projection);
-        position = glm::vec3(inverse_view[3]);
-    }
-
     virtual glm::mat4 getView();
     virtual glm::mat4 getInverseView();
     glm::mat4 getProjection();

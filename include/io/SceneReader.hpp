@@ -15,7 +15,9 @@ public:
     SceneReader(std::shared_ptr<VulkanContext>& vulkanContext)
         : context(vulkanContext) {}
 
-    std::shared_ptr<Scene> readScene(const std::string& filename, std::shared_ptr<Material> material);
+    std::shared_ptr<Scene> readScene(const std::string& filename, std::unordered_map<std::string, std::shared_ptr<Material>> materials);
+    std::shared_ptr<Camera> loadCamera(const YAML::Node& camera_node) const;
+    void initializeMaterial(const YAML::Node& material_node, std::shared_ptr<Material>& material, std::unordered_map<std::string, std::shared_ptr<Texture>> textures);
 
 private:
     void processSceneNodesRecursiv(const YAML::Node& yaml_node, const std::shared_ptr<Scene>& scene, const std::vector<std::shared_ptr<MaterialInstance>>& instances);

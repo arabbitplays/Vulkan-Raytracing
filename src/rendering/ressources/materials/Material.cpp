@@ -4,6 +4,11 @@
 
 #include "Material.hpp"
 
+std::vector<std::shared_ptr<MaterialInstance>> Material::getInstances()
+{
+    return instances;
+}
+
 void Material::clearRessources() {
     resetQueue.flush();
     mainDeletionQueue.flush();

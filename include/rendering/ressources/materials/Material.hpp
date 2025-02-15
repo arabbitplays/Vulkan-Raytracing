@@ -13,12 +13,13 @@
 #include <glm/vec4.hpp>
 #include <Pipeline.hpp>
 
+struct MaterialInstance;
 class Pipeline;
 
 class Material {
   public:
     Material() = default;
-    Material(std::shared_ptr<VulkanContext> context) : context(context) {
+    Material(std::string name, std::shared_ptr<VulkanContext> context) : name(name), context(context) {
         std::vector<DescriptorAllocator::PoolSizeRatio> poolRatios = {
             { VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1 },
         };
@@ -40,13 +41,21 @@ class Material {
     virtual glm::vec4 getEmissionForInstance(uint32_t material_instance_id) {
         return glm::vec4(0.0f);
     }
+    std::vector<std::shared_ptr<MaterialInstance>> getInstances();
+
     void clearRessources();
     virtual void reset();
+
+    std::string name;
 
 protected:
     std::shared_ptr<VulkanContext> context;
     DescriptorAllocator descriptorAllocator;
     DeletionQueue mainDeletionQueue, resetQueue;
+
+    std::vector<std::shared_ptr<MaterialInstance>> instances;
+
+    AllocatedBuffer materialBuffer; // maps an instance to its respective material via a common index into the constants and texture buffers
 };
 
 struct MaterialInstance {

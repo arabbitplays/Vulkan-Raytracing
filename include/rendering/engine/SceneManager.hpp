@@ -69,8 +69,9 @@ private:
     VkSampler defaultSamplerNearest;
     VkSampler defaultSamplerAnisotropic;
 
-    std::shared_ptr<PhongMaterial> phong_material;
+    std::unordered_map<std::string, std::shared_ptr<Material>> defaultMaterials;
     std::shared_ptr<MetalRoughMaterial> metal_rough_material;
+    std::shared_ptr<PhongMaterial> phong_material;
 
     AllocatedBuffer vertex_buffer, index_buffer, geometry_mapping_buffer, instance_mapping_buffer, emitting_instances_buffer;
     std::shared_ptr<AccelerationStructure> top_level_acceleration_structure;

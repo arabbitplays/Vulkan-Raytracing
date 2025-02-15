@@ -16,12 +16,14 @@ void SceneWriter::writeScene(const std::string& filename, std::shared_ptr<Scene>
     out << YAML::BeginMap;
     out << YAML::Key << "scene" << YAML::Value << YAML::BeginMap;
 
+    out << YAML::Key << "material_name" << YAML::Value << scene->material->name;
+
     out << YAML::Key << "camera" << YAML::Value << YAML::BeginMap;
     Camera camera = *scene->camera;
     out << YAML::Key << "position" << YAML::Value << YAML::convert<glm::vec3>::encode(camera.position);
     out << YAML::Key << "view_dir" << YAML::Value << YAML::convert<glm::vec3>::encode(camera.view_dir);
     out << YAML::Key << "fov" << YAML::Value << camera.fov;
-    out << YAML::Key << "interactive" << YAML::Value << false;
+    out << YAML::Key << "interactive" << YAML::Value << (typeid(*scene->camera) == typeid(InteractiveCamera));
     out << YAML::EndMap;
 
     out << YAML::Key << "meshes" << YAML::Value << YAML::BeginSeq;
@@ -90,6 +92,24 @@ void SceneWriter::writeMaterial(YAML::Emitter& out, const std::shared_ptr<Materi
                 out << YAML::Key << "emission_power" << YAML::Value << resources->constants->emission.w;
             }
 
+            out << YAML::EndMap;
+        }
+        out << YAML::EndSeq;
+    } else if (typeid(*material) == typeid(PhongMaterial))
+    {
+        auto phong_material = dynamic_cast<PhongMaterial*>(material.get());
+
+        out << YAML::Key << "materials" << YAML::Value << YAML::BeginSeq;
+        for (auto& resources : phong_material->getResources())
+        {
+            out << YAML::BeginMap;
+            out << YAML::Key << "diffuse" << YAML::Value << YAML::convert<glm::vec3>::encode(resources->constants->diffuse);
+            out << YAML::Key << "specular" << YAML::Value << YAML::convert<glm::vec3>::encode(resources->constants->specular);
+            out << YAML::Key << "ambient" << YAML::Value << YAML::convert<glm::vec3>::encode(resources->constants->ambient);
+            out << YAML::Key << "reflection" << YAML::Value << YAML::convert<glm::vec3>::encode(resources->constants->reflection);
+            out << YAML::Key << "transmission" << YAML::Value << YAML::convert<glm::vec3>::encode(resources->constants->transmission);
+            out << YAML::Key << "n" << YAML::Value << resources->constants->n;
+            out << YAML::Key << "eta" << YAML::Value << YAML::convert<glm::vec3>::encode(resources->constants->eta);
             out << YAML::EndMap;
         }
         out << YAML::EndSeq;

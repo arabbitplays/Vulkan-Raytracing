@@ -9,71 +9,109 @@
 #include <spdlog/spdlog.h>
 #include <YAML_glm.hpp>
 
-std::shared_ptr<Scene> SceneReader::readScene(const std::string& filename, std::shared_ptr<Material> material)
+std::shared_ptr<Scene> SceneReader::readScene(const std::string& filename, std::unordered_map<std::string, std::shared_ptr<Material>> materials)
 {
     try {
-        // Load YAML file
         YAML::Node config = YAML::LoadFile(filename);
-        std::shared_ptr<Scene> scene = std::make_shared<Scene>(context->mesh_builder, *context->resource_builder, material);
-
-        // Read values
         YAML::Node scene_node = config["scene"];
 
-        YAML::Node camera_node = scene_node["camera"];
-        scene->camera = std::make_shared<Camera>(
-            context->swapchain->extent.width, context->swapchain->extent.height,
-            camera_node["fov"].as<float>(),
-            camera_node["position"].as<glm::vec3>(),
-            camera_node["view_dir"].as<glm::vec3>()
-        );
+        auto material_name = scene_node["material_name"].as<std::string>();
+        if (!materials.contains(material_name))
+            throw std::runtime_error("Material " + material_name + " does not exist");
+        std::shared_ptr<Scene> scene = std::make_shared<Scene>(context->mesh_builder, *context->resource_builder, materials[material_name]);
+
+        scene->camera = loadCamera(scene_node["camera"]);
 
         for (const auto& mesh_node : scene_node["meshes"]) {
             scene->addMesh(mesh_node["name"].as<std::string>(), mesh_node["path"].as<std::string>());
         }
 
-        std::vector<std::shared_ptr<MaterialInstance>> instances;
-        if (typeid(*material) == typeid(MetalRoughMaterial) )
-        {
-            auto metal_rough_material = dynamic_cast<MetalRoughMaterial*>(material.get());
-
-            for (const auto& material_node : scene_node["materials"])
-            {
-                MetalRoughParameters parameters{};
-
-                if (material_node["albedo"])
-                {
-                    parameters.albedo = material_node["albedo"].as<glm::vec3>();
-                    parameters.metallic = material_node["metallic"].as<float>();
-                    parameters.roughness = material_node["roughness"].as<float>();
-                    parameters.ao = material_node["ao"].as<float>();
-                }
-
-                if (material_node["emission_power"])
-                {
-                    parameters.emission_color = material_node["emission_color"].as<glm::vec3>();
-                    parameters.emission_power = material_node["emission_power"].as<float>();
-                }
-
-                metal_rough_material->createInstance(parameters);
-            }
-            instances = metal_rough_material->getInstances();
-        } else {
-            if (material != nullptr)
-            {
-                std::string material_name = typeid(*material).name();
-                spdlog::error("Reading " + material_name + " not suported");
-            }
+        for (const auto& texture_node : scene_node["textures"]) {
+            TextureType type = texture_node["is_normal"].as<bool>() ? NORMAL : PARAMETER;
+            scene->addTexture(texture_node["path"].as<std::string>(), type);
         }
+
+        initializeMaterial(scene_node["materials"], materials[material_name], scene->textures);
 
         for (const auto& yaml_mesh_node : scene_node["nodes"])
         {
-            processSceneNodesRecursiv(static_cast<YAML::Node>(yaml_mesh_node), scene, instances);
+            processSceneNodesRecursiv(static_cast<YAML::Node>(yaml_mesh_node), scene, scene->material->getInstances());
         }
 
         return scene;
     } catch (const YAML::Exception& e) {
         spdlog::error("YAML Error: {}", e.what());
         return nullptr;
+    }
+}
+
+std::shared_ptr<Camera> SceneReader::loadCamera(const YAML::Node& camera_node) const
+{
+    if (camera_node["interactive"].as<bool>())
+    {
+        return std::make_shared<InteractiveCamera>(
+            context->swapchain->extent.width, context->swapchain->extent.height,
+            camera_node["fov"].as<float>(),
+            camera_node["position"].as<glm::vec3>(),
+            camera_node["view_dir"].as<glm::vec3>()
+        );
+    } else
+    {
+        return std::make_shared<Camera>(
+            context->swapchain->extent.width, context->swapchain->extent.height,
+            camera_node["fov"].as<float>(),
+            camera_node["position"].as<glm::vec3>(),
+            camera_node["view_dir"].as<glm::vec3>()
+        );
+    }
+}
+
+void SceneReader::initializeMaterial(const YAML::Node& material_node, std::shared_ptr<Material>& material, std::unordered_map<std::string, std::shared_ptr<Texture>> textures)
+{
+    if (typeid(*material) == typeid(MetalRoughMaterial) )
+    {
+        auto metal_rough_material = dynamic_cast<MetalRoughMaterial*>(material.get());
+
+        for (const auto& material_node : material_node)
+        {
+            MetalRoughParameters parameters{};
+
+            if (material_node["albedo"])
+            {
+                parameters.albedo = material_node["albedo"].as<glm::vec3>();
+                parameters.metallic = material_node["metallic"].as<float>();
+                parameters.roughness = material_node["roughness"].as<float>();
+                parameters.ao = material_node["ao"].as<float>();
+            } else
+            {
+                parameters.albedo_tex = textures[material_node["albedo_tex"].as<std::string>()];
+                parameters.metal_rough_ao_tex = textures[material_node["metal_rough_ao_tex"].as<std::string>()];
+                parameters.normal_tex = textures[material_node["normal_tex"].as<std::string>()];
+            }
+
+            if (material_node["emission_power"])
+            {
+                parameters.emission_color = material_node["emission_color"].as<glm::vec3>();
+                parameters.emission_power = material_node["emission_power"].as<float>();
+            }
+
+            metal_rough_material->createInstance(parameters);
+        }
+    } else if (typeid(*material) == typeid(PhongMaterial)) {
+        auto phong_material = dynamic_cast<PhongMaterial*>(material.get());
+
+        for (const auto& material_node : material_node)
+        {
+            phong_material->createInstance(
+                material_node["diffuse"].as<glm::vec3>(),
+                material_node["specular"].as<glm::vec3>(),
+                material_node["ambient"].as<glm::vec3>(),
+                material_node["reflection"].as<glm::vec3>(),
+                material_node["transmission"].as<glm::vec3>(),
+                material_node["n"].as<float>(),
+                material_node["eta"].as<glm::vec3>()
+            );
+        }
     }
 }
 

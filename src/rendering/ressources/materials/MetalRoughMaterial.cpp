@@ -133,11 +133,6 @@ std::vector<std::shared_ptr<MetalRoughMaterial::MaterialResources>> MetalRoughMa
     return resources_buffer;
 }
 
-std::vector<std::shared_ptr<MaterialInstance>> MetalRoughMaterial::getInstances()
-{
-    return instances;
-}
-
 
 AllocatedBuffer MetalRoughMaterial::createMaterialBuffer() {
     assert(resources_buffer.size() == instances.size());

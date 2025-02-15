@@ -15,11 +15,13 @@ void SceneManager::createScene(SceneType scene_type) {
 
     if (scene != nullptr) {
         scene_ressource_deletion_queue.flush();
-        phong_material->reset();
-        metal_rough_material->reset();
+        for (auto& material : defaultMaterials)
+        {
+            material.second->reset();
+        }
     }
 
-    if (true)
+    if (false)
     {
         switch (scene_type) {
         case SceneType::PBR_CORNELL_BOX:
@@ -38,7 +40,7 @@ void SceneManager::createScene(SceneType scene_type) {
     } else
     {
         SceneReader reader = SceneReader(context);
-        scene = reader.readScene("../ressources/scenes/PBR_CORNELL_BOX.yaml", metal_rough_material);
+        scene = reader.readScene("../ressources/scenes/SHOWCASE.yaml", defaultMaterials);
     }
 
 
@@ -362,6 +364,7 @@ void SceneManager::createDefaultMaterials(VkPhysicalDeviceRayTracingPipelineProp
         phong_material->clearRessources();
     });
     phong_material->pipeline->createShaderBindingTables(raytracingProperties);
+    defaultMaterials["phong"] = phong_material;
 
     metal_rough_material = std::make_shared<MetalRoughMaterial>(context, defaultSamplerLinear);
     metal_rough_material->buildPipelines(scene_descsriptor_set_layout);
@@ -369,6 +372,7 @@ void SceneManager::createDefaultMaterials(VkPhysicalDeviceRayTracingPipelineProp
         metal_rough_material->clearRessources();
     });
     metal_rough_material->pipeline->createShaderBindingTables(raytracingProperties);
+    defaultMaterials["metal_rough"] = metal_rough_material;
 }
 
 std::shared_ptr<Material> SceneManager::getMaterial() {
