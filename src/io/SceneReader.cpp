@@ -139,17 +139,13 @@ void SceneReader::initializeMaterial(const YAML::Node& material_node, std::share
 }
 
 glm::mat4 recomposeMatrix(glm::vec3 translation, glm::vec3 rotation, glm::vec3 scale) {
-    // Step 1: Create translation matrix
     glm::mat4 translationMatrix = glm::translate(glm::mat4(1.0f), translation);
 
-    // Step 2: Convert Euler angles to quaternion, then to rotation matrix
     glm::quat quaternion = glm::quat(glm::radians(rotation)); // Convert degrees to radians
     glm::mat4 rotationMatrix = glm::toMat4(quaternion);
 
-    // Step 3: Create scale matrix
     glm::mat4 scaleMatrix = glm::scale(glm::mat4(1.0f), scale);
 
-    // Step 4: Combine matrices (T * R * S)
     return translationMatrix * rotationMatrix * scaleMatrix;
 }
 

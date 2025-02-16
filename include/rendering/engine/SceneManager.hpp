@@ -21,7 +21,7 @@ public:
         initDefaultResources(raytracingProperties);
     }
 
-    void createScene(SceneType scene_type);
+    void createScene(SceneType scene_type, std::string scene_path);
     void createBlas();
     void updateScene(DrawContext& draw_context, uint32_t current_image_idx, AllocatedImage& current_image, AllocatedImage& rng_tex);
 
@@ -32,6 +32,7 @@ public:
 
     std::shared_ptr<Scene> scene;
     SceneType curr_scene_type;
+    std::string curr_scene_path;
 
     std::vector<VkDescriptorSet> scene_descriptor_sets{};
     std::vector<AllocatedBuffer> sceneUniformBuffers;

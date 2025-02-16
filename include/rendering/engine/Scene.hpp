@@ -89,12 +89,12 @@ protected:
     virtual void initCamera(uint32_t image_width, uint32_t image_height) {};
     virtual void initScene()
     {
-        environment_map[0] = ressource_builder.loadTextureImage("../ressources/textures/environmentMaps/posx.jpg").image;
-        environment_map[1] = ressource_builder.loadTextureImage("../ressources/textures/environmentMaps/negx.jpg").image;
-        environment_map[2] = ressource_builder.loadTextureImage("../ressources/textures/environmentMaps/posy.jpg").image;
-        environment_map[3] = ressource_builder.loadTextureImage("../ressources/textures/environmentMaps/negy.jpg").image;
-        environment_map[4] = ressource_builder.loadTextureImage("../ressources/textures/environmentMaps/posz.jpg").image;
-        environment_map[5] = ressource_builder.loadTextureImage("../ressources/textures/environmentMaps/negz.jpg").image;
+        environment_map[0] = ressource_builder.loadTextureImage("../resources/textures/environmentMaps/posx.jpg").image;
+        environment_map[1] = ressource_builder.loadTextureImage("../resources/textures/environmentMaps/negx.jpg").image;
+        environment_map[2] = ressource_builder.loadTextureImage("../resources/textures/environmentMaps/posy.jpg").image;
+        environment_map[3] = ressource_builder.loadTextureImage("../resources/textures/environmentMaps/negy.jpg").image;
+        environment_map[4] = ressource_builder.loadTextureImage("../resources/textures/environmentMaps/posz.jpg").image;
+        environment_map[5] = ressource_builder.loadTextureImage("../resources/textures/environmentMaps/negz.jpg").image;
 
         deletion_queue.pushFunction([&] () {
             for (auto image : environment_map) {

@@ -55,9 +55,9 @@ def combine_rgb_channels(r_path, g_path, b_path, output_path):
 
 folder_name = "rusty_metal"
 file_name = "rusty-metal"
-r_path = 'ressources/textures/' + folder_name + '/' + file_name + '_metallic.png'
-g_path = 'ressources/textures/' + folder_name + '/' + file_name + '_roughness.png'
-b_path = 'ressources/textures/' + folder_name + '/' + file_name + '_ao.png'
-output_path = 'ressources/textures/' + folder_name + '/' + file_name + '_metal_rough_ao.png'  # Replace with desired output path
+r_path = 'resources/textures/' + folder_name + '/' + file_name + '_metallic.png'
+g_path = 'resources/textures/' + folder_name + '/' + file_name + '_roughness.png'
+b_path = 'resources/textures/' + folder_name + '/' + file_name + '_ao.png'
+output_path = 'resources/textures/' + folder_name + '/' + file_name + '_metal_rough_ao.png'  # Replace with desired output path
 combine_rgb_channels(r_path, g_path, b_path, output_path)
-#print_image_pixels("ressources/textures/testing/normal-map.png")
+#print_image_pixels("resources/textures/testing/normal-map.png")

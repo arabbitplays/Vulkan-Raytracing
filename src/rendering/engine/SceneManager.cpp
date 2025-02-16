@@ -10,7 +10,7 @@
 #include <SceneReader.hpp>
 #include <SceneWriter.hpp>
 
-void SceneManager::createScene(SceneType scene_type) {
+void SceneManager::createScene(SceneType scene_type, std::string scene_path) {
     QuickTimer timer{"Scene Creation", true};
 
     if (scene != nullptr) {
@@ -40,7 +40,7 @@ void SceneManager::createScene(SceneType scene_type) {
     } else
     {
         SceneReader reader = SceneReader(context);
-        scene = reader.readScene("../ressources/scenes/PBR_CORNELL_BOX.yaml", defaultMaterials);
+        scene = reader.readScene(scene_path, defaultMaterials);
     }
 
 

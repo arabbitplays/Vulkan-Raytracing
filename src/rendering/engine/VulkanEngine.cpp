@@ -493,9 +493,12 @@ void VulkanEngine::createRenderingImages() {
 
 void VulkanEngine::loadScene()
 {
+    assert(renderer_options->curr_scene_path != "");
     vkDeviceWaitIdle(device);
     raytracing_options->curr_sample_count = 0;
-    scene_manager->createScene(renderer_options->scene_type);
+    std::string path = renderer_options->scene_dir_path + "/" + renderer_options->curr_scene_path;
+    scene_manager->createScene(renderer_options->scene_type, path);
+    scene_manager->curr_scene_path = renderer_options->curr_scene_path;
 }
 
 
@@ -553,7 +556,7 @@ void VulkanEngine::mainLoop() {
 
         glfwPollEvents();
 
-        if (scene_manager->curr_scene_type != renderer_options->scene_type) {
+        if (scene_manager->curr_scene_path != renderer_options->curr_scene_path) {
             loadScene();
         }
 

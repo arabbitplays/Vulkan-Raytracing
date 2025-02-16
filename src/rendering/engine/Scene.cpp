@@ -93,8 +93,8 @@ void PlaneScene::initCamera(uint32_t image_width, uint32_t image_height) {
 }
 
 void PlaneScene::initScene() {
-    addMesh("Sphere", "../ressources/models/sphere.obj");
-    addMesh("Plane", "../ressources/models/plane.obj");
+    addMesh("Sphere", "../resources/models/sphere.obj");
+    addMesh("Plane", "../resources/models/plane.obj");
 
     for (auto& meshAsset : meshes) {
         deletion_queue.pushFunction([&]() {
@@ -162,8 +162,8 @@ void CornellBox::initCamera(uint32_t image_width, uint32_t image_height) {
 }
 
 void CornellBox::initScene() {
-    addMesh("Sphere", "../ressources/models/sphere.obj");
-    addMesh("Plane", "../ressources/models/plane.obj");
+    addMesh("Sphere", "../resources/models/sphere.obj");
+    addMesh("Plane", "../resources/models/plane.obj");
 
     glm::vec3 diffuse_gray = glm::vec3(0.5f);
     float quad_scale = 5.0f;
@@ -371,8 +371,8 @@ void PBR_CornellBox::initCamera(uint32_t image_width, uint32_t image_height) {
 }
 
 void PBR_CornellBox::initScene() {
-    addMesh("Sphere", "../ressources/models/sphere.obj");
-    addMesh("Plane", "../ressources/models/plane.obj");
+    addMesh("Sphere", "../resources/models/sphere.obj");
+    addMesh("Plane", "../resources/models/plane.obj");
 
     glm::vec3 diffuse_gray = glm::vec3(0.5f);
     float quad_scale = 5.0f;
@@ -489,15 +489,15 @@ void Material_Showcase::initCamera(uint32_t image_width, uint32_t image_height) 
 }
 
 void Material_Showcase::initScene() {
-    addMesh("Sphere", "../ressources/models/sphere.obj");
-    addMesh("Plane", "../ressources/models/plane.obj");
+    addMesh("Sphere", "../resources/models/sphere.obj");
+    addMesh("Plane", "../resources/models/plane.obj");
 
     glm::vec3 diffuse_gray = glm::vec3(0.5f);
     float quad_scale = 5.0f;
 
-    /*AllocatedImage albedo_tex = ressource_builder.loadTextureImage("../ressources/textures/testing/base-map.png");
-    AllocatedImage metal_rough_ao_tex = ressource_builder.loadTextureImage("../ressources/textures/testing/base-map.png");
-    AllocatedImage normal_tex = ressource_builder.loadTextureImage("../ressources/textures/testing/normal-map.png", VK_FORMAT_R8G8B8A8_UNORM);
+    /*AllocatedImage albedo_tex = ressource_builder.loadTextureImage("../resources/textures/testing/base-map.png");
+    AllocatedImage metal_rough_ao_tex = ressource_builder.loadTextureImage("../resources/textures/testing/base-map.png");
+    AllocatedImage normal_tex = ressource_builder.loadTextureImage("../resources/textures/testing/normal-map.png", VK_FORMAT_R8G8B8A8_UNORM);
     textures.push_back(albedo_tex);
     textures.push_back(metal_rough_ao_tex);
     textures.push_back(normal_tex);
@@ -536,13 +536,13 @@ void Material_Showcase::initScene() {
     quad->refreshTransform(glm::mat4(1.0f));
     scene_graph["Left"] = std::move(quad);*/
 
-    addTexture("../ressources/textures/rusty_metal/rusty-metal_albedo.png", PARAMETER);
-    addTexture("../ressources/textures/rusty_metal/rusty-metal_metal_rough_ao.png", PARAMETER);
-    addTexture("../ressources/textures/rusty_metal/rusty-metal_normal-dx.png", NORMAL);
+    addTexture("../resources/textures/rusty_metal/rusty-metal_albedo.png", PARAMETER);
+    addTexture("../resources/textures/rusty_metal/rusty-metal_metal_rough_ao.png", PARAMETER);
+    addTexture("../resources/textures/rusty_metal/rusty-metal_normal-dx.png", NORMAL);
 
-    addTexture("../ressources/textures/peeling_paint/peeling-painted-metal_albedo.png", PARAMETER);
-    addTexture("../ressources/textures/peeling_paint/peeling-painted-metal_metal_rough_ao.png", PARAMETER);
-    addTexture("../ressources/textures/peeling_paint/peeling-painted-metal_normal-dx.png", NORMAL);
+    addTexture("../resources/textures/peeling_paint/peeling-painted-metal_albedo.png", PARAMETER);
+    addTexture("../resources/textures/peeling_paint/peeling-painted-metal_metal_rough_ao.png", PARAMETER);
+    addTexture("../resources/textures/peeling_paint/peeling-painted-metal_normal-dx.png", NORMAL);
 
     auto sphere = std::make_shared<MeshNode>();
     sphere->localTransform = glm::translate(glm::mat4(1.0f), glm::vec3(0, 0, 0)) * glm::scale(glm::mat4(1.0), glm::vec3(1.0f));

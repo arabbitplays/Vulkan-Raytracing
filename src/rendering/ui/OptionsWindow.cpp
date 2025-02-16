@@ -31,6 +31,17 @@ void OptionsWindow::createFrame() {
                     break;
                 }
             }
+
+            std::vector<const char*> cStrArray;
+            for (auto& str : renderer_options->scene_paths) {
+                cStrArray.push_back(const_cast<char*>(str.c_str())); // Convert std::string to char*
+            }
+            const char** items2 = cStrArray.data();
+
+            if (ImGui::Combo("Select an scene", &imgui_options.curr_scene_2, items2, renderer_options->scene_paths.size())) {
+                reset_image = true;
+                renderer_options->curr_scene_path = renderer_options->scene_paths[imgui_options.curr_scene_2];
+            }
         }
 
         if (ImGui::CollapsingHeader("Raytracing Options")) {
