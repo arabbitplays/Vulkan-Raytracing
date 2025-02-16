@@ -121,7 +121,7 @@ void SceneManager::createUniformBuffers() {
     }
 }
 
-void SceneManager::updateScene(DrawContext& draw_context, uint32_t current_image_idx, AllocatedImage& current_image, AllocatedImage& rng_tex) {
+void SceneManager::updateScene(DrawContext& draw_context, uint32_t current_image_idx, AllocatedImage current_image, AllocatedImage& rng_tex) {
     //QuickTimer timer{"Scene Update", true};
 
     scene->update(context->swapchain->extent.width, context->swapchain->extent.height);

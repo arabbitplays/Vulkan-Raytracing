@@ -569,11 +569,7 @@ void VulkanEngine::drawFrame() {
 
     vkResetFences(device, 1, &inFlightFences[currentFrame]);
 
-#ifdef REALTIME_MODE
-    scene_manager->updateScene(mainDrawContext, currentFrame, storageImages[currentFrame]);
-#else
-    scene_manager->updateScene(mainDrawContext, currentFrame, render_targets[0], rng_tex);
-#endif
+    scene_manager->updateScene(mainDrawContext, currentFrame, getRenderTarget(), rng_tex);
     raytracing_options->emitting_instances_count = scene_manager->getEmittingInstancesCount(); // TODO move this together with the creation of the instance buffers
 
     vkResetCommandBuffer(commandBuffers[currentFrame], 0);
@@ -724,13 +720,13 @@ void VulkanEngine::recordCopyToSwapchain(VkCommandBuffer commandBuffer, uint32_t
     AllocatedImage render_target = getRenderTarget();
 
     ressourceBuilder.transitionImageLayout(commandBuffer, swapchain->images[swapchain_image_index],
-        VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
-        VK_ACCESS_NONE, VK_ACCESS_NONE,
+        VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+        VK_ACCESS_NONE, VK_ACCESS_TRANSFER_WRITE_BIT,
         VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
     ressourceBuilder.transitionImageLayout(commandBuffer, render_target.image,
-        VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
-        VK_ACCESS_NONE, VK_ACCESS_TRANSFER_READ_BIT,
+        VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR, VK_PIPELINE_STAGE_TRANSFER_BIT,
+        VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT,
         VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
 
     VkImageCopy copyRegion{};
@@ -743,12 +739,12 @@ void VulkanEngine::recordCopyToSwapchain(VkCommandBuffer commandBuffer, uint32_t
         swapchain->images[swapchain_image_index], VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copyRegion);
 
     ressourceBuilder.transitionImageLayout(commandBuffer, swapchain->images[swapchain_image_index],
-        VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
-        VK_ACCESS_NONE, VK_ACCESS_NONE,
+        VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
+        VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_NONE,
         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
 
     ressourceBuilder.transitionImageLayout(commandBuffer, render_target.image,
-        VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+        VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
         VK_ACCESS_TRANSFER_READ_BIT, VK_ACCESS_NONE,
         VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL);
 }

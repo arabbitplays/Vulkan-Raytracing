@@ -23,7 +23,7 @@ public:
 
     void createScene(std::string scene_path);
     void createBlas();
-    void updateScene(DrawContext& draw_context, uint32_t current_image_idx, AllocatedImage& current_image, AllocatedImage& rng_tex);
+    void updateScene(DrawContext& draw_context, uint32_t current_image_idx, AllocatedImage current_image, AllocatedImage& rng_tex);
 
     void clearRessources();
 
