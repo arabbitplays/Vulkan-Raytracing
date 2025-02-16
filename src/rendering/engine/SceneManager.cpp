@@ -10,7 +10,7 @@
 #include <SceneReader.hpp>
 #include <SceneWriter.hpp>
 
-void SceneManager::createScene(SceneType scene_type, std::string scene_path) {
+void SceneManager::createScene(std::string scene_path) {
     QuickTimer timer{"Scene Creation", true};
 
     if (scene != nullptr) {
@@ -21,28 +21,8 @@ void SceneManager::createScene(SceneType scene_type, std::string scene_path) {
         }
     }
 
-    if (false)
-    {
-        switch (scene_type) {
-        case SceneType::PBR_CORNELL_BOX:
-            scene = std::make_shared<PBR_CornellBox>(context->mesh_builder, *context->resource_builder, context->swapchain->extent.width, context->swapchain->extent.height, metal_rough_material);
-            break;
-        case SceneType::CORNELL_BOX:
-            scene = std::make_shared<CornellBox>(context->mesh_builder, *context->resource_builder, context->swapchain->extent.width, context->swapchain->extent.height, phong_material);
-            break;
-        case SceneType::PLANE:
-            scene = std::make_shared<PlaneScene>(context->mesh_builder, *context->resource_builder, context->swapchain->extent.width, context->swapchain->extent.height, phong_material);
-            break;
-        case SceneType::SHOWCASE:
-            scene = std::make_shared<Material_Showcase>(context->mesh_builder, *context->resource_builder, context->swapchain->extent.width, context->swapchain->extent.height, metal_rough_material);
-            break;
-        }
-    } else
-    {
-        SceneReader reader = SceneReader(context);
-        scene = reader.readScene(scene_path, defaultMaterials);
-    }
-
+    SceneReader reader = SceneReader(context);
+    scene = reader.readScene(scene_path, defaultMaterials);
 
     scene_ressource_deletion_queue.pushFunction([&]() {
         scene->clearRessources();
@@ -52,14 +32,6 @@ void SceneManager::createScene(SceneType scene_type, std::string scene_path) {
     createBlas();
     createUniformBuffers();
     createSceneDescriptorSets();
-
-    curr_scene_type = scene_type;
-
-    const std::string name_string[] = {"PBR_CORNELL_BOX", "CORNELL_BOX", "PLANE", "SHOWCASE" };
-    size_t index = static_cast<size_t>(scene_type);
-    // TODO remove this test
-    SceneWriter writer;
-    writer.writeScene(name_string[index] + ".yaml", scene);
 }
 
 void SceneManager::createSceneBuffers() {

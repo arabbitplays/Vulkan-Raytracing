@@ -497,7 +497,7 @@ void VulkanEngine::loadScene()
     vkDeviceWaitIdle(device);
     raytracing_options->curr_sample_count = 0;
     std::string path = renderer_options->scene_dir_path + "/" + renderer_options->curr_scene_path;
-    scene_manager->createScene(renderer_options->scene_type, path);
+    scene_manager->createScene(path);
     scene_manager->curr_scene_path = renderer_options->curr_scene_path;
 }
 

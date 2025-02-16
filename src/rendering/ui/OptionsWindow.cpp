@@ -14,33 +14,15 @@ void OptionsWindow::createFrame() {
         ImGui::Begin("Main Window", &show_window);
 
         if (ImGui::CollapsingHeader("Renderer Options")) {
-            const char* items[] = { "PBR Cornell Box", "Cornell Box", "Plane", "Showcase" };
-            if (ImGui::Combo("Select an option", &imgui_options.currentScene, items, IM_ARRAYSIZE(items))) {
-                switch (imgui_options.currentScene) {
-                    case 0:
-                        renderer_options->scene_type = SceneType::PBR_CORNELL_BOX;
-                    break;
-                    case 1:
-                        renderer_options->scene_type = SceneType::CORNELL_BOX;
-                    break;
-                    case 2:
-                        renderer_options->scene_type = SceneType::PLANE;
-                    break;
-                    case 3:
-                        renderer_options->scene_type = SceneType::SHOWCASE;
-                    break;
-                }
-            }
-
             std::vector<const char*> cStrArray;
             for (auto& str : renderer_options->scene_paths) {
                 cStrArray.push_back(const_cast<char*>(str.c_str())); // Convert std::string to char*
             }
-            const char** items2 = cStrArray.data();
+            const char** items = cStrArray.data();
 
-            if (ImGui::Combo("Select an scene", &imgui_options.curr_scene_2, items2, renderer_options->scene_paths.size())) {
+            if (ImGui::Combo("Select an scene", &imgui_options.curr_scene, items, renderer_options->scene_paths.size())) {
                 reset_image = true;
-                renderer_options->curr_scene_path = renderer_options->scene_paths[imgui_options.curr_scene_2];
+                renderer_options->curr_scene_path = renderer_options->scene_paths[imgui_options.curr_scene];
             }
         }
 
