@@ -3,6 +3,7 @@
 #include "rendering/engine/VulkanEngine.hpp"
 #include <CommandLineParser.hpp>
 #include <filesystem>
+#include <ReferenceRenderer.hpp>
 
 int main(int argc, char* argv[]) {
     RendererOptions options;
@@ -12,6 +13,7 @@ int main(int argc, char* argv[]) {
 
     cli_parser.addFlag("--help", &help, "Show this message.");
     cli_parser.addInt("--samples", &options.sample_count, "Number of samples taken per pixel.");
+    cli_parser.addString("--reference_scene", &options.reference_scene_path, "Generate one image of this scene.");
     cli_parser.addString("--output", &options.output_path, "Generate one image and save it to the given file.");
     cli_parser.addString("--scenes", &options.scene_dir_path, "The path to the directory where the scene files can be found.");
     cli_parser.addFlag("-v", &verbose, "Display debug messages.");
@@ -42,9 +44,17 @@ int main(int argc, char* argv[]) {
     }
     options.curr_scene_path = options.scene_paths[0];
 
-    VulkanEngine app;
+    std::shared_ptr<VulkanEngine> app;
+    if (!options.output_path.empty() && !options.reference_scene_path.empty())
+    {
+        app = std::make_shared<ReferenceRenderer>();
+    } else
+    {
+        app = std::make_shared<VulkanEngine>();
+    }
+
     try {
-        app.run(options);
+        app->run(options);
     } catch (const std::exception& e) {
         spdlog::error(e.what());
         return EXIT_FAILURE;

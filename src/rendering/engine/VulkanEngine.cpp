@@ -59,8 +59,8 @@ void CmdTraceRaysKHR(VkDevice device, VkCommandBuffer commandBuffer, const VkStr
     }
 }
 
-const uint32_t WIDTH = 800;
-const uint32_t HEIGHT = 600;
+const uint32_t WIDTH = 1920;
+const uint32_t HEIGHT = 1080;
 
 void VulkanEngine::run(RendererOptions& renderer_options) {
     this->renderer_options = std::make_shared<RendererOptions>(renderer_options);
@@ -155,10 +155,6 @@ void VulkanEngine::initVulkan() {
     mainDeletionQueue.pushFunction([&]() {
         scene_manager->clearRessources();
     });
-
-    //createDepthResources();
-
-    loadScene();
 
     createCommandBuffers();
     createSyncObjects();
@@ -467,15 +463,15 @@ void VulkanEngine::createSwapchain() {
 }
 
 void VulkanEngine::createRenderingTargets() {
-    storageImages.resize(MAX_FRAMES_IN_FLIGHT);
+    render_targets.resize(MAX_FRAMES_IN_FLIGHT);
     for (uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-        storageImages[i] = ressourceBuilder.createImage(
+        render_targets[i] = ressourceBuilder.createImage(
             VkExtent3D{swapchain->extent.width, swapchain->extent.height, 1},
             VK_FORMAT_B8G8R8A8_UNORM, VK_IMAGE_TILING_OPTIMAL,
             VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_STORAGE_BIT,
             VK_IMAGE_ASPECT_COLOR_BIT);
 
-        ressourceBuilder.transitionImageLayout(storageImages[i].image, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
+        ressourceBuilder.transitionImageLayout(render_targets[i].image, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
             VK_ACCESS_NONE, VK_ACCESS_NONE, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
     }
 
@@ -490,6 +486,12 @@ void VulkanEngine::createRenderingTargets() {
             VK_IMAGE_ASPECT_COLOR_BIT,
             VK_IMAGE_LAYOUT_GENERAL);
 }
+
+AllocatedImage VulkanEngine::getRenderTarget()
+{
+    return render_targets[0];
+}
+
 
 void VulkanEngine::loadScene()
 {
@@ -546,14 +548,6 @@ void VulkanEngine::createSyncObjects() {
 
 void VulkanEngine::mainLoop() {
     while(!glfwWindowShouldClose(window)) {
-        // render one image and then output it if output path is defined
-        if (!renderer_options->output_path.empty() && renderer_options->sample_count == raytracing_options->curr_sample_count)
-        {
-            vkDeviceWaitIdle(device);
-            outputRenderingTarget();
-            break;
-        }
-
         glfwPollEvents();
 
         if (scene_manager->curr_scene_path != renderer_options->curr_scene_path) {
@@ -578,31 +572,16 @@ void VulkanEngine::drawFrame() {
 #ifdef REALTIME_MODE
     scene_manager->updateScene(mainDrawContext, currentFrame, storageImages[currentFrame]);
 #else
-    scene_manager->updateScene(mainDrawContext, currentFrame, storageImages[0], rng_tex);
+    scene_manager->updateScene(mainDrawContext, currentFrame, render_targets[0], rng_tex);
 #endif
     raytracing_options->emitting_instances_count = scene_manager->getEmittingInstancesCount(); // TODO move this together with the creation of the instance buffers
 
     vkResetCommandBuffer(commandBuffers[currentFrame], 0);
     recordCommandBuffer(commandBuffers[currentFrame], imageIndex);
 
-    VkSubmitInfo submitInfo{};
-    submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-
-    VkSemaphore waitSemaphore[] = {imageAvailableSemaphores[currentFrame]};
-    VkPipelineStageFlags waitStages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
-    submitInfo.waitSemaphoreCount = 1;
-    submitInfo.pWaitSemaphores = waitSemaphore;
-    submitInfo.pWaitDstStageMask = waitStages;
-    submitInfo.commandBufferCount = 1;
-    submitInfo.pCommandBuffers = &commandBuffers[currentFrame];
-    VkSemaphore signalSemaphore[] = {renderFinishedSemaphores[currentFrame]};
-    submitInfo.signalSemaphoreCount = 1;
-    submitInfo.pSignalSemaphores = signalSemaphore;
-
-    if (vkQueueSubmit(graphicsQueue, 1, &submitInfo, inFlightFences[currentFrame]) != VK_SUCCESS) {
-        throw std::runtime_error("failed to submit draw command buffer!");
-    }
-
+    std::vector<VkSemaphore> waitSemaphore = {imageAvailableSemaphores[currentFrame]};
+    std::vector<VkSemaphore> signalSemaphore = {renderFinishedSemaphores[currentFrame]};
+    submitCommandBuffer(waitSemaphore, signalSemaphore);
     presentSwapchainImage(signalSemaphore, imageIndex);
 
     currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
@@ -622,12 +601,31 @@ int VulkanEngine::aquireNextSwapchainImage()
     return imageIndex;
 }
 
-void VulkanEngine::presentSwapchainImage(VkSemaphore wait_semaphore[], uint32_t image_index)
+void VulkanEngine::submitCommandBuffer(std::vector<VkSemaphore> wait_semaphore, std::vector<VkSemaphore> signal_semaphore)
+{
+    VkSubmitInfo submitInfo{};
+    submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+
+    VkPipelineStageFlags waitStages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
+    submitInfo.waitSemaphoreCount = static_cast<uint32_t>(wait_semaphore.size());
+    submitInfo.pWaitSemaphores = wait_semaphore.data();
+    submitInfo.pWaitDstStageMask = waitStages;
+    submitInfo.commandBufferCount = 1;
+    submitInfo.pCommandBuffers = &commandBuffers[currentFrame];
+    submitInfo.signalSemaphoreCount = static_cast<uint32_t>(signal_semaphore.size());;
+    submitInfo.pSignalSemaphores = signal_semaphore.data();
+
+    if (vkQueueSubmit(graphicsQueue, 1, &submitInfo, inFlightFences[currentFrame]) != VK_SUCCESS) {
+        throw std::runtime_error("failed to submit draw command buffer!");
+    }
+}
+
+void VulkanEngine::presentSwapchainImage(std::vector<VkSemaphore> wait_semaphore, uint32_t image_index)
 {
     VkPresentInfoKHR presentInfo{};
     presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
-    presentInfo.waitSemaphoreCount = 1;
-    presentInfo.pWaitSemaphores = wait_semaphore;
+    presentInfo.waitSemaphoreCount = static_cast<uint32_t>(wait_semaphore.size());
+    presentInfo.pWaitSemaphores = wait_semaphore.data();
     VkSwapchainKHR swapChains[] = {swapchain->handle};
     presentInfo.swapchainCount = 1;
     presentInfo.pSwapchains = swapChains;
@@ -657,7 +655,7 @@ void VulkanEngine::refreshAfterResize() {
 
 void VulkanEngine::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex) {
     recordBeginCommandBuffer(commandBuffer);
-    recordRenderToImage(commandBuffer, imageIndex);
+    recordRenderToImage(commandBuffer);
     recordCopyToSwapchain(commandBuffer, imageIndex);
     guiManager->recordGuiCommands(commandBuffer, imageIndex);
     recordEndCommandBuffer(commandBuffer);
@@ -673,7 +671,7 @@ void VulkanEngine::recordBeginCommandBuffer(VkCommandBuffer commandBuffer)
     }
 }
 
-void VulkanEngine::recordRenderToImage(VkCommandBuffer commandBuffer, uint32_t imageIndex)
+void VulkanEngine::recordRenderToImage(VkCommandBuffer commandBuffer)
 {
     Pipeline pipeline = *scene_manager->getMaterial()->pipeline;
 
@@ -721,21 +719,19 @@ void VulkanEngine::recordRenderToImage(VkCommandBuffer commandBuffer, uint32_t i
     raytracing_options->curr_sample_count++;
 }
 
-void VulkanEngine::recordCopyToSwapchain(VkCommandBuffer commandBuffer, uint32_t imageIndex)
+void VulkanEngine::recordCopyToSwapchain(VkCommandBuffer commandBuffer, uint32_t swapchain_image_index)
 {
-#ifdef REALTIME_MODE
-    AllocatedImage storage_image = storageImages[currentFrame];
-#else
-    AllocatedImage storage_image = storageImages[0];
-#endif
+    AllocatedImage render_target = getRenderTarget();
 
-    ressourceBuilder.transitionImageLayout(commandBuffer, swapchain->images[imageIndex],
+    ressourceBuilder.transitionImageLayout(commandBuffer, swapchain->images[swapchain_image_index],
         VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
         VK_ACCESS_NONE, VK_ACCESS_NONE,
         VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
-    ressourceBuilder.transitionImageLayout(commandBuffer, storage_image.image, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
-        VK_ACCESS_NONE, VK_ACCESS_TRANSFER_READ_BIT, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+    ressourceBuilder.transitionImageLayout(commandBuffer, render_target.image,
+        VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+        VK_ACCESS_NONE, VK_ACCESS_TRANSFER_READ_BIT,
+        VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
 
     VkImageCopy copyRegion{};
     copyRegion.srcSubresource = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1};
@@ -743,15 +739,15 @@ void VulkanEngine::recordCopyToSwapchain(VkCommandBuffer commandBuffer, uint32_t
     copyRegion.dstSubresource = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1};
     copyRegion.dstOffset = {0, 0, 0};
     copyRegion.extent = {swapchain->extent.width, swapchain->extent.height, 1};
-    vkCmdCopyImage(commandBuffer, storage_image.image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-        swapchain->images[imageIndex], VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copyRegion);
+    vkCmdCopyImage(commandBuffer, render_target.image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+        swapchain->images[swapchain_image_index], VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copyRegion);
 
-    ressourceBuilder.transitionImageLayout(commandBuffer, swapchain->images[imageIndex],
+    ressourceBuilder.transitionImageLayout(commandBuffer, swapchain->images[swapchain_image_index],
         VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
         VK_ACCESS_NONE, VK_ACCESS_NONE,
         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
 
-    ressourceBuilder.transitionImageLayout(commandBuffer, storage_image.image,
+    ressourceBuilder.transitionImageLayout(commandBuffer, render_target.image,
         VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
         VK_ACCESS_TRANSFER_READ_BIT, VK_ACCESS_NONE,
         VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL);
@@ -766,9 +762,9 @@ void VulkanEngine::recordEndCommandBuffer(VkCommandBuffer commandBuffer)
 
 void VulkanEngine::outputRenderingTarget()
 {
-    void* data = context->resource_builder->downloadImage(storageImages[0]);
-    fixImageFormatForStorage(static_cast<unsigned char*>(data), storageImages[0].imageExtent.width * storageImages[0].imageExtent.height, storageImages[0].imageFormat);
-    context->resource_builder->writePNG(std::to_string(renderer_options->sample_count) + "_" + renderer_options->output_path, data, storageImages[0].imageExtent.width, storageImages[0].imageExtent.height);
+    void* data = context->resource_builder->downloadImage(render_targets[0]);
+    fixImageFormatForStorage(static_cast<unsigned char*>(data), render_targets[0].imageExtent.width * render_targets[0].imageExtent.height, render_targets[0].imageFormat);
+    context->resource_builder->writePNG(std::to_string(renderer_options->sample_count) + "_" + renderer_options->output_path, data, render_targets[0].imageExtent.width, render_targets[0].imageExtent.height);
 }
 
 // target format is R8G8B8A8
@@ -795,7 +791,7 @@ void VulkanEngine::cleanup() {
 }
 
 void VulkanEngine::cleanupRenderingTargets() {
-    for (auto image : storageImages) {
+    for (auto image : render_targets) {
         ressourceBuilder.destroyImage(image);
     }
     ressourceBuilder.destroyImage(rng_tex);

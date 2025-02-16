@@ -42,7 +42,7 @@
 
 class VulkanEngine {
 public:
-    static constexpr int MAX_FRAMES_IN_FLIGHT = 2;
+    static constexpr int MAX_FRAMES_IN_FLIGHT = 1;
 
     VkDevice device;
     std::shared_ptr<CommandManager> pCommandManager;
@@ -53,7 +53,7 @@ public:
     std::shared_ptr<DescriptorAllocator> descriptorAllocator;
 
     void run(RendererOptions& options);
-private:
+protected:
 
     GLFWwindow* window;
     std::shared_ptr<GuiManager> guiManager;
@@ -77,7 +77,7 @@ private:
 
     VkPhysicalDeviceRayTracingPipelinePropertiesKHR raytracingProperties{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_PROPERTIES_KHR};
 
-    std::vector<AllocatedImage> storageImages;
+    std::vector<AllocatedImage> render_targets;
     AllocatedImage rng_tex;
 
     std::shared_ptr<SceneManager> scene_manager;
@@ -92,7 +92,7 @@ private:
     void initWindow();
     void initVulkan();
     void initGui();
-    void mainLoop();
+    virtual void mainLoop();
     void cleanup();
 
     static void framebufferResizeCallback(GLFWwindow *window, int width, int height);
@@ -128,21 +128,23 @@ private:
 
     void pollSdlEvents();
 
-    void drawFrame();
+    virtual void drawFrame();
     int aquireNextSwapchainImage();
-    void presentSwapchainImage(VkSemaphore wait_semaphore[], uint32_t image_index);
+    void submitCommandBuffer(std::vector<VkSemaphore> wait_semaphore, std::vector<VkSemaphore> signal_semaphore);
+    void presentSwapchainImage(std::vector<VkSemaphore> wait_semaphore, uint32_t image_index);
 
     void refreshAfterResize();
 
     void createRenderingTargets();
+    virtual AllocatedImage getRenderTarget();
     void outputRenderingTarget();
     void fixImageFormatForStorage(unsigned char* image_data, size_t pixel_count, VkFormat originalFormat);
     void cleanupRenderingTargets();
 
-    void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
+    virtual void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
     void recordBeginCommandBuffer(VkCommandBuffer commandBuffer);
-    void recordRenderToImage(VkCommandBuffer commandBuffer, uint32_t imageIndex);
-    void recordCopyToSwapchain(VkCommandBuffer commandBuffer, uint32_t imageIndex);
+    void recordRenderToImage(VkCommandBuffer commandBuffer);
+    void recordCopyToSwapchain(VkCommandBuffer commandBuffer, uint32_t swapchain_image_index);
     void recordEndCommandBuffer(VkCommandBuffer commandBuffer);
 
     static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(

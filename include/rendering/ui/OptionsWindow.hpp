@@ -33,7 +33,7 @@ private:
         .fresnel = true,
         .dispersion = false,
         .normal_mapping = true,
-        .sample_light = true,
+        .sample_light = false,
     };
 
 protected:

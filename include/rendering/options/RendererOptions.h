@@ -12,6 +12,7 @@ struct RendererOptions {
     std::string scene_dir_path = "";
     std::vector<std::string> scene_paths{};
 
+    std::string reference_scene_path = "";
     std::string output_path = "";
     int32_t sample_count = 1;
 };
