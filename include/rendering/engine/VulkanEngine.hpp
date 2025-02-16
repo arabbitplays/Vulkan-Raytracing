@@ -118,7 +118,6 @@ private:
     void createRessourceBuilder();
 
     bool hasStencilComponent(VkFormat format);
-    AllocatedImage loadTextureImage(std::string path);
 
 
     void createSwapchain();
@@ -130,13 +129,21 @@ private:
     void pollSdlEvents();
 
     void drawFrame();
+    int aquireNextSwapchainImage();
+    void presentSwapchainImage(VkSemaphore wait_semaphore[], uint32_t image_index);
 
     void refreshAfterResize();
 
-    void cleanupRenderingImages();
-    void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
-    void outputStorageImage();
+    void createRenderingTargets();
+    void outputRenderingTarget();
     void fixImageFormatForStorage(unsigned char* image_data, size_t pixel_count, VkFormat originalFormat);
+    void cleanupRenderingTargets();
+
+    void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
+    void recordBeginCommandBuffer(VkCommandBuffer commandBuffer);
+    void recordRenderToImage(VkCommandBuffer commandBuffer, uint32_t imageIndex);
+    void recordCopyToSwapchain(VkCommandBuffer commandBuffer, uint32_t imageIndex);
+    void recordEndCommandBuffer(VkCommandBuffer commandBuffer);
 
     static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
             VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
@@ -149,7 +156,6 @@ private:
         return VK_FALSE;
     }
 
-    void createRenderingImages();
     void loadScene();
 };
 

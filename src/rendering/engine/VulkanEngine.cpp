@@ -145,10 +145,10 @@ void VulkanEngine::initVulkan() {
     context->descriptor_allocator = descriptorAllocator;
     context->command_manager = pCommandManager;
 
-    createRenderingImages();
+    createRenderingTargets();
 
     mainDeletionQueue.pushFunction([&]() {
-        cleanupRenderingImages();
+        cleanupRenderingTargets();
     });
 
     scene_manager = std::make_shared<SceneManager>(context, MAX_FRAMES_IN_FLIGHT, raytracingProperties);
@@ -466,7 +466,7 @@ void VulkanEngine::createSwapchain() {
     });
 }
 
-void VulkanEngine::createRenderingImages() {
+void VulkanEngine::createRenderingTargets() {
     storageImages.resize(MAX_FRAMES_IN_FLIGHT);
     for (uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
         storageImages[i] = ressourceBuilder.createImage(
@@ -550,7 +550,7 @@ void VulkanEngine::mainLoop() {
         if (!renderer_options->output_path.empty() && renderer_options->sample_count == raytracing_options->curr_sample_count)
         {
             vkDeviceWaitIdle(device);
-            outputStorageImage();
+            outputRenderingTarget();
             break;
         }
 
@@ -569,15 +569,9 @@ void VulkanEngine::mainLoop() {
 void VulkanEngine::drawFrame() {
     vkWaitForFences(device, 1, &inFlightFences[currentFrame], VK_TRUE, UINT64_MAX);
 
-    uint32_t imageIndex;
-    VkResult result = vkAcquireNextImageKHR(device, swapchain->handle, UINT64_MAX, imageAvailableSemaphores[currentFrame], VK_NULL_HANDLE, &imageIndex);
-
-    if (result == VK_ERROR_OUT_OF_DATE_KHR) {
-        refreshAfterResize();
+    int imageIndex = aquireNextSwapchainImage();
+    if (imageIndex < 0)
         return;
-    } else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
-        std::runtime_error("failed to acquire swap chain image!");
-    }
 
     vkResetFences(device, 1, &inFlightFences[currentFrame]);
 
@@ -609,16 +603,37 @@ void VulkanEngine::drawFrame() {
         throw std::runtime_error("failed to submit draw command buffer!");
     }
 
+    presentSwapchainImage(signalSemaphore, imageIndex);
+
+    currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
+}
+
+int VulkanEngine::aquireNextSwapchainImage()
+{
+    uint32_t imageIndex;
+    VkResult result = vkAcquireNextImageKHR(device, swapchain->handle, UINT64_MAX, imageAvailableSemaphores[currentFrame], VK_NULL_HANDLE, &imageIndex);
+
+    if (result == VK_ERROR_OUT_OF_DATE_KHR) {
+        refreshAfterResize();
+        return -1;
+    } else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
+        std::runtime_error("failed to acquire swap chain image!");
+    }
+    return imageIndex;
+}
+
+void VulkanEngine::presentSwapchainImage(VkSemaphore wait_semaphore[], uint32_t image_index)
+{
     VkPresentInfoKHR presentInfo{};
     presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
     presentInfo.waitSemaphoreCount = 1;
-    presentInfo.pWaitSemaphores = signalSemaphore;
+    presentInfo.pWaitSemaphores = wait_semaphore;
     VkSwapchainKHR swapChains[] = {swapchain->handle};
     presentInfo.swapchainCount = 1;
     presentInfo.pSwapchains = swapChains;
-    presentInfo.pImageIndices = &imageIndex;
+    presentInfo.pImageIndices = &image_index;
 
-    result = vkQueuePresentKHR(presentQueue, &presentInfo);
+    VkResult result = vkQueuePresentKHR(presentQueue, &presentInfo);
 
     if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || framebufferResized) {
         framebufferResized = false;
@@ -627,8 +642,6 @@ void VulkanEngine::drawFrame() {
     } else if (result != VK_SUCCESS) {
         std::runtime_error("failed to present swap chain image!");
     }
-
-    currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
 }
 
 void VulkanEngine::refreshAfterResize() {
@@ -636,21 +649,33 @@ void VulkanEngine::refreshAfterResize() {
 
     raytracing_options->curr_sample_count = 0;
     swapchain->recreate();
-    cleanupRenderingImages();
-    createRenderingImages();
+    cleanupRenderingTargets();
+    createRenderingTargets();
     guiManager->updateWindows(swapchain);
     scene_manager->scene->update(swapchain->extent.width, swapchain->extent.height);
 }
 
 void VulkanEngine::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex) {
-    Pipeline pipeline = *scene_manager->getMaterial()->pipeline;
+    recordBeginCommandBuffer(commandBuffer);
+    recordRenderToImage(commandBuffer, imageIndex);
+    recordCopyToSwapchain(commandBuffer, imageIndex);
+    guiManager->recordGuiCommands(commandBuffer, imageIndex);
+    recordEndCommandBuffer(commandBuffer);
+}
 
+void VulkanEngine::recordBeginCommandBuffer(VkCommandBuffer commandBuffer)
+{
     VkCommandBufferBeginInfo beginInfo{};
     beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 
     if (vkBeginCommandBuffer(commandBuffer, &beginInfo) != VK_SUCCESS) {
         throw std::runtime_error("failed to begin record command buffer!");
     }
+}
+
+void VulkanEngine::recordRenderToImage(VkCommandBuffer commandBuffer, uint32_t imageIndex)
+{
+    Pipeline pipeline = *scene_manager->getMaterial()->pipeline;
 
     const uint32_t handleSizeAligned = VulkanUtil::alignedSize(raytracingProperties.shaderGroupHandleSize, raytracingProperties.shaderGroupHandleAlignment);
 
@@ -694,7 +719,10 @@ void VulkanEngine::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t i
         1);
 
     raytracing_options->curr_sample_count++;
+}
 
+void VulkanEngine::recordCopyToSwapchain(VkCommandBuffer commandBuffer, uint32_t imageIndex)
+{
 #ifdef REALTIME_MODE
     AllocatedImage storage_image = storageImages[currentFrame];
 #else
@@ -727,15 +755,16 @@ void VulkanEngine::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t i
         VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
         VK_ACCESS_TRANSFER_READ_BIT, VK_ACCESS_NONE,
         VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL);
+}
 
-    guiManager->recordGuiCommands(commandBuffer, imageIndex);
-
+void VulkanEngine::recordEndCommandBuffer(VkCommandBuffer commandBuffer)
+{
     if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS) {
         throw std::runtime_error("failed to record command buffer!");
     }
 }
 
-void VulkanEngine::outputStorageImage()
+void VulkanEngine::outputRenderingTarget()
 {
     void* data = context->resource_builder->downloadImage(storageImages[0]);
     fixImageFormatForStorage(static_cast<unsigned char*>(data), storageImages[0].imageExtent.width * storageImages[0].imageExtent.height, storageImages[0].imageFormat);
@@ -765,7 +794,7 @@ void VulkanEngine::cleanup() {
     glfwTerminate();
 }
 
-void VulkanEngine::cleanupRenderingImages() {
+void VulkanEngine::cleanupRenderingTargets() {
     for (auto image : storageImages) {
         ressourceBuilder.destroyImage(image);
     }
