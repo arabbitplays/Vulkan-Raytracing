@@ -39,14 +39,13 @@ void main() {
         depth++;
     }
 
+    float gamma = 2.2;
     vec3 prev_color = imageLoad(image, ivec2(gl_LaunchIDEXT.xy)).xyz;
+    prev_color = pow(prev_color, vec3(gamma)); // srgb -> unorm
+
     color = (options.curr_sample_count * prev_color + color) / (options.curr_sample_count + 1);
+    color = pow(color, vec3(1 / gamma)); // unorm -> srgb
 
-    // Gamma correction
-    //color = color / (color + vec3(1.0));
-    //color = pow(color, vec3(1.0/2.2));
-
-    //color = vec3(stepAndOutputRNGFloat(payload.rng_state));
     imageStore(rng_tex, ivec2(gl_LaunchIDEXT.xy), payload.rng_state);
     imageStore(image, ivec2(gl_LaunchIDEXT.xy), vec4(color, 1.0));
 }

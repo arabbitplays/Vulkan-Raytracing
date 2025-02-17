@@ -1,8 +1,8 @@
-#define PI 3.14159265
-// from https://developer.nvidia.com/gpugems/gpugems3/part-vi-gpu-computing/chapter-37-efficient-random-number-generation-and-application
+#include "math.glsl"
 
 layout(binding = 9, set = 0, rgba32ui) uniform uimage2D rng_tex;
 
+// from https://developer.nvidia.com/gpugems/gpugems3/part-vi-gpu-computing/chapter-37-efficient-random-number-generation-and-application
 // S1, S2, S3, and M are all constants, and z is part of the
 // private per-thread generator state.
 uint TausStep(inout uint z, uint S1, uint S2, uint S3, uint M)
@@ -24,6 +24,17 @@ float stepAndOutputRNGFloat(inout uvec4 rngState) {
         ^ TausStep(rngState.y, 2, 25, 4, 4294967288)
         ^ TausStep(rngState.z, 3, 11, 17, 4294967280)
         ^ LCGStep(rngState.w, 1664525, 1013904223));
+}
+
+// ---------------------------------------------------------------------------------------
+
+vec3 sampleUniformHemisphere(inout uvec4 rngState) {
+    vec2 u = vec2(stepAndOutputRNGFloat(rngState), stepAndOutputRNGFloat(rngState));
+
+    float z = u.x;
+    float r = safeSqrt(1 - sqrt(z));
+    float phi = 2 * PI * u.y;
+    return vec3(r * cos(phi), r * sin(phi), z);
 }
 
 vec3 sampleCosHemisphere(inout uvec4 rngState) {

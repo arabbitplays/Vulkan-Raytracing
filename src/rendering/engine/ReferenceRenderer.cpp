@@ -10,8 +10,6 @@ void ReferenceRenderer::mainLoop() {
 
     renderer_options->curr_scene_path = renderer_options->reference_scene_path;
     loadScene();
-    scene_manager->updateScene(mainDrawContext, currentFrame, getRenderTarget(), rng_tex);
-    raytracing_options->emitting_instances_count = scene_manager->getEmittingInstancesCount(); // TODO move this together with the creation of the instance buffers
 
     stopwatch.reset();
 
@@ -48,6 +46,9 @@ void ReferenceRenderer::drawFrame()
     }
 
     vkResetFences(device, 1, &inFlightFences[currentFrame]);
+
+    scene_manager->updateScene(mainDrawContext, currentFrame, getRenderTarget(), rng_tex);
+    raytracing_options->emitting_instances_count = scene_manager->getEmittingInstancesCount(); // TODO move this together with the creation of the instance buffers
 
     vkResetCommandBuffer(commandBuffers[currentFrame], 0);
     recordCommandBuffer(commandBuffers[currentFrame], imageIndex);

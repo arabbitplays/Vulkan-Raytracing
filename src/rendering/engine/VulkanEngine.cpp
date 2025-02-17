@@ -24,7 +24,7 @@ const std::vector<const char*> deviceExtensions = {
     VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME,
     VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME,
 };
-
+#define NDEBUG
 #ifdef NDEBUG
     const bool enableValidationLayers = false;
 #else
@@ -59,8 +59,8 @@ void CmdTraceRaysKHR(VkDevice device, VkCommandBuffer commandBuffer, const VkStr
     }
 }
 
-const uint32_t WIDTH = 1920;
-const uint32_t HEIGHT = 1080;
+const uint32_t WIDTH = 6144;
+const uint32_t HEIGHT = 3320;
 
 void VulkanEngine::run(RendererOptions& renderer_options) {
     this->renderer_options = std::make_shared<RendererOptions>(renderer_options);
@@ -553,7 +553,8 @@ void VulkanEngine::mainLoop() {
         if (scene_manager->curr_scene_path != renderer_options->curr_scene_path) {
             loadScene();
         }
-
+        scene_manager->updateScene(mainDrawContext, currentFrame, getRenderTarget(), rng_tex);
+        raytracing_options->emitting_instances_count = scene_manager->getEmittingInstancesCount(); // TODO move this together with the creation of the instance buffers
         drawFrame();
     }
 
@@ -568,9 +569,6 @@ void VulkanEngine::drawFrame() {
         return;
 
     vkResetFences(device, 1, &inFlightFences[currentFrame]);
-
-    scene_manager->updateScene(mainDrawContext, currentFrame, getRenderTarget(), rng_tex);
-    raytracing_options->emitting_instances_count = scene_manager->getEmittingInstancesCount(); // TODO move this together with the creation of the instance buffers
 
     vkResetCommandBuffer(commandBuffers[currentFrame], 0);
     recordCommandBuffer(commandBuffers[currentFrame], imageIndex);
@@ -646,8 +644,7 @@ void VulkanEngine::refreshAfterResize() {
     cleanupRenderingTargets();
     createRenderingTargets();
     guiManager->updateWindows(swapchain);
-    scene_manager->scene->update(swapchain->extent.width, swapchain->extent.height);
-}
+    scene_manager->updateScene(mainDrawContext, currentFrame, getRenderTarget(), rng_tex);}
 
 void VulkanEngine::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex) {
     recordBeginCommandBuffer(commandBuffer);

@@ -90,6 +90,7 @@ void main() {
     payload.light = result;
     payload.next_origin = P;
     payload.next_direction = TBN * sampleCosHemisphere(payload.rng_state);
+    //payload.next_direction = TBN * sampleUniformHemisphere(payload.rng_state);
     // f * cos / PDF
-    payload.contribution = calcBRDF(N, V, payload.next_direction, albedo, metallic, roughness) * PI ;
+    payload.contribution = calcBRDF(N, V, payload.next_direction, albedo, metallic, roughness) * PI;
 }
