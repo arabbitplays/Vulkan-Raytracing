@@ -42,8 +42,7 @@ std::shared_ptr<Scene> SceneReader::readScene(const std::string& filename, std::
 
         return scene;
     } catch (const YAML::Exception& e) {
-        spdlog::error("YAML Error: {}", e.what());
-        return nullptr;
+        throw std::runtime_error(e.what());
     }
 }
 

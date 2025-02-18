@@ -140,8 +140,9 @@ LightSample sampleEmittingPrimitive(vec3 P) {
     float area = 0.5 * length(cross(triangle.B.position - triangle.A.position, triangle.C.position - triangle.A.position));
     float pdf = 1.0 / area;
 
+    mat3 normal_matrix = transpose(inverse(mat3(emitting_instance.transform)));
     vec3 N = normalize((1 - u - v) * triangle.A.normal + u * triangle.B.normal + v * triangle.C.normal);
-    N = normalize(vec3(vec4(N, 1.0) * emitting_instance.transform));
+    N = normalize(vec3(normal_matrix * N));
 
     Material material = getMaterial(triangle.material_idx);
     vec3 li = vec3(0.0);

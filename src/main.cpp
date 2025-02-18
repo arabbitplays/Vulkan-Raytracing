@@ -28,8 +28,9 @@ int main(int argc, char* argv[]) {
         spdlog::set_level(spdlog::level::debug);
     }
 
+    std::string scenes_dir = options.resources_path + "/scenes";
     try {
-        for (const auto& entry : std::filesystem::directory_iterator(options.resources_path)) {
+        for (const auto& entry : std::filesystem::directory_iterator(scenes_dir)) {
             options.scene_paths.push_back(entry.path().filename());
         }
     } catch (const std::exception& e) {
@@ -39,7 +40,7 @@ int main(int argc, char* argv[]) {
 
     if (options.scene_paths.empty())
     {
-        spdlog::error("No scenes found in scene directory " + options.resources_path + ".");
+        spdlog::error("No scenes found in scene directory " + scenes_dir + ".");
         return 1;
     }
     options.curr_scene_path = options.scene_paths[0];
