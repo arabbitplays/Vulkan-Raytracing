@@ -9,7 +9,7 @@
 
 struct RendererOptions {
     std::string curr_scene_path = "";
-    std::string scene_dir_path = "";
+    std::string resources_path = "";
     std::vector<std::string> scene_paths{};
 
     std::string reference_scene_path = "";

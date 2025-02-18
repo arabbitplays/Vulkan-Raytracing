@@ -158,7 +158,7 @@ protected:
         return VK_FALSE;
     }
 
-    void loadScene();
+    virtual void loadScene();
 };
 
 #endif //BASICS_VULKANENGINE_HPP

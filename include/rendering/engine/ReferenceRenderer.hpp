@@ -10,6 +10,7 @@
 
 class ReferenceRenderer : public VulkanEngine {
     void mainLoop() override;
+    void loadScene() override;
     void drawFrame() override;
     void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex) override;
 

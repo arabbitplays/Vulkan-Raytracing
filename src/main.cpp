@@ -15,7 +15,7 @@ int main(int argc, char* argv[]) {
     cli_parser.addInt("--samples", &options.sample_count, "Number of samples taken per pixel.");
     cli_parser.addString("--reference_scene", &options.reference_scene_path, "Generate one image of this scene.");
     cli_parser.addString("--output", &options.output_path, "Generate one image and save it to the given file.");
-    cli_parser.addString("--scenes", &options.scene_dir_path, "The path to the directory where the scene files can be found.");
+    cli_parser.addString("--resources", &options.resources_path, "The path to the directory where all resource files can be found.");
     cli_parser.addFlag("-v", &verbose, "Display debug messages.");
     cli_parser.parse(argc, argv);
 
@@ -29,7 +29,7 @@ int main(int argc, char* argv[]) {
     }
 
     try {
-        for (const auto& entry : std::filesystem::directory_iterator(options.scene_dir_path)) {
+        for (const auto& entry : std::filesystem::directory_iterator(options.resources_path)) {
             options.scene_paths.push_back(entry.path().filename());
         }
     } catch (const std::exception& e) {
@@ -39,7 +39,7 @@ int main(int argc, char* argv[]) {
 
     if (options.scene_paths.empty())
     {
-        spdlog::error("No scenes found in scene directory " + options.scene_dir_path + ".");
+        spdlog::error("No scenes found in scene directory " + options.resources_path + ".");
         return 1;
     }
     options.curr_scene_path = options.scene_paths[0];

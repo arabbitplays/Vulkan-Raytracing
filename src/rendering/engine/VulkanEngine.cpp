@@ -130,7 +130,7 @@ void VulkanEngine::initVulkan() {
     createCommandManager();
     createRessourceBuilder();
     createDescriptorAllocator();
-    mesh_builder = std::make_shared<MeshAssetBuilder>(device, ressourceBuilder);
+    mesh_builder = std::make_shared<MeshAssetBuilder>(device, ressourceBuilder, renderer_options->resources_path);
 
     createSwapchain();
 
@@ -430,7 +430,7 @@ void VulkanEngine::createCommandManager() {
 }
 
 void VulkanEngine::createRessourceBuilder() {
-    pRessourceBuilder = std::make_shared<RessourceBuilder>(physicalDevice, device, commandManager);
+    pRessourceBuilder = std::make_shared<RessourceBuilder>(physicalDevice, device, commandManager, renderer_options->resources_path);
     ressourceBuilder = *pRessourceBuilder;
 }
 
@@ -498,7 +498,7 @@ void VulkanEngine::loadScene()
     assert(renderer_options->curr_scene_path != "");
     vkDeviceWaitIdle(device);
     raytracing_options->curr_sample_count = 0;
-    std::string path = renderer_options->scene_dir_path + "/" + renderer_options->curr_scene_path;
+    std::string path = renderer_options->resources_path + "/scenes/" + renderer_options->curr_scene_path;
     scene_manager->createScene(path);
     scene_manager->curr_scene_path = renderer_options->curr_scene_path;
 }

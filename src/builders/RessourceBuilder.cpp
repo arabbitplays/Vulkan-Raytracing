@@ -25,12 +25,6 @@ VkDeviceAddress GetBufferDeviceAddressKHR(VkDevice device, const VkBufferDeviceA
     }
 }
 
-RessourceBuilder::RessourceBuilder(VkPhysicalDevice physicalDevice, VkDevice device, CommandManager commandManager) {
-    this->device = device;
-    this->physicalDevice = physicalDevice;
-    this->commandManager = commandManager;
-}
-
 AllocatedBuffer RessourceBuilder::createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties) {
     AllocatedBuffer allocatedBuffer{};
     allocatedBuffer.size = size;
@@ -195,7 +189,7 @@ AllocatedImage RessourceBuilder::createImage(void* data, VkExtent3D extent, VkFo
 
 Texture RessourceBuilder::loadTextureImage(std::string path, TextureType type) {
     int texWidth, texHeight, texChannels;
-    stbi_uc* pixels = stbi_load(path.c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
+    stbi_uc* pixels = stbi_load((resource_path + "/" + path).c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
 
     if (!pixels) {
         throw std::runtime_error("failed to load texture image!");

@@ -8,7 +8,6 @@ void ReferenceRenderer::mainLoop() {
     assert(!renderer_options->output_path.empty());
     assert(!renderer_options->reference_scene_path.empty());
 
-    renderer_options->curr_scene_path = renderer_options->reference_scene_path;
     loadScene();
 
     stopwatch.reset();
@@ -29,6 +28,15 @@ void ReferenceRenderer::mainLoop() {
 
     vkDeviceWaitIdle(device);
 }
+
+void ReferenceRenderer::loadScene()
+{
+    vkDeviceWaitIdle(device);
+    raytracing_options->curr_sample_count = 0;
+    std::string path = renderer_options->reference_scene_path;
+    scene_manager->createScene(path);
+}
+
 
 void ReferenceRenderer::drawFrame()
 {
