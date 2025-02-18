@@ -14,7 +14,7 @@ int main(int argc, char* argv[]) {
     cli_parser.addFlag("--help", &help, "Show this message.");
     cli_parser.addInt("--samples", &options.sample_count, "Number of samples taken per pixel.");
     cli_parser.addString("--reference_scene", &options.reference_scene_path, "Generate one image of this scene.");
-    cli_parser.addString("--output", &options.output_path, "Generate one image and save it to the given file.");
+    cli_parser.addString("--output", &options.output_dir, "Generate one image and save it to the given file.");
     cli_parser.addString("--resources", &options.resources_path, "The path to the directory where all resource files can be found.");
     cli_parser.addFlag("-v", &verbose, "Display debug messages.");
     cli_parser.parse(argc, argv);
@@ -45,7 +45,7 @@ int main(int argc, char* argv[]) {
     options.curr_scene_path = options.scene_paths[0];
 
     std::shared_ptr<VulkanEngine> app;
-    if (!options.output_path.empty() && !options.reference_scene_path.empty())
+    if (!options.output_dir.empty() && !options.reference_scene_path.empty())
     {
         app = std::make_shared<ReferenceRenderer>();
     } else

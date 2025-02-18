@@ -5,7 +5,7 @@
 #include "ReferenceRenderer.hpp"
 
 void ReferenceRenderer::mainLoop() {
-    assert(!renderer_options->output_path.empty());
+    assert(!renderer_options->output_dir.empty());
     assert(!renderer_options->reference_scene_path.empty());
 
     loadScene();
@@ -99,3 +99,26 @@ void ReferenceRenderer::recordCommandBuffer(VkCommandBuffer commandBuffer, uint3
     recordEndCommandBuffer(commandBuffer);
 }
 
+void ReferenceRenderer::outputRenderingTarget()
+{
+    void* data = context->resource_builder->downloadImage(render_targets[0]);
+    fixImageFormatForStorage(static_cast<unsigned char*>(data), render_targets[0].imageExtent.width * render_targets[0].imageExtent.height, render_targets[0].imageFormat);
+    context->resource_builder->writePNG(renderer_options->output_dir + "/" + std::to_string(renderer_options->sample_count) + "_ref.png", data, render_targets[0].imageExtent.width, render_targets[0].imageExtent.height);
+}
+
+// target format is R8G8B8A8
+void ReferenceRenderer::fixImageFormatForStorage(unsigned char* image_data, size_t pixel_count, VkFormat originalFormat)
+{
+    if (originalFormat == VK_FORMAT_R8G8B8A8_UNORM)
+        return;
+
+    if (originalFormat == VK_FORMAT_B8G8R8A8_UNORM)
+    {
+        for (size_t i = 0; i < pixel_count; i++) {
+            std::swap(image_data[i * 4], image_data[i * 4 + 2]);  // Swap B (0) and R (2)
+        }
+    } else
+    {
+        spdlog::error("Image format of the storage image is not supported to be stored correctly!");
+    }
+}

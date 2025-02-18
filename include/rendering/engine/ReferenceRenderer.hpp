@@ -14,6 +14,9 @@ class ReferenceRenderer : public VulkanEngine {
     void drawFrame() override;
     void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex) override;
 
+    void outputRenderingTarget();
+    void fixImageFormatForStorage(unsigned char* image_data, size_t pixel_count, VkFormat originalFormat);
+
 private:
     spdlog::stopwatch stopwatch;
     uint32_t present_sample_count = 1;

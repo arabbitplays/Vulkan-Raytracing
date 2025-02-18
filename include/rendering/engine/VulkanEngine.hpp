@@ -137,8 +137,6 @@ protected:
 
     void createRenderingTargets();
     virtual AllocatedImage getRenderTarget();
-    void outputRenderingTarget();
-    void fixImageFormatForStorage(unsigned char* image_data, size_t pixel_count, VkFormat originalFormat);
     void cleanupRenderingTargets();
 
     virtual void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);

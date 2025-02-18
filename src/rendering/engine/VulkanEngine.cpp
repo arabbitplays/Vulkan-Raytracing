@@ -753,30 +753,6 @@ void VulkanEngine::recordEndCommandBuffer(VkCommandBuffer commandBuffer)
     }
 }
 
-void VulkanEngine::outputRenderingTarget()
-{
-    void* data = context->resource_builder->downloadImage(render_targets[0]);
-    fixImageFormatForStorage(static_cast<unsigned char*>(data), render_targets[0].imageExtent.width * render_targets[0].imageExtent.height, render_targets[0].imageFormat);
-    context->resource_builder->writePNG(std::to_string(renderer_options->sample_count) + "_" + renderer_options->output_path, data, render_targets[0].imageExtent.width, render_targets[0].imageExtent.height);
-}
-
-// target format is R8G8B8A8
-void VulkanEngine::fixImageFormatForStorage(unsigned char* image_data, size_t pixel_count, VkFormat originalFormat)
-{
-    if (originalFormat == VK_FORMAT_R8G8B8A8_UNORM)
-        return;
-
-    if (originalFormat == VK_FORMAT_B8G8R8A8_UNORM)
-    {
-        for (size_t i = 0; i < pixel_count; i++) {
-            std::swap(image_data[i * 4], image_data[i * 4 + 2]);  // Swap B (0) and R (2)
-        }
-    } else
-    {
-        spdlog::error("Image format of the storage image is not supported to be stored correctly!");
-    }
-}
-
 void VulkanEngine::cleanup() {
     mainDeletionQueue.flush();
     glfwDestroyWindow(window);
