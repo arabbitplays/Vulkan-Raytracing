@@ -18,6 +18,8 @@ public:
     void refreshTransform(const glm::mat4& parentMatrix);
     virtual void draw(const glm::mat4& topMatrix, DrawContext& ctx);
 
+    std::string name;
+
     std::weak_ptr<Node> parent;
     std::vector<std::shared_ptr<Node>> children;
     

@@ -5,12 +5,15 @@
 #include "SceneReader.hpp"
 
 #include <MeshNode.hpp>
+#include <QuickTimer.hpp>
 #include <glm/gtx/quaternion.hpp>
 #include <spdlog/spdlog.h>
 #include <YAML_glm.hpp>
 
 std::shared_ptr<Scene> SceneReader::readScene(const std::string& filename, std::unordered_map<std::string, std::shared_ptr<Material>> materials)
 {
+    QuickTimer quick_timer("Reading scene from file");
+
     try {
         YAML::Node config = YAML::LoadFile(filename);
         YAML::Node scene_node = config["scene"];
@@ -35,10 +38,17 @@ std::shared_ptr<Scene> SceneReader::readScene(const std::string& filename, std::
 
         initializeMaterial(scene_node["materials"], materials[material_name], scene->textures);
 
+        std::shared_ptr<Node> scene_graph_node = std::make_shared<Node>();
+        scene_graph_node->name = "root";
+        scene_graph_node->localTransform = glm::mat4{1.0f};
+        scene_graph_node->worldTransform = glm::mat4{1.0f};
+        scene_graph_node->children = {};
         for (const auto& yaml_mesh_node : scene_node["nodes"])
         {
-            processSceneNodesRecursiv(static_cast<YAML::Node>(yaml_mesh_node), scene, scene->material->getInstances());
+            scene_graph_node->children.push_back(processSceneNodesRecursiv(static_cast<YAML::Node>(yaml_mesh_node), scene, scene->material->getInstances()));
         }
+        scene_graph_node->refreshTransform(glm::mat4(1.0f));
+        scene->addNode(scene_graph_node->name, scene_graph_node);
 
         return scene;
     } catch (const YAML::Exception& e) {
@@ -148,17 +158,40 @@ glm::mat4 recomposeMatrix(glm::vec3 translation, glm::vec3 rotation, glm::vec3 s
     return translationMatrix * rotationMatrix * scaleMatrix;
 }
 
-void SceneReader::processSceneNodesRecursiv(const YAML::Node& yaml_node, const std::shared_ptr<Scene>& scene, const std::vector<std::shared_ptr<MaterialInstance>>& instances)
+std::shared_ptr<Node> SceneReader::processSceneNodesRecursiv(const YAML::Node& yaml_node, const std::shared_ptr<Scene>& scene, const std::vector<std::shared_ptr<MaterialInstance>>& instances)
 {
-    // todo support non mesh nodes
-    std::shared_ptr<MeshNode> scene_graph_node = std::make_shared<MeshNode>();
-    scene_graph_node->localTransform = recomposeMatrix(yaml_node["translation"].as<glm::vec3>(), yaml_node["rotation"].as<glm::vec3>(), yaml_node["scale"].as<glm::vec3>());
-    scene_graph_node->worldTransform = glm::mat4{1.0f};
-    // todo process children recursivly
-    scene_graph_node->children = {};
-    scene_graph_node->meshAsset = scene->getMesh(yaml_node["mesh"].as<std::string>());
-    scene_graph_node->meshMaterial = instances.at(yaml_node["material_idx"].as<int>());
+    if (yaml_node["mesh"]) // construct a mesh node
+    {
+        std::shared_ptr<MeshNode> scene_graph_node = std::make_shared<MeshNode>();
+        scene_graph_node->name = yaml_node["name"].as<std::string>();
+        scene_graph_node->localTransform = recomposeMatrix(yaml_node["translation"].as<glm::vec3>(), yaml_node["rotation"].as<glm::vec3>(), yaml_node["scale"].as<glm::vec3>());
+        scene_graph_node->worldTransform = glm::mat4{1.0f};
+        scene_graph_node->children = {};
+        for (auto& child_node : yaml_node["children"])
+        {
+            scene_graph_node->children.push_back(processSceneNodesRecursiv(child_node, scene, instances));
+        }
+        scene_graph_node->meshAsset = scene->getMesh(yaml_node["mesh"].as<std::string>());
+        scene_graph_node->meshMaterial = instances.at(yaml_node["material_idx"].as<int>());
 
-    scene_graph_node->refreshTransform(glm::mat4(1.0f));
-    scene->addNode(yaml_node["name"].as<std::string>(), scene_graph_node);
+        scene_graph_node->refreshTransform(glm::mat4(1.0f));
+        scene->addNode(scene_graph_node->name, scene_graph_node);
+
+        return scene_graph_node;
+    } else // construct a plain node
+    {
+        std::shared_ptr<Node> scene_graph_node = std::make_shared<Node>();
+        scene_graph_node->name = yaml_node["name"].as<std::string>();
+        scene_graph_node->localTransform = recomposeMatrix(yaml_node["translation"].as<glm::vec3>(), yaml_node["rotation"].as<glm::vec3>(), yaml_node["scale"].as<glm::vec3>());
+        scene_graph_node->worldTransform = glm::mat4{1.0f};
+        scene_graph_node->children = {};
+        for (auto& child_node : yaml_node["children"])
+        {
+            scene_graph_node->children.push_back(processSceneNodesRecursiv(child_node, scene, instances));
+        }
+        scene_graph_node->refreshTransform(glm::mat4(1.0f));
+        scene->addNode(scene_graph_node->name, scene_graph_node);
+
+        return scene_graph_node;
+    }
 }

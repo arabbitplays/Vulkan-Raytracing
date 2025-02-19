@@ -14,11 +14,11 @@ public:
   SceneWriter() = default;
 
   void writeScene(const std::string& filename, std::shared_ptr<Scene> scene);
-  void writeMaterial(YAML::Emitter& out, const std::shared_ptr<Material>& material);
-  void writeSceneLights(YAML::Emitter& out, const std::shared_ptr<Scene>& scene);
 
 private:
-  void writeSceneNode(YAML::Emitter& out, const std::string& node_name, const std::shared_ptr<Node>& node);
+  void writeMaterial(YAML::Emitter& out, const std::shared_ptr<Material>& material);
+  void writeSceneLights(YAML::Emitter& out, const std::shared_ptr<Scene>& scene);
+  void writeSceneNode(YAML::Emitter& out, const std::shared_ptr<Node>& node);
 };
 
 

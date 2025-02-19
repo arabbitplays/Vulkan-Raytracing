@@ -6,11 +6,14 @@
 #include <iostream>
 #include <fstream>
 #include <MeshNode.hpp>
+#include <QuickTimer.hpp>
 #include <spdlog/spdlog.h>
 #include <YAML_glm.hpp>
 
 
 void SceneWriter::writeScene(const std::string& filename, std::shared_ptr<Scene> scene) {
+    QuickTimer quick_timer("Writing scene to file");
+
     YAML::Emitter out;
 
     out << YAML::BeginMap;
@@ -49,8 +52,8 @@ void SceneWriter::writeScene(const std::string& filename, std::shared_ptr<Scene>
     writeMaterial(out, scene->material);
 
     out << YAML::Key << "nodes" << YAML::Value << YAML::BeginSeq;
-    for (const auto& node : scene->nodes) {
-        writeSceneNode(out, node.first, node.second);
+    for (const auto& node : scene->nodes["root"]->children) {
+        writeSceneNode(out, node);
     }
     out << YAML::EndSeq;
 
@@ -147,7 +150,6 @@ void SceneWriter::writeSceneLights(YAML::Emitter& out, const std::shared_ptr<Sce
             out << YAML::Key << "color" << YAML::Value << YAML::convert<glm::vec3>::encode(light.color);
             out << YAML::Key << "intensity" << YAML::Value << light.intensity;
             out << YAML::EndMap;
-
         }
     }
     out << YAML::EndSeq;
@@ -199,10 +201,10 @@ DecomposedTransform decomposeMatrix(const glm::mat4& transform) {
     return result;
 }
 
-void SceneWriter::writeSceneNode(YAML::Emitter& out, const std::string& node_name, const std::shared_ptr<Node>& node)
+void SceneWriter::writeSceneNode(YAML::Emitter& out, const std::shared_ptr<Node>& node)
 {
     out << YAML::BeginMap;
-    out << YAML::Key << "name" << YAML::Value << node_name;
+    out << YAML::Key << "name" << YAML::Value << node->name;
 
     DecomposedTransform transform = decomposeMatrix(node->localTransform);
     out << YAML::Key << "translation" << YAML::Value << YAML::convert<glm::vec3>::encode(transform.translation);
@@ -219,9 +221,7 @@ void SceneWriter::writeSceneNode(YAML::Emitter& out, const std::string& node_nam
     out << YAML::Key << "children" << YAML::Value << YAML::BeginSeq;
     for (const auto& child : node->children)
     {
-        // TODO do recursion
-        break;
-        writeSceneNode(out, node_name, child);
+        writeSceneNode(out, child);
     }
     out << YAML::EndSeq;
     out << YAML::EndMap;

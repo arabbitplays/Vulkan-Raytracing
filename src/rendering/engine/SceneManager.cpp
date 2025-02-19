@@ -32,6 +32,9 @@ void SceneManager::createScene(std::string scene_path) {
     createBlas();
     createUniformBuffers();
     createSceneDescriptorSets();
+
+    SceneWriter writer;
+    writer.writeScene("recTest.yaml", scene);
 }
 
 void SceneManager::createSceneBuffers() {

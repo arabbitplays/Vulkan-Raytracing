@@ -4,6 +4,8 @@
 
 #include "AssimpModelLoader.hpp"
 
+#include <spdlog/spdlog.h>
+
 void AssimpModelLoader::loadData(std::string path, std::vector<Vertex> &vertices, std::vector<uint32_t> &indices) {
     Assimp::Importer importer;
     const aiScene* scene = importer.ReadFile(path, aiProcess_Triangulate | aiProcess_CalcTangentSpace);
@@ -27,12 +29,23 @@ void AssimpModelLoader::processNode(aiNode *node, const aiScene *scene, std::vec
 }
 
 void AssimpModelLoader::processMesh(aiMesh *mesh, const aiScene *scene, std::vector<Vertex> &vertices, std::vector<uint32_t> &indices) {
+    if (!mesh->mTangents)
+    {
+        spdlog::info("No tangent found for mesh!");
+    }
+
     for (uint32_t i = 0; i < mesh->mNumVertices; i++) {
         Vertex vertex;
 
         vertex.pos = glm::vec3(mesh->mVertices[i].x, mesh->mVertices[i].y, mesh->mVertices[i].z);
         vertex.normal = glm::vec3(mesh->mNormals[i].x, mesh->mNormals[i].y, mesh->mNormals[i].z);
-        vertex.tangent = glm::vec4(mesh->mTangents[i].x, mesh->mTangents[i].y, mesh->mTangents[i].z, 0);
+        if (mesh->mTangents)
+        {
+            vertex.tangent = glm::vec4(mesh->mTangents[i].x, mesh->mTangents[i].y, mesh->mTangents[i].z, 0);
+        } else
+        {
+            vertex.tangent = glm::vec4(1, 0, 0, 0);
+        }
         if (mesh->mTextureCoords[0]) {
             vertex.texCoord = glm::vec3(mesh->mTextureCoords[0][i].x, mesh->mTextureCoords[0][i].y, 0);
         } else {

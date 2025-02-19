@@ -104,7 +104,7 @@ void Pipeline::addShaderStage(VkShaderModule shaderModule, VkShaderStageFlagBits
 
     VkRayTracingShaderGroupCreateInfoKHR shaderGroupInfo{};
     shaderGroupInfo.sType = VK_STRUCTURE_TYPE_RAY_TRACING_SHADER_GROUP_CREATE_INFO_KHR;
-    shaderGroupInfo.type = shaderGroup; // TODO what are the alternatives?
+    shaderGroupInfo.type = shaderGroup;
     shaderGroupInfo.generalShader = VK_SHADER_UNUSED_KHR;
     shaderGroupInfo.closestHitShader = VK_SHADER_UNUSED_KHR;
     shaderGroupInfo.anyHitShader = VK_SHADER_UNUSED_KHR;
