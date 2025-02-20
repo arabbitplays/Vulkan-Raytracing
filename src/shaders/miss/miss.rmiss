@@ -11,5 +11,5 @@ layout(set = 0, binding = 7) uniform sampler2D textures[6];
 layout(location = 0) rayPayloadInEXT Payload payload;
 
 void main() {
-    payload.light = sceneData.sunlightColor * sceneData.sunlightDirection.w;
+    //payload.light = sceneData.sunlightColor * sceneData.sunlightDirection.w;
 }

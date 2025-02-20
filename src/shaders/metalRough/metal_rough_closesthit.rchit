@@ -60,7 +60,11 @@ void main() {
     float roughness = texture(metal_rough_ao_textures[triangle.material_idx], uv).y + material.roughness;
     float ao = texture(metal_rough_ao_textures[triangle.material_idx], uv).z + material.ao;
 
-    vec3 direct_light = vec3(0.0);
+    // no direct light sampling or handle light that goes directly to the camera
+    if (!options.sample_light || (payload.depth == 0 && material.emission_power > 0)) {
+        payload.light += payload.beta * material.emission_color * material.emission_power;
+    }
+
     if (options.sample_light) {
         LightSample light_sample = sampleEmittingPrimitive(P);
         vec3 L = light_sample.P - P;
@@ -69,26 +73,13 @@ void main() {
 
         vec3 f = calcBRDF(N, V, L, albedo, metallic, roughness) * max(dot(N, L), 0.0);
         if (length(f) > 0.0 && unoccluded(P, L, distance_to_light)) {
-            direct_light = f * light_sample.light / light_sample.pdf;
+            payload.light += payload.beta * f * light_sample.light / light_sample.pdf;
         }
     }
 
-    vec3 result = vec3(0.0);
-    if (options.sample_light) {
-        if (payload.depth == 0 && material.emission_power > 0) { // handle light that goes directly to the camera
-            result = material.emission_color * material.emission_power;
-        } else {
-            result = direct_light;
-        }
-    } else {
-        result = material.emission_color * material.emission_power;
-    }
-
-
-    payload.light = result;
     payload.next_origin = P;
     payload.next_direction = TBN * sampleCosHemisphere(payload.rng_state);
     //payload.next_direction = TBN * sampleUniformHemisphere(payload.rng_state);
     // f * cos / PDF
-    payload.contribution = calcBRDF(N, V, payload.next_direction, albedo, metallic, roughness) * PI;
+    payload.beta *= calcBRDF(N, V, payload.next_direction, albedo, metallic, roughness) * PI;
 }
