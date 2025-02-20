@@ -12,7 +12,7 @@ struct RaytracingOptions {
     int32_t dispersion = 0;
     int32_t normal_mapping = 1;
 
-    uint32_t sample_light = 0;
+    uint32_t sample_light = 1;
     uint32_t curr_sample_count = 0;
     uint32_t emitting_instances_count = 0;
 };

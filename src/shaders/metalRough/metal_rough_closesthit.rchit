@@ -4,8 +4,6 @@
 #extension GL_EXT_nonuniform_qualifier : enable
 #extension GL_EXT_shader_explicit_arithmetic_types : enable
 
-#define MAX_RECURSION_DEPTH 4
-
 #include "../common/payload.glsl"
 #include "../common/scene_data.glsl"
 #include "../common/layout.glsl"
@@ -13,7 +11,6 @@
 #include "../common/random.glsl"
 
 layout(binding = 0, set = 0) uniform accelerationStructureEXT topLevelAS;
-layout(location = 1) rayPayloadEXT bool isShadowed;
 
 layout(binding = 1, set = 1) uniform sampler2D albedo_textures[64];
 layout(binding = 2, set = 1) uniform sampler2D metal_rough_ao_textures[64];
@@ -70,22 +67,23 @@ void main() {
         float distance_to_light = length(L);
         L = normalize(L);
 
-        if (light_sample.same_surface) {
-            direct_light = light_sample.light;
-        } else {
-            vec3 f = calcBRDF(N, V, L, albedo, metallic, roughness) * max(dot(N, L), 0.0);
-            if (length(f) > 0.0 && unoccluded(P, L, distance_to_light, geometric_normal)) {
-                direct_light = f * light_sample.light / light_sample.pdf;
-            }
+        vec3 f = calcBRDF(N, V, L, albedo, metallic, roughness) * max(dot(N, L), 0.0);
+        if (length(f) > 0.0 && unoccluded(P, L, distance_to_light)) {
+            direct_light = f * light_sample.light / light_sample.pdf;
         }
     }
 
     vec3 result = vec3(0.0);
     if (options.sample_light) {
-        result = direct_light;
+        if (payload.depth == 0 && material.emission_power > 0) { // handle light that goes directly to the camera
+            result = material.emission_color * material.emission_power;
+        } else {
+            result = direct_light;
+        }
     } else {
         result = material.emission_color * material.emission_power;
     }
+
 
     payload.light = result;
     payload.next_origin = P;

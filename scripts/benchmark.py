@@ -2,6 +2,7 @@ import subprocess
 from PIL import Image
 import numpy as np
 import sys
+import matplotlib.pyplot as plt
 
 class Tee:
     def __init__(self, file):
@@ -49,6 +50,25 @@ def mse_images(image_path1, image_path2):
     mse = np.mean((img1_array - img2_array) ** 2)
     return mse
 
+def plot_difference(image_path1, image_path2):
+    img1 = Image.open(image_path1).convert("L")  # Convert to grayscale
+    img2 = Image.open(image_path2).convert("L")  # Convert to grayscale
+
+    if img1.size != img2.size:
+        raise ValueError("Images must have the same dimensions for MSE calculation.")
+
+    img1_array = np.array(img1, dtype=np.float32)
+    img2_array = np.array(img2, dtype=np.float32)
+
+    diff = np.abs(img1_array - img2_array)
+
+    plt.figure(figsize=(8, 6))
+    plt.imshow(diff, cmap='hot', interpolation='nearest')
+    plt.colorbar(label='Difference Intensity')
+    plt.title('Image Difference Heatmap')
+    plt.axis('off')
+    plt.savefig("heatmap.png")  # Save instead of show
+
 def run_benchmark(program, reference_dir, sample_counts):
     output_path = reference_dir + "/benchmark"
 
@@ -68,6 +88,8 @@ def run_benchmark(program, reference_dir, sample_counts):
             mse = mse_images(reference_dir + "/1000000_ref.png", output_path + "/" + str(sample_count) + "_ref.png")
             results.append(mse)
 
+        plot_difference(reference_dir + "/1000000_ref.png", output_path + "/" + str(sample_counts[-1]) + "_ref.png")
+
         print("\n" + "-" * 50 + " RESULTS: " + "-" * 50 + "\n")
         for i in range(len(results)):
             print(str(sample_counts[i]) + " samples; MSE to reference image: " + str(results[i]))
@@ -77,4 +99,4 @@ def run_benchmark(program, reference_dir, sample_counts):
 build_path = "buildDir/renderer"
 reference_dir = "resources/references/big_light_cornell"
 
-run_benchmark(build_path, reference_dir, [5, 10])
+run_benchmark(build_path, reference_dir, [1000])
