@@ -7,6 +7,7 @@
 #include "../common/scene_data.glsl"
 #include "../common/options.glsl"
 #include "../common/random.glsl"
+#include "../common/constants.glsl"
 
 layout(binding = 0, set = 0) uniform accelerationStructureEXT topLevelAS;
 layout(binding = 1, set = 0, rgba8) uniform image2D image;
@@ -28,7 +29,7 @@ void main() {
     payload.beta = vec3(1.0);
 
     while (payload.depth < options.recursion_depth && length(payload.beta) > 0.001 && payload.next_direction != vec3(0.0)) {
-        float tmin = 0.01;
+        float tmin = EPSILON;
         float tmax = 10000.0;
 
         traceRayEXT(topLevelAS, gl_RayFlagsOpaqueEXT | gl_RayFlagsCullBackFacingTrianglesEXT, 0xff, 0, 0, 0, payload.next_origin, tmin, payload.next_direction, tmax, 0);

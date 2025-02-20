@@ -1,5 +1,4 @@
-#define EPSILON 0.005
-#define PI 3.14159265
+#include "../common/constants.glsl"
 
 layout(location = 1) rayPayloadEXT bool isShadowed;
 
@@ -119,14 +118,15 @@ LightSample sampleEmittingPrimitive(vec3 P) {
     vec3 N = normalize((1 - u - v) * triangle.A.normal + u * triangle.B.normal + v * triangle.C.normal);
     N = normalize(vec3(normal_matrix * N));
 
-    // convert probability to solid angle
     vec3 L = P - sampled_P;
-    pdf = pdf * pow(length(L), 2) / abs(dot(L, N));
 
     Material material = getMaterial(triangle.material_idx);
     vec3 li = vec3(0.0);
-    if (dot(L, N) > 0.0) {
+    float NdotL = dot(normalize(L), N);
+    if (NdotL > 0.001) {
         li = material.emission_color * material.emission_power;
+        // convert probability to solid angle
+        pdf = pdf * dot(L, L) / abs(NdotL);
     }
 
     LightSample result;
@@ -138,10 +138,10 @@ LightSample sampleEmittingPrimitive(vec3 P) {
 }
 
 bool unoccluded(vec3 P, vec3 L, float distance_to_light) {
-    float tmin = 0.0;
-    float tmax = distance_to_light - 2 * EPSILON;
+    float tmin = EPSILON;
+    float tmax = distance_to_light - EPSILON;
     vec3 direction = L;
-    vec3 origin = P + EPSILON * L;
+    vec3 origin = P;
     uint flags = gl_RayFlagsTerminateOnFirstHitEXT | gl_RayFlagsOpaqueEXT | gl_RayFlagsSkipClosestHitShaderEXT;
     isShadowed = true;
 

@@ -3,6 +3,7 @@ from PIL import Image
 import numpy as np
 import sys
 import matplotlib.pyplot as plt
+import flip_evaluator as flip
 
 class Tee:
     def __init__(self, file):
@@ -48,22 +49,17 @@ def mse_images(image_path1, image_path2):
     img2_array = np.array(img2, dtype=np.float32)
 
     mse = np.mean((img1_array - img2_array) ** 2)
-    return mse
+
+    flipErrorMap, meanFLIPError, parameters = flip.evaluate(image_path1, image_path2, "LDR")
+    result = {"mse" : mse, "flip": round(meanFLIPError, 6)}
+
+    return result
 
 def plot_difference(image_path1, image_path2):
-    img1 = Image.open(image_path1).convert("L")  # Convert to grayscale
-    img2 = Image.open(image_path2).convert("L")  # Convert to grayscale
-
-    if img1.size != img2.size:
-        raise ValueError("Images must have the same dimensions for MSE calculation.")
-
-    img1_array = np.array(img1, dtype=np.float32)
-    img2_array = np.array(img2, dtype=np.float32)
-
-    diff = np.abs(img1_array - img2_array)
+    flipErrorMap, meanFLIPError, parameters = flip.evaluate(image_path1, image_path2, "LDR")
 
     plt.figure(figsize=(8, 6))
-    plt.imshow(diff, cmap='hot', interpolation='nearest')
+    plt.imshow(flipErrorMap, cmap='hot', interpolation='nearest')
     plt.colorbar(label='Difference Intensity')
     plt.title('Image Difference Heatmap')
     plt.axis('off')
@@ -85,14 +81,13 @@ def run_benchmark(program, reference_dir, sample_counts):
                 "--reference_scene", reference_dir + "/" + "scene.yaml"]
             run_program(build_path, args)
 
-            mse = mse_images(reference_dir + "/1000000_ref.png", output_path + "/" + str(sample_count) + "_ref.png")
-            results.append(mse)
+            results.append(mse_images(reference_dir + "/1000000_ref.png", output_path + "/" + str(sample_count) + "_ref.png"))
 
         plot_difference(reference_dir + "/1000000_ref.png", output_path + "/" + str(sample_counts[-1]) + "_ref.png")
 
         print("\n" + "-" * 50 + " RESULTS: " + "-" * 50 + "\n")
         for i in range(len(results)):
-            print(str(sample_counts[i]) + " samples; MSE to reference image: " + str(results[i]))
+            print(str(sample_counts[i]) + " samples; MSE: " + str(results[i]["mse"]) + "; Flip: " + str(results[i]["flip"]))
 
         sys.stdout = sys.__stdout__  # Restore stdout
 

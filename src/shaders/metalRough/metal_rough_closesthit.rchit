@@ -72,14 +72,18 @@ void main() {
         L = normalize(L);
 
         vec3 f = calcBRDF(N, V, L, albedo, metallic, roughness) * max(dot(N, L), 0.0);
-        if (length(f) > 0.0 && unoccluded(P, L, distance_to_light)) {
+        if (light_sample.light != vec3(0) && length(f) > 0.0 && unoccluded(P, L, distance_to_light)) {
             payload.light += payload.beta * f * light_sample.light / light_sample.pdf;
         }
     }
 
     payload.next_origin = P;
     payload.next_direction = TBN * sampleCosHemisphere(payload.rng_state);
-    //payload.next_direction = TBN * sampleUniformHemisphere(payload.rng_state);
+    /*payload.next_direction = sampleUniformHemisphere(payload.rng_state);
+    if (dot(payload.next_direction, N) < 0) {
+        payload.next_direction = -payload.next_direction;
+    }*/
     // f * cos / PDF
     payload.beta *= calcBRDF(N, V, payload.next_direction, albedo, metallic, roughness) * PI;
+    //payload.beta *= calcBRDF(N, V, payload.next_direction, albedo, metallic, roughness) * max(0.0, dot(payload.next_direction, N)) * 2 * PI;
 }
