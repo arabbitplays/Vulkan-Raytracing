@@ -65,7 +65,7 @@ def plot_difference(image_path1, image_path2):
     plt.axis('off')
     plt.savefig("heatmap.png")  # Save instead of show
 
-def run_benchmark(program, reference_dir, sample_counts):
+def run_benchmark(program, reference_dir, reference_name, sample_counts):
     output_path = reference_dir + "/benchmark"
 
     with open(output_path + "/log.txt", "w") as f:
@@ -81,9 +81,9 @@ def run_benchmark(program, reference_dir, sample_counts):
                 "--reference_scene", reference_dir + "/" + "scene.yaml"]
             run_program(build_path, args)
 
-            results.append(mse_images(reference_dir + "/1000000_ref.png", output_path + "/" + str(sample_count) + "_ref.png"))
+            results.append(mse_images(reference_dir + "/" + reference_name, output_path + "/" + str(sample_count) + "_ref.png"))
 
-        plot_difference(reference_dir + "/1000000_ref.png", output_path + "/" + str(sample_counts[-1]) + "_ref.png")
+        plot_difference(reference_dir + "/" + reference_name, output_path + "/" + str(sample_counts[-1]) + "_ref.png")
 
         print("\n" + "-" * 50 + " RESULTS: " + "-" * 50 + "\n")
         for i in range(len(results)):
@@ -93,5 +93,6 @@ def run_benchmark(program, reference_dir, sample_counts):
 
 build_path = "buildDir/renderer"
 reference_dir = "resources/references/big_light_cornell"
+reference_name = "100000_ref_sphere.png"
 
-run_benchmark(build_path, reference_dir, [1000])
+run_benchmark(build_path, reference_dir, reference_name, [1000])

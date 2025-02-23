@@ -62,7 +62,9 @@ void main() {
 
     // no direct light sampling or handle light that goes directly to the camera
     if (!options.sample_light || (payload.depth == 0 && material.emission_power > 0)) {
-        payload.light += payload.beta * material.emission_color * material.emission_power;
+        if (dot(N, V) > 0) {
+            payload.light += payload.beta * material.emission_color * material.emission_power;
+        }
     }
 
     if (options.sample_light) {
@@ -78,12 +80,25 @@ void main() {
     }
 
     payload.next_origin = P;
-    payload.next_direction = TBN * sampleCosHemisphere(payload.rng_state);
-    /*payload.next_direction = sampleUniformHemisphere(payload.rng_state);
-    if (dot(payload.next_direction, N) < 0) {
+    //payload.next_direction = TBN * sampleCosHemisphere(payload.rng_state);
+    payload.next_direction = sampleUniformSphere(payload.rng_state);
+    /*if (dot(payload.next_direction, N) < 0) {
         payload.next_direction = -payload.next_direction;
     }*/
+
+    /*payload.next_direction = vec3(0);
+    for (int i = 0; i < 1000; i++) {
+        vec3 sampled_dir = TBN * sampleCosHemisphere(payload.rng_state);
+
+        if (dot(sampled_dir, N) < 0) {
+            sampled_dir = -sampled_dir;
+        }
+        payload.next_direction += sampled_dir;
+    }
+    payload.next_direction = normalize(payload.next_direction);*/
+
     // f * cos / PDF
-    payload.beta *= calcBRDF(N, V, payload.next_direction, albedo, metallic, roughness) * PI;
+    //payload.beta *= calcBRDF(N, V, payload.next_direction, albedo, metallic, roughness) * PI;
     //payload.beta *= calcBRDF(N, V, payload.next_direction, albedo, metallic, roughness) * max(0.0, dot(payload.next_direction, N)) * 2 * PI;
+    payload.beta *= calcBRDF(N, V, payload.next_direction, albedo, metallic, roughness) * max(0.0, dot(payload.next_direction, N)) * 4 * PI;
 }

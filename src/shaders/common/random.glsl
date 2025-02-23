@@ -28,11 +28,19 @@ float stepAndOutputRNGFloat(inout uvec4 rngState) {
 
 // ---------------------------------------------------------------------------------------
 
+vec3 sampleUniformSphere(inout uvec4 rngState) {
+    vec2 u = vec2(stepAndOutputRNGFloat(rngState), stepAndOutputRNGFloat(rngState));
+    float z = 1 - 2 * u.x;
+    float r = safeSqrt(1 - z * z);
+    float phi = 2 * PI * u.y;
+    return vec3(r * cos(phi), r * sin(phi), z);
+}
+
 vec3 sampleUniformHemisphere(inout uvec4 rngState) {
     vec2 u = vec2(stepAndOutputRNGFloat(rngState), stepAndOutputRNGFloat(rngState));
 
     float z = u.x;
-    float r = safeSqrt(1 - sqrt(z));
+    float r = safeSqrt(1 - z * z);
     float phi = 2 * PI * u.y;
     return vec3(r * cos(phi), r * sin(phi), z);
 }

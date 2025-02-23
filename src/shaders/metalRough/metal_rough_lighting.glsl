@@ -62,6 +62,10 @@ vec3 fresnelSchlick(vec3 h, vec3 v, vec3 albedo, float metallic) {
 }
 
 vec3 calcBRDF(vec3 n, vec3 v, vec3 l, vec3 albedo, float metallic, float roughness) {
+    if (dot(n, v) * dot(n, l) < 0) {
+        return vec3(0);
+    }
+
     vec3 h = normalize(l + v);
 
     // cook-torance brdf
@@ -109,9 +113,12 @@ LightSample sampleEmittingPrimitive(vec3 P) {
         v = 1 - v;
     }
 
-    vec3 sampled_P = (1 - u - v) * triangle.A.position + u * triangle.B.position + v * triangle.C.position;
-    sampled_P = vec3(emitting_instance.transform * vec4(sampled_P, 1.0));
-    float area = 0.5 * length(cross(triangle.B.position - triangle.A.position, triangle.C.position - triangle.A.position));
+    vec3 A_pos = vec3(emitting_instance.transform * vec4(triangle.A.position, 1.0));
+    vec3 B_pos = vec3(emitting_instance.transform * vec4(triangle.B.position, 1.0));
+    vec3 C_pos = vec3(emitting_instance.transform * vec4(triangle.C.position, 1.0));
+    vec3 sampled_P = (1 - u - v) * A_pos + u * B_pos + v * C_pos;
+
+    float area = 0.5 * length(cross(B_pos - A_pos, C_pos - A_pos));
     float pdf = 1.0 / area;
 
     mat3 normal_matrix = transpose(inverse(mat3(emitting_instance.transform)));
@@ -125,7 +132,7 @@ LightSample sampleEmittingPrimitive(vec3 P) {
     float NdotL = dot(normalize(L), N);
     if (NdotL > 0.001) {
         li = material.emission_color * material.emission_power;
-        // convert probability to solid angle
+        // convert probability to solid angle??
         pdf = pdf * dot(L, L) / abs(NdotL);
     }
 
