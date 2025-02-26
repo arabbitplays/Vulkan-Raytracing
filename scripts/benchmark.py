@@ -91,6 +91,6 @@ def run_benchmark(program, reference_dir, reference_name, sample_counts):
 
 build_path = "buildDir/renderer"
 reference_dir = "resources/references/simple_cornell"
-reference_name = "100000_ref.png"
+reference_name = "100000_ref_hemi.png"
 
-run_benchmark(build_path, reference_dir, reference_name, [100, 1000])
+run_benchmark(build_path, reference_dir, reference_name, [1000])

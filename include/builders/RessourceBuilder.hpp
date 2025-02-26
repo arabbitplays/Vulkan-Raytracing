@@ -43,7 +43,7 @@ public:
     AllocatedImage createImage(void *data, VkExtent3D extent, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage,
                                VkImageAspectFlags aspectFlags, VkImageLayout target_layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
     Texture loadTextureImage(std::string path, TextureType type = PARAMETER);
-    stbi_uc* loadImageData(std::string path, int* width, int* height, int* channels);
+    uint8_t* loadImageData(std::string path, int* width, int* height, int* channels);
     void* downloadImage(AllocatedImage image, uint32_t bytes_per_channel = 1);
     void writePNG(std::string path, void* data, uint32_t width, uint32_t height);
 

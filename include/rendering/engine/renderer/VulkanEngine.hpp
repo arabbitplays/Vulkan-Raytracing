@@ -118,8 +118,6 @@ protected:
     void createRessourceBuilder();
 
     bool hasStencilComponent(VkFormat format);
-
-
     void createSwapchain();
 
     void createDescriptorAllocator();
@@ -138,6 +136,9 @@ protected:
     void createRenderingTargets();
     virtual AllocatedImage getRenderTarget();
     void cleanupRenderingTargets();
+
+    void outputRenderingTarget();
+    uint8_t* fixImageFormatForStorage(void* image_data, size_t pixel_count, VkFormat originalFormat);
 
     virtual void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
     void recordBeginCommandBuffer(VkCommandBuffer commandBuffer);

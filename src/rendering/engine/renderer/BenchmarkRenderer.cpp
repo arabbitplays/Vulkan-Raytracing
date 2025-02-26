@@ -3,14 +3,16 @@
 //
 
 #include "BenchmarkRenderer.hpp"
+#include <omp.h>
 
 void BenchmarkRenderer::mainLoop() {
     assert(!renderer_options->output_dir.empty());
     assert(!renderer_options->reference_scene_path.empty());
 
+    omp_set_num_threads(omp_get_max_threads());
+
     loadScene();
-    int texWidth, texHeight, texChannels;
-    reference_image_data = ressourceBuilder.loadImageData(renderer_options->reference_image_path, &texWidth, &texHeight, &texChannels);
+    reference_image_data = ressourceBuilder.loadImageData(renderer_options->reference_image_path, &ref_width, &ref_height, &ref_channels);
 
     while(!glfwWindowShouldClose(window)) {
         // render one image and then output it if output path is defined
@@ -28,11 +30,16 @@ void BenchmarkRenderer::mainLoop() {
         if (calculate_error)
         {
             calculate_error = false;
-            calculateMSEToReference();
+            float mse = calculateMSEToReference();
+            spdlog::info("Sample count: {}, Error: {:f}", raytracing_options->curr_sample_count, mse);
         }
     }
 
     vkDeviceWaitIdle(device);
+
+    float mse = calculateMSEToReference();
+    spdlog::info("Sample count: {}, Final Error: {:f}", raytracing_options->curr_sample_count, mse);
+    stbi_image_free(reference_image_data);
 }
 
 void BenchmarkRenderer::loadScene()
@@ -53,8 +60,7 @@ void BenchmarkRenderer::drawFrame()
     {
         present_image = true;
         calculate_error = true;
-        error_calculation_sample_count = (error_calculation_count + 2) * (error_calculation_count + 2);
-        error_calculation_count++;
+        error_calculation_sample_count *= 2;
     }
 
     int  imageIndex = 0;
@@ -98,30 +104,38 @@ void BenchmarkRenderer::recordCommandBuffer(VkCommandBuffer commandBuffer, uint3
 
 float BenchmarkRenderer::calculateMSEToReference()
 {
-    void* data = context->resource_builder->downloadImage(render_targets[0]);
-}
+    QuickTimer timer("MSE Calculation");
+    AllocatedImage render_target = getRenderTarget();
+    uint32_t width = render_target.imageExtent.width;
+    uint32_t height = render_target.imageExtent.height;
 
+    assert(ref_width == width && ref_height == height && ref_channels == 4);
 
-void BenchmarkRenderer::outputRenderingTarget()
-{
-    void* data = context->resource_builder->downloadImage(render_targets[0]);
-    fixImageFormatForStorage(static_cast<unsigned char*>(data), render_targets[0].imageExtent.width * render_targets[0].imageExtent.height, render_targets[0].imageFormat);
-    context->resource_builder->writePNG(renderer_options->output_dir + "/" + std::to_string(renderer_options->sample_count) + "_ref.png", data, render_targets[0].imageExtent.width, render_targets[0].imageExtent.height);
-}
+    void* raw_data = context->resource_builder->downloadImage(render_target, sizeof(uint32_t));
+    uint8_t* image_data = fixImageFormatForStorage(raw_data, width * height, render_target.imageFormat);
 
-// target format is R8G8B8A8
-void BenchmarkRenderer::fixImageFormatForStorage(unsigned char* image_data, size_t pixel_count, VkFormat originalFormat)
-{
-    if (originalFormat == VK_FORMAT_R8G8B8A8_UNORM)
-        return;
+    assert(image_data != nullptr && reference_image_data != nullptr);
 
-    if (originalFormat == VK_FORMAT_B8G8R8A8_UNORM)
+    std::vector<double> row_sum(height);
+    uint32_t row_length = width * 4;
+#pragma omp parallel for
+    for (uint32_t i = 0; i < height; i++)
     {
-        for (size_t i = 0; i < pixel_count; i++) {
-            std::swap(image_data[i * 4], image_data[i * 4 + 2]);  // Swap B (0) and R (2)
+        row_sum[i] = 0;
+        for (uint32_t j = 0; j < width * 4; j++)
+        {
+            const int32_t difference = image_data[i * row_length + j] - reference_image_data[i * row_length + j];
+            row_sum[i] += difference * difference;
         }
-    } else
-    {
-        spdlog::error("Image format of the storage image is not supported to be stored correctly!");
     }
+
+    double sum = 0.0f;
+#pragma omp parallel for reduction(+:sum)
+    for (int i = 0; i < height; i++)
+    {
+        sum += row_sum[i] / static_cast<double>(row_length);
+    }
+
+    delete image_data;
+    return static_cast<float>(sum / static_cast<double>(height));
 }

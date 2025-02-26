@@ -14,13 +14,11 @@ class BenchmarkRenderer : public VulkanEngine {
     void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex) override;
 
     float calculateMSEToReference();
-    void outputRenderingTarget();
-    void fixImageFormatForStorage(unsigned char* image_data, size_t pixel_count, VkFormat originalFormat);
 
 private:
-    stbi_uc* reference_image_data;
+    uint8_t* reference_image_data;
+    int ref_width, ref_height, ref_channels;
 
-    uint32_t error_calculation_count = 0;
     uint32_t error_calculation_sample_count = 1;
     bool present_image = false, calculate_error = true;
 };

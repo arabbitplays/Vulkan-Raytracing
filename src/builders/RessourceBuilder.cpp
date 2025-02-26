@@ -189,7 +189,7 @@ AllocatedImage RessourceBuilder::createImage(void* data, VkExtent3D extent, VkFo
 
 Texture RessourceBuilder::loadTextureImage(std::string path, TextureType type) {
     int texWidth, texHeight, texChannels;
-    stbi_uc* pixels = loadImageData(resource_path + "/" + path, &texWidth, &texHeight, &texChannels);
+    uint8_t* pixels = loadImageData(resource_path + "/" + path, &texWidth, &texHeight, &texChannels);
 
     if (!pixels) {
         throw std::runtime_error("failed to load texture image!");
@@ -219,7 +219,7 @@ Texture RessourceBuilder::loadTextureImage(std::string path, TextureType type) {
     return Texture(filename, type, path, textureImage);
 }
 
-stbi_uc* RessourceBuilder::loadImageData(std::string path, int* width, int* height, int* channels)
+uint8_t* RessourceBuilder::loadImageData(std::string path, int* width, int* height, int* channels)
 {
     return stbi_load(path.c_str(), width, height, channels, STBI_rgb_alpha);
 }

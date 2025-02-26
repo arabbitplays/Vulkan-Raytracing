@@ -98,39 +98,3 @@ void ReferenceRenderer::recordCommandBuffer(VkCommandBuffer commandBuffer, uint3
         recordCopyToSwapchain(commandBuffer, imageIndex);
     recordEndCommandBuffer(commandBuffer);
 }
-
-void ReferenceRenderer::outputRenderingTarget()
-{
-    void* data = context->resource_builder->downloadImage(render_targets[0], sizeof(uint32_t));
-    uint8_t* fixed_data = fixImageFormatForStorage(data, render_targets[0].imageExtent.width * render_targets[0].imageExtent.height, render_targets[0].imageFormat);
-    context->resource_builder->writePNG(renderer_options->output_dir + "/" + std::to_string(renderer_options->sample_count) + "_ref.png", fixed_data, render_targets[0].imageExtent.width, render_targets[0].imageExtent.height);
-}
-
-// target format is R8G8B8A8_UNORM
-uint8_t* ReferenceRenderer::fixImageFormatForStorage(void* data, size_t pixel_count, VkFormat originalFormat)
-{
-    if (originalFormat == VK_FORMAT_R8G8B8A8_UNORM)
-        return static_cast<uint8_t*>(data);
-
-    if (originalFormat == VK_FORMAT_B8G8R8A8_UNORM)
-    {
-        auto image_data = static_cast<uint8_t*>(data);
-        for (size_t i = 0; i < pixel_count; i++) {
-            std::swap(image_data[i * 4], image_data[i * 4 + 2]);  // Swap B (0) and R (2)
-        }
-        return image_data;
-    } if (originalFormat == VK_FORMAT_R32G32B32A32_SFLOAT)
-    {
-        uint8_t* output_image = new uint8_t[pixel_count * 4];
-        auto image_data = static_cast<float*>(data);
-        for (size_t i = 0; i < pixel_count * 4; i++) {
-            float test = image_data[i];
-            // Clamp each channel to the [0, 1] range and then scale to [0, 255]
-            output_image[i] = static_cast<uint8_t>(std::fmin(1.0f, std::fmax(0.0f, image_data[i])) * 255);
-        }
-        return output_image;
-    } else
-    {
-        spdlog::error("Image format of the storage image is not supported to be stored correctly!");
-    }
-}
