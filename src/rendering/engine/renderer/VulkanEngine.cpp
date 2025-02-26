@@ -1,16 +1,7 @@
-#include "rendering/engine/VulkanEngine.hpp"
-
-#include <Camera.hpp>
-#include <DescriptorLayoutBuilder.hpp>
-#include <imgui.h>
-#include <imgui_impl_glfw.h>
-#include <imgui_impl_vulkan.h>
-#include <PhongMaterial.hpp>
-#include <RenderPassBuilder.hpp>
+#include <VulkanEngine.hpp>
 #include <set>
-#include <deps/linmath.h>
 #include <cstdlib>
-#include "../scene_graph/MeshNode.hpp"
+#include <omp.h>
 
 const std::vector<const char*> validationLayers = {
     "VK_LAYER_KHRONOS_validation",
@@ -68,6 +59,7 @@ void VulkanEngine::run(RendererOptions& renderer_options) {
     initWindow();
     initVulkan();
     initGui();
+
     mainLoop();
 
     cleanup();

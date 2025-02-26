@@ -1,16 +1,16 @@
 //
-// Created by oschdi on 2/16/25.
+// Created by oschdi on 2/26/25.
 //
 
-#include "ReferenceRenderer.hpp"
+#include "BenchmarkRenderer.hpp"
 
-void ReferenceRenderer::mainLoop() {
+void BenchmarkRenderer::mainLoop() {
     assert(!renderer_options->output_dir.empty());
     assert(!renderer_options->reference_scene_path.empty());
 
     loadScene();
-
-    stopwatch.reset();
+    int texWidth, texHeight, texChannels;
+    reference_image_data = ressourceBuilder.loadImageData(renderer_options->reference_image_path, &texWidth, &texHeight, &texChannels);
 
     while(!glfwWindowShouldClose(window)) {
         // render one image and then output it if output path is defined
@@ -24,12 +24,18 @@ void ReferenceRenderer::mainLoop() {
         glfwPollEvents();
 
         drawFrame();
+
+        if (calculate_error)
+        {
+            calculate_error = false;
+            calculateMSEToReference();
+        }
     }
 
     vkDeviceWaitIdle(device);
 }
 
-void ReferenceRenderer::loadScene()
+void BenchmarkRenderer::loadScene()
 {
     vkDeviceWaitIdle(device);
     raytracing_options->curr_sample_count = 0;
@@ -38,12 +44,18 @@ void ReferenceRenderer::loadScene()
 }
 
 
-void ReferenceRenderer::drawFrame()
+void BenchmarkRenderer::drawFrame()
 {
     vkWaitForFences(device, 1, &inFlightFences[currentFrame], VK_TRUE, UINT64_MAX);
 
     uint32_t curr_sample_count = raytracing_options->curr_sample_count;
-    present_image = present_sample_count == curr_sample_count;
+    if (error_calculation_sample_count == curr_sample_count)
+    {
+        present_image = true;
+        calculate_error = true;
+        error_calculation_sample_count = (error_calculation_count + 2) * (error_calculation_count + 2);
+        error_calculation_count++;
+    }
 
     int  imageIndex = 0;
     if (present_image)
@@ -67,30 +79,15 @@ void ReferenceRenderer::drawFrame()
         std::vector<VkSemaphore> signalSemaphore = {renderFinishedSemaphores[currentFrame]};
         submitCommandBuffer(waitSemaphore, signalSemaphore);
         presentSwapchainImage(signalSemaphore, imageIndex);
-
-        present_sample_count *= 2;
     } else
     {
         submitCommandBuffer({}, {});
     }
 
-    if (curr_sample_count % 1000 == 0)
-    {
-        double elapsed_time = stopwatch.elapsed().count();
-        stopwatch.reset();
-        uint32_t samples_left = renderer_options->sample_count - curr_sample_count;
-        double time_left = elapsed_time / 1000 * samples_left;
-        int hours = static_cast<int>(time_left) / 3600;
-        int minutes = (static_cast<int>(time_left) % 3600) / 60;
-        int sec = static_cast<int>(time_left) % 60;
-        uint32_t progress = round((float)curr_sample_count / (float)renderer_options->sample_count * 100);
-        spdlog::info("Current sample count: {}, progress: {}%, estimated time remaining: {}h {}m {}s", curr_sample_count, progress, hours, minutes, sec);
-    }
-
     currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
 }
 
-void ReferenceRenderer::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex)
+void BenchmarkRenderer::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex)
 {
     recordBeginCommandBuffer(commandBuffer);
     recordRenderToImage(commandBuffer);
@@ -99,7 +96,13 @@ void ReferenceRenderer::recordCommandBuffer(VkCommandBuffer commandBuffer, uint3
     recordEndCommandBuffer(commandBuffer);
 }
 
-void ReferenceRenderer::outputRenderingTarget()
+float BenchmarkRenderer::calculateMSEToReference()
+{
+    void* data = context->resource_builder->downloadImage(render_targets[0]);
+}
+
+
+void BenchmarkRenderer::outputRenderingTarget()
 {
     void* data = context->resource_builder->downloadImage(render_targets[0]);
     fixImageFormatForStorage(static_cast<unsigned char*>(data), render_targets[0].imageExtent.width * render_targets[0].imageExtent.height, render_targets[0].imageFormat);
@@ -107,7 +110,7 @@ void ReferenceRenderer::outputRenderingTarget()
 }
 
 // target format is R8G8B8A8
-void ReferenceRenderer::fixImageFormatForStorage(unsigned char* image_data, size_t pixel_count, VkFormat originalFormat)
+void BenchmarkRenderer::fixImageFormatForStorage(unsigned char* image_data, size_t pixel_count, VkFormat originalFormat)
 {
     if (originalFormat == VK_FORMAT_R8G8B8A8_UNORM)
         return;

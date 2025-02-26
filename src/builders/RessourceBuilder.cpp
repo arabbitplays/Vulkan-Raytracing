@@ -189,7 +189,7 @@ AllocatedImage RessourceBuilder::createImage(void* data, VkExtent3D extent, VkFo
 
 Texture RessourceBuilder::loadTextureImage(std::string path, TextureType type) {
     int texWidth, texHeight, texChannels;
-    stbi_uc* pixels = stbi_load((resource_path + "/" + path).c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
+    stbi_uc* pixels = loadImageData(resource_path + "/" + path, &texWidth, &texHeight, &texChannels);
 
     if (!pixels) {
         throw std::runtime_error("failed to load texture image!");
@@ -219,20 +219,25 @@ Texture RessourceBuilder::loadTextureImage(std::string path, TextureType type) {
     return Texture(filename, type, path, textureImage);
 }
 
-void* RessourceBuilder::downloadImage(AllocatedImage image)
+stbi_uc* RessourceBuilder::loadImageData(std::string path, int* width, int* height, int* channels)
 {
-    size_t buffer_size = image.imageExtent.width * image.imageExtent.height * image.imageExtent.depth * 4;
+    return stbi_load(path.c_str(), width, height, channels, STBI_rgb_alpha);
+}
+
+void* RessourceBuilder::downloadImage(AllocatedImage image, uint32_t bytes_per_channel)
+{
+    size_t buffer_size = image.imageExtent.width * image.imageExtent.height * image.imageExtent.depth * 4 * bytes_per_channel;
     AllocatedBuffer staging_buffer = createBuffer(buffer_size, VK_BUFFER_USAGE_TRANSFER_DST_BIT,
         VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 
     transitionImageLayout(image.image, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
-        VK_ACCESS_NONE, VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+        VK_ACCESS_NONE, VK_ACCESS_TRANSFER_READ_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
     copyImageToBuffer(image.image, staging_buffer.handle, image.imageExtent);
     transitionImageLayout(image.image, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR,
-        VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL);
+        VK_ACCESS_TRANSFER_READ_BIT, VK_ACCESS_NONE, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL);
 
     void* mapped_data;
-    unsigned char* imageData = new unsigned char[buffer_size];  // Assuming RGBA (4 bytes per pixel)
+    auto* imageData = new uint8_t[buffer_size * bytes_per_channel];
     vkMapMemory(device, staging_buffer.bufferMemory, 0, buffer_size, 0, &mapped_data);
     memcpy(imageData, mapped_data, buffer_size);
     vkUnmapMemory(device, staging_buffer.bufferMemory);

@@ -1,6 +1,7 @@
+#include <BenchmarkRenderer.hpp>
 #include <exception>
 #include <iostream>
-#include "rendering/engine/VulkanEngine.hpp"
+#include <VulkanEngine.hpp>
 #include <CommandLineParser.hpp>
 #include <filesystem>
 #include <ReferenceRenderer.hpp>
@@ -16,6 +17,7 @@ int main(int argc, char* argv[]) {
     cli_parser.addString("--reference_scene", &options.reference_scene_path, "Generate one image of this scene.");
     cli_parser.addString("--output", &options.output_dir, "Generate one image and save it to the given file.");
     cli_parser.addString("--resources", &options.resources_path, "The path to the directory where all resource files can be found.");
+    cli_parser.addString("--reference_image", &options.reference_image_path, "The image to benchmark against");
     cli_parser.addFlag("-v", &verbose, "Display debug messages.");
     cli_parser.parse(argc, argv);
 
@@ -48,7 +50,13 @@ int main(int argc, char* argv[]) {
     std::shared_ptr<VulkanEngine> app;
     if (!options.output_dir.empty() && !options.reference_scene_path.empty())
     {
-        app = std::make_shared<ReferenceRenderer>();
+        if (!options.reference_image_path.empty())
+        {
+            app = std::make_shared<BenchmarkRenderer>();
+        } else
+        {
+            app = std::make_shared<ReferenceRenderer>();
+        }
     } else
     {
         app = std::make_shared<VulkanEngine>();

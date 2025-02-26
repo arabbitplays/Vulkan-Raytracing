@@ -15,7 +15,7 @@ class ReferenceRenderer : public VulkanEngine {
     void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex) override;
 
     void outputRenderingTarget();
-    void fixImageFormatForStorage(unsigned char* image_data, size_t pixel_count, VkFormat originalFormat);
+    uint8_t* fixImageFormatForStorage(void* image_data, size_t pixel_count, VkFormat originalFormat);
 
 private:
     spdlog::stopwatch stopwatch;

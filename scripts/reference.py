@@ -95,9 +95,9 @@ def render_reference(program, total_samples, samples_per_image, reference_dir, o
     render_images(program, samples_per_image, image_count, reference_dir, output_dir)
 
     calculate_final_image(image_count, output_dir, str(total_samples) + "_ref")
-    #delete_images(image_count, output_dir)
+    delete_images(image_count, output_dir)
 
 build_path = "buildDir/renderer"
 reference_dir = "resources/references/simple_cornell"
 output_dir = "tmp"
-render_reference(build_path, 300000, 5000, reference_dir, output_dir)
+render_reference(build_path, 100000, 5000, reference_dir, output_dir)

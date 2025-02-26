@@ -4,6 +4,8 @@ import numpy as np
 import sys
 import matplotlib.pyplot as plt
 import flip_evaluator as flip
+from scripts.gamma_correction import unorm_to_srgb
+
 
 class Tee:
     def __init__(self, file):
@@ -31,14 +33,7 @@ def run_program(program, args):
     except Exception as e:
         print(f"An error occurred: {e}")
 
-def mse_images(image_path1, image_path2):
-    """
-    Compute the Mean Squared Error (MSE) between two images.
-
-    :param image_path1: Path to the first image.
-    :param image_path2: Path to the second image.
-    :return: Mean Squared Error (float).
-    """
+def error_images(image_path1, image_path2):
     img1 = Image.open(image_path1).convert("L")  # Convert to grayscale
     img2 = Image.open(image_path2).convert("L")  # Convert to grayscale
 
@@ -47,6 +42,9 @@ def mse_images(image_path1, image_path2):
 
     img1_array = np.array(img1, dtype=np.float32)
     img2_array = np.array(img2, dtype=np.float32)
+
+    img1_array = unorm_to_srgb(img1_array)
+    img2_array = unorm_to_srgb(img2_array)
 
     mse = np.mean((img1_array - img2_array) ** 2)
 
@@ -81,7 +79,7 @@ def run_benchmark(program, reference_dir, reference_name, sample_counts):
                 "--reference_scene", reference_dir + "/" + "scene.yaml"]
             run_program(program, args)
 
-            results.append(mse_images(reference_dir + "/" + reference_name, output_path + "/" + str(sample_count) + "_ref.png"))
+            results.append(error_images(reference_dir + "/" + reference_name, output_path + "/" + str(sample_count) + "_ref.png"))
 
         plot_difference(reference_dir + "/" + reference_name, output_path + "/" + str(sample_counts[-1]) + "_ref.png")
 
@@ -92,7 +90,7 @@ def run_benchmark(program, reference_dir, reference_name, sample_counts):
         sys.stdout = sys.__stdout__  # Restore stdout
 
 build_path = "buildDir/renderer"
-reference_dir = "resources/references/big_light_cornell"
-reference_name = "100_ref.png"
+reference_dir = "resources/references/simple_cornell"
+reference_name = "100000_ref.png"
 
-run_benchmark(build_path, reference_dir, reference_name, [1000])
+run_benchmark(build_path, reference_dir, reference_name, [100, 1000])
