@@ -79,7 +79,7 @@ def run_benchmark(program, reference_dir, reference_name, sample_counts):
                 "--samples", str(sample_count),
                 "--resources", "resources",
                 "--reference_scene", reference_dir + "/" + "scene.yaml"]
-            run_program(build_path, args)
+            run_program(program, args)
 
             results.append(mse_images(reference_dir + "/" + reference_name, output_path + "/" + str(sample_count) + "_ref.png"))
 
@@ -93,6 +93,6 @@ def run_benchmark(program, reference_dir, reference_name, sample_counts):
 
 build_path = "buildDir/renderer"
 reference_dir = "resources/references/big_light_cornell"
-reference_name = "100000_ref_sphere.png"
+reference_name = "100_ref.png"
 
 run_benchmark(build_path, reference_dir, reference_name, [1000])

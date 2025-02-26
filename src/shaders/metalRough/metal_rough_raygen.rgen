@@ -36,13 +36,8 @@ void main() {
         payload.depth++;
     }
 
-    vec3 color = payload.light;
-    float gamma = 2.2;
     vec3 prev_color = imageLoad(image, ivec2(gl_LaunchIDEXT.xy)).xyz;
-    prev_color = pow(prev_color, vec3(gamma)); // srgb -> unorm
-
-    color = (options.curr_sample_count * prev_color + color) / (options.curr_sample_count + 1);
-    color = pow(color, vec3(1 / gamma)); // unorm -> srgb
+    vec3 color = (options.curr_sample_count * prev_color + payload.light) / (options.curr_sample_count + 1);
 
     imageStore(rng_tex, ivec2(gl_LaunchIDEXT.xy), payload.rng_state);
     imageStore(image, ivec2(gl_LaunchIDEXT.xy), vec4(color, 1.0));

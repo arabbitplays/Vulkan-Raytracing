@@ -18,7 +18,7 @@ def save_image(image_array, output_path):
     image = Image.fromarray(image_array)
     image.save(output_path)
 
-folder = "resources/references/"
-unorm_image = load_image(folder + "1000000_P1.png")
+folder = "tmp/"
+unorm_image = load_image(folder + "ng_100000_ref.png")
 srgb_image = unorm_to_srgb(unorm_image)
-save_image(srgb_image, folder + "gamma_1000000_P1.png")
+save_image(srgb_image, folder + "100000_ref.png")
