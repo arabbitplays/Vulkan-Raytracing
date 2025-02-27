@@ -25,6 +25,7 @@ private:
     struct ImguiOptions {
         bool shadows, fresnel, dispersion, normal_mapping;
         bool sample_light;
+        bool sample_brdf;
         int curr_scene;
     };
 
@@ -34,6 +35,7 @@ private:
         .dispersion = false,
         .normal_mapping = true,
         .sample_light = false,
+        .sample_brdf = false,
     };
 
 protected:

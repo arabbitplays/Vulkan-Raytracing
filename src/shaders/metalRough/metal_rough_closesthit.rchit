@@ -48,6 +48,8 @@ void main() {
     vec3 T = normalize(vec3(tangent * gl_WorldToObjectEXT)); // transform tangent to world space
     vec3 bitangent = -normalize(cross(geometric_normal, T));
     mat3 TBN = mat3(T, bitangent, geometric_normal);
+    mat3 transpose_tbn = transpose(TBN);
+
     if (options.normal_mapping) {
         vec3 texNormal = texture(normal_textures[triangle.material_idx], uv).xyz;
         texNormal = texNormal * 2.0 - 1.0;
@@ -62,7 +64,7 @@ void main() {
     float ao = texture(metal_rough_ao_textures[triangle.material_idx], uv).z + material.ao;
 
     // no direct light sampling or handle light that goes directly to the camera
-    if (!options.sample_light || (payload.depth == 0 && material.emission_power > 0)) {
+    if (!options.sample_light || payload.specular_bounce || (payload.depth == 0 && material.emission_power > 0)) {
         if (dot(N, V) > 0) {
             payload.light += payload.beta * material.emission_color * material.emission_power;
         }
@@ -74,32 +76,35 @@ void main() {
         float distance_to_light = length(L);
         L = normalize(L);
 
-        vec3 f = calcBRDF(N, V, L, albedo, metallic, roughness) * max(dot(N, L), 0.0);
+        vec3 wo = normalize(transpose_tbn * V);
+        vec3 wi = normalize(transpose_tbn * L);
+
+        vec3 f = calcBRDF(wo, wi, albedo, metallic, roughness) * max(dot(N, L), 0.0);
         if (light_sample.light != vec3(0) && length(f) > 0.0 && unoccluded(P, L, distance_to_light)) {
             payload.light += payload.beta * f * light_sample.light / light_sample.pdf;
         }
     }
 
     payload.next_origin = P;
-    payload.next_direction = TBN * sampleCosHemisphere(payload.rng_state);
-    /*payload.next_direction = sampleUniformSphere(payload.rng_state);
-    if (dot(payload.next_direction, N) < 0) {
-        payload.next_direction = -payload.next_direction;
-    }*/
 
-    /*payload.next_direction = vec3(0);
-    for (int i = 0; i < 1000; i++) {
-        vec3 sampled_dir = TBN * sampleCosHemisphere(payload.rng_state);
+    if (options.sample_bsdf) {
+        vec3 wo = normalize(transpose_tbn * V);
+        BrdfSample brdf_sample = sampleBrdf(wo, albedo, metallic, roughness, payload.rng_state);
+        payload.next_direction = TBN * brdf_sample.wi;
+        payload.beta *= brdf_sample.f * max(0.0, dot(payload.next_direction, N)) / brdf_sample.pdf;
+        payload.specular_bounce = brdf_sample.isSpecular;
+       // payload.light = payload.next_direction;
+    } else {
+        payload.next_direction = TBN * sampleCosHemisphere(payload.rng_state);
+        /*payload.next_direction = sampleUniformSphere(payload.rng_state);
+        if (dot(payload.next_direction, N) < 0) {
+            payload.next_direction = -payload.next_direction;
+        }*/
 
-        if (dot(sampled_dir, N) < 0) {
-            sampled_dir = -sampled_dir;
-        }
-        payload.next_direction += sampled_dir;
+        vec3 wo = normalize(transpose_tbn * V);
+        vec3 wi = normalize(transpose_tbn * payload.next_direction);
+        payload.beta *= calcBRDF(wo, wi, albedo, metallic, roughness) * PI;
+        //payload.beta *= calcBRDF(N, V, payload.next_direction, albedo, metallic, roughness) * max(0.0, dot(payload.next_direction, N)) * 2 * PI;
+        //payload.beta *= calcBRDF(N, V, payload.next_direction, albedo, metallic, roughness) * max(0.0, dot(payload.next_direction, N)) * 4 * PI;
     }
-    payload.next_direction = normalize(payload.next_direction);*/
-
-    // f * cos / PDF
-    payload.beta *= calcBRDF(N, V, payload.next_direction, albedo, metallic, roughness) * PI;
-    //payload.beta *= calcBRDF(N, V, payload.next_direction, albedo, metallic, roughness) * max(0.0, dot(payload.next_direction, N)) * 2 * PI;
-    //payload.beta *= calcBRDF(N, V, payload.next_direction, albedo, metallic, roughness) * max(0.0, dot(payload.next_direction, N)) * 4 * PI;
 }

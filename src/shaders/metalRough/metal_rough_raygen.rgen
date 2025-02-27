@@ -27,6 +27,7 @@ void main() {
     payload.light = vec3(0.0);
     payload.depth = 0;
     payload.beta = vec3(1.0);
+    payload.specular_bounce = false;
 
     while (payload.depth < options.recursion_depth && length(payload.beta) > 0.001 && payload.next_direction != vec3(0.0)) {
         float tmin = EPSILON;

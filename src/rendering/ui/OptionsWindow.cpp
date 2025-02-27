@@ -48,6 +48,10 @@ void OptionsWindow::createFrame() {
                 raytracing_options->sample_light = imgui_options.sample_light ? 1 : 0;
                 reset_image = true;
             }
+            if (ImGui::Checkbox("Sample bsdf", &imgui_options.sample_brdf)) {
+                raytracing_options->sample_brdf = imgui_options.sample_brdf ? 1 : 0;
+                reset_image = true;
+            }
         }
         ImGui::End();
     }
