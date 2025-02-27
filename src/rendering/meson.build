@@ -1,7 +1,7 @@
 subdir('camera')
 subdir('engine')
 subdir('scene_graph')
-subdir('ressources')
+subdir('resources')
 subdir('ui')
 
 src += files(

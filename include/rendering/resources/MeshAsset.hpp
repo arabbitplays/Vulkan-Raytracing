@@ -21,6 +21,7 @@ struct GeometryData {
 
 struct MeshAsset {
     std::string name;
+    std::string path;
     uint32_t geometry_id;
     uint32_t vertex_count = 0;
     uint32_t triangle_count = 0;

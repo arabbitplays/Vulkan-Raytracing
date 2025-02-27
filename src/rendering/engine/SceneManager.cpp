@@ -7,30 +7,23 @@
 #include <DescriptorLayoutBuilder.hpp>
 #include <OptionsWindow.hpp>
 #include <QuickTimer.hpp>
+#include <SceneReader.hpp>
+#include <SceneWriter.hpp>
 
-void SceneManager::createScene(SceneType scene_type) {
+void SceneManager::createScene(std::string scene_path) {
     QuickTimer timer{"Scene Creation", true};
 
     if (scene != nullptr) {
         scene_ressource_deletion_queue.flush();
-        phong_material->reset();
-        metal_rough_material->reset();
+        for (auto& material : defaultMaterials)
+        {
+            material.second->reset();
+        }
     }
 
-    switch (scene_type) {
-        case SceneType::PBR_CORNELL_BOX:
-            scene = std::make_shared<PBR_CornellBox>(context->mesh_builder, *context->resource_builder, context->swapchain->extent.width, context->swapchain->extent.height, metal_rough_material);
-        break;
-        case SceneType::CORNELL_BOX:
-            scene = std::make_shared<CornellBox>(context->mesh_builder, *context->resource_builder, context->swapchain->extent.width, context->swapchain->extent.height, phong_material);
-            break;
-        case SceneType::PLANE:
-            scene = std::make_shared<PlaneScene>(context->mesh_builder, *context->resource_builder, context->swapchain->extent.width, context->swapchain->extent.height, phong_material);
-            break;
-        case SceneType::SHOWCASE:
-            scene = std::make_shared<Material_Showcase>(context->mesh_builder, *context->resource_builder, context->swapchain->extent.width, context->swapchain->extent.height, metal_rough_material);
-        break;
-    }
+    SceneReader reader = SceneReader(context);
+    scene = reader.readScene(scene_path, defaultMaterials);
+
     scene_ressource_deletion_queue.pushFunction([&]() {
         scene->clearRessources();
     });
@@ -39,16 +32,15 @@ void SceneManager::createScene(SceneType scene_type) {
     createBlas();
     createUniformBuffers();
     createSceneDescriptorSets();
-
-    curr_scene_type = scene_type;
 }
 
 void SceneManager::createSceneBuffers() {
-    vertex_buffer = createVertexBuffer(scene->meshes);
-    index_buffer = createIndexBuffer(scene->meshes);
+    std::vector<std::shared_ptr<MeshAsset>> meshes = scene->getMeshes();
+    vertex_buffer = createVertexBuffer(meshes);
+    index_buffer = createIndexBuffer(meshes);
     scene->material->writeMaterial();
 
-    geometry_mapping_buffer = createGeometryMappingBuffer(scene->meshes);
+    geometry_mapping_buffer = createGeometryMappingBuffer(meshes);
 
     scene_ressource_deletion_queue.pushFunction([&]() {
         context->resource_builder->destroyBuffer(vertex_buffer);
@@ -60,7 +52,8 @@ void SceneManager::createSceneBuffers() {
 void SceneManager::createBlas() {
     QuickTimer timer{"BLAS Build", true};
     uint32_t object_id = 0;
-    for (auto& meshAsset : scene->meshes) {
+    std::vector<std::shared_ptr<MeshAsset>> meshes = scene->getMeshes();
+    for (auto& meshAsset : meshes) {
         meshAsset->accelerationStructure = std::make_shared<AccelerationStructure>(context->device, *context->resource_builder, *context->command_manager, VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_KHR);
 
         meshAsset->accelerationStructure->addTriangleGeometry(vertex_buffer, index_buffer,
@@ -128,7 +121,7 @@ void SceneManager::createUniformBuffers() {
     }
 }
 
-void SceneManager::updateScene(DrawContext& draw_context, uint32_t current_image_idx, AllocatedImage& current_image, AllocatedImage& rng_tex) {
+void SceneManager::updateScene(DrawContext& draw_context, uint32_t current_image_idx, AllocatedImage current_image, AllocatedImage& rng_tex) {
     //QuickTimer timer{"Scene Update", true};
 
     scene->update(context->swapchain->extent.width, context->swapchain->extent.height);
@@ -143,9 +136,7 @@ void SceneManager::updateScene(DrawContext& draw_context, uint32_t current_image
     }
 
     draw_context.objects.clear();
-    for (auto& pair : scene->nodes) {
-        pair.second->draw(glm::mat4(1.0f), draw_context);
-    }
+    scene->nodes["root"]->draw(glm::mat4(1.0f), draw_context);
 
     // TODO move this to scene creation time
     if (instance_mapping_buffer.handle == VK_NULL_HANDLE) {
@@ -158,8 +149,8 @@ void SceneManager::updateScene(DrawContext& draw_context, uint32_t current_image
         });
     }
     uint32_t instance_id = 0;
-    for (auto& object : draw_context.objects) {
-        top_level_acceleration_structure->addInstance(object.acceleration_structure, object.transform, instance_id++);
+    for (int i = 0; i < draw_context.objects.size(); i++) {
+        top_level_acceleration_structure->addInstance(draw_context.objects[i].acceleration_structure, draw_context.objects[i].transform, instance_id++);
     }
 
     if (top_level_acceleration_structure->getHandle() == VK_NULL_HANDLE) {
@@ -343,6 +334,7 @@ void SceneManager::createDefaultMaterials(VkPhysicalDeviceRayTracingPipelineProp
         phong_material->clearRessources();
     });
     phong_material->pipeline->createShaderBindingTables(raytracingProperties);
+    defaultMaterials["phong"] = phong_material;
 
     metal_rough_material = std::make_shared<MetalRoughMaterial>(context, defaultSamplerLinear);
     metal_rough_material->buildPipelines(scene_descsriptor_set_layout);
@@ -350,6 +342,7 @@ void SceneManager::createDefaultMaterials(VkPhysicalDeviceRayTracingPipelineProp
         metal_rough_material->clearRessources();
     });
     metal_rough_material->pipeline->createShaderBindingTables(raytracingProperties);
+    defaultMaterials["metal_rough"] = metal_rough_material;
 }
 
 std::shared_ptr<Material> SceneManager::getMaterial() {

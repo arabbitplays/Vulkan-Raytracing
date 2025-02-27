@@ -29,6 +29,10 @@ def combine_rgb_channels(r_path, g_path, b_path, output_path):
     g_data = np.array(img_g)
     b_data = np.array(img_b)
 
+    img_resized = img_b.resize((img_b.width // 2, img_b.height // 2), Image.LANCZOS)
+    # Convert back to numpy array
+    #b_data = np.array(img_resized)
+
     # Ensure all images have the same dimensions
     if r_data.shape != g_data.shape or g_data.shape != b_data.shape:
         raise ValueError("All images must have the same dimensions")
@@ -49,10 +53,11 @@ def combine_rgb_channels(r_path, g_path, b_path, output_path):
 
     print(f"Combined image saved to {output_path}")
 
-
-r_path = 'ressources/textures/cogPattern/cog-patterned-metal_metallic.png'
-g_path = 'ressources/textures/cogPattern/cog-patterned-metal_roughness.png'
-b_path = 'ressources/textures/cogPattern/cog-patterned-metal_ao.png'
-output_path = 'ressources/textures/cogPattern/cog-patterned-metal_rough_ao.png'  # Replace with desired output path
+folder_name = "rusty_metal"
+file_name = "rusty-metal"
+r_path = 'resources/textures/' + folder_name + '/' + file_name + '_metallic.png'
+g_path = 'resources/textures/' + folder_name + '/' + file_name + '_roughness.png'
+b_path = 'resources/textures/' + folder_name + '/' + file_name + '_ao.png'
+output_path = 'resources/textures/' + folder_name + '/' + file_name + '_metal_rough_ao.png'  # Replace with desired output path
 #combine_rgb_channels(r_path, g_path, b_path, output_path)
-print_image_pixels("ressources/textures/testing/normal-map.png")
+print_image_pixels("tmp/5.png")

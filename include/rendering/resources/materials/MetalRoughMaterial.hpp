@@ -8,8 +8,10 @@
 #include <Material.hpp>
 #include <glm/vec3.hpp>
 
+#define METAL_ROUGH_MATERIAL_NAME "metal_rough"
+
 struct MetalRoughParameters {
-    AllocatedImage albedo_tex, metal_rough_ao_tex, normal_tex;
+    std::shared_ptr<Texture> albedo_tex, metal_rough_ao_tex, normal_tex;
     glm::vec3 albedo = glm::vec3(0.0f);
     float metallic, roughness, ao;
     glm::vec3 emission_color = glm::vec3(1.0);
@@ -24,24 +26,31 @@ public:
         glm::vec4 emission;
     };
 
-    MetalRoughMaterial(std::shared_ptr<VulkanContext> context, VkSampler sampler) : Material(context), sampler(sampler) {
-    }
+    struct MaterialResources
+    {
+        std::shared_ptr<MaterialConstants> constants;
+        Texture albedo_tex;
+        Texture metal_rough_ao_tex;
+        Texture normal_tex;
+    };
+
+    MetalRoughMaterial(std::shared_ptr<VulkanContext> context, VkSampler sampler) : Material(METAL_ROUGH_MATERIAL_NAME, context), sampler(sampler) {}
+
 
     void buildPipelines(VkDescriptorSetLayout sceneLayout) override;
     void writeMaterial() override;
     glm::vec4 getEmissionForInstance(uint32_t material_instance_id) override;
+    std::vector<std::shared_ptr<MaterialResources>> getResources();
+
     std::shared_ptr<MaterialInstance> createInstance(MetalRoughParameters parameters);
     void reset() override;
 private:
     AllocatedBuffer createMaterialBuffer();
 
-    AllocatedImage default_tex, default_normal_tex;
+    std::shared_ptr<Texture> default_tex, default_normal_tex;
 
-    std::vector<std::shared_ptr<MaterialInstance>> instances;
-    std::vector<std::shared_ptr<MaterialConstants>> constants_buffer;
+    std::vector<std::shared_ptr<MaterialResources>> resources_buffer;
     VkSampler sampler;
-    std::vector<AllocatedImage> albedo_textures, metal_rough_ao_textures, normal_textures;
-    AllocatedBuffer materialBuffer; // maps an instance to its respective material via a common index into the constants and texture buffers
 };
 
 

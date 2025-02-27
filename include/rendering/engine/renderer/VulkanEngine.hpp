@@ -42,7 +42,7 @@
 
 class VulkanEngine {
 public:
-    static constexpr int MAX_FRAMES_IN_FLIGHT = 2;
+    static constexpr int MAX_FRAMES_IN_FLIGHT = 1;
 
     VkDevice device;
     std::shared_ptr<CommandManager> pCommandManager;
@@ -53,7 +53,7 @@ public:
     std::shared_ptr<DescriptorAllocator> descriptorAllocator;
 
     void run(RendererOptions& options);
-private:
+protected:
 
     GLFWwindow* window;
     std::shared_ptr<GuiManager> guiManager;
@@ -77,7 +77,7 @@ private:
 
     VkPhysicalDeviceRayTracingPipelinePropertiesKHR raytracingProperties{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_PROPERTIES_KHR};
 
-    std::vector<AllocatedImage> storageImages;
+    std::vector<AllocatedImage> render_targets;
     AllocatedImage rng_tex;
 
     std::shared_ptr<SceneManager> scene_manager;
@@ -92,7 +92,7 @@ private:
     void initWindow();
     void initVulkan();
     void initGui();
-    void mainLoop();
+    virtual void mainLoop();
     void cleanup();
 
     static void framebufferResizeCallback(GLFWwindow *window, int width, int height);
@@ -118,9 +118,6 @@ private:
     void createRessourceBuilder();
 
     bool hasStencilComponent(VkFormat format);
-    AllocatedImage loadTextureImage(std::string path);
-
-
     void createSwapchain();
 
     void createDescriptorAllocator();
@@ -129,14 +126,25 @@ private:
 
     void pollSdlEvents();
 
-    void drawFrame();
+    virtual void drawFrame();
+    int aquireNextSwapchainImage();
+    void submitCommandBuffer(std::vector<VkSemaphore> wait_semaphore, std::vector<VkSemaphore> signal_semaphore);
+    void presentSwapchainImage(std::vector<VkSemaphore> wait_semaphore, uint32_t image_index);
 
     void refreshAfterResize();
 
-    void cleanupRenderingImages();
-    void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
-    void outputStorageImage();
-    void fixImageFormatForStorage(unsigned char* image_data, size_t pixel_count, VkFormat originalFormat);
+    void createRenderingTargets();
+    virtual AllocatedImage getRenderTarget();
+    void cleanupRenderingTargets();
+
+    void outputRenderingTarget();
+    uint8_t* fixImageFormatForStorage(void* image_data, size_t pixel_count, VkFormat originalFormat);
+
+    virtual void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
+    void recordBeginCommandBuffer(VkCommandBuffer commandBuffer);
+    void recordRenderToImage(VkCommandBuffer commandBuffer);
+    void recordCopyToSwapchain(VkCommandBuffer commandBuffer, uint32_t swapchain_image_index);
+    void recordEndCommandBuffer(VkCommandBuffer commandBuffer);
 
     static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
             VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
@@ -149,8 +157,7 @@ private:
         return VK_FALSE;
     }
 
-    void createRenderingImages();
-    void loadScene();
+    virtual void loadScene();
 };
 
 #endif //BASICS_VULKANENGINE_HPP

@@ -4,8 +4,6 @@
 #extension GL_EXT_nonuniform_qualifier : enable
 #extension GL_EXT_shader_explicit_arithmetic_types : enable
 
-#define MAX_RECURSION_DEPTH 4
-
 #include "../common/payload.glsl"
 #include "../common/scene_data.glsl"
 #include "../common/layout.glsl"
@@ -13,7 +11,6 @@
 #include "../common/random.glsl"
 
 layout(binding = 0, set = 0) uniform accelerationStructureEXT topLevelAS;
-layout(location = 1) rayPayloadEXT bool isShadowed;
 
 layout(binding = 1, set = 1) uniform sampler2D albedo_textures[64];
 layout(binding = 2, set = 1) uniform sampler2D metal_rough_ao_textures[64];
@@ -63,33 +60,45 @@ void main() {
     float roughness = texture(metal_rough_ao_textures[triangle.material_idx], uv).y + material.roughness;
     float ao = texture(metal_rough_ao_textures[triangle.material_idx], uv).z + material.ao;
 
-    vec3 direct_light = vec3(0.0);
+    // no direct light sampling or handle light that goes directly to the camera
+    if (!options.sample_light || (payload.depth == 0 && material.emission_power > 0)) {
+        if (dot(N, V) > 0) {
+            payload.light += payload.beta * material.emission_color * material.emission_power;
+        }
+    }
+
     if (options.sample_light) {
         LightSample light_sample = sampleEmittingPrimitive(P);
         vec3 L = light_sample.P - P;
         float distance_to_light = length(L);
         L = normalize(L);
 
-        if (light_sample.same_surface) {
-            direct_light = light_sample.light;
-        } else {
-            vec3 f = calcBRDF(N, V, L, albedo, metallic, roughness) * max(dot(N, L), 0.0);
-            if (length(f) > 0.0 && unoccluded(P, L, distance_to_light, geometric_normal)) {
-                direct_light = f * light_sample.light / light_sample.pdf;
-            }
+        vec3 f = calcBRDF(N, V, L, albedo, metallic, roughness) * max(dot(N, L), 0.0);
+        if (light_sample.light != vec3(0) && length(f) > 0.0 && unoccluded(P, L, distance_to_light)) {
+            payload.light += payload.beta * f * light_sample.light / light_sample.pdf;
         }
     }
 
-    vec3 result = vec3(0.0);
-    if (options.sample_light) {
-        result = direct_light;
-    } else {
-        result = material.emission_color * material.emission_power;
-    }
-
-    payload.light = result;
     payload.next_origin = P;
     payload.next_direction = TBN * sampleCosHemisphere(payload.rng_state);
+    /*payload.next_direction = sampleUniformSphere(payload.rng_state);
+    if (dot(payload.next_direction, N) < 0) {
+        payload.next_direction = -payload.next_direction;
+    }*/
+
+    /*payload.next_direction = vec3(0);
+    for (int i = 0; i < 1000; i++) {
+        vec3 sampled_dir = TBN * sampleCosHemisphere(payload.rng_state);
+
+        if (dot(sampled_dir, N) < 0) {
+            sampled_dir = -sampled_dir;
+        }
+        payload.next_direction += sampled_dir;
+    }
+    payload.next_direction = normalize(payload.next_direction);*/
+
     // f * cos / PDF
-    payload.contribution = calcBRDF(N, V, payload.next_direction, albedo, metallic, roughness) * PI ;
+    payload.beta *= calcBRDF(N, V, payload.next_direction, albedo, metallic, roughness) * PI;
+    //payload.beta *= calcBRDF(N, V, payload.next_direction, albedo, metallic, roughness) * max(0.0, dot(payload.next_direction, N)) * 2 * PI;
+    //payload.beta *= calcBRDF(N, V, payload.next_direction, albedo, metallic, roughness) * max(0.0, dot(payload.next_direction, N)) * 4 * PI;
 }

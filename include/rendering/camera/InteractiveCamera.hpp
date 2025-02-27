@@ -12,7 +12,7 @@
 class InteractiveCamera : public Camera {
 public:
     InteractiveCamera() = default;
-    InteractiveCamera(glm::mat4 projection) : Camera(glm::mat4(1.0f), projection) {
+    InteractiveCamera(uint32_t image_width, uint32_t image_height, float fov, glm::vec3 position, glm::vec3 view_dir) : Camera(image_width, image_height, fov, position, view_dir) {
         velocity = glm::vec3(0.0f);
         pitch = 0.0f;
         yaw = 0.0f;
@@ -23,10 +23,9 @@ public:
 
     void processGlfwKeyEvent(int key, int action) override;
     void processGlfwMouseEvent(double xPos, double yPos) override;
-    void update() override;
+    void update(uint32_t image_width, uint32_t image_height) override;
 
     glm::vec3 velocity;
-    glm::vec3 position;
     bool isActive = true;
 
     // Mouse state

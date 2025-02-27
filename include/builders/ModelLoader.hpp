@@ -14,8 +14,9 @@
 class ModelLoader {
 public:
     ModelLoader() = default;
+    virtual ~ModelLoader() = default;
 
-    MeshAsset LoadMeshAsset(std::string name, std::string path);
+    MeshAsset loadMeshAsset(std::string name, std::string ressources_path, std::string path);
 
 protected:
     virtual void loadData(std::string path, std::vector<Vertex>& vertices, std::vector<uint32_t>& indices) = 0;

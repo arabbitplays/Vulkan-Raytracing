@@ -5,16 +5,16 @@
 #ifndef RENDEREROPTIONS_H
 #define RENDEREROPTIONS_H
 
-enum SceneType {
-    PBR_CORNELL_BOX,
-    CORNELL_BOX,
-    PLANE,
-    SHOWCASE,
-};
+#include <vector>
 
 struct RendererOptions {
-    SceneType scene_type = PBR_CORNELL_BOX;
-    std::string output_path = "";
+    std::string curr_scene_path = "";
+    std::string resources_path = "";
+    std::vector<std::string> scene_paths{};
+
+    std::string reference_scene_path = ""; // used by the reference renderer to find the scene to render a erference of
+    std::string reference_image_path = ""; // used by the benchmark renderer to find the image to benchmark against
+    std::string output_dir = "";
     int32_t sample_count = 1;
 };
 

@@ -21,9 +21,9 @@ public:
         initDefaultResources(raytracingProperties);
     }
 
-    void createScene(SceneType scene_type);
+    void createScene(std::string scene_path);
     void createBlas();
-    void updateScene(DrawContext& draw_context, uint32_t current_image_idx, AllocatedImage& current_image, AllocatedImage& rng_tex);
+    void updateScene(DrawContext& draw_context, uint32_t current_image_idx, AllocatedImage current_image, AllocatedImage& rng_tex);
 
     void clearRessources();
 
@@ -31,7 +31,7 @@ public:
     uint32_t getEmittingInstancesCount();
 
     std::shared_ptr<Scene> scene;
-    SceneType curr_scene_type;
+    std::string curr_scene_path;
 
     std::vector<VkDescriptorSet> scene_descriptor_sets{};
     std::vector<AllocatedBuffer> sceneUniformBuffers;
@@ -69,8 +69,9 @@ private:
     VkSampler defaultSamplerNearest;
     VkSampler defaultSamplerAnisotropic;
 
-    std::shared_ptr<PhongMaterial> phong_material;
+    std::unordered_map<std::string, std::shared_ptr<Material>> defaultMaterials;
     std::shared_ptr<MetalRoughMaterial> metal_rough_material;
+    std::shared_ptr<PhongMaterial> phong_material;
 
     AllocatedBuffer vertex_buffer, index_buffer, geometry_mapping_buffer, instance_mapping_buffer, emitting_instances_buffer;
     std::shared_ptr<AccelerationStructure> top_level_acceleration_structure;

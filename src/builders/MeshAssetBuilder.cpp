@@ -10,15 +10,9 @@
 #include <cstring>
 #include <ModelLoader.hpp>
 
-// TODO what is this class???
-MeshAssetBuilder::MeshAssetBuilder(VkDevice device, RessourceBuilder ressource_builder) {
-    this->device = device;
-    this->ressource_builder = ressource_builder;
-}
-
 MeshAsset MeshAssetBuilder::LoadMeshAsset(std::string name, std::string path) {
     AssimpModelLoader loader;
-    return loader.LoadMeshAsset(name, path);
+    return loader.loadMeshAsset(name, resource_path, path);
 }
 
 void MeshAssetBuilder::destroyMeshAsset(MeshAsset& meshAsset) {

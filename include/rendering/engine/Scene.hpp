@@ -51,15 +51,28 @@ struct DirectionalLight {
 class Scene {
 public:
     Scene(std::shared_ptr<MeshAssetBuilder>& mesh_asset_builder, RessourceBuilder& ressource_builder, std::shared_ptr<Material> material)
-        : mesh_builder(mesh_asset_builder), ressource_builder(ressource_builder), material(material) {}
+        : mesh_builder(mesh_asset_builder), ressource_builder(ressource_builder), material(material)
+    {
+        Scene::initScene();
+    }
+
+    virtual ~Scene() = default;
+
+    void addMesh(std::string name, std::string path);
+    std::shared_ptr<MeshAsset> getMesh(std::string name);
+    void addTexture(std::string path, TextureType type);
+    void addNode(std::string name, std::shared_ptr<Node> node);
 
     std::shared_ptr<SceneData> createSceneData();
-    virtual void update(uint32_t image_width, uint32_t image_height) {};
+    void update(uint32_t image_width, uint32_t image_height);
+    std::vector<std::shared_ptr<MeshAsset>> getMeshes();
     void clearRessources();
 
     std::shared_ptr<Camera> camera;
 
-    std::vector<std::shared_ptr<MeshAsset>> meshes;
+    std::unordered_map<std::string, std::shared_ptr<MeshAsset>> meshes;
+    std::unordered_map<std::string, std::shared_ptr<Texture>> textures;
+
     std::unordered_map<std::string, std::shared_ptr<Node>> nodes;
     std::array<AllocatedImage, 6> environment_map{};
 
@@ -74,7 +87,24 @@ public:
 
 protected:
     virtual void initCamera(uint32_t image_width, uint32_t image_height) {};
-    virtual void initScene() {};
+    virtual void initScene()
+    {
+        std::string folder = "textures/environmentMaps/";
+        environment_map[0] = ressource_builder.loadTextureImage(folder + "posx.jpg").image;
+        environment_map[1] = ressource_builder.loadTextureImage(folder + "negx.jpg").image;
+        environment_map[2] = ressource_builder.loadTextureImage(folder + "posy.jpg").image;
+        environment_map[3] = ressource_builder.loadTextureImage(folder + "negy.jpg").image;
+        environment_map[4] = ressource_builder.loadTextureImage(folder + "posz.jpg").image;
+        environment_map[5] = ressource_builder.loadTextureImage(folder + "negz.jpg").image;
+
+        deletion_queue.pushFunction([&] () {
+            for (auto image : environment_map) {
+                ressource_builder.destroyImage(image);
+            }
+        });
+    };
+
+
 };
 
 class PlaneScene : public Scene {
@@ -85,7 +115,6 @@ public:
         initCamera(image_width, image_height);
         initScene();
     };
-    void update(uint32_t image_width, uint32_t image_height) override;
 
 protected:
     void initCamera(uint32_t image_width, uint32_t image_height) override;
@@ -103,7 +132,6 @@ public:
         initCamera(image_width, image_height);
         initScene();
     };
-    void update(uint32_t image_width, uint32_t image_height) override;
 
 protected:
     void initCamera(uint32_t image_width, uint32_t image_height) override;
@@ -121,7 +149,6 @@ public:
         initCamera(image_width, image_height);
         initScene();
     };
-    void update(uint32_t image_width, uint32_t image_height) override;
 
 protected:
     void initCamera(uint32_t image_width, uint32_t image_height) override;
@@ -139,14 +166,12 @@ public:
         initCamera(image_width, image_height);
         initScene();
     };
-    void update(uint32_t image_width, uint32_t image_height) override;
 
 protected:
     void initCamera(uint32_t image_width, uint32_t image_height) override;
     void initScene() override;
 
     std::shared_ptr<MetalRoughMaterial> metal_rough;
-    std::vector<AllocatedImage> textures;
 };
 
 #endif //SCENE_HPP

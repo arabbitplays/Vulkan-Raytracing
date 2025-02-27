@@ -7,9 +7,11 @@
 
 
 #include <cstring>
+#include <stb_image.h>
 #include <string>
 #include <vulkan/vulkan_core.h>
 #include "../rendering/engine/CommandManager.hpp"
+#include <Texture.hpp>
 
 struct AllocatedBuffer {
     VkBuffer handle = VK_NULL_HANDLE;
@@ -25,18 +27,11 @@ struct AllocatedBuffer {
     }
 };
 
-struct AllocatedImage {
-    VkImage image;
-    VkDeviceMemory imageMemory;
-    VkImageView imageView;
-    VkFormat imageFormat;
-    VkExtent3D imageExtent;
-};
-
 class RessourceBuilder {
 public:
     RessourceBuilder() = default;
-    RessourceBuilder(VkPhysicalDevice physicalDevice, VkDevice device, CommandManager commandManager);
+    RessourceBuilder(VkPhysicalDevice physicalDevice, VkDevice device, CommandManager commandManager, const std::string& resource_path)
+        : physicalDevice(physicalDevice), device(device), commandManager(commandManager), resource_path(resource_path) {};
 
     AllocatedBuffer createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties);
     AllocatedBuffer stageMemoryToNewBuffer(void *data, size_t size, VkBufferUsageFlags usage);
@@ -47,8 +42,9 @@ public:
                                VkImageAspectFlags aspectFlags);
     AllocatedImage createImage(void *data, VkExtent3D extent, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage,
                                VkImageAspectFlags aspectFlags, VkImageLayout target_layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-    AllocatedImage loadTextureImage(std::string path, VkFormat format = VK_FORMAT_R8G8B8A8_SRGB);
-    void* downloadImage(AllocatedImage image);
+    Texture loadTextureImage(std::string path, TextureType type = PARAMETER);
+    uint8_t* loadImageData(std::string path, int* width, int* height, int* channels);
+    void* downloadImage(AllocatedImage image, uint32_t bytes_per_channel = 1);
     void writePNG(std::string path, void* data, uint32_t width, uint32_t height);
 
     VkImageView createImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags);
@@ -69,6 +65,7 @@ private:
     VkPhysicalDevice physicalDevice;
     VkDevice device;
     CommandManager commandManager;
+    std::string resource_path;
 
     void copyBufferToImage(VkBuffer buffer, VkImage image, VkExtent3D extent);
     void copyImageToBuffer(VkImage image, VkBuffer buffer, VkExtent3D extent);

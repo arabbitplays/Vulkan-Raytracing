@@ -7,13 +7,15 @@
 #include <iostream>
 #include <stdexcept>
 
-MeshAsset ModelLoader::LoadMeshAsset(std::string name, std::string path) {
+MeshAsset ModelLoader::loadMeshAsset(std::string name, std::string resources_path, std::string path) {
     MeshBuffers meshBuffers{};
 
-    loadData(path, meshBuffers.vertices, meshBuffers.indices);
+    std::string full_path = resources_path + "/" + path;
+    loadData(full_path, meshBuffers.vertices, meshBuffers.indices);
 
     MeshAsset meshAsset{};
     meshAsset.name = name;
+    meshAsset.path = path;
     meshAsset.meshBuffers = meshBuffers;
     meshAsset.vertex_count = meshBuffers.indices.size();
     meshAsset.triangle_count = meshBuffers.indices.size() / 3;

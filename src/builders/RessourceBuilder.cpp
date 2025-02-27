@@ -25,12 +25,6 @@ VkDeviceAddress GetBufferDeviceAddressKHR(VkDevice device, const VkBufferDeviceA
     }
 }
 
-RessourceBuilder::RessourceBuilder(VkPhysicalDevice physicalDevice, VkDevice device, CommandManager commandManager) {
-    this->device = device;
-    this->physicalDevice = physicalDevice;
-    this->commandManager = commandManager;
-}
-
 AllocatedBuffer RessourceBuilder::createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties) {
     AllocatedBuffer allocatedBuffer{};
     allocatedBuffer.size = size;
@@ -183,23 +177,31 @@ AllocatedImage RessourceBuilder::createImage(void* data, VkExtent3D extent, VkFo
 
     AllocatedImage image = createImage(extent, format, tiling, VK_BUFFER_USAGE_2_TRANSFER_DST_BIT_KHR | usage, aspectFlags);
 
-    // TODO weird shader stages
     transitionImageLayout(image.image, VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
         VK_ACCESS_NONE, VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
     copyBufferToImage(stagingBuffer.handle, image.image, extent);
-    transitionImageLayout(image.image, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+    transitionImageLayout(image.image, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR,
         VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, target_layout);
 
     destroyBuffer(stagingBuffer);
     return image;
 }
 
-AllocatedImage RessourceBuilder::loadTextureImage(std::string path, VkFormat format) {
+Texture RessourceBuilder::loadTextureImage(std::string path, TextureType type) {
     int texWidth, texHeight, texChannels;
-    stbi_uc* pixels = stbi_load(path.c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
+    uint8_t* pixels = loadImageData(resource_path + "/" + path, &texWidth, &texHeight, &texChannels);
 
     if (!pixels) {
         throw std::runtime_error("failed to load texture image!");
+    }
+
+    VkFormat format;
+    if (type == NORMAL)
+    {
+        format = VK_FORMAT_R8G8B8A8_UNORM;
+    } else if (type == PARAMETER)
+    {
+        format = VK_FORMAT_R8G8B8A8_SRGB;
     }
 
     AllocatedImage textureImage = createImage(pixels, {static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight), 1},
@@ -208,24 +210,34 @@ AllocatedImage RessourceBuilder::loadTextureImage(std::string path, VkFormat for
 
     stbi_image_free(pixels);
 
-    return textureImage;
+    size_t lastSlash = path.find_last_of("/\\");
+    std::string filename = (lastSlash == std::string::npos) ? path : path.substr(lastSlash + 1);
+    size_t lastDot = filename.find_last_of(".");
+    filename = (lastDot == std::string::npos) ? filename : filename.substr(0, lastDot);
+
+
+    return Texture(filename, type, path, textureImage);
 }
 
-void* RessourceBuilder::downloadImage(AllocatedImage image)
+uint8_t* RessourceBuilder::loadImageData(std::string path, int* width, int* height, int* channels)
 {
-    size_t buffer_size = image.imageExtent.width * image.imageExtent.height * image.imageExtent.depth * 4;
+    return stbi_load(path.c_str(), width, height, channels, STBI_rgb_alpha);
+}
+
+void* RessourceBuilder::downloadImage(AllocatedImage image, uint32_t bytes_per_channel)
+{
+    size_t buffer_size = image.imageExtent.width * image.imageExtent.height * image.imageExtent.depth * 4 * bytes_per_channel;
     AllocatedBuffer staging_buffer = createBuffer(buffer_size, VK_BUFFER_USAGE_TRANSFER_DST_BIT,
         VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 
-    // TODO weird shader stages
     transitionImageLayout(image.image, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
-        VK_ACCESS_NONE, VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+        VK_ACCESS_NONE, VK_ACCESS_TRANSFER_READ_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
     copyImageToBuffer(image.image, staging_buffer.handle, image.imageExtent);
-    transitionImageLayout(image.image, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-        VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL);
+    transitionImageLayout(image.image, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR,
+        VK_ACCESS_TRANSFER_READ_BIT, VK_ACCESS_NONE, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL);
 
     void* mapped_data;
-    unsigned char* imageData = new unsigned char[buffer_size];  // Assuming RGBA (4 bytes per pixel)
+    auto* imageData = new uint8_t[buffer_size * bytes_per_channel];
     vkMapMemory(device, staging_buffer.bufferMemory, 0, buffer_size, 0, &mapped_data);
     memcpy(imageData, mapped_data, buffer_size);
     vkUnmapMemory(device, staging_buffer.bufferMemory);

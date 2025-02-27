@@ -2,18 +2,20 @@ project('Raytracing',
         ['cpp', 'c'],
         default_options : [
             'warning_level=3',
-            'cpp_std=c++20',
+            'cpp_std=c++20'
         ],
 )
 
 incdirs = [
     include_directories('include'),
     include_directories('include/builders'),
+    include_directories('include/io'),
     include_directories('include/rendering/camera'),
     include_directories('include/rendering/engine'),
+    include_directories('include/rendering/engine/renderer'),
     include_directories('include/rendering/options'),
-    include_directories('include/rendering/ressources'),
-    include_directories('include/rendering/ressources/materials'),
+    include_directories('include/rendering/resources'),
+    include_directories('include/rendering/resources/materials'),
     include_directories('include/rendering/scene_graph'),
     include_directories('include/rendering/ui'),
     include_directories('include/rendering'),
@@ -29,7 +31,9 @@ glm = dependency('glm', fallback : ['glm', 'glm_dep'], version: ['>=0.9.9.8'])
 imgui = dependency('imgui', fallback: ['imgui', 'imgui_dep'])
 stb = dependency('stb', fallback: ['stb', 'stb_dep'], default_options : ['stb_libraries=[\'stb_image\', \'stb_image_write\']'])
 spdlog = dependency('spdlog')
-assimp_dep = dependency('assimp')
+assimp = dependency('assimp')
+yaml = dependency('yaml-cpp')
+openmp = dependency('openmp', required: true)
 
 project_root = meson.current_source_dir()
 
@@ -83,7 +87,9 @@ exe = executable(
         stb,
         spdlog,
         vulkan,
-        assimp_dep,
+        assimp,
+        yaml,
+        openmp
     ],
     include_directories: incdirs,
     install : true
