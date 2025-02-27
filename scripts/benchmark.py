@@ -79,9 +79,9 @@ def run_benchmark(program, reference_dir, reference_name, sample_counts):
                 "--reference_scene", reference_dir + "/" + "scene.yaml"]
             run_program(program, args)
 
-            results.append(error_images(reference_dir + "/" + reference_name, output_path + "/" + str(sample_count) + "_ref.png"))
+            results.append(error_images(reference_dir + "/" + reference_name, output_path + "/" + str(sample_count) + "_render.png"))
 
-        plot_difference(reference_dir + "/" + reference_name, output_path + "/" + str(sample_counts[-1]) + "_ref.png")
+        plot_difference(reference_dir + "/" + reference_name, output_path + "/" + str(sample_counts[-1]) + "_render.png")
 
         print("\n" + "-" * 50 + " RESULTS: " + "-" * 50 + "\n")
         for i in range(len(results)):

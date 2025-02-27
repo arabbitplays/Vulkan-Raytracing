@@ -19,7 +19,8 @@ layout(binding = 3, set = 1) uniform sampler2D normal_textures[64];
 
 hitAttributeEXT vec3 attribs;
 
-#include "metal_rough_lighting.glsl"
+#include "torrance_sparrow_brdf.glsl"
+#include "light_sampler.glsl"
 
 void main() {
     Triangle triangle = getTriangle(gl_InstanceCustomIndexEXT, gl_PrimitiveID);
