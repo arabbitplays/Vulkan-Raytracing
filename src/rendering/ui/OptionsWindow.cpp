@@ -6,6 +6,11 @@
 
 #include <imgui.h>
 
+void OptionsWindow::addProperties(const std::shared_ptr<Properties>& section)
+{
+    properties[section->section_name] = section;
+}
+
 void OptionsWindow::createFrame() {
     ImGui::SetNextWindowSize(ImVec2(400, 300), ImGuiCond_Once);
 
@@ -53,6 +58,20 @@ void OptionsWindow::createFrame() {
                 reset_image = true;
             }
         }
+
+        for (auto& section : properties)
+        {
+            if (ImGui::CollapsingHeader(section.second->section_name.c_str())) {
+                for (auto& bool_option : section.second->bool_options)
+                {
+                    if (ImGui::Checkbox(bool_option->name.c_str(), &bool_option->imgui_option)) {
+                        *bool_option->var = bool_option->imgui_option ? 1 : 0;
+                        reset_image = true;
+                    }
+                }
+            }
+        }
+
         ImGui::End();
     }
 

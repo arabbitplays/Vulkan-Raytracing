@@ -34,6 +34,11 @@ public:
         Texture normal_tex;
     };
 
+    struct MaterialProperties
+    {
+        int32_t sample_lights, sample_bsdf;
+    };
+
     MetalRoughMaterial(std::shared_ptr<VulkanContext> context, VkSampler sampler) : Material(METAL_ROUGH_MATERIAL_NAME, context), sampler(sampler) {}
 
 
@@ -44,12 +49,16 @@ public:
 
     std::shared_ptr<MaterialInstance> createInstance(MetalRoughParameters parameters);
     void reset() override;
+
+protected:
+    void initProperties() override;
 private:
     AllocatedBuffer createMaterialBuffer();
 
     std::shared_ptr<Texture> default_tex, default_normal_tex;
 
     std::vector<std::shared_ptr<MaterialResources>> resources_buffer;
+    MaterialProperties material_properties;
     VkSampler sampler;
 };
 

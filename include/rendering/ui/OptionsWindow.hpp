@@ -9,17 +9,22 @@
 #include <glm/fwd.hpp>
 #include <RaytracingOptions.hpp>
 #include <RendererOptions.h>
+#include <Properties.hpp>
 
 class OptionsWindow final : public GuiWindow {
 public:
     OptionsWindow() : GuiWindow() {}
     explicit OptionsWindow(const std::shared_ptr<RaytracingOptions>& raytracing_options, std::shared_ptr<RendererOptions>& renderer_options)
-        : GuiWindow(), raytracing_options(raytracing_options), renderer_options(renderer_options) {}
+        : GuiWindow(), raytracing_options(raytracing_options), renderer_options(renderer_options)
+    {
+    }
 
     void createFrame() override;
+    void addProperties(const std::shared_ptr<Properties>& properties);
 
     std::shared_ptr<RaytracingOptions> raytracing_options;
     std::shared_ptr<RendererOptions> renderer_options;
+    std::unordered_map<std::string, std::shared_ptr<Properties>> properties;
 
 private:
     struct ImguiOptions {
@@ -37,6 +42,7 @@ private:
         .sample_light = false,
         .sample_brdf = true,
     };
+
 
 protected:
 };

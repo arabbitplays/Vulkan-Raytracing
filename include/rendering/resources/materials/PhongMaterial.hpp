@@ -26,6 +26,10 @@ public:
         // add images and samplers here
     };
 
+    struct MaterialProperties {
+        int32_t shadows, dispersion, fresnel;
+    };
+
     PhongMaterial(std::shared_ptr<VulkanContext> context) : Material(PHONG_MATERIAL_NAME, context) {}
 
     void buildPipelines(VkDescriptorSetLayout sceneLayout) override;
@@ -33,9 +37,13 @@ public:
     std::shared_ptr<MaterialInstance> createInstance(glm::vec3 diffuse, glm::vec3 specular, glm::vec3 ambient, glm::vec3 reflection, glm::vec3 transmission, float n, glm::vec3 eta = glm::vec3(0.0));
     std::vector<std::shared_ptr<MaterialResources>> getResources();
     void reset() override;
+
+protected:
+    void initProperties() override;
 private:
     AllocatedBuffer createMaterialBuffer();
 
+    MaterialProperties material_properties;
     std::vector<std::shared_ptr<MaterialResources>> resources_buffer;
     AllocatedBuffer materialBuffer;
 };

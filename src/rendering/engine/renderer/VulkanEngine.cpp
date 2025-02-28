@@ -106,7 +106,7 @@ void VulkanEngine::initGui() {
         guiManager->destroy();
     });
 
-    guiManager->addWindow(std::make_shared<OptionsWindow>(raytracing_options, renderer_options));
+    guiManager->addOptionsWindow(std::make_shared<OptionsWindow>(raytracing_options, renderer_options));
 }
 
 void VulkanEngine::initVulkan() {
@@ -493,6 +493,7 @@ void VulkanEngine::loadScene()
     std::string path = renderer_options->resources_path + "/scenes/" + renderer_options->curr_scene_path;
     scene_manager->createScene(path);
     scene_manager->curr_scene_path = renderer_options->curr_scene_path;
+    guiManager->addPropertiesToOptions(scene_manager->scene->material->getProperties());
 }
 
 

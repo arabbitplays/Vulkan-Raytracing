@@ -133,6 +133,12 @@ std::vector<std::shared_ptr<MetalRoughMaterial::MaterialResources>> MetalRoughMa
     return resources_buffer;
 }
 
+void MetalRoughMaterial::initProperties()
+{
+    properties = std::make_shared<Properties>(MATERIAL_SECTION_NAME);
+    properties->addBool("Sample lights", &material_properties.sample_lights);
+    properties->addBool("Sample BSDF", &material_properties.sample_bsdf);
+}
 
 AllocatedBuffer MetalRoughMaterial::createMaterialBuffer() {
     assert(resources_buffer.size() == instances.size());
