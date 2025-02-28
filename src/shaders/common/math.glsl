@@ -44,6 +44,20 @@ float tanTheta(vec3 w) {
     return sinTheta(w) / cosTheta(w);
 }
 
+float sinPhi(vec3 w) {
+    float sinTheta = sinTheta(w);
+    return (sinTheta == 0) ? 0 : clamp(w.y / sinTheta, -1, 1);
+}
+
+float cosPhi(vec3 w) {
+    float sinTheta = sinTheta(w);
+    return (sinTheta == 0) ? 1 : clamp(w.x / sinTheta, -1, 1);
+}
+
 bool sameHemisphere(vec3 w, vec3 v) {
     return w.z * v.z > 0;
+}
+
+float lerp(float x, float a, float b) {
+    return (1 - x) * a + x * b;
 }

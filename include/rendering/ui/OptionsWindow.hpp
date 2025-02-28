@@ -35,7 +35,7 @@ private:
         .dispersion = false,
         .normal_mapping = true,
         .sample_light = false,
-        .sample_brdf = false,
+        .sample_brdf = true,
     };
 
 protected:

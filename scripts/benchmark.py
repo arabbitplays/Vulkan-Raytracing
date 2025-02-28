@@ -90,7 +90,7 @@ def run_benchmark(program, reference_dir, reference_name, sample_counts):
         sys.stdout = sys.__stdout__  # Restore stdout
 
 build_path = "buildDir/renderer"
-reference_dir = "resources/references/simple_cornell"
-reference_name = "100000_ref_hemi.png"
+reference_dir = "resources/references/big_light_cornell"
+reference_name = "300000_ref.png"
 
 run_benchmark(build_path, reference_dir, reference_name, [1000])

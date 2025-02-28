@@ -93,7 +93,7 @@ void main() {
         payload.next_direction = TBN * brdf_sample.wi;
         payload.beta *= brdf_sample.f * max(0.0, dot(payload.next_direction, N)) / brdf_sample.pdf;
         payload.specular_bounce = brdf_sample.isSpecular;
-       // payload.light = payload.next_direction;
+        //payload.light = dot(payload.next_direction, N) < 0 ? vec3(1) : vec3(0);
     } else {
         payload.next_direction = TBN * sampleCosHemisphere(payload.rng_state);
         /*payload.next_direction = sampleUniformSphere(payload.rng_state);
