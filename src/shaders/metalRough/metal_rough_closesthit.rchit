@@ -7,7 +7,7 @@
 #include "../common/payload.glsl"
 #include "../common/scene_data.glsl"
 #include "../common/layout.glsl"
-#include "../common/options.glsl"
+#include "options.glsl"
 #include "../common/random.glsl"
 
 layout(binding = 0, set = 0) uniform accelerationStructureEXT topLevelAS;

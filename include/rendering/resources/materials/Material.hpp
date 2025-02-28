@@ -12,7 +12,7 @@
 #include <bits/shared_ptr.h>
 #include <glm/vec4.hpp>
 #include <Pipeline.hpp>
-#include <Properties.hpp>
+#include <PropertiesManager.hpp>
 
 struct MaterialInstance;
 class Pipeline;

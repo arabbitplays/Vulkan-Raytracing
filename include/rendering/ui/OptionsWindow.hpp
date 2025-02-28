@@ -7,24 +7,21 @@
 #include <GuiWindow.hpp>
 #include <bits/shared_ptr.h>
 #include <glm/fwd.hpp>
-#include <RaytracingOptions.hpp>
 #include <RendererOptions.h>
-#include <Properties.hpp>
+#include <PropertiesManager.hpp>
 
 class OptionsWindow final : public GuiWindow {
 public:
     OptionsWindow() : GuiWindow() {}
-    explicit OptionsWindow(const std::shared_ptr<RaytracingOptions>& raytracing_options, std::shared_ptr<RendererOptions>& renderer_options)
-        : GuiWindow(), raytracing_options(raytracing_options), renderer_options(renderer_options)
+    explicit OptionsWindow(std::shared_ptr<RendererOptions>& renderer_options, std::shared_ptr<PropertiesManager> props_manager)
+        : GuiWindow(), renderer_options(renderer_options), props_manager(props_manager)
     {
     }
 
     void createFrame() override;
-    void addProperties(const std::shared_ptr<Properties>& properties);
 
-    std::shared_ptr<RaytracingOptions> raytracing_options;
     std::shared_ptr<RendererOptions> renderer_options;
-    std::unordered_map<std::string, std::shared_ptr<Properties>> properties;
+    std::shared_ptr<PropertiesManager> props_manager;
 
 private:
     struct ImguiOptions {

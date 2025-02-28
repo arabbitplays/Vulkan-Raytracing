@@ -5,7 +5,7 @@
 
 #include "../common/payload.glsl"
 #include "../common/scene_data.glsl"
-#include "../common/options.glsl"
+#include "options.glsl"
 #include "../common/random.glsl"
 #include "../common/constants.glsl"
 

@@ -101,17 +101,9 @@ void GuiManager::initImGui(VkPhysicalDevice physical_device, GLFWwindow* window,
     ImGui_ImplVulkan_Init(&initInfo);
 }
 
-void GuiManager::addOptionsWindow(std::shared_ptr<OptionsWindow> window) {
-    options_window = window;
+void GuiManager::addWindow(std::shared_ptr<GuiWindow> window) {
     gui_windows.push_back(window);
 }
-
-void GuiManager::addPropertiesToOptions(std::shared_ptr<Properties> properties)
-{
-    assert(options_window != nullptr);
-    options_window->addProperties(properties);
-}
-
 
 void GuiManager::updateWindows(std::shared_ptr<Swapchain> swapchain) {
     for (auto framebuffer : frame_buffers) {

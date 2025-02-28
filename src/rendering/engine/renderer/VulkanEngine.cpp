@@ -106,7 +106,7 @@ void VulkanEngine::initGui() {
         guiManager->destroy();
     });
 
-    guiManager->addOptionsWindow(std::make_shared<OptionsWindow>(raytracing_options, renderer_options));
+    guiManager->addWindow(std::make_shared<OptionsWindow>(renderer_options, properties_manager));
 }
 
 void VulkanEngine::initVulkan() {
@@ -116,7 +116,7 @@ void VulkanEngine::initVulkan() {
     pickPhysicalDevice();
     createLogicalDevice();
 
-    raytracing_options = std::make_shared<RaytracingOptions>();
+    properties_manager = std::make_shared<PropertiesManager>();
 
     createCommandManager();
     createRessourceBuilder();
@@ -489,13 +489,12 @@ void VulkanEngine::loadScene()
 {
     assert(renderer_options->curr_scene_path != "");
     vkDeviceWaitIdle(device);
-    raytracing_options->curr_sample_count = 0;
+    properties_manager->curr_sample_count = 0;
     std::string path = renderer_options->resources_path + "/scenes/" + renderer_options->curr_scene_path;
     scene_manager->createScene(path);
     scene_manager->curr_scene_path = renderer_options->curr_scene_path;
-    guiManager->addPropertiesToOptions(scene_manager->scene->material->getProperties());
+    properties_manager->addProperties(scene_manager->scene->material->getProperties());
 }
-
 
 void VulkanEngine::createCommandBuffers() {
     commandBuffers.resize(MAX_FRAMES_IN_FLIGHT);
@@ -547,7 +546,7 @@ void VulkanEngine::mainLoop() {
             loadScene();
         }
         scene_manager->updateScene(mainDrawContext, currentFrame, getRenderTarget(), rng_tex);
-        raytracing_options->emitting_instances_count = scene_manager->getEmittingInstancesCount(); // TODO move this together with the creation of the instance buffers
+        properties_manager->emitting_instances_count = scene_manager->getEmittingInstancesCount(); // TODO move this together with the creation of the instance buffers
         drawFrame();
     }
 
@@ -632,7 +631,7 @@ void VulkanEngine::presentSwapchainImage(std::vector<VkSemaphore> wait_semaphore
 void VulkanEngine::refreshAfterResize() {
     vkDeviceWaitIdle(device);
 
-    raytracing_options->curr_sample_count = 0;
+    properties_manager->curr_sample_count = 0;
     swapchain->recreate();
     cleanupRenderingTargets();
     createRenderingTargets();
@@ -689,7 +688,9 @@ void VulkanEngine::recordRenderToImage(VkCommandBuffer commandBuffer)
         0, static_cast<uint32_t>(descriptor_sets.size()), descriptor_sets.data(),
         0, nullptr);
 
-    vkCmdPushConstants(commandBuffer, pipeline.getLayoutHandle(), VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR | VK_SHADER_STAGE_RAYGEN_BIT_KHR, 0, sizeof(RaytracingOptions), raytracing_options.get());
+    uint32_t pc_size;
+    void* pc_data = properties_manager->getPushConstants(&pc_size);
+    vkCmdPushConstants(commandBuffer, pipeline.getLayoutHandle(), VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR | VK_SHADER_STAGE_RAYGEN_BIT_KHR, 0, pc_size, pc_data);
 
     CmdTraceRaysKHR(
         device,
@@ -702,7 +703,7 @@ void VulkanEngine::recordRenderToImage(VkCommandBuffer commandBuffer)
         swapchain->extent.height,
         1);
 
-    raytracing_options->curr_sample_count++;
+    properties_manager->curr_sample_count++;
 }
 
 void VulkanEngine::recordCopyToSwapchain(VkCommandBuffer commandBuffer, uint32_t swapchain_image_index)

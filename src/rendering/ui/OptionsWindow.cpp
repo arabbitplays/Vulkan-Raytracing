@@ -6,11 +6,6 @@
 
 #include <imgui.h>
 
-void OptionsWindow::addProperties(const std::shared_ptr<Properties>& section)
-{
-    properties[section->section_name] = section;
-}
-
 void OptionsWindow::createFrame() {
     ImGui::SetNextWindowSize(ImVec2(400, 300), ImGuiCond_Once);
 
@@ -31,7 +26,7 @@ void OptionsWindow::createFrame() {
             }
         }
 
-        if (ImGui::CollapsingHeader("Raytracing Options")) {
+        /*if (ImGui::CollapsingHeader("Raytracing Options")) {
             ImGui::SliderInt("Recursion depth", &raytracing_options->recursion_depth, 0, 5);
             if (ImGui::Checkbox("Shadows", &imgui_options.shadows)) {
                 raytracing_options->shadows = imgui_options.shadows ? 1 : 0;
@@ -57,9 +52,9 @@ void OptionsWindow::createFrame() {
                 raytracing_options->sample_brdf = imgui_options.sample_brdf ? 1 : 0;
                 reset_image = true;
             }
-        }
+        }*/
 
-        for (auto& section : properties)
+        for (auto& section : props_manager->properties)
         {
             if (ImGui::CollapsingHeader(section.second->section_name.c_str())) {
                 for (auto& bool_option : section.second->bool_options)
@@ -76,6 +71,6 @@ void OptionsWindow::createFrame() {
     }
 
     if (reset_image) {
-        raytracing_options->curr_sample_count = 0;
+        props_manager->curr_sample_count = 0;
     }
 }

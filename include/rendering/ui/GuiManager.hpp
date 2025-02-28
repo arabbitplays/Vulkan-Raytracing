@@ -21,8 +21,7 @@ public:
               DescriptorAllocator descriptor_allocator, std::shared_ptr<Swapchain> swapchain,
               uint32_t graphics_queue_family, VkQueue graphics_queue);
 
-    void addOptionsWindow(std::shared_ptr<OptionsWindow> window);
-    void addPropertiesToOptions(std::shared_ptr<Properties> properties);
+    void addWindow(std::shared_ptr<GuiWindow> window);
     void updateWindows(std::shared_ptr<Swapchain> swapchain);
     void recordGuiCommands(VkCommandBuffer commandBuffer, uint32_t imageIndex);
     void destroy();

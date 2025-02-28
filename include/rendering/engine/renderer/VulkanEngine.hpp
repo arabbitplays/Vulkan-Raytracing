@@ -72,8 +72,8 @@ protected:
     std::vector<VkCommandBuffer> commandBuffers;
 
     DrawContext mainDrawContext;
-    std::shared_ptr<RaytracingOptions> raytracing_options;
     std::shared_ptr<RendererOptions> renderer_options;
+    std::shared_ptr<PropertiesManager> properties_manager;
 
     VkPhysicalDeviceRayTracingPipelinePropertiesKHR raytracingProperties{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_PROPERTIES_KHR};
 

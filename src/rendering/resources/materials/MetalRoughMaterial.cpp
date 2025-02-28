@@ -29,7 +29,7 @@ void MetalRoughMaterial::buildPipelines(VkDescriptorSetLayout sceneLayout) {
     std::vector<VkDescriptorSetLayout> descriptorSetLayouts{sceneLayout, materialLayout};
     pipeline->setDescriptorSetLayouts(descriptorSetLayouts);
 
-    pipeline->addPushConstant(sizeof(RaytracingOptions), VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR | VK_SHADER_STAGE_RAYGEN_BIT_KHR);
+    pipeline->addPushConstant(MAX_PUSH_CONSTANT_SIZE, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR | VK_SHADER_STAGE_RAYGEN_BIT_KHR);
 
     VkShaderModule raygenShaderModule = VulkanUtil::createShaderModule(context->device, oschd_metal_rough_raygen_rgen_spv_size(), oschd_metal_rough_raygen_rgen_spv());
     VkShaderModule missShaderModule = VulkanUtil::createShaderModule(context->device, oschd_miss_rmiss_spv_size(), oschd_miss_rmiss_spv());
@@ -136,6 +136,7 @@ std::vector<std::shared_ptr<MetalRoughMaterial::MaterialResources>> MetalRoughMa
 void MetalRoughMaterial::initProperties()
 {
     properties = std::make_shared<Properties>(MATERIAL_SECTION_NAME);
+    properties->addBool("Normal mapping", &material_properties.normal_mapping);
     properties->addBool("Sample lights", &material_properties.sample_lights);
     properties->addBool("Sample BSDF", &material_properties.sample_bsdf);
 }

@@ -14,7 +14,7 @@ void ReferenceRenderer::mainLoop() {
 
     while(!glfwWindowShouldClose(window)) {
         // render one image and then output it if output path is defined
-        if (renderer_options->sample_count == raytracing_options->curr_sample_count)
+        if (renderer_options->sample_count == properties_manager->curr_sample_count)
         {
             vkDeviceWaitIdle(device);
             outputRenderingTarget();
@@ -32,9 +32,10 @@ void ReferenceRenderer::mainLoop() {
 void ReferenceRenderer::loadScene()
 {
     vkDeviceWaitIdle(device);
-    raytracing_options->curr_sample_count = 0;
+    properties_manager->curr_sample_count = 0;
     std::string path = renderer_options->reference_scene_path;
     scene_manager->createScene(path);
+    properties_manager->addProperties(scene_manager->scene->material->getProperties());
 }
 
 
@@ -42,7 +43,7 @@ void ReferenceRenderer::drawFrame()
 {
     vkWaitForFences(device, 1, &inFlightFences[currentFrame], VK_TRUE, UINT64_MAX);
 
-    uint32_t curr_sample_count = raytracing_options->curr_sample_count;
+    uint32_t curr_sample_count = properties_manager->curr_sample_count;
     present_image = present_sample_count == curr_sample_count;
 
     int  imageIndex = 0;
@@ -56,7 +57,7 @@ void ReferenceRenderer::drawFrame()
     vkResetFences(device, 1, &inFlightFences[currentFrame]);
 
     scene_manager->updateScene(mainDrawContext, currentFrame, getRenderTarget(), rng_tex);
-    raytracing_options->emitting_instances_count = scene_manager->getEmittingInstancesCount(); // TODO move this together with the creation of the instance buffers
+    properties_manager->emitting_instances_count = scene_manager->getEmittingInstancesCount(); // TODO move this together with the creation of the instance buffers
 
     vkResetCommandBuffer(commandBuffers[currentFrame], 0);
     recordCommandBuffer(commandBuffers[currentFrame], imageIndex);
