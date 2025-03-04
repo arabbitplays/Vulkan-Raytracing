@@ -136,9 +136,9 @@ std::vector<std::shared_ptr<MetalRoughMaterial::MaterialResources>> MetalRoughMa
 void MetalRoughMaterial::initProperties()
 {
     properties = std::make_shared<Properties>(MATERIAL_SECTION_NAME);
-    properties->addBool("Normal mapping", &material_properties.normal_mapping);
-    properties->addBool("Sample lights", &material_properties.sample_lights);
-    properties->addBool("Sample BSDF", &material_properties.sample_bsdf);
+    properties->addBool("Normal_Mapping", &material_properties.normal_mapping);
+    properties->addBool("Sample_Lights", &material_properties.sample_lights);
+    properties->addBool("Sample_BSDF", &material_properties.sample_bsdf);
 }
 
 AllocatedBuffer MetalRoughMaterial::createMaterialBuffer() {

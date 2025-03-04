@@ -31,7 +31,7 @@ public:
     uint32_t getEmittingInstancesCount();
 
     std::shared_ptr<Scene> scene;
-    std::string curr_scene_path;
+    std::string curr_scene_name;
 
     std::vector<VkDescriptorSet> scene_descriptor_sets{};
     std::vector<AllocatedBuffer> sceneUniformBuffers;

@@ -4,20 +4,19 @@
 
 #include "ReferenceRenderer.hpp"
 
-void ReferenceRenderer::mainLoop() {
-    assert(!renderer_options->output_dir.empty());
-    assert(!renderer_options->reference_scene_path.empty());
+constexpr std::string SAMPLE_COUNT_OPTION_NAME = "Sample_Count";
 
+void ReferenceRenderer::mainLoop() {
     loadScene();
 
     stopwatch.reset();
 
     while(!glfwWindowShouldClose(window)) {
         // render one image and then output it if output path is defined
-        if (renderer_options->sample_count == properties_manager->curr_sample_count)
+        if (sample_count == properties_manager->curr_sample_count)
         {
             vkDeviceWaitIdle(device);
-            outputRenderingTarget();
+            outputRenderingTarget(base_options->resources_dir + "/references/" + std::to_string(sample_count) + "_render.png");
             break;
         }
 
@@ -27,15 +26,6 @@ void ReferenceRenderer::mainLoop() {
     }
 
     vkDeviceWaitIdle(device);
-}
-
-void ReferenceRenderer::loadScene()
-{
-    vkDeviceWaitIdle(device);
-    properties_manager->curr_sample_count = 0;
-    std::string path = renderer_options->reference_scene_path;
-    scene_manager->createScene(path);
-    properties_manager->addProperties(scene_manager->scene->material->getProperties());
 }
 
 
@@ -79,12 +69,12 @@ void ReferenceRenderer::drawFrame()
     {
         double elapsed_time = stopwatch.elapsed().count();
         stopwatch.reset();
-        uint32_t samples_left = renderer_options->sample_count - curr_sample_count;
+        uint32_t samples_left = sample_count - curr_sample_count;
         double time_left = elapsed_time / 1000 * samples_left;
         int hours = static_cast<int>(time_left) / 3600;
         int minutes = (static_cast<int>(time_left) % 3600) / 60;
         int sec = static_cast<int>(time_left) % 60;
-        uint32_t progress = round((float)curr_sample_count / (float)renderer_options->sample_count * 100);
+        uint32_t progress = round((float)curr_sample_count / (float)sample_count * 100);
         spdlog::info("Current sample count: {}, progress: {}%, estimated time remaining: {}h {}m {}s", curr_sample_count, progress, hours, minutes, sec);
     }
 
@@ -98,4 +88,10 @@ void ReferenceRenderer::recordCommandBuffer(VkCommandBuffer commandBuffer, uint3
     if (present_image)
         recordCopyToSwapchain(commandBuffer, imageIndex);
     recordEndCommandBuffer(commandBuffer);
+}
+
+void ReferenceRenderer::initProperties()
+{
+    VulkanEngine::initProperties();
+    renderer_properties->addInt(SAMPLE_COUNT_OPTION_NAME, &sample_count);
 }

@@ -7,20 +7,18 @@
 #include <GuiWindow.hpp>
 #include <bits/shared_ptr.h>
 #include <glm/fwd.hpp>
-#include <RendererOptions.h>
 #include <PropertiesManager.hpp>
 
 class OptionsWindow final : public GuiWindow {
 public:
     OptionsWindow() : GuiWindow() {}
-    explicit OptionsWindow(std::shared_ptr<RendererOptions>& renderer_options, std::shared_ptr<PropertiesManager> props_manager)
-        : GuiWindow(), renderer_options(renderer_options), props_manager(props_manager)
+    explicit OptionsWindow(std::shared_ptr<PropertiesManager> props_manager)
+        : GuiWindow(), props_manager(props_manager)
     {
     }
 
     void createFrame() override;
 
-    std::shared_ptr<RendererOptions> renderer_options;
     std::shared_ptr<PropertiesManager> props_manager;
 
 private:

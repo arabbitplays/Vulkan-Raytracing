@@ -5,21 +5,21 @@
 #include "BenchmarkRenderer.hpp"
 #include <omp.h>
 
-void BenchmarkRenderer::mainLoop() {
-    assert(!renderer_options->output_dir.empty());
-    assert(!renderer_options->reference_scene_path.empty());
+constexpr std::string SAMPLE_COUNT_OPTION_NAME = "Sample_Count";
+constexpr std::string REFERENCE_IMAGE_PATH_OPTION_NAME = "Reference_Image";
 
+void BenchmarkRenderer::mainLoop() {
     omp_set_num_threads(omp_get_max_threads());
 
     loadScene();
-    reference_image_data = ressourceBuilder.loadImageData(renderer_options->reference_image_path, &ref_width, &ref_height, &ref_channels);
+    reference_image_data = ressourceBuilder.loadImageData(reference_image_path, &ref_width, &ref_height, &ref_channels);
 
     while(!glfwWindowShouldClose(window)) {
         // render one image and then output it if output path is defined
-        if (renderer_options->sample_count == properties_manager->curr_sample_count)
+        if (sample_count == properties_manager->curr_sample_count)
         {
             vkDeviceWaitIdle(device);
-            outputRenderingTarget();
+            outputRenderingTarget(std::to_string(sample_count) + "_benchmark.png");
             break;
         }
 
@@ -41,16 +41,6 @@ void BenchmarkRenderer::mainLoop() {
     spdlog::info("Sample count: {}, Final Error: {:f}", properties_manager->curr_sample_count, mse);
     stbi_image_free(reference_image_data);
 }
-
-void BenchmarkRenderer::loadScene()
-{
-    vkDeviceWaitIdle(device);
-    properties_manager->curr_sample_count = 0;
-    std::string path = renderer_options->reference_scene_path;
-    scene_manager->createScene(path);
-    properties_manager->addProperties(scene_manager->scene->material->getProperties());
-}
-
 
 void BenchmarkRenderer::drawFrame()
 {
@@ -139,4 +129,11 @@ float BenchmarkRenderer::calculateMSEToReference()
 
     delete image_data;
     return static_cast<float>(sum / static_cast<double>(height));
+}
+
+void BenchmarkRenderer::initProperties()
+{
+    VulkanEngine::initProperties();
+    renderer_properties->addInt(SAMPLE_COUNT_OPTION_NAME, &sample_count);
+    renderer_properties->addString(REFERENCE_IMAGE_PATH_OPTION_NAME, &reference_image_path);
 }

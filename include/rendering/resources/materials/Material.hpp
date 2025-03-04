@@ -17,8 +17,6 @@
 struct MaterialInstance;
 class Pipeline;
 
-constexpr std::string MATERIAL_SECTION_NAME = "Material";
-
 class Material {
   public:
     Material() = default;

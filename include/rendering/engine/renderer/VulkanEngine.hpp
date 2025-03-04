@@ -36,9 +36,11 @@
 #include "../../util/QuickTimer.hpp"
 #include "../../util/VulkanUtil.hpp"
 #include "../IRenderable.hpp"
+#include <BaseOptions.hpp>
 #include "../scene_graph/Node.hpp"
 #include "DeletionQueue.hpp"
 #include <VulkanContext.hpp>
+
 
 class VulkanEngine {
 public:
@@ -52,7 +54,7 @@ public:
     std::shared_ptr<MeshAssetBuilder> mesh_builder;
     std::shared_ptr<DescriptorAllocator> descriptorAllocator;
 
-    void run(RendererOptions& options);
+    void run(const std::string& config_file, const std::string& resources_dir);
 protected:
 
     GLFWwindow* window;
@@ -72,8 +74,9 @@ protected:
     std::vector<VkCommandBuffer> commandBuffers;
 
     DrawContext mainDrawContext;
-    std::shared_ptr<RendererOptions> renderer_options;
     std::shared_ptr<PropertiesManager> properties_manager;
+    std::shared_ptr<Properties> renderer_properties;
+    std::shared_ptr<BaseOptions> base_options;
 
     VkPhysicalDeviceRayTracingPipelinePropertiesKHR raytracingProperties{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_PROPERTIES_KHR};
 
@@ -137,7 +140,7 @@ protected:
     virtual AllocatedImage getRenderTarget();
     void cleanupRenderingTargets();
 
-    void outputRenderingTarget();
+    void outputRenderingTarget(const std::string& output_path);
     uint8_t* fixImageFormatForStorage(void* image_data, size_t pixel_count, VkFormat originalFormat);
 
     virtual void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
@@ -157,7 +160,8 @@ protected:
         return VK_FALSE;
     }
 
-    virtual void loadScene();
+    void loadScene();
+    virtual void initProperties();
 };
 
 #endif //BASICS_VULKANENGINE_HPP
