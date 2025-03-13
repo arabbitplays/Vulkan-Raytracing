@@ -13,7 +13,7 @@
 struct MetalRoughParameters {
     std::shared_ptr<Texture> albedo_tex, metal_rough_ao_tex, normal_tex;
     glm::vec3 albedo = glm::vec3(0.0f);
-    float metallic, roughness, ao;
+    float metallic, roughness, ao, eta = 1;
     glm::vec3 emission_color = glm::vec3(1.0);
     float emission_power = 0;
 };
@@ -22,7 +22,7 @@ class MetalRoughMaterial : public Material {
 public:
     struct MaterialConstants {
         glm::vec4 albedo;
-        glm::vec4 properties; // metallic roughness ao
+        glm::vec4 properties; // metallic roughness ao eta
         glm::vec4 emission;
     };
 

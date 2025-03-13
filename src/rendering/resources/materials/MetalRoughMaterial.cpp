@@ -109,7 +109,7 @@ std::shared_ptr<MaterialInstance> MetalRoughMaterial::createInstance(MetalRoughP
 
     auto constants = std::make_shared<MaterialConstants>();
     constants->albedo = glm::vec4(parameters.albedo, 0.0f);
-    constants->properties = glm::vec4(parameters.metallic, parameters.roughness, parameters.ao, 0.0f);
+    constants->properties = glm::vec4(parameters.metallic, parameters.roughness, parameters.ao, parameters.eta); // TODO dynamic eta
     constants->emission = glm::vec4(parameters.emission_color, parameters.emission_power);
 
     std::shared_ptr<MaterialInstance> instance = std::make_shared<MaterialInstance>();

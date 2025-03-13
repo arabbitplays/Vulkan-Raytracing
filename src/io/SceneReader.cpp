@@ -114,6 +114,8 @@ void SceneReader::initializeMaterial(const YAML::Node& material_node, std::share
                 parameters.metallic = material_node["metallic"].as<float>();
                 parameters.roughness = material_node["roughness"].as<float>();
                 parameters.ao = material_node["ao"].as<float>();
+                if (material_node["eta"])
+                    parameters.eta = material_node["eta"].as<float>();
             } else
             {
                 parameters.albedo_tex = textures[material_node["albedo_tex"].as<std::string>()];

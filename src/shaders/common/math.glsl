@@ -58,6 +58,10 @@ bool sameHemisphere(vec3 w, vec3 v) {
     return w.z * v.z > 0;
 }
 
+vec3 faceForward(vec3 n, vec3 v) {
+    return (dot(n, v) < 0) ? -n : n;
+}
+
 float lerp(float x, float a, float b) {
     return (1 - x) * a + x * b;
 }
