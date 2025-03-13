@@ -139,6 +139,7 @@ void MetalRoughMaterial::initProperties()
     properties->addBool("Normal_Mapping", &material_properties.normal_mapping);
     properties->addBool("Sample_Lights", &material_properties.sample_lights);
     properties->addBool("Sample_BSDF", &material_properties.sample_bsdf);
+    properties->addBool("Russian_Roulette", &material_properties.russian_roulette);
 }
 
 AllocatedBuffer MetalRoughMaterial::createMaterialBuffer() {

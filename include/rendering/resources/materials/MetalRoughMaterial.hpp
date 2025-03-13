@@ -36,7 +36,7 @@ public:
 
     struct MaterialProperties
     {
-        int32_t normal_mapping = 0, sample_lights = 0, sample_bsdf = 0;
+        int32_t normal_mapping = 0, sample_lights = 0, sample_bsdf = 0, russian_roulette = 0;
     };
 
     MetalRoughMaterial(std::shared_ptr<VulkanContext> context, VkSampler sampler) : Material(METAL_ROUGH_MATERIAL_NAME, context), sampler(sampler) {}

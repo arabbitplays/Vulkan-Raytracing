@@ -73,10 +73,9 @@ def run_benchmark(program, reference_dir, reference_name, sample_counts):
         results = []
         for sample_count in sample_counts:
             args = [
-                "--output", output_path,
-                "--samples", str(sample_count),
+                "--ref",
                 "--resources", "resources",
-                "--reference_scene", reference_dir + "/" + "scene.yaml"]
+                "--config", "resources/ref_config.yaml"]
             run_program(program, args)
 
             results.append(error_images(reference_dir + "/" + reference_name, output_path + "/" + str(sample_count) + "_render.png"))

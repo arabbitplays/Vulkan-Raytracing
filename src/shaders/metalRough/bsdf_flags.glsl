@@ -1,0 +1,39 @@
+const int BSDF_FLAG_UNSET = 0;
+const int BSDF_FLAG_REFLECTION = 1 << 0;
+const int BSDF_FLAG_TRANSMISSION = 1 << 1;
+const int BSDF_FLAG_DIFFUSE = 1 << 2;
+const int BSDF_FLAG_GLOSSY = 1 << 3;
+const int BSDF_FLAG_SPECULAR = 1 << 4;
+
+const int BSDF_FLAG_DIFFUSE_REFLECTION = BSDF_FLAG_DIFFUSE | BSDF_FLAG_REFLECTION;
+const int BSDF_FLAG_DIFFUSE_TRANSMISSION = BSDF_FLAG_DIFFUSE | BSDF_FLAG_TRANSMISSION;
+const int BSDF_FLAG_GLOSSY_REFLECTION = BSDF_FLAG_GLOSSY | BSDF_FLAG_REFLECTION;
+const int BSDF_FLAG_GLOSSY_TRANSMISSION = BSDF_FLAG_GLOSSY | BSDF_FLAG_TRANSMISSION;
+const int BSDF_FLAG_SPECULAR_REFLECTION = BSDF_FLAG_SPECULAR | BSDF_FLAG_REFLECTION;
+const int BSDF_FLAG_SPECULAR_TRANSMISSION = BSDF_FLAG_SPECULAR | BSDF_FLAG_TRANSMISSION;
+
+const int BSDF_FLAG_ALL = BSDF_FLAG_DIFFUSE | BSDF_FLAG_GLOSSY | BSDF_FLAG_SPECULAR | BSDF_FLAG_REFLECTION | BSDF_FLAG_TRANSMISSION;
+
+bool isReflective(int flags) {
+    return (flags & BSDF_FLAG_REFLECTION) != 0;
+}
+
+bool isTransmissive(int flags) {
+    return (flags & BSDF_FLAG_TRANSMISSION) != 0;
+}
+
+bool isDiffuse(int flags) {
+    return (flags & BSDF_FLAG_DIFFUSE) != 0;
+}
+
+bool isGlossy(int flags) {
+    return (flags & BSDF_FLAG_GLOSSY) != 0;
+}
+
+bool isSpecular(int flags) {
+    return (flags & BSDF_FLAG_SPECULAR) != 0;
+}
+
+bool isNonSpecular(int flags) {
+    return (flags & (BSDF_FLAG_DIFFUSE | BSDF_FLAG_GLOSSY)) != 0;
+}

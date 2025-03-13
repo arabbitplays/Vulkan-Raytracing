@@ -23,14 +23,14 @@ vec3 calcConductorBRDF(vec3 wo, vec3 wi, vec3 albedo, float metallic, float roug
 }
 
 BsdfSample sampleConductorBrdf(vec3 wo, vec3 albedo, float metallic, float roughness, inout uvec4 rngState) {
-    BsdfSample result = BsdfSample(vec3(0.0), vec3(0.0), 1, false);
+    BsdfSample result = BsdfSample(vec3(0.0), vec3(0.0), 1, BSDF_FLAG_UNSET, 1);
 
     if (effectivelySmooth(roughness, roughness)) {
         vec3 wi = vec3(-wo.x, -wo.y, wo.z);
         result.f = fresnelSchlick(absCosTheta(wi), albedo, metallic) / absCosTheta(wi);
         result.pdf = 1;
         result.wi = wi;
-        result.isSpecular = true;
+        result.flags = BSDF_FLAG_SPECULAR_REFLECTION;
         return result;
     }
 
@@ -51,6 +51,7 @@ BsdfSample sampleConductorBrdf(vec3 wo, vec3 albedo, float metallic, float rough
     result.pdf = normalDistributionPDF(wo, wm, roughness, roughness) / (4 * abs(dot(wo, wm)));
     result.f = diffuseFraction * albedo / PI + specular;
     result.wi = wi;
+    result.flags = BSDF_FLAG_GLOSSY_REFLECTION;
 
     return result;
 }

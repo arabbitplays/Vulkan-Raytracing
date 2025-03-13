@@ -1,8 +1,11 @@
+#include "bsdf_flags.glsl"
+
 struct BsdfSample {
     vec3 f;
     vec3 wi;
     float pdf;
-    bool isSpecular;
+    int flags;
+    float eta; // used for russian roulette
 };
 
 #include "trowbridge_reitz_distribution.glsl"

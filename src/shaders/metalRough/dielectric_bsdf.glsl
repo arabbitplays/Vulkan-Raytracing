@@ -68,7 +68,7 @@ bool refract(vec3 wi, vec3 n, float eta, inout float etap, inout vec3 wt) {
 }
 
 BsdfSample sampleDielectricBsdf(vec3 wo, float roughness, float eta, inout uvec4 rngState) {
-    BsdfSample result = BsdfSample(vec3(0.0), vec3(0.0), 1, false);
+    BsdfSample result = BsdfSample(vec3(0.0), vec3(0.0), 1, BSDF_FLAG_UNSET, 1);
 
     if (eta == 1 || effectivelySmooth(roughness, roughness)) {
         float R = fresnel_dielectric(cosTheta(wo), eta);
@@ -82,7 +82,7 @@ BsdfSample sampleDielectricBsdf(vec3 wo, float roughness, float eta, inout uvec4
             result.f = vec3(R / absCosTheta(wi));
             result.wi = wi;
             result.pdf = R / (R + T);
-            result.isSpecular = true;
+            result.flags = BSDF_FLAG_SPECULAR_REFLECTION;
             return result;
         } else {
             // sample perfect specular BTDF
@@ -97,7 +97,8 @@ BsdfSample sampleDielectricBsdf(vec3 wo, float roughness, float eta, inout uvec4
             result.f = ft;
             result.wi = wi;
             result.pdf = T / (R + T);
-            result.isSpecular = true;
+            result.flags = BSDF_FLAG_SPECULAR_TRANSMISSION;
+            result.eta = etap;
             return result;
         }
     }
@@ -116,6 +117,7 @@ BsdfSample sampleDielectricBsdf(vec3 wo, float roughness, float eta, inout uvec4
         result.f = vec3(D(wm, roughness, roughness) * R * G(wo, wi, roughness, roughness) / (4 * cosTheta(wo) * cosTheta(wi)));
         result.pdf = normalDistributionPDF(wo, wm, roughness, roughness) / (4 * abs(dot(wo, wm))) * R / (R + T);
         result.wi = wi;
+        result.flags = BSDF_FLAG_GLOSSY_REFLECTION;
         return result;
     } else {
         // sample transmission at rough intercase
@@ -134,6 +136,8 @@ BsdfSample sampleDielectricBsdf(vec3 wo, float roughness, float eta, inout uvec4
 
         result.f = ft;
         result.wi = wi;
+        result.flags = BSDF_FLAG_GLOSSY_TRANSMISSION;
+        result.eta = etap;
         return result;
     }
 }

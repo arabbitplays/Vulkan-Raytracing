@@ -102,7 +102,9 @@ void main() {
 
         payload.next_direction = TBN * brdf_sample.wi;
         payload.beta *= brdf_sample.f * abs(dot(payload.next_direction, N)) / brdf_sample.pdf;
-        payload.specular_bounce = brdf_sample.isSpecular;
+        payload.specular_bounce = isSpecular(brdf_sample.flags);
+        if (isTransmissive(brdf_sample.flags))
+            payload.eta_scale *= sqr(brdf_sample.eta);
     } else {
         //payload.next_direction = TBN * sampleCosHemisphere(payload.rng_state);
         payload.next_direction = sampleUniformSphere(payload.rng_state);
@@ -112,4 +114,19 @@ void main() {
         //payload.beta *= calcBRDF(wo, wi, albedo, metallic, roughness) * PI;
         payload.beta *= computeBsdf(wo, wi, albedo, metallic, roughness, eta) * abs(dot(payload.next_direction, N)) * 4 * PI;
     }
+
+    if (options.russian_roulette) {
+        vec3 rr_beta = payload.beta * payload.eta_scale;
+        float beta_max_component = max(rr_beta.x, max(rr_beta.y, rr_beta.z));
+        if (beta_max_component < 1 && payload.depth > 1) {
+            float q = max(0, 1 - beta_max_component);
+            float u = stepAndOutputRNGFloat(payload.rng_state);
+            if (u < q) {
+                payload.next_direction = vec3(0);
+            } else {
+                beta /= 1 - q;
+            }
+        }
+    }
+
 }
