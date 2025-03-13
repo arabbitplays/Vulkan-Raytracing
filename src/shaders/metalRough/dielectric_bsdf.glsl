@@ -102,5 +102,38 @@ BsdfSample sampleDielectricBsdf(vec3 wo, float roughness, float eta, inout uvec4
         }
     }
 
-    return result;
+    vec3 wm = sampleWm(wo, roughness, roughness, rngState);
+    float R = fresnel_dielectric(dot (wo, wm), eta);
+    float T = 1 - R;
+
+    float u = stepAndOutputRNGFloat(rngState);
+
+    if (u < R / (R + T)) {
+        // sample reflection at rough interface
+        vec3 wi = reflect(-wo, wm);
+        if (!sameHemisphere(wo, wi)) return result;
+
+        result.f = vec3(D(wm, roughness, roughness) * R * G(wo, wi, roughness, roughness) / (4 * cosTheta(wo) * cosTheta(wi)));
+        result.pdf = normalDistributionPDF(wo, wm, roughness, roughness) / (4 * abs(dot(wo, wm))) * R / (R + T);
+        result.wi = wi;
+        return result;
+    } else {
+        // sample transmission at rough intercase
+        vec3 wi;
+        float etap = 1;
+        bool valid = refract(wo, wm, eta, etap, wi);
+        if (sameHemisphere(wo, wi) || wi.z == 0 || !valid) return result;
+
+        float denom = sqr(dot(wi, wm) + dot(wo, wm) / etap);
+        float dwm_dwi = abs(dot(wi, wm)) / denom;
+        result.pdf = normalDistributionPDF(wo, wm, roughness, roughness) * dwm_dwi * T / (R + T);
+
+        vec3 ft = vec3(D(wm, roughness, roughness) * T * G(wo, wi, roughness, roughness)
+            * abs(dot(wi, wm) * dot(wo, wm) / (cosTheta(wi) * cosTheta(wo) * denom)));
+        ft /= sqr(etap);
+
+        result.f = ft;
+        result.wi = wi;
+        return result;
+    }
 }
