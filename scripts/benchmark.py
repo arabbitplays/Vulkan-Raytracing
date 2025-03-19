@@ -73,15 +73,14 @@ def run_benchmark(program, reference_dir, reference_name, sample_counts):
         results = []
         for sample_count in sample_counts:
             args = [
-                "--output", output_path,
-                "--samples", str(sample_count),
+                "--ref",
                 "--resources", "resources",
-                "--reference_scene", reference_dir + "/" + "scene.yaml"]
+                "--config", "resources/ref_config.yaml"]
             run_program(program, args)
 
-            results.append(error_images(reference_dir + "/" + reference_name, output_path + "/" + str(sample_count) + "_ref.png"))
+            results.append(error_images(reference_dir + "/" + reference_name, output_path + "/" + str(sample_count) + "_render.png"))
 
-        plot_difference(reference_dir + "/" + reference_name, output_path + "/" + str(sample_counts[-1]) + "_ref.png")
+        plot_difference(reference_dir + "/" + reference_name, output_path + "/" + str(sample_counts[-1]) + "_render.png")
 
         print("\n" + "-" * 50 + " RESULTS: " + "-" * 50 + "\n")
         for i in range(len(results)):
@@ -91,6 +90,6 @@ def run_benchmark(program, reference_dir, reference_name, sample_counts):
 
 build_path = "buildDir/renderer"
 reference_dir = "resources/references/simple_cornell"
-reference_name = "100000_ref_hemi.png"
+reference_name = "100000_ref.png"
 
 run_benchmark(build_path, reference_dir, reference_name, [1000])

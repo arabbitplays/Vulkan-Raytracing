@@ -1,6 +1,7 @@
 #include <VulkanEngine.hpp>
 #include <set>
 #include <cstdlib>
+#include <filesystem>
 
 const std::vector<const char*> validationLayers = {
     "VK_LAYER_KHRONOS_validation",
@@ -52,8 +53,10 @@ void CmdTraceRaysKHR(VkDevice device, VkCommandBuffer commandBuffer, const VkStr
 const uint32_t WIDTH = 6144;
 const uint32_t HEIGHT = 3320;
 
-void VulkanEngine::run(RendererOptions& renderer_options) {
-    this->renderer_options = std::make_shared<RendererOptions>(renderer_options);
+void VulkanEngine::run(const std::string& config_file, const std::string& resources_dir) {
+    base_options = std::make_shared<BaseOptions>();
+    base_options->resources_dir = resources_dir;
+    properties_manager = std::make_shared<PropertiesManager>(config_file);
 
     initWindow();
     initVulkan();
@@ -106,7 +109,7 @@ void VulkanEngine::initGui() {
         guiManager->destroy();
     });
 
-    guiManager->addWindow(std::make_shared<OptionsWindow>(raytracing_options, renderer_options));
+    guiManager->addWindow(std::make_shared<OptionsWindow>(properties_manager));
 }
 
 void VulkanEngine::initVulkan() {
@@ -116,12 +119,13 @@ void VulkanEngine::initVulkan() {
     pickPhysicalDevice();
     createLogicalDevice();
 
-    raytracing_options = std::make_shared<RaytracingOptions>();
+    initProperties();
+    properties_manager->addPropertySection(renderer_properties);
 
     createCommandManager();
     createRessourceBuilder();
     createDescriptorAllocator();
-    mesh_builder = std::make_shared<MeshAssetBuilder>(device, ressourceBuilder, renderer_options->resources_path);
+    mesh_builder = std::make_shared<MeshAssetBuilder>(device, ressourceBuilder, base_options->resources_dir);
 
     createSwapchain();
 
@@ -421,7 +425,7 @@ void VulkanEngine::createCommandManager() {
 }
 
 void VulkanEngine::createRessourceBuilder() {
-    pRessourceBuilder = std::make_shared<RessourceBuilder>(physicalDevice, device, commandManager, renderer_options->resources_path);
+    pRessourceBuilder = std::make_shared<RessourceBuilder>(physicalDevice, device, commandManager, base_options->resources_dir);
     ressourceBuilder = *pRessourceBuilder;
 }
 
@@ -487,14 +491,14 @@ AllocatedImage VulkanEngine::getRenderTarget()
 
 void VulkanEngine::loadScene()
 {
-    assert(renderer_options->curr_scene_path != "");
+    assert(base_options->curr_scene_name != "");
     vkDeviceWaitIdle(device);
-    raytracing_options->curr_sample_count = 0;
-    std::string path = renderer_options->resources_path + "/scenes/" + renderer_options->curr_scene_path;
+    properties_manager->curr_sample_count = 0;
+    std::string path = base_options->resources_dir + "/scenes/" + base_options->curr_scene_name;
     scene_manager->createScene(path);
-    scene_manager->curr_scene_path = renderer_options->curr_scene_path;
+    scene_manager->curr_scene_name = base_options->curr_scene_name;
+    properties_manager->addPropertySection(scene_manager->scene->material->getProperties());
 }
-
 
 void VulkanEngine::createCommandBuffers() {
     commandBuffers.resize(MAX_FRAMES_IN_FLIGHT);
@@ -542,11 +546,11 @@ void VulkanEngine::mainLoop() {
     while(!glfwWindowShouldClose(window)) {
         glfwPollEvents();
 
-        if (scene_manager->curr_scene_path != renderer_options->curr_scene_path) {
+        if (scene_manager->curr_scene_name != base_options->curr_scene_name) {
             loadScene();
         }
         scene_manager->updateScene(mainDrawContext, currentFrame, getRenderTarget(), rng_tex);
-        raytracing_options->emitting_instances_count = scene_manager->getEmittingInstancesCount(); // TODO move this together with the creation of the instance buffers
+        properties_manager->emitting_instances_count = scene_manager->getEmittingInstancesCount(); // TODO move this together with the creation of the instance buffers
         drawFrame();
     }
 
@@ -631,7 +635,7 @@ void VulkanEngine::presentSwapchainImage(std::vector<VkSemaphore> wait_semaphore
 void VulkanEngine::refreshAfterResize() {
     vkDeviceWaitIdle(device);
 
-    raytracing_options->curr_sample_count = 0;
+    properties_manager->curr_sample_count = 0;
     swapchain->recreate();
     cleanupRenderingTargets();
     createRenderingTargets();
@@ -688,7 +692,9 @@ void VulkanEngine::recordRenderToImage(VkCommandBuffer commandBuffer)
         0, static_cast<uint32_t>(descriptor_sets.size()), descriptor_sets.data(),
         0, nullptr);
 
-    vkCmdPushConstants(commandBuffer, pipeline.getLayoutHandle(), VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR | VK_SHADER_STAGE_RAYGEN_BIT_KHR, 0, sizeof(RaytracingOptions), raytracing_options.get());
+    uint32_t pc_size;
+    void* pc_data = properties_manager->getPushConstants(&pc_size);
+    vkCmdPushConstants(commandBuffer, pipeline.getLayoutHandle(), VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR | VK_SHADER_STAGE_RAYGEN_BIT_KHR, 0, pc_size, pc_data);
 
     CmdTraceRaysKHR(
         device,
@@ -701,7 +707,7 @@ void VulkanEngine::recordRenderToImage(VkCommandBuffer commandBuffer)
         swapchain->extent.height,
         1);
 
-    raytracing_options->curr_sample_count++;
+    properties_manager->curr_sample_count++;
 }
 
 void VulkanEngine::recordCopyToSwapchain(VkCommandBuffer commandBuffer, uint32_t swapchain_image_index)
@@ -763,12 +769,12 @@ void VulkanEngine::cleanupRenderingTargets() {
     ressourceBuilder.destroyImage(rng_tex);
 }
 
-void VulkanEngine::outputRenderingTarget()
+void VulkanEngine::outputRenderingTarget(const std::string& output_path)
 {
     AllocatedImage render_target = getRenderTarget();
     void* data = context->resource_builder->downloadImage(render_target, sizeof(uint32_t));
     uint8_t* fixed_data = fixImageFormatForStorage(data, render_target.imageExtent.width * render_target.imageExtent.height, render_target.imageFormat);
-    context->resource_builder->writePNG(renderer_options->output_dir + "/" + std::to_string(renderer_options->sample_count) + "_render.png", fixed_data, render_target.imageExtent.width, render_target.imageExtent.height);
+    context->resource_builder->writePNG(output_path, fixed_data, render_target.imageExtent.width, render_target.imageExtent.height);
 
     delete fixed_data;
 }
@@ -801,4 +807,30 @@ uint8_t* VulkanEngine::fixImageFormatForStorage(void* data, size_t pixel_count, 
     {
         spdlog::error("Image format of the storage image is not supported to be stored correctly!");
     }
+}
+
+void VulkanEngine::initProperties()
+{
+    renderer_properties = std::make_shared<Properties>(RENDERER_SECTION_NAME);
+
+    renderer_properties->addString(RESOURCES_DIR_OPTION_NAME, &base_options->resources_dir);
+    renderer_properties->addInt(RECURSION_DEPTH_OPTION_NAME, &base_options->max_depth, 1, 5);
+
+    std::string scenes_dir = base_options->resources_dir + "/scenes";
+    std::vector<std::string> scenes;
+    try {
+        for (const auto& entry : std::filesystem::__cxx11::directory_iterator(scenes_dir)) {
+            scenes.push_back(entry.path().filename());
+        }
+    } catch (const std::exception& e) {
+        throw std::runtime_error("failed to load scene directory: " + std::string(e.what()));
+    }
+
+    if (scenes.empty())
+    {
+        throw std::runtime_error("No scenes found in scene directory " + scenes_dir + ".");
+    }
+    base_options->curr_scene_name = scenes[0];
+
+    renderer_properties->addSelection(CURR_SCENE_OPTION_NAME, &base_options->curr_scene_name, scenes);
 }

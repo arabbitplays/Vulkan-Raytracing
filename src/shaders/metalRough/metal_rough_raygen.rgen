@@ -5,7 +5,7 @@
 
 #include "../common/payload.glsl"
 #include "../common/scene_data.glsl"
-#include "../common/options.glsl"
+#include "options.glsl"
 #include "../common/random.glsl"
 #include "../common/constants.glsl"
 
@@ -27,8 +27,10 @@ void main() {
     payload.light = vec3(0.0);
     payload.depth = 0;
     payload.beta = vec3(1.0);
+    payload.eta_scale = 1;
+    payload.specular_bounce = false;
 
-    while (payload.depth < options.recursion_depth && length(payload.beta) > 0.001 && payload.next_direction != vec3(0.0)) {
+    while (payload.depth < options.recursion_depth && payload.next_direction != vec3(0.0)) {
         float tmin = EPSILON;
         float tmax = 10000.0;
 

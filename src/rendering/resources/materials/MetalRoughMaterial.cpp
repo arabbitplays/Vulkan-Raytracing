@@ -29,7 +29,7 @@ void MetalRoughMaterial::buildPipelines(VkDescriptorSetLayout sceneLayout) {
     std::vector<VkDescriptorSetLayout> descriptorSetLayouts{sceneLayout, materialLayout};
     pipeline->setDescriptorSetLayouts(descriptorSetLayouts);
 
-    pipeline->addPushConstant(sizeof(RaytracingOptions), VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR | VK_SHADER_STAGE_RAYGEN_BIT_KHR);
+    pipeline->addPushConstant(MAX_PUSH_CONSTANT_SIZE, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR | VK_SHADER_STAGE_RAYGEN_BIT_KHR);
 
     VkShaderModule raygenShaderModule = VulkanUtil::createShaderModule(context->device, oschd_metal_rough_raygen_rgen_spv_size(), oschd_metal_rough_raygen_rgen_spv());
     VkShaderModule missShaderModule = VulkanUtil::createShaderModule(context->device, oschd_miss_rmiss_spv_size(), oschd_miss_rmiss_spv());
@@ -109,7 +109,7 @@ std::shared_ptr<MaterialInstance> MetalRoughMaterial::createInstance(MetalRoughP
 
     auto constants = std::make_shared<MaterialConstants>();
     constants->albedo = glm::vec4(parameters.albedo, 0.0f);
-    constants->properties = glm::vec4(parameters.metallic, parameters.roughness, parameters.ao, 0.0f);
+    constants->properties = glm::vec4(parameters.metallic, parameters.roughness, parameters.ao, parameters.eta); // TODO dynamic eta
     constants->emission = glm::vec4(parameters.emission_color, parameters.emission_power);
 
     std::shared_ptr<MaterialInstance> instance = std::make_shared<MaterialInstance>();
@@ -133,6 +133,14 @@ std::vector<std::shared_ptr<MetalRoughMaterial::MaterialResources>> MetalRoughMa
     return resources_buffer;
 }
 
+void MetalRoughMaterial::initProperties()
+{
+    properties = std::make_shared<Properties>(MATERIAL_SECTION_NAME);
+    properties->addBool("Normal_Mapping", &material_properties.normal_mapping);
+    properties->addBool("Sample_Lights", &material_properties.sample_lights);
+    properties->addBool("Sample_BSDF", &material_properties.sample_bsdf);
+    properties->addBool("Russian_Roulette", &material_properties.russian_roulette);
+}
 
 AllocatedBuffer MetalRoughMaterial::createMaterialBuffer() {
     assert(resources_buffer.size() == instances.size());

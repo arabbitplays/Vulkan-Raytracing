@@ -39,6 +39,8 @@ private:
 
     VkDevice device;
     std::shared_ptr<Swapchain> swapchain;
+
+    std::shared_ptr<OptionsWindow> options_window;
 	std::vector<std::shared_ptr<GuiWindow>> gui_windows{};
 
     uint32_t minImageCount = 2;

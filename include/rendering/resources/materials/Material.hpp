@@ -12,6 +12,7 @@
 #include <bits/shared_ptr.h>
 #include <glm/vec4.hpp>
 #include <Pipeline.hpp>
+#include <PropertiesManager.hpp>
 
 struct MaterialInstance;
 class Pipeline;
@@ -42,6 +43,7 @@ class Material {
         return glm::vec4(0.0f);
     }
     std::vector<std::shared_ptr<MaterialInstance>> getInstances();
+    std::shared_ptr<Properties> getProperties();
 
     void clearRessources();
     virtual void reset();
@@ -49,11 +51,14 @@ class Material {
     std::string name;
 
 protected:
+    virtual void initProperties() = 0;
+
     std::shared_ptr<VulkanContext> context;
     DescriptorAllocator descriptorAllocator;
     DeletionQueue mainDeletionQueue, resetQueue;
 
     std::vector<std::shared_ptr<MaterialInstance>> instances;
+    std::shared_ptr<Properties> properties;
 
     AllocatedBuffer materialBuffer; // maps an instance to its respective material via a common index into the constants and texture buffers
 };

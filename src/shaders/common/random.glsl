@@ -57,3 +57,12 @@ vec3 sampleCosHemisphere(inout uvec4 rngState) {
 
     return vec3(x, y, z);
 }
+
+vec2 sampleUniformDiskPolar(inout uvec4 rngState) {
+    vec2 u = vec2(stepAndOutputRNGFloat(rngState), stepAndOutputRNGFloat(rngState));
+
+    float r = sqrt(u.x);
+    float theta = 2.0 * PI * u.y;
+
+    return vec2(r * cos(theta), r * sin(theta));
+}

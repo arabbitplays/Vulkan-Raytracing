@@ -7,24 +7,25 @@
 #include <GuiWindow.hpp>
 #include <bits/shared_ptr.h>
 #include <glm/fwd.hpp>
-#include <RaytracingOptions.hpp>
-#include <RendererOptions.h>
+#include <PropertiesManager.hpp>
 
 class OptionsWindow final : public GuiWindow {
 public:
     OptionsWindow() : GuiWindow() {}
-    explicit OptionsWindow(const std::shared_ptr<RaytracingOptions>& raytracing_options, std::shared_ptr<RendererOptions>& renderer_options)
-        : GuiWindow(), raytracing_options(raytracing_options), renderer_options(renderer_options) {}
+    explicit OptionsWindow(std::shared_ptr<PropertiesManager> props_manager)
+        : GuiWindow(), props_manager(props_manager)
+    {
+    }
 
     void createFrame() override;
 
-    std::shared_ptr<RaytracingOptions> raytracing_options;
-    std::shared_ptr<RendererOptions> renderer_options;
+    std::shared_ptr<PropertiesManager> props_manager;
 
 private:
     struct ImguiOptions {
         bool shadows, fresnel, dispersion, normal_mapping;
         bool sample_light;
+        bool sample_brdf;
         int curr_scene;
     };
 
@@ -34,7 +35,9 @@ private:
         .dispersion = false,
         .normal_mapping = true,
         .sample_light = false,
+        .sample_brdf = true,
     };
+
 
 protected:
 };

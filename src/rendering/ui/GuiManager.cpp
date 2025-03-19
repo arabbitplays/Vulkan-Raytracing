@@ -105,7 +105,6 @@ void GuiManager::addWindow(std::shared_ptr<GuiWindow> window) {
     gui_windows.push_back(window);
 }
 
-
 void GuiManager::updateWindows(std::shared_ptr<Swapchain> swapchain) {
     for (auto framebuffer : frame_buffers) {
         vkDestroyFramebuffer(device, framebuffer, nullptr);

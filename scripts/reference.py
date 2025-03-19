@@ -26,7 +26,7 @@ def render_images(program, samples_per_image, image_count, reference_dir, output
         "--output", output_dir,
         "--samples", str(samples_per_image),
         "--resources", "resources",
-        "--reference_scene", reference_dir + "/" + "scene.yaml"]
+        "--reference_scene", reference_dir + "/" + "ExtraCornell.yaml"]
         run_program(program, args)
         os.rename(output_dir + "/" + str(samples_per_image) + "_ref.png", output_dir + "/" + str(i) + ".png")
 

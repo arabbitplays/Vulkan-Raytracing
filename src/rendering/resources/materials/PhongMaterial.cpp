@@ -29,7 +29,7 @@ void PhongMaterial::buildPipelines(VkDescriptorSetLayout sceneLayout) {
     std::vector<VkDescriptorSetLayout> descriptorSetLayouts{sceneLayout, materialLayout};
     pipeline->setDescriptorSetLayouts(descriptorSetLayouts);
 
-    pipeline->addPushConstant(sizeof(RaytracingOptions), VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR | VK_SHADER_STAGE_RAYGEN_BIT_KHR);
+    pipeline->addPushConstant(MAX_PUSH_CONSTANT_SIZE, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR | VK_SHADER_STAGE_RAYGEN_BIT_KHR);
 
     VkShaderModule raygenShaderModule = VulkanUtil::createShaderModule(context->device, oschd_phong_raygen_rgen_spv_size(), oschd_phong_raygen_rgen_spv());
     VkShaderModule missShaderModule = VulkanUtil::createShaderModule(context->device, oschd_environment_miss_rmiss_spv_size(), oschd_environment_miss_rmiss_spv());
@@ -101,6 +101,14 @@ AllocatedBuffer PhongMaterial::createMaterialBuffer() {
 std::vector<std::shared_ptr<PhongMaterial::MaterialResources>> PhongMaterial::getResources()
 {
     return resources_buffer;
+}
+
+void PhongMaterial::initProperties()
+{
+    properties = std::make_shared<Properties>(MATERIAL_SECTION_NAME);
+    properties->addBool("Shadows", &material_properties.shadows);
+    properties->addBool("Fresnel", &material_properties.fresnel);
+    properties->addBool("Dispersion", &material_properties.dispersion);
 }
 
 
