@@ -11,6 +11,7 @@
 #include <glm/gtx/quaternion.hpp>
 #include <spdlog/spdlog.h>
 #include <YAML_glm.hpp>
+#include <TransformUtil.hpp>
 
 std::shared_ptr<Scene> SceneReader::readScene(const std::string& filename, std::unordered_map<std::string, std::shared_ptr<Material>> materials)
 {
@@ -150,24 +151,13 @@ void SceneReader::initializeMaterial(const YAML::Node& material_node, std::share
     }
 }
 
-glm::mat4 recomposeMatrix(glm::vec3 translation, glm::vec3 rotation, glm::vec3 scale) {
-    glm::mat4 translationMatrix = glm::translate(glm::mat4(1.0f), translation);
-
-    glm::quat quaternion = glm::quat(glm::radians(rotation)); // Convert degrees to radians
-    glm::mat4 rotationMatrix = glm::toMat4(quaternion);
-
-    glm::mat4 scaleMatrix = glm::scale(glm::mat4(1.0f), scale);
-
-    return translationMatrix * rotationMatrix * scaleMatrix;
-}
-
 std::shared_ptr<Node> SceneReader::processSceneNodesRecursiv(const YAML::Node& yaml_node, const std::shared_ptr<Scene>& scene, const std::vector<std::shared_ptr<MaterialInstance>>& instances)
 {
     if (yaml_node["mesh"]) // construct a mesh node
     {
         std::shared_ptr<Node> scene_graph_node = std::make_shared<Node>();
         scene_graph_node->name = yaml_node["name"].as<std::string>();
-        scene_graph_node->transform->setLocalTransform(recomposeMatrix(yaml_node["translation"].as<glm::vec3>(), yaml_node["rotation"].as<glm::vec3>(), yaml_node["scale"].as<glm::vec3>()));
+        scene_graph_node->transform->setLocalTransform(TransformUtil::recomposeMatrix({yaml_node["translation"].as<glm::vec3>(), yaml_node["rotation"].as<glm::vec3>(), yaml_node["scale"].as<glm::vec3>()}));
         scene_graph_node->children = {};
         for (auto& child_node : yaml_node["children"])
         {
@@ -185,7 +175,7 @@ std::shared_ptr<Node> SceneReader::processSceneNodesRecursiv(const YAML::Node& y
     {
         std::shared_ptr<Node> scene_graph_node = std::make_shared<Node>();
         scene_graph_node->name = yaml_node["name"].as<std::string>();
-        scene_graph_node->transform->setLocalTransform(recomposeMatrix(yaml_node["translation"].as<glm::vec3>(), yaml_node["rotation"].as<glm::vec3>(), yaml_node["scale"].as<glm::vec3>()));
+        scene_graph_node->transform->setLocalTransform(TransformUtil::recomposeMatrix({yaml_node["translation"].as<glm::vec3>(), yaml_node["rotation"].as<glm::vec3>(), yaml_node["scale"].as<glm::vec3>()}));
         scene_graph_node->children = {};
         for (auto& child_node : yaml_node["children"])
         {

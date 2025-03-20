@@ -7,6 +7,7 @@
 #include <fstream>
 #include <MeshRenderer.hpp>
 #include <QuickTimer.hpp>
+#include <TransformUtil.hpp>
 #include <spdlog/spdlog.h>
 #include <YAML_glm.hpp>
 
@@ -157,11 +158,6 @@ void SceneWriter::writeSceneLights(YAML::Emitter& out, const std::shared_ptr<Sce
     out << YAML::EndMap;
 }
 
-struct DecomposedTransform
-{
-    glm::vec3 translation, rotation, scale;
-};
-
 float roundToDecimal(float value, int decimalPlaces) {
     float multiplier = std::pow(10.0f, decimalPlaces);
     return std::round(value * multiplier) / multiplier;
@@ -175,38 +171,12 @@ glm::vec3 roundVec3(glm::vec3 v, int decimalPlaces) {
     return v;
 }
 
-DecomposedTransform decomposeMatrix(const glm::mat4& transform) {
-    // Extract translation (last column of the matrix)
-    glm::vec3 translation = glm::vec3(transform[3]);
-
-    // Extract scale factors (length of the columns, excluding the translation part)
-    glm::vec3 scale(
-        glm::length(glm::vec3(transform[0])),
-        glm::length(glm::vec3(transform[1])),
-        glm::length(glm::vec3(transform[2]))
-    );
-
-    // Extract rotation by normalizing the 3x3 portion of the matrix
-    glm::mat3 rotationMatrix = glm::mat3(transform);
-    rotationMatrix[0] /= scale.x;
-    rotationMatrix[1] /= scale.y;
-    rotationMatrix[2] /= scale.z;
-
-    // Convert rotation matrix to quaternion
-    glm::quat rotation = glm::quat_cast(rotationMatrix);
-    glm::vec3 eulerAngles = glm::eulerAngles(rotation);
-    eulerAngles = glm::degrees(eulerAngles);
-
-    DecomposedTransform result(translation, eulerAngles, scale);
-    return result;
-}
-
 void SceneWriter::writeSceneNode(YAML::Emitter& out, const std::shared_ptr<Node>& node)
 {
     out << YAML::BeginMap;
     out << YAML::Key << "name" << YAML::Value << node->name;
 
-    DecomposedTransform transform = decomposeMatrix(node->transform->getLocalTransform());
+    TransformUtil::DecomposedTransform transform = TransformUtil::decomposeMatrix(node->transform->getLocalTransform());
     out << YAML::Key << "translation" << YAML::Value << YAML::convert<glm::vec3>::encode(transform.translation);
     out << YAML::Key << "rotation" << YAML::Value << YAML::convert<glm::vec3>::encode(transform.rotation);
     out << YAML::Key << "scale" << YAML::Value << YAML::convert<glm::vec3>::encode(transform.scale);

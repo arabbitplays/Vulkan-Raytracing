@@ -34,6 +34,11 @@ void HierarchyWindow::createFrame() {
     for (auto& node_add : nodes_to_add)
     {
         scene->nodes[node_add.parent_key]->children.push_back(scene->nodes[node_add.node_key]);
+        //TODO not quite working
+        glm::mat4 new_parent_transform = scene->nodes[node_add.parent_key]->transform->getWorldTransform();
+        glm::mat4 prev_world_transform = scene->nodes[node_add.node_key]->transform->getWorldTransform();
+        scene->nodes[node_add.node_key]->transform->setLocalTransform(glm::inverse(new_parent_transform) * prev_world_transform);
+        scene->nodes[node_add.node_key]->refreshTransform(new_parent_transform);
     }
 
     for (auto& node_remove : nodes_to_remove)
