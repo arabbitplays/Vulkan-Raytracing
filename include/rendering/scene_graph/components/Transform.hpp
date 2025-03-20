@@ -6,6 +6,7 @@
 #define TRANSFORM_HPP
 
 #include <Component.hpp>
+#include <TransformUtil.hpp>
 #include <glm/glm.hpp>
 
 class Transform : public Component {
@@ -18,8 +19,11 @@ public:
 
     void setLocalTransform(glm::mat4 transform_matrix);
     glm::mat4 getLocalTransform() const;
-    void updateGlobalTransform(glm::mat4 parent_matrix);
+    void updateTransforms(glm::mat4 parent_matrix);
     glm::mat4 getWorldTransform() const;
+
+public:
+    TransformUtil::DecomposedTransform decomposed_transform;
 
 private:
 

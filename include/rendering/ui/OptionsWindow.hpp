@@ -13,13 +13,10 @@ class OptionsWindow final : public GuiWindow {
 public:
     OptionsWindow() : GuiWindow() {}
     explicit OptionsWindow(std::shared_ptr<PropertiesManager> props_manager)
-        : GuiWindow(), props_manager(props_manager)
-    {
-    }
+        : GuiWindow(props_manager) {}
 
     void createFrame() override;
 
-    std::shared_ptr<PropertiesManager> props_manager;
 
 private:
     struct ImguiOptions {

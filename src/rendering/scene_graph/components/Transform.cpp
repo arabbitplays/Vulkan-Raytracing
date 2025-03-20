@@ -10,15 +10,17 @@ Transform::Transform() : Component(nullptr) {
 }
 
 void Transform::setLocalTransform(glm::mat4 transform_matrix) {
-  localTransform = transform_matrix;
+	localTransform = transform_matrix;
+	decomposed_transform = TransformUtil::decomposeMatrix(localTransform);
 }
 
 glm::mat4 Transform::getLocalTransform() const {
 	return localTransform;
 }
 
-void Transform::updateGlobalTransform(glm::mat4 parent_matrix)
+void Transform::updateTransforms(glm::mat4 parent_matrix)
 {
+	localTransform = TransformUtil::recomposeMatrix(decomposed_transform);
 	worldTransform = parent_matrix * localTransform;
 }
 

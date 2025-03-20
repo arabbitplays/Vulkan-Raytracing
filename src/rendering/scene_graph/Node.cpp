@@ -10,7 +10,7 @@ Node::Node()
 }
 
 void Node::refreshTransform(const glm::mat4 &parentMatrix) {
-    transform->updateGlobalTransform(parentMatrix);
+    transform->updateTransforms(parentMatrix);
     for (auto& c : children) {
         c->refreshTransform(transform->getWorldTransform());
     }

@@ -110,7 +110,9 @@ void VulkanEngine::initGui() {
     });
 
     guiManager->addWindow(std::make_shared<OptionsWindow>(properties_manager));
-    hierarchy_window = std::make_shared<HierarchyWindow>(properties_manager);
+    auto inspector_window = std::make_shared<InspectorWindow>(properties_manager);
+    guiManager->addWindow(inspector_window);
+    hierarchy_window = std::make_shared<HierarchyWindow>(properties_manager, inspector_window);
     guiManager->addWindow(hierarchy_window);
 }
 

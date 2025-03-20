@@ -13,7 +13,7 @@ void OptionsWindow::createFrame() {
     if (show_window) {
         ImGui::Begin("Main Window", &show_window);
 
-        for (auto& section : props_manager->properties)
+        for (auto& section : main_props_manager->properties)
         {
             if (ImGui::CollapsingHeader(section.second->section_name.c_str())) {
                 for (auto& bool_property : section.second->bool_properties)
@@ -61,6 +61,6 @@ void OptionsWindow::createFrame() {
     }
 
     if (reset_image) {
-        props_manager->curr_sample_count = 0;
+        main_props_manager->curr_sample_count = 0;
     }
 }

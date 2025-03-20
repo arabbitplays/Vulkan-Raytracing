@@ -7,6 +7,7 @@
 
 #include <GuiWindow.hpp>
 #include <imgui.h>
+#include <InspectorWindow.hpp>
 #include <memory>
 #include <Scene.hpp>
 #include <string>
@@ -34,17 +35,18 @@ static DragPayload dragPayload;
 class HierarchyWindow final : public GuiWindow {
 public:
     HierarchyWindow() = default;
-    HierarchyWindow(std::shared_ptr<PropertiesManager> main_props_manager);
+    HierarchyWindow(std::shared_ptr<PropertiesManager> main_props_manager, std::shared_ptr<InspectorWindow> inspector_window);
     ~HierarchyWindow() override = default;
 
     void createFrame() override;
-    void displayNode(std::shared_ptr<Node> node, std::shared_ptr<Node> parent, uint32_t depth);
     void setScene(const std::shared_ptr<Scene>& scene);
 
     std::string last_clicked_node_key = "";
 
 private:
-    std::shared_ptr<PropertiesManager> main_props_manager;
+    void displayNode(std::shared_ptr<Node> node, std::shared_ptr<Node> parent, uint32_t depth);
+
+    std::shared_ptr<InspectorWindow> inspector_window;
 
     std::shared_ptr<Scene> scene;
 

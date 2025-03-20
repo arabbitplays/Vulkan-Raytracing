@@ -6,7 +6,8 @@
 
 #include <spdlog/spdlog.h>
 
-HierarchyWindow::HierarchyWindow(std::shared_ptr<PropertiesManager> main_props_manager) : main_props_manager(main_props_manager) {}
+HierarchyWindow::HierarchyWindow(std::shared_ptr<PropertiesManager> main_props_manager, std::shared_ptr<InspectorWindow> inspector_window)
+    : GuiWindow(main_props_manager), inspector_window(inspector_window) {}
 
 
 void HierarchyWindow::setScene(const std::shared_ptr<Scene>& scene)
@@ -21,13 +22,9 @@ void HierarchyWindow::createFrame() {
 
     ImGui::SetNextWindowSize(ImVec2(400, 300), ImGuiCond_Once);
 
-    bool reset_image = false;
     if (show_window) {
         ImGui::Begin("Hierarchy", &show_window);
-
-
         displayNode(scene->nodes["root"], nullptr, 0);
-
         ImGui::End();
     }
 
@@ -60,6 +57,9 @@ void HierarchyWindow::createFrame() {
     nodes_to_remove.clear();
 
     scene->nodes["root"]->refreshTransform(glm::mat4(1.0f));
+
+    if (last_clicked_node_key != "")
+        inspector_window->setNode(scene->nodes[last_clicked_node_key], scene->nodes["root"]);
 }
 
 void HierarchyWindow::displayNode(std::shared_ptr<Node> node, std::shared_ptr<Node> parent, uint32_t depth)
