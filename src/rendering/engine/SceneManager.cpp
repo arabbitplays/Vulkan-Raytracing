@@ -136,7 +136,7 @@ void SceneManager::updateScene(DrawContext& draw_context, uint32_t current_image
     }
 
     draw_context.objects.clear();
-    scene->nodes["root"]->draw(glm::mat4(1.0f), draw_context);
+    scene->nodes["root"]->draw(draw_context);
 
     // TODO move this to scene creation time
     if (instance_mapping_buffer.handle == VK_NULL_HANDLE) {

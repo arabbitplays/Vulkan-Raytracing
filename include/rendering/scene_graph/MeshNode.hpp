@@ -16,8 +16,6 @@ public:
 
     std::shared_ptr<MeshAsset> meshAsset;
     std::shared_ptr<MaterialInstance> meshMaterial;
-
-    void draw(const glm::mat4& topMatrix, DrawContext& ctx) override;
 };
 
 

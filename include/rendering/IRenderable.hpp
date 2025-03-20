@@ -32,7 +32,7 @@ struct DrawContext {
 };
 
 class IRenderable {
-    virtual void draw(const glm::mat4& topMatrix, DrawContext& ctx) = 0;
+    virtual void draw(DrawContext& ctx) = 0;
 };
 
 #endif //BASICS_IRENDERABLE_HPP

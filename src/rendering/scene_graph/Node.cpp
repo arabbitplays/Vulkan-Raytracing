@@ -2,17 +2,22 @@
 // Created by oster on 12.09.2024.
 //
 
-#include "Node.hpp"
+#include <Node.hpp>
+
+Node::Node()
+{
+    transform = std::make_shared<Transform>();
+}
 
 void Node::refreshTransform(const glm::mat4 &parentMatrix) {
-    worldTransform = parentMatrix * localTransform;
+    transform->updateGlobalTransform(parentMatrix);
     for (auto& c : children) {
-        c->refreshTransform(worldTransform);
+        c->refreshTransform(transform->getWorldTransform());
     }
 }
 
-void Node::draw(const glm::mat4 &topMatrix, DrawContext &ctx) {
+void Node::draw(DrawContext &ctx) {
     for (auto& c : children) {
-        c->draw(topMatrix, ctx);
+        c->draw(ctx);
     }
 }

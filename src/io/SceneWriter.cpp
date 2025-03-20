@@ -206,7 +206,7 @@ void SceneWriter::writeSceneNode(YAML::Emitter& out, const std::shared_ptr<Node>
     out << YAML::BeginMap;
     out << YAML::Key << "name" << YAML::Value << node->name;
 
-    DecomposedTransform transform = decomposeMatrix(node->localTransform);
+    DecomposedTransform transform = decomposeMatrix(node->transform->getLocalTransform());
     out << YAML::Key << "translation" << YAML::Value << YAML::convert<glm::vec3>::encode(transform.translation);
     out << YAML::Key << "rotation" << YAML::Value << YAML::convert<glm::vec3>::encode(transform.rotation);
     out << YAML::Key << "scale" << YAML::Value << YAML::convert<glm::vec3>::encode(transform.scale);
