@@ -5,6 +5,7 @@
 #include "SceneReader.hpp"
 
 #include <AccelerationStructure.hpp>
+#include <MeshRenderer.hpp>
 #include <Node.hpp>
 #include <QuickTimer.hpp>
 #include <glm/gtx/quaternion.hpp>
@@ -172,8 +173,10 @@ std::shared_ptr<Node> SceneReader::processSceneNodesRecursiv(const YAML::Node& y
         {
             scene_graph_node->children.push_back(processSceneNodesRecursiv(child_node, scene, instances));
         }
-        //scene_graph_node->meshAsset = scene->getMesh(yaml_node["mesh"].as<std::string>());
-        //scene_graph_node->meshMaterial = instances.at(yaml_node["material_idx"].as<int>());
+        std::shared_ptr<MeshRenderer> mesh_component = std::make_shared<MeshRenderer>(scene_graph_node);
+        mesh_component->meshAsset = scene->getMesh(yaml_node["mesh"].as<std::string>());
+        mesh_component->meshMaterial = instances.at(yaml_node["material_idx"].as<int>());
+        scene_graph_node->addComponent(mesh_component);
         scene_graph_node->refreshTransform(glm::mat4(1.0f));
 
         scene->addNode(scene_graph_node->name, scene_graph_node);

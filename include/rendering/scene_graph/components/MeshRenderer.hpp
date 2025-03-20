@@ -6,12 +6,19 @@
 #define MESHRENDERER_HPP
 
 #include <Component.hpp>
+#include <Material.hpp>
 
-class MeshRenderer : Component {
+class MeshRenderer : public Component {
+public:
     MeshRenderer() = default;
     MeshRenderer(std::shared_ptr<Node> node);
+    ~MeshRenderer() override = default;
 
     void OnRender(DrawContext &ctx) override;
+    void OnUpdate() override {};
+
+    std::shared_ptr<MeshAsset> meshAsset;
+    std::shared_ptr<MaterialInstance> meshMaterial;
 };
 
 

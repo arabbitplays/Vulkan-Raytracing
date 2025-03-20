@@ -8,7 +8,7 @@
 #include <Component.hpp>
 #include <glm/glm.hpp>
 
-class Transform : Component {
+class Transform : public Component {
 public:
     Transform();
 

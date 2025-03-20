@@ -16,6 +16,19 @@ public:
 
     void draw(DrawContext& ctx) override;
     void refreshTransform(const glm::mat4& parentMatrix);
+    void addComponent(std::shared_ptr<Component> component);
+    template <typename T>
+    std::shared_ptr<T> getComponent()
+    {
+        for (auto& component : components)
+        {
+            auto casted = std::dynamic_pointer_cast<T>(component);
+            if (casted) {
+                return casted;
+            }
+        }
+        return nullptr;
+    }
 
     std::string name;
 

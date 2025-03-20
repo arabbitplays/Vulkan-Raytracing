@@ -16,5 +16,5 @@ void MeshRenderer::OnRender(DrawContext& ctx)
 
     glm::mat4 nodeMatrix = shared_node->transform->getWorldTransform();
 
-    //ctx.objects.push_back(RenderObject{InstanceData{meshAsset->geometry_id, meshMaterial->material_index}, meshAsset->accelerationStructure, nodeMatrix, meshAsset->triangle_count});
+    ctx.objects.push_back(RenderObject{InstanceData{meshAsset->geometry_id, meshMaterial->material_index}, meshAsset->accelerationStructure, nodeMatrix, meshAsset->triangle_count});
 }

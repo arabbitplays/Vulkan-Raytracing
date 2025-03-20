@@ -17,7 +17,18 @@ void Node::refreshTransform(const glm::mat4 &parentMatrix) {
 }
 
 void Node::draw(DrawContext &ctx) {
+    for (auto& component : components)
+    {
+        component->OnRender(ctx);
+    }
+
     for (auto& c : children) {
         c->draw(ctx);
     }
 }
+
+void Node::addComponent(std::shared_ptr<Component> component)
+{
+    components.push_back(component);
+}
+

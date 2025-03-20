@@ -5,7 +5,7 @@
 #include "SceneWriter.hpp"
 #include <iostream>
 #include <fstream>
-#include <MeshNode.hpp>
+#include <MeshRenderer.hpp>
 #include <QuickTimer.hpp>
 #include <spdlog/spdlog.h>
 #include <YAML_glm.hpp>
@@ -211,11 +211,13 @@ void SceneWriter::writeSceneNode(YAML::Emitter& out, const std::shared_ptr<Node>
     out << YAML::Key << "rotation" << YAML::Value << YAML::convert<glm::vec3>::encode(transform.rotation);
     out << YAML::Key << "scale" << YAML::Value << YAML::convert<glm::vec3>::encode(transform.scale);
 
-    if (typeid(*node) == typeid(MeshNode) )
+    // TODO write components
+    std::shared_ptr<MeshRenderer> mesh_renderer = node->getComponent<MeshRenderer>();
+    if (mesh_renderer)
     {
-        auto mesh_node = dynamic_cast<MeshNode*>(node.get());
-        out << YAML::Key << "mesh" << YAML::Value << mesh_node->meshAsset->name;
-        out << YAML::Key << "material_idx" << YAML::Value << mesh_node->meshMaterial->material_index;
+        auto mesh_renderer = dynamic_cast<MeshRenderer*>(node->components.at(0).get());
+        out << YAML::Key << "mesh" << YAML::Value << mesh_renderer->meshAsset->name;
+        out << YAML::Key << "material_idx" << YAML::Value << mesh_renderer->meshMaterial->material_index;
     }
 
     out << YAML::Key << "children" << YAML::Value << YAML::BeginSeq;
