@@ -37,6 +37,8 @@
 #include "../../util/VulkanUtil.hpp"
 #include "../IRenderable.hpp"
 #include <BaseOptions.hpp>
+#include <HierarchyWindow.hpp>
+
 #include "../scene_graph/Node.hpp"
 #include "DeletionQueue.hpp"
 #include <VulkanContext.hpp>
@@ -59,6 +61,8 @@ protected:
 
     GLFWwindow* window;
     std::shared_ptr<GuiManager> guiManager;
+    std::shared_ptr<HierarchyWindow> hierarchy_window;
+
     VkInstance instance;
     VkSurfaceKHR surface;
     VkDebugUtilsMessengerEXT debugMessenger;

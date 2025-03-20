@@ -211,7 +211,6 @@ void SceneWriter::writeSceneNode(YAML::Emitter& out, const std::shared_ptr<Node>
     out << YAML::Key << "rotation" << YAML::Value << YAML::convert<glm::vec3>::encode(transform.rotation);
     out << YAML::Key << "scale" << YAML::Value << YAML::convert<glm::vec3>::encode(transform.scale);
 
-    // TODO write components
     std::shared_ptr<MeshRenderer> mesh_renderer = node->getComponent<MeshRenderer>();
     if (mesh_renderer)
     {

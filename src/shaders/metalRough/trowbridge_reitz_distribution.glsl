@@ -5,7 +5,7 @@ struct Material {
     float metallic;
     float roughness;
     float ao;
-    vec3 eta;
+    float eta;
     vec3 emission_color;
     float emission_power;
 };
@@ -21,7 +21,7 @@ Material getMaterial(uint material_id) {
     m.metallic = B.x;
     m.roughness = B.y;
     m.ao = B.z;
-    m.eta = vec3(B.w); // TODO Fix this
+    m.eta = B.w;
     m.emission_color = C.xyz;
     m.emission_power = C.w;
 

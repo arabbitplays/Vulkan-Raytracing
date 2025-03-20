@@ -2,6 +2,7 @@
 #include <set>
 #include <cstdlib>
 #include <filesystem>
+#include <HierarchyWindow.hpp>
 
 const std::vector<const char*> validationLayers = {
     "VK_LAYER_KHRONOS_validation",
@@ -15,7 +16,6 @@ const std::vector<const char*> deviceExtensions = {
     VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME,
     VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME,
 };
-#define NDEBUG
 #ifdef NDEBUG
     const bool enableValidationLayers = false;
 #else
@@ -110,6 +110,8 @@ void VulkanEngine::initGui() {
     });
 
     guiManager->addWindow(std::make_shared<OptionsWindow>(properties_manager));
+    hierarchy_window = std::make_shared<HierarchyWindow>(properties_manager);
+    guiManager->addWindow(hierarchy_window);
 }
 
 void VulkanEngine::initVulkan() {
@@ -498,6 +500,8 @@ void VulkanEngine::loadScene()
     scene_manager->createScene(path);
     scene_manager->curr_scene_name = base_options->curr_scene_name;
     properties_manager->addPropertySection(scene_manager->scene->material->getProperties());
+    hierarchy_window->setScene(scene_manager->scene);
+
 }
 
 void VulkanEngine::createCommandBuffers() {

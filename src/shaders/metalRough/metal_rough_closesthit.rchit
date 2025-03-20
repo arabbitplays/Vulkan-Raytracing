@@ -62,7 +62,7 @@ void main() {
     float metallic = texture(metal_rough_ao_textures[triangle.material_idx], uv).x + material.metallic;
     float roughness = texture(metal_rough_ao_textures[triangle.material_idx], uv).y + material.roughness;
     float ao = texture(metal_rough_ao_textures[triangle.material_idx], uv).z + material.ao;
-    float eta = material.eta.x; // TODO eta
+    float eta = material.eta;
 
     // no direct light sampling or handle light that goes directly to the camera
     if (!options.sample_light || payload.specular_bounce || (payload.depth == 0 && material.emission_power > 0)) {

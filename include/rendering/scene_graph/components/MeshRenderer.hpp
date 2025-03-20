@@ -14,6 +14,7 @@ public:
     MeshRenderer(std::shared_ptr<Node> node);
     ~MeshRenderer() override = default;
 
+    void OnStart() override {};
     void OnRender(DrawContext &ctx) override;
     void OnUpdate() override {};
 

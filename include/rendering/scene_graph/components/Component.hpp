@@ -14,6 +14,7 @@ public:
     Component(std::shared_ptr<Node> node) : node(node) {};
     virtual ~Component() = default;
 
+    virtual void OnStart() = 0;
     virtual void OnRender(DrawContext &ctx) = 0;
     virtual void OnUpdate() = 0;
 

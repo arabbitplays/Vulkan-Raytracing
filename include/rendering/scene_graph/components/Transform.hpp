@@ -12,6 +12,7 @@ class Transform : public Component {
 public:
     Transform();
 
+    void OnStart() override {};
     void OnRender(DrawContext& ctx) override {};
     void OnUpdate() override {};
 
