@@ -26,6 +26,9 @@ class Texture {
 public:
   Texture() = default;
   Texture(std::string name, TextureType type, std::string path, AllocatedImage image) : name(name), type(type), path(path), image(image) {};
+  bool operator==(const Texture& other) const {
+    return name == other.name;
+  }
 
   std::string name;
   std::string path;

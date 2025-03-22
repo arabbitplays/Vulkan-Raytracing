@@ -80,6 +80,7 @@ void MetalRoughMaterial::writeMaterial() {
     std::vector<VkImageView> albedo_views{};
     std::vector<VkImageView> metal_rough_views{};
     std::vector<VkImageView> normal_views{};
+    // TODO give indices of the images to the material instances
     for (auto& resources : resources_buffer)
     {
         albedo_views.push_back(resources->albedo_tex.image.imageView);
@@ -94,7 +95,8 @@ void MetalRoughMaterial::writeMaterial() {
     descriptorAllocator.clearWrites();
 }
 
-std::shared_ptr<MaterialInstance> MetalRoughMaterial::createInstance(MetalRoughParameters parameters) {
+std::shared_ptr<MetalRoughMaterial::MaterialResources> MetalRoughMaterial::createMaterialResources(MetalRoughParameters parameters)
+{
     if (parameters.albedo_tex == nullptr) {
         parameters.albedo_tex = default_tex;
     }
@@ -112,14 +114,34 @@ std::shared_ptr<MaterialInstance> MetalRoughMaterial::createInstance(MetalRoughP
     constants->properties = glm::vec4(parameters.metallic, parameters.roughness, parameters.ao, parameters.eta); // TODO dynamic eta
     constants->emission = glm::vec4(parameters.emission_color, parameters.emission_power);
 
-    std::shared_ptr<MaterialInstance> instance = std::make_shared<MaterialInstance>();
-    instances.push_back(instance);
     auto resources = std::make_shared<MaterialResources>();
     resources->constants = constants;
     resources->albedo_tex = *parameters.albedo_tex;
     resources->metal_rough_ao_tex = *parameters.metal_rough_ao_tex;
     resources->normal_tex = *parameters.normal_tex;
+
+    return resources;
+}
+
+// is unique = true the method assumes that such an instance doesn't exist yet, so safe time when creating lots of instances,
+// where it is clear that they are unique (used for loading scenes for example
+std::shared_ptr<MaterialInstance> MetalRoughMaterial::createInstance(MetalRoughParameters parameters, bool unique) {
+    std::shared_ptr<MaterialInstance> instance = std::make_shared<MaterialInstance>();
+    std::shared_ptr<MaterialResources> resources = createMaterialResources(parameters);
+
+    if (!unique)
+    {
+        for (uint32_t i = 0; i < resources_buffer.size(); i++)
+        {
+            if (*resources == *resources_buffer[i])
+            {
+                return instances[i];
+            }
+        }
+    }
+
     resources_buffer.push_back(resources);
+    instances.push_back(instance);
 
     return instance;
 }
@@ -147,8 +169,8 @@ AllocatedBuffer MetalRoughMaterial::createMaterialBuffer() {
 
     std::vector<MaterialConstants> materialConstants{};
     for (uint32_t i = 0; i < resources_buffer.size(); i++) {
-        instances[i]->material_index = i;
         materialConstants.push_back(*resources_buffer[i]->constants);
+        instances[i]->material_index = i;
     }
     return context->resource_builder->stageMemoryToNewBuffer(materialConstants.data(), materialConstants.size() * sizeof(MaterialConstants), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
 }

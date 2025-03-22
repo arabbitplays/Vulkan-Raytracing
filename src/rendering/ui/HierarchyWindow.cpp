@@ -61,7 +61,6 @@ void HierarchyWindow::createFrame() {
 
     if (last_clicked_node_key != "")
         inspector_window->setNode(scene->nodes[last_clicked_node_key], scene->nodes["root"]);
-    spdlog::info(last_clicked_node_key);
     last_clicked_node_key = "";
 }
 

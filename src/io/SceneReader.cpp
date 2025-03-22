@@ -131,7 +131,7 @@ void SceneReader::initializeMaterial(const YAML::Node& material_node, std::share
                 parameters.emission_power = material_node["emission_power"].as<float>();
             }
 
-            metal_rough_material->createInstance(parameters);
+            metal_rough_material->createInstance(parameters, true);
         }
     } else if (typeid(*material) == typeid(PhongMaterial)) {
         auto phong_material = dynamic_cast<PhongMaterial*>(material.get());

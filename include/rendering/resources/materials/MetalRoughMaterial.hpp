@@ -24,6 +24,11 @@ public:
         glm::vec4 albedo;
         glm::vec4 properties; // metallic roughness ao eta
         glm::vec4 emission;
+        bool operator==(const MaterialConstants& other) const {
+            return glm::all(glm::epsilonEqual(albedo, other.albedo, 0.0001f))
+                && glm::all(glm::epsilonEqual(properties, other.properties, 0.0001f))
+                && glm::all(glm::epsilonEqual(emission, other.emission, 0.0001f));
+        }
     };
 
     struct MaterialResources
@@ -32,6 +37,13 @@ public:
         Texture albedo_tex;
         Texture metal_rough_ao_tex;
         Texture normal_tex;
+        bool operator==(const MaterialResources& other) const
+        {
+            return *constants == *other.constants
+                && albedo_tex == other.albedo_tex
+                && metal_rough_ao_tex == other.metal_rough_ao_tex
+                && normal_tex == other.normal_tex;
+        };
     };
 
     struct MaterialProperties
@@ -41,17 +53,17 @@ public:
 
     MetalRoughMaterial(std::shared_ptr<VulkanContext> context, VkSampler sampler) : Material(METAL_ROUGH_MATERIAL_NAME, context), sampler(sampler) {}
 
-
     void buildPipelines(VkDescriptorSetLayout sceneLayout) override;
     void writeMaterial() override;
     glm::vec4 getEmissionForInstance(uint32_t material_instance_id) override;
     std::vector<std::shared_ptr<MaterialResources>> getResources();
 
-    std::shared_ptr<MaterialInstance> createInstance(MetalRoughParameters parameters);
+    std::shared_ptr<MaterialInstance> createInstance(MetalRoughParameters parameters, bool unique = false);
     void reset() override;
 
 protected:
     void initProperties() override;
+    std::shared_ptr<MaterialResources> createMaterialResources(MetalRoughParameters parameters);
 private:
     AllocatedBuffer createMaterialBuffer();
 
