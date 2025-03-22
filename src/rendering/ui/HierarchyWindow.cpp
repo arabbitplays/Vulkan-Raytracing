@@ -35,7 +35,6 @@ void HierarchyWindow::createFrame() {
         glm::mat4 new_parent_transform = scene->nodes[node_add.parent_key]->transform->getWorldTransform();
         glm::mat4 prev_world_transform = scene->nodes[node_add.node_key]->transform->getWorldTransform();
         scene->nodes[node_add.node_key]->transform->setLocalTransform(glm::inverse(new_parent_transform) * prev_world_transform);
-        scene->nodes[node_add.node_key]->refreshTransform(new_parent_transform);
     }
 
     for (auto& node_remove : nodes_to_remove)
@@ -48,6 +47,8 @@ void HierarchyWindow::createFrame() {
                 scene->nodes[node_remove.parent_key]->children.end());
     }
 
+    std::shared_ptr<Node> root_node = scene->nodes["root"];
+
     if (!nodes_to_add.empty() || !nodes_to_remove.empty())
     {
         main_props_manager->curr_sample_count = 0;
@@ -56,30 +57,31 @@ void HierarchyWindow::createFrame() {
     nodes_to_add.clear();
     nodes_to_remove.clear();
 
-    scene->nodes["root"]->refreshTransform(glm::mat4(1.0f));
+    root_node->refreshTransform(glm::mat4(1.0f));
 
     if (last_clicked_node_key != "")
         inspector_window->setNode(scene->nodes[last_clicked_node_key], scene->nodes["root"]);
+    spdlog::info(last_clicked_node_key);
+    last_clicked_node_key = "";
 }
 
 void HierarchyWindow::displayNode(std::shared_ptr<Node> node, std::shared_ptr<Node> parent, uint32_t depth)
 {
-    ImGui::SetCursorPosX(ImGui::GetCursorPosX() + depth * 20);
+    ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_OpenOnDoubleClick;
 
-    if (ImGui::CollapsingHeader(node->name.c_str()))
-    {
-        for (auto& child : node->children)
-        {
-            displayNode(child, node, depth + 1);
-        }
+    // Highlight if selected
+    if (last_clicked_node_key == node->name) {
+        flags |= ImGuiTreeNodeFlags_Selected;
     }
 
-    if (ImGui::IsItemClicked())
-    {
+    bool open = ImGui::TreeNodeEx(node->name.c_str(), flags);
+
+    // Register clicks directly on the TreeNode
+    if (ImGui::IsItemClicked(ImGuiMouseButton_Left)) {
         last_clicked_node_key = node->name;
     }
 
-    if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_None)) {
+    if (node->name != "root" && ImGui::BeginDragDropSource(ImGuiDragDropFlags_None)) {
         dragPayload.source_key = node->name;
         dragPayload.parent_key = parent->name;
         ImGui::SetDragDropPayload("DRAG_PAYLOAD", &dragPayload, sizeof(DragPayload));
@@ -97,5 +99,12 @@ void HierarchyWindow::displayNode(std::shared_ptr<Node> node, std::shared_ptr<No
             nodes_to_remove.push_back({dragged_keys.parent_key, dragged_keys.source_key});
         }
         ImGui::EndDragDropTarget();
+    }
+
+    if (open) {
+        for (auto& child : node->children) {
+            displayNode(child, node, depth + 1);
+        }
+        ImGui::TreePop();
     }
 }
