@@ -36,10 +36,10 @@ std::shared_ptr<Scene> SceneReader::readScene(const std::string& filename, std::
         for (const auto& texture_node : scene_node["textures"]) {
             // todo handle more types
             TextureType type = texture_node["is_normal"].as<bool>() ? NORMAL : PARAMETER;
-            scene->addTexture(texture_node["path"].as<std::string>(), type);
+            context->texture_repository->addTexture(texture_node["path"].as<std::string>(), type);
         }
 
-        initializeMaterial(scene_node["materials"], materials[material_name], scene->textures);
+        initializeMaterial(scene_node["materials"], materials[material_name]);
 
         std::shared_ptr<Node> scene_graph_node = std::make_shared<Node>();
         scene_graph_node->name = "root";
@@ -100,7 +100,7 @@ void SceneReader::loadSceneLights(const YAML::Node& lights_node, std::shared_ptr
     }
 }
 
-void SceneReader::initializeMaterial(const YAML::Node& material_node, std::shared_ptr<Material>& material, std::unordered_map<std::string, std::shared_ptr<Texture>> textures)
+void SceneReader::initializeMaterial(const YAML::Node& material_node, std::shared_ptr<Material>& material)
 {
     if (typeid(*material) == typeid(MetalRoughMaterial) )
     {
@@ -111,19 +111,24 @@ void SceneReader::initializeMaterial(const YAML::Node& material_node, std::share
             MetalRoughParameters parameters{};
 
             if (material_node["albedo"])
-            {
                 parameters.albedo = material_node["albedo"].as<glm::vec3>();
-                parameters.metallic = material_node["metallic"].as<float>();
-                parameters.roughness = material_node["roughness"].as<float>();
-                parameters.ao = material_node["ao"].as<float>();
-                if (material_node["eta"])
-                    parameters.eta = material_node["eta"].as<float>();
-            } else
-            {
+            if (material_node["albedo_tex"])
                 parameters.albedo_tex_name = material_node["albedo_tex"].as<std::string>();
+
+            if (material_node["metallic"])
+                parameters.metallic = material_node["metallic"].as<float>();
+            if (material_node["roughness"])
+                parameters.roughness = material_node["roughness"].as<float>();
+            if (material_node["ao"])
+                parameters.ao = material_node["ao"].as<float>();
+            if (material_node["metal_rough_ao_tex"])
                 parameters.metal_rough_ao_tex_name = material_node["metal_rough_ao_tex"].as<std::string>();
+
+            if (material_node["eta"])
+                parameters.eta = material_node["eta"].as<float>();
+
+            if (material_node["normal_tex"])
                 parameters.normal_tex_name = material_node["normal_tex"].as<std::string>();
-            }
 
             if (material_node["emission_power"])
             {

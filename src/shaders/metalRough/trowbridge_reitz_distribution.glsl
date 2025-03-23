@@ -13,26 +13,12 @@ struct Material {
     int normal_tex_idx;
 };
 
+layout(binding = 0, set = 1) readonly buffer MaterialBuffer {
+    Material[] data;
+} material_buffer;
+
 Material getMaterial(uint material_id) {
-    uint base_index = 4 * material_id;
-    vec4 A = material_buffer.data[base_index];
-    vec4 B = material_buffer.data[base_index + 1];
-    vec4 C = material_buffer.data[base_index + 2];
-    ivec4 D = ivec4(round(material_buffer.data[base_index + 3]));
-
-    Material m;
-    m.albedo = A.xyz;
-    m.metallic = B.x;
-    m.roughness = B.y;
-    m.ao = B.z;
-    m.eta = B.w;
-    m.emission_color = C.xyz;
-    m.emission_power = C.w;
-    m.albedo_tex_idx = D.x;
-    m.metal_rough_ao_tex_idx = D.y;
-    m.normal_tex_idx = D.z;
-
-    return m;
+    return material_buffer.data[material_id];
 }
 
 // Throwbridge Reitz Distribution

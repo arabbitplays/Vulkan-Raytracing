@@ -60,7 +60,6 @@ public:
 
     void addMesh(std::string name, std::string path);
     std::shared_ptr<MeshAsset> getMesh(std::string name);
-    void addTexture(std::string path, TextureType type);
     void addNode(std::string name, std::shared_ptr<Node> node);
 
     std::shared_ptr<SceneData> createSceneData();
@@ -71,7 +70,6 @@ public:
     std::shared_ptr<Camera> camera;
 
     std::unordered_map<std::string, std::shared_ptr<MeshAsset>> meshes;
-    std::unordered_map<std::string, std::shared_ptr<Texture>> textures;
 
     std::unordered_map<std::string, std::shared_ptr<Node>> nodes;
     std::array<AllocatedImage, 6> environment_map{};

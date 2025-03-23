@@ -41,14 +41,14 @@ void SceneWriter::writeScene(const std::string& filename, std::shared_ptr<Scene>
     }
     out << YAML::EndSeq;
 
-    out << YAML::Key << "textures" << YAML::Value << YAML::BeginSeq;
+    /*out << YAML::Key << "textures" << YAML::Value << YAML::BeginSeq;
     for (const auto& texture : scene->textures) {
         out << YAML::BeginMap;
         out << YAML::Key << "name" << YAML::Value << texture.first;
         out << YAML::Key << "path" << YAML::Value << texture.second->path;
         out << YAML::EndMap;
     }
-    out << YAML::EndSeq;
+    out << YAML::EndSeq;*/ // TODO write textures from repo
 
     writeMaterial(out, scene->material);
 

@@ -143,6 +143,12 @@ void VulkanEngine::initVulkan() {
     context->mesh_builder = mesh_builder;
     context->descriptor_allocator = descriptorAllocator;
     context->command_manager = pCommandManager;
+    context->texture_repository = std::make_shared<TextureRepository>(context->resource_builder);
+
+    mainDeletionQueue.pushFunction([&]()
+    {
+        context->texture_repository->destroy();
+    });
 
     createRenderingTargets();
 

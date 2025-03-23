@@ -15,6 +15,9 @@ hitAttributeEXT vec3 attribs;
 
 #include "phong_lighting.glsl"
 
+layout(binding = 0, set = 1) readonly buffer MaterialBuffer {
+    vec4[] data;
+} material_buffer;
 
 Material getMaterial(uint material_id) {
     uint base_index = 5 * material_id;

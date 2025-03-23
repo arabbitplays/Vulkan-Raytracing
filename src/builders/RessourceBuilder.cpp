@@ -215,7 +215,6 @@ Texture RessourceBuilder::loadTextureImage(std::string path, TextureType type) {
     size_t lastDot = filename.find_last_of(".");
     filename = (lastDot == std::string::npos) ? filename : filename.substr(0, lastDot);
 
-
     return Texture(filename, type, path, textureImage);
 }
 

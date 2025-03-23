@@ -44,12 +44,6 @@ std::shared_ptr<MeshAsset> Scene::getMesh(std::string name)
 }
 
 
-void Scene::addTexture(std::string path, TextureType type)
-{
-    Texture tex = ressource_builder.loadTextureImage(path, type);
-    textures[tex.name] = std::make_shared<Texture>(tex);
-}
-
 void Scene::addNode(std::string name, std::shared_ptr<Node> node)
 {
     assert(!nodes.contains(name));
@@ -76,10 +70,5 @@ void Scene::clearRessources() {
     for (auto& mesh : meshes)
     {
         mesh_builder->destroyMeshAsset(*mesh.second);
-    }
-
-    for (auto& texture : textures)
-    {
-        ressource_builder.destroyImage(texture.second->image);
     }
 }

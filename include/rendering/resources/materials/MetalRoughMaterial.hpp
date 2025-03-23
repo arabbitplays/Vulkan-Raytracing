@@ -7,6 +7,7 @@
 
 #include <Material.hpp>
 #include <glm/vec3.hpp>
+#include <TextureRepository.hpp>
 
 #define METAL_ROUGH_MATERIAL_NAME "metal_rough"
 
@@ -54,7 +55,6 @@ protected:
 private:
     AllocatedBuffer createMaterialBuffer();
 
-    std::shared_ptr<Texture> default_tex, default_normal_tex;
 
     std::vector<std::shared_ptr<MaterialResources>> resources_buffer;
     std::vector<std::shared_ptr<Texture>> albedo_textures, metal_rough_ao_textures, normal_textures;

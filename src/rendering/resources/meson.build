@@ -1,4 +1,5 @@
 subdir('materials')
+subdir('repositories')
 
 src += files(
     'AccelerationStructure.cpp',

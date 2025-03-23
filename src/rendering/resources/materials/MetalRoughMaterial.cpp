@@ -51,20 +51,6 @@ void MetalRoughMaterial::buildPipelines(VkDescriptorSetLayout sceneLayout) {
     vkDestroyShaderModule(context->device, missShaderModule, nullptr);
     vkDestroyShaderModule(context->device, shadowMissShaderModule, nullptr);
     vkDestroyShaderModule(context->device, closestHitShaderModule, nullptr);
-
-
-    uint32_t black = glm::packUnorm4x8(glm::vec4(0, 0, 0, 0));
-    default_tex = std::make_shared<Texture>("", PARAMETER, "", context->resource_builder->createImage((void*)&black, VkExtent3D{ 1, 1, 1 }, VK_FORMAT_R8G8B8A8_SRGB,
-                                               VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_ASPECT_COLOR_BIT));
-
-    uint32_t blue = glm::packUnorm4x8(glm::vec4(0.5f, 0.5f, 1, 0));
-    default_normal_tex = std::make_shared<Texture>("", NORMAL, "", context->resource_builder->createImage((void*)&blue, VkExtent3D{ 1, 1, 1 }, VK_FORMAT_R8G8B8A8_UNORM,
-                                               VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_ASPECT_COLOR_BIT));
-
-    mainDeletionQueue.pushFunction([&]() {
-        context->resource_builder->destroyImage(default_tex->image);
-        context->resource_builder->destroyImage(default_normal_tex->image);
-    });
 }
 
 void MetalRoughMaterial::writeMaterial() {
@@ -112,14 +98,7 @@ std::shared_ptr<MetalRoughMaterial::MaterialResources> MetalRoughMaterial::creat
             }
         }
 
-        if (texture_name.empty())
-        {
-            textures.push_back(is_normal_map ? default_normal_tex : default_tex);
-        } else
-        {
-            // TODO add image from repository
-            assert(false);
-        }
+        textures.push_back(context->texture_repository->getTexture(texture_name));
         return textures.size() - 1;
     };
 
