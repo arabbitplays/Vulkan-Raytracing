@@ -58,8 +58,7 @@ public:
 
     virtual ~Scene() = default;
 
-    void addMesh(std::string name, std::string path);
-    std::shared_ptr<MeshAsset> getMesh(std::string name);
+    void addMesh(std::shared_ptr<MeshAsset> mesh);
     void addNode(std::string name, std::shared_ptr<Node> node);
 
     std::shared_ptr<SceneData> createSceneData();

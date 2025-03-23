@@ -6,15 +6,16 @@
 
 #include <iostream>
 #include <stdexcept>
+#include <PathUtil.hpp>
 
-MeshAsset ModelLoader::loadMeshAsset(std::string name, std::string resources_path, std::string path) {
+MeshAsset ModelLoader::loadMeshAsset(std::string resources_path, std::string path) {
     MeshBuffers meshBuffers{};
 
     std::string full_path = resources_path + "/" + path;
     loadData(full_path, meshBuffers.vertices, meshBuffers.indices);
 
     MeshAsset meshAsset{};
-    meshAsset.name = name;
+    meshAsset.name = PathUtil::getFileName(path);
     meshAsset.path = path;
     meshAsset.meshBuffers = meshBuffers;
     meshAsset.vertex_count = meshBuffers.indices.size();

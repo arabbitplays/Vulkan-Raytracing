@@ -11,6 +11,7 @@
 #include <MeshAssetBuilder.hpp>
 #include <DescriptorAllocator.hpp>
 #include <CommandManager.hpp>
+#include <MeshRepository.hpp>
 #include <TextureRepository.hpp>
 
 
@@ -28,6 +29,7 @@ struct VulkanContext {
     std::shared_ptr<CommandManager> command_manager;
 
     std::shared_ptr<TextureRepository> texture_repository;
+    std::shared_ptr<MeshRepository> mesh_repository;
 };
 
 #endif //VULKANCONTEXT_HPP

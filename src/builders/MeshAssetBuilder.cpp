@@ -10,9 +10,9 @@
 #include <cstring>
 #include <ModelLoader.hpp>
 
-MeshAsset MeshAssetBuilder::LoadMeshAsset(std::string name, std::string path) {
+MeshAsset MeshAssetBuilder::loadMeshAsset(std::string path) {
     AssimpModelLoader loader;
-    return loader.loadMeshAsset(name, resource_path, path);
+    return loader.loadMeshAsset(resource_path, path);
 }
 
 void MeshAssetBuilder::destroyMeshAsset(MeshAsset& meshAsset) {

@@ -30,7 +30,9 @@ std::shared_ptr<Scene> SceneReader::readScene(const std::string& filename, std::
         loadSceneLights(scene_node["lights"], scene);
 
         for (const auto& mesh_node : scene_node["meshes"]) {
-            scene->addMesh(mesh_node["name"].as<std::string>(), mesh_node["path"].as<std::string>());
+            std::string mesh_path = mesh_node["path"].as<std::string>();
+            std::string mesh_name = context->mesh_repository->addMesh(mesh_path);
+            scene->addMesh(context->mesh_repository->getMesh(mesh_name));
         }
 
         for (const auto& texture_node : scene_node["textures"]) {
@@ -169,7 +171,7 @@ std::shared_ptr<Node> SceneReader::processSceneNodesRecursiv(const YAML::Node& y
             scene_graph_node->children.push_back(processSceneNodesRecursiv(child_node, scene, instances));
         }
         std::shared_ptr<MeshRenderer> mesh_component = std::make_shared<MeshRenderer>(scene_graph_node);
-        mesh_component->meshAsset = scene->getMesh(yaml_node["mesh"].as<std::string>());
+        mesh_component->meshAsset = context->mesh_repository->getMesh(yaml_node["mesh"].as<std::string>());
         mesh_component->meshMaterial = instances.at(yaml_node["material_idx"].as<int>());
         scene_graph_node->addComponent(mesh_component);
         scene_graph_node->refreshTransform(glm::mat4(1.0f));

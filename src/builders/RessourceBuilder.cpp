@@ -9,6 +9,7 @@
 
 #define STB_IMAGE_IMPLEMENTATION
 #define STB_IMAGE_WRITE_IMPLEMENTATION
+#include <PathUtil.hpp>
 #include <stb_image_write.h>
 #include <stb_image.h>
 
@@ -210,12 +211,7 @@ Texture RessourceBuilder::loadTextureImage(std::string path, TextureType type) {
 
     stbi_image_free(pixels);
 
-    size_t lastSlash = path.find_last_of("/\\");
-    std::string filename = (lastSlash == std::string::npos) ? path : path.substr(lastSlash + 1);
-    size_t lastDot = filename.find_last_of(".");
-    filename = (lastDot == std::string::npos) ? filename : filename.substr(0, lastDot);
-
-    return Texture(filename, type, path, textureImage);
+    return Texture(PathUtil::getFileName(path), type, path, textureImage);
 }
 
 uint8_t* RessourceBuilder::loadImageData(std::string path, int* width, int* height, int* channels)

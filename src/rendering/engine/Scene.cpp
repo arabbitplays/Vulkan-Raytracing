@@ -32,15 +32,9 @@ std::shared_ptr<SceneData> Scene::createSceneData() {
     return sceneData;
 }
 
-void Scene::addMesh(std::string name, std::string path)
+void Scene::addMesh(std::shared_ptr<MeshAsset> mesh)
 {
-    MeshAsset mesh_asset = mesh_builder->LoadMeshAsset(name, path);
-    meshes[name] = std::make_shared<MeshAsset>(mesh_asset);
-}
-
-std::shared_ptr<MeshAsset> Scene::getMesh(std::string name)
-{
-    return meshes[name];
+    meshes[mesh->name] = mesh;
 }
 
 
@@ -67,8 +61,4 @@ void Scene::update(uint32_t image_width, uint32_t image_height) {
 
 void Scene::clearRessources() {
     deletion_queue.flush();
-    for (auto& mesh : meshes)
-    {
-        mesh_builder->destroyMeshAsset(*mesh.second);
-    }
 }

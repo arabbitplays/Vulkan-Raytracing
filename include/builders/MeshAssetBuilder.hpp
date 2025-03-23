@@ -17,7 +17,7 @@ public:
     MeshAssetBuilder() = default;
     MeshAssetBuilder(VkDevice device, RessourceBuilder ressource_builder, const std::string& resource_path)
         : device(device), ressource_builder(ressource_builder), resource_path(resource_path) {};
-    MeshAsset LoadMeshAsset(std::string name, std::string path);
+    MeshAsset loadMeshAsset(std::string path);
     void destroyMeshAsset(MeshAsset& meshAsset);
 
 private:
