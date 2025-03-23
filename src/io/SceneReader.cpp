@@ -120,9 +120,9 @@ void SceneReader::initializeMaterial(const YAML::Node& material_node, std::share
                     parameters.eta = material_node["eta"].as<float>();
             } else
             {
-                parameters.albedo_tex = textures[material_node["albedo_tex"].as<std::string>()];
-                parameters.metal_rough_ao_tex = textures[material_node["metal_rough_ao_tex"].as<std::string>()];
-                parameters.normal_tex = textures[material_node["normal_tex"].as<std::string>()];
+                parameters.albedo_tex_name = material_node["albedo_tex"].as<std::string>();
+                parameters.metal_rough_ao_tex_name = material_node["metal_rough_ao_tex"].as<std::string>();
+                parameters.normal_tex_name = material_node["normal_tex"].as<std::string>();
             }
 
             if (material_node["emission_power"])

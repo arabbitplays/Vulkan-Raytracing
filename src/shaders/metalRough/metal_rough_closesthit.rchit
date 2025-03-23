@@ -58,10 +58,10 @@ void main() {
 
     vec3 V = -normalize(gl_WorldRayDirectionEXT);
 
-    vec3 albedo = texture(albedo_textures[triangle.material_idx], uv).xyz + material.albedo;
-    float metallic = texture(metal_rough_ao_textures[triangle.material_idx], uv).x + material.metallic;
-    float roughness = texture(metal_rough_ao_textures[triangle.material_idx], uv).y + material.roughness;
-    float ao = texture(metal_rough_ao_textures[triangle.material_idx], uv).z + material.ao;
+    vec3 albedo = texture(albedo_textures[0], uv).xyz + material.albedo;
+    float metallic = texture(metal_rough_ao_textures[0], uv).x + material.metallic;
+    float roughness = texture(metal_rough_ao_textures[0], uv).y + material.roughness;
+    float ao = texture(metal_rough_ao_textures[0], uv).z + material.ao;
     float eta = material.eta;
 
     // no direct light sampling or handle light that goes directly to the camera

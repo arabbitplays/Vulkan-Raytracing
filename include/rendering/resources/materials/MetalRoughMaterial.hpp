@@ -11,7 +11,7 @@
 #define METAL_ROUGH_MATERIAL_NAME "metal_rough"
 
 struct MetalRoughParameters {
-    std::shared_ptr<Texture> albedo_tex, metal_rough_ao_tex, normal_tex;
+    std::string albedo_tex_name, metal_rough_ao_tex_name, normal_tex_name;
     glm::vec3 albedo = glm::vec3(0.0f);
     float metallic, roughness, ao, eta = 1;
     glm::vec3 emission_color = glm::vec3(1.0);
@@ -24,10 +24,12 @@ public:
         glm::vec4 albedo;
         glm::vec4 properties; // metallic roughness ao eta
         glm::vec4 emission;
+        glm::vec4 tex_indices; // albedo, metal_rough_ao, normal
         bool operator==(const MaterialConstants& other) const {
             return glm::all(glm::epsilonEqual(albedo, other.albedo, 0.0001f))
                 && glm::all(glm::epsilonEqual(properties, other.properties, 0.0001f))
-                && glm::all(glm::epsilonEqual(emission, other.emission, 0.0001f));
+                && glm::all(glm::epsilonEqual(emission, other.emission, 0.0001f))
+                && glm::all(glm::epsilonEqual(tex_indices, other.tex_indices, 0.0001f));
         }
     };
 
@@ -70,6 +72,8 @@ private:
     std::shared_ptr<Texture> default_tex, default_normal_tex;
 
     std::vector<std::shared_ptr<MaterialResources>> resources_buffer;
+    std::vector<std::shared_ptr<Texture>> albedo_textures, metal_rough_ao_textures, normal_textures;
+
     MaterialProperties material_properties;
     VkSampler sampler;
 };

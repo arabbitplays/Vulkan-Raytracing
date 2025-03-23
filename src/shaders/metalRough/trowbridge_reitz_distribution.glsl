@@ -11,7 +11,7 @@ struct Material {
 };
 
 Material getMaterial(uint material_id) {
-    uint base_index = 3 * material_id;
+    uint base_index = 4 * material_id;
     vec4 A = material_buffer.data[base_index];
     vec4 B = material_buffer.data[base_index + 1];
     vec4 C = material_buffer.data[base_index + 2];

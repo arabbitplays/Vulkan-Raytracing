@@ -77,19 +77,19 @@ void MetalRoughMaterial::writeMaterial() {
 
     descriptorAllocator.writeBuffer(0, materialBuffer.handle, 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
 
-    std::vector<VkImageView> albedo_views{};
-    std::vector<VkImageView> metal_rough_views{};
-    std::vector<VkImageView> normal_views{};
-    // TODO give indices of the images to the material instances
-    for (auto& resources : resources_buffer)
+    auto extract_views = [](std::vector<std::shared_ptr<Texture>> textures)
     {
-        albedo_views.push_back(resources->albedo_tex.image.imageView);
-        metal_rough_views.push_back(resources->metal_rough_ao_tex.image.imageView);
-        normal_views.push_back(resources->normal_tex.image.imageView);
-    }
-    descriptorAllocator.writeImages(1, albedo_views, sampler, VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
-    descriptorAllocator.writeImages(2, metal_rough_views, sampler, VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
-    descriptorAllocator.writeImages(3, normal_views, sampler, VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+        std::vector<VkImageView> imageViews{};
+        for (auto& texture : textures)
+        {
+            imageViews.push_back(texture->image.imageView);
+        }
+        return imageViews;
+    };
+
+    descriptorAllocator.writeImages(1, extract_views(albedo_textures), sampler, VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+    descriptorAllocator.writeImages(2, extract_views(metal_rough_ao_textures), sampler, VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+    descriptorAllocator.writeImages(3, extract_views(normal_textures), sampler, VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
 
     descriptorAllocator.updateSet(context->device, materialDescriptorSet);
     descriptorAllocator.clearWrites();
@@ -97,18 +97,6 @@ void MetalRoughMaterial::writeMaterial() {
 
 std::shared_ptr<MetalRoughMaterial::MaterialResources> MetalRoughMaterial::createMaterialResources(MetalRoughParameters parameters)
 {
-    if (parameters.albedo_tex == nullptr) {
-        parameters.albedo_tex = default_tex;
-    }
-
-    if (parameters.metal_rough_ao_tex == nullptr) {
-        parameters.metal_rough_ao_tex = default_tex;
-    }
-
-    if (parameters.normal_tex == nullptr) {
-        parameters.normal_tex = default_normal_tex;
-    }
-
     auto constants = std::make_shared<MaterialConstants>();
     constants->albedo = glm::vec4(parameters.albedo, 0.0f);
     constants->properties = glm::vec4(parameters.metallic, parameters.roughness, parameters.ao, parameters.eta); // TODO dynamic eta
@@ -116,9 +104,10 @@ std::shared_ptr<MetalRoughMaterial::MaterialResources> MetalRoughMaterial::creat
 
     auto resources = std::make_shared<MaterialResources>();
     resources->constants = constants;
-    resources->albedo_tex = *parameters.albedo_tex;
-    resources->metal_rough_ao_tex = *parameters.metal_rough_ao_tex;
-    resources->normal_tex = *parameters.normal_tex;
+
+    albedo_textures.push_back(default_tex);
+    metal_rough_ao_textures.push_back(default_tex);
+    normal_textures.push_back(default_normal_tex);
 
     return resources;
 }
@@ -178,5 +167,8 @@ AllocatedBuffer MetalRoughMaterial::createMaterialBuffer() {
 void MetalRoughMaterial::reset() {
     resources_buffer.clear();
     instances.clear();
+    albedo_textures.clear();
+    metal_rough_ao_textures.clear();
+    normal_textures.clear();
     Material::reset();
 }
