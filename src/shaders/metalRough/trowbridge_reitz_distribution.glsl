@@ -8,6 +8,9 @@ struct Material {
     float eta;
     vec3 emission_color;
     float emission_power;
+    int albedo_tex_idx;
+    int metal_rough_ao_tex_idx;
+    int normal_tex_idx;
 };
 
 Material getMaterial(uint material_id) {
@@ -15,6 +18,7 @@ Material getMaterial(uint material_id) {
     vec4 A = material_buffer.data[base_index];
     vec4 B = material_buffer.data[base_index + 1];
     vec4 C = material_buffer.data[base_index + 2];
+    ivec4 D = ivec4(round(material_buffer.data[base_index + 3]));
 
     Material m;
     m.albedo = A.xyz;
@@ -24,6 +28,9 @@ Material getMaterial(uint material_id) {
     m.eta = B.w;
     m.emission_color = C.xyz;
     m.emission_power = C.w;
+    m.albedo_tex_idx = D.x;
+    m.metal_rough_ao_tex_idx = D.y;
+    m.normal_tex_idx = D.z;
 
     return m;
 }

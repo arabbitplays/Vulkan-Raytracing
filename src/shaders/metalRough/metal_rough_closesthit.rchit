@@ -51,17 +51,17 @@ void main() {
     mat3 transpose_tbn = transpose(TBN);
 
     if (options.normal_mapping) {
-        vec3 texNormal = texture(normal_textures[triangle.material_idx], uv).xyz;
+        vec3 texNormal = texture(normal_textures[material.normal_tex_idx], uv).xyz;
         texNormal = texNormal * 2.0 - 1.0;
         N = normalize(TBN * texNormal);
     }
 
     vec3 V = -normalize(gl_WorldRayDirectionEXT);
 
-    vec3 albedo = texture(albedo_textures[0], uv).xyz + material.albedo;
-    float metallic = texture(metal_rough_ao_textures[0], uv).x + material.metallic;
-    float roughness = texture(metal_rough_ao_textures[0], uv).y + material.roughness;
-    float ao = texture(metal_rough_ao_textures[0], uv).z + material.ao;
+    vec3 albedo = texture(albedo_textures[material.albedo_tex_idx], uv).xyz + material.albedo;
+    float metallic = texture(metal_rough_ao_textures[material.metal_rough_ao_tex_idx], uv).x + material.metallic;
+    float roughness = texture(metal_rough_ao_textures[material.metal_rough_ao_tex_idx], uv).y + material.roughness;
+    float ao = texture(metal_rough_ao_textures[material.metal_rough_ao_tex_idx], uv).z + material.ao;
     float eta = material.eta;
 
     // no direct light sampling or handle light that goes directly to the camera

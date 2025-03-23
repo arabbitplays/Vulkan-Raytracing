@@ -20,32 +20,17 @@ struct MetalRoughParameters {
 
 class MetalRoughMaterial : public Material {
 public:
-    struct MaterialConstants {
+    struct MaterialResources {
         glm::vec4 albedo;
         glm::vec4 properties; // metallic roughness ao eta
         glm::vec4 emission;
-        glm::vec4 tex_indices; // albedo, metal_rough_ao, normal
-        bool operator==(const MaterialConstants& other) const {
+        glm::ivec4 tex_indices; // albedo, metal_rough_ao, normal
+        bool operator==(const MaterialResources& other) const {
             return glm::all(glm::epsilonEqual(albedo, other.albedo, 0.0001f))
                 && glm::all(glm::epsilonEqual(properties, other.properties, 0.0001f))
                 && glm::all(glm::epsilonEqual(emission, other.emission, 0.0001f))
-                && glm::all(glm::epsilonEqual(tex_indices, other.tex_indices, 0.0001f));
+                && glm::all(glm::equal(tex_indices, other.tex_indices));
         }
-    };
-
-    struct MaterialResources
-    {
-        std::shared_ptr<MaterialConstants> constants;
-        Texture albedo_tex;
-        Texture metal_rough_ao_tex;
-        Texture normal_tex;
-        bool operator==(const MaterialResources& other) const
-        {
-            return *constants == *other.constants
-                && albedo_tex == other.albedo_tex
-                && metal_rough_ao_tex == other.metal_rough_ao_tex
-                && normal_tex == other.normal_tex;
-        };
     };
 
     struct MaterialProperties

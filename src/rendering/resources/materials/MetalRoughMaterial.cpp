@@ -97,17 +97,38 @@ void MetalRoughMaterial::writeMaterial() {
 
 std::shared_ptr<MetalRoughMaterial::MaterialResources> MetalRoughMaterial::createMaterialResources(MetalRoughParameters parameters)
 {
-    auto constants = std::make_shared<MaterialConstants>();
-    constants->albedo = glm::vec4(parameters.albedo, 0.0f);
-    constants->properties = glm::vec4(parameters.metallic, parameters.roughness, parameters.ao, parameters.eta); // TODO dynamic eta
-    constants->emission = glm::vec4(parameters.emission_color, parameters.emission_power);
-
     auto resources = std::make_shared<MaterialResources>();
-    resources->constants = constants;
+    resources->albedo = glm::vec4(parameters.albedo, 0.0f);
+    resources->properties = glm::vec4(parameters.metallic, parameters.roughness, parameters.ao, parameters.eta);
+    resources->emission = glm::vec4(parameters.emission_color, parameters.emission_power);
 
-    albedo_textures.push_back(default_tex);
-    metal_rough_ao_textures.push_back(default_tex);
-    normal_textures.push_back(default_normal_tex);
+    auto add_texture_if_needed = [&](const std::string& texture_name, std::vector<std::shared_ptr<Texture>>& textures, bool is_normal_map = false) -> uint32_t
+    {
+        for (uint32_t i = 0; i < textures.size(); i++)
+        {
+            if (textures[i]->name == texture_name)
+            {
+                return i;
+            }
+        }
+
+        if (texture_name.empty())
+        {
+            textures.push_back(is_normal_map ? default_normal_tex : default_tex);
+        } else
+        {
+            // TODO add image from repository
+            assert(false);
+        }
+        return textures.size() - 1;
+    };
+
+    resources->tex_indices = glm::vec4{
+        add_texture_if_needed(parameters.albedo_tex_name, albedo_textures),
+        add_texture_if_needed(parameters.metal_rough_ao_tex_name, metal_rough_ao_textures),
+        add_texture_if_needed(parameters.normal_tex_name, normal_textures, true),
+        0
+    };
 
     return resources;
 }
@@ -129,6 +150,7 @@ std::shared_ptr<MaterialInstance> MetalRoughMaterial::createInstance(MetalRoughP
         }
     }
 
+    instance->material_index = resources_buffer.size();
     resources_buffer.push_back(resources);
     instances.push_back(instance);
 
@@ -136,7 +158,7 @@ std::shared_ptr<MaterialInstance> MetalRoughMaterial::createInstance(MetalRoughP
 }
 
 glm::vec4 MetalRoughMaterial::getEmissionForInstance(uint32_t material_instance_id) {
-    return resources_buffer[material_instance_id]->constants->emission;
+    return resources_buffer[material_instance_id]->emission;
 }
 
 std::vector<std::shared_ptr<MetalRoughMaterial::MaterialResources>> MetalRoughMaterial::getResources()
@@ -156,12 +178,11 @@ void MetalRoughMaterial::initProperties()
 AllocatedBuffer MetalRoughMaterial::createMaterialBuffer() {
     assert(resources_buffer.size() == instances.size());
 
-    std::vector<MaterialConstants> materialConstants{};
+    std::vector<MaterialResources> material_data{};
     for (uint32_t i = 0; i < resources_buffer.size(); i++) {
-        materialConstants.push_back(*resources_buffer[i]->constants);
-        instances[i]->material_index = i;
+        material_data.push_back(*resources_buffer[i]);
     }
-    return context->resource_builder->stageMemoryToNewBuffer(materialConstants.data(), materialConstants.size() * sizeof(MaterialConstants), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
+    return context->resource_builder->stageMemoryToNewBuffer(material_data.data(), material_data.size() * sizeof(MaterialResources), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
 }
 
 void MetalRoughMaterial::reset() {

@@ -79,7 +79,8 @@ void SceneWriter::writeMaterial(YAML::Emitter& out, const std::shared_ptr<Materi
         {
             out << YAML::BeginMap;
 
-            if (resources->albedo_tex.name.empty() && resources->metal_rough_ao_tex.name.empty() && resources->normal_tex.name.empty())
+            // TODO write material
+            /*if (resources->albedo_tex.name.empty() && resources->metal_rough_ao_tex.name.empty() && resources->normal_tex.name.empty())
             {
                 out << YAML::Key << "albedo" << YAML::Value << YAML::convert<glm::vec3>::encode(resources->constants->albedo);
                 out << YAML::Key << "metallic" << YAML::Value << resources->constants->properties.x;
@@ -96,7 +97,7 @@ void SceneWriter::writeMaterial(YAML::Emitter& out, const std::shared_ptr<Materi
             {
                 out << YAML::Key << "emission_color" << YAML::Value << YAML::convert<glm::vec3>::encode(resources->constants->emission);
                 out << YAML::Key << "emission_power" << YAML::Value << resources->constants->emission.w;
-            }
+            }*/
 
             out << YAML::EndMap;
         }
