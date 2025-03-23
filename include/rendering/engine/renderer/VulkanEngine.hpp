@@ -53,7 +53,6 @@ public:
     CommandManager commandManager;
     std::shared_ptr<RessourceBuilder> pRessourceBuilder;
     RessourceBuilder ressourceBuilder;
-    std::shared_ptr<MeshAssetBuilder> mesh_builder;
     std::shared_ptr<DescriptorAllocator> descriptorAllocator;
 
     void run(const std::string& config_file, const std::string& resources_dir);
@@ -80,7 +79,6 @@ protected:
     DrawContext mainDrawContext;
     std::shared_ptr<PropertiesManager> properties_manager;
     std::shared_ptr<Properties> renderer_properties;
-    std::shared_ptr<BaseOptions> base_options;
 
     VkPhysicalDeviceRayTracingPipelinePropertiesKHR raytracingProperties{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_PROPERTIES_KHR};
 

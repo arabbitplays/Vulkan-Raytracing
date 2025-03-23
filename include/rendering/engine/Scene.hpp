@@ -50,8 +50,8 @@ struct DirectionalLight {
 
 class Scene {
 public:
-    Scene(std::shared_ptr<MeshAssetBuilder>& mesh_asset_builder, RessourceBuilder& ressource_builder, std::shared_ptr<Material> material)
-        : mesh_builder(mesh_asset_builder), ressource_builder(ressource_builder), material(material)
+    Scene(RessourceBuilder& ressource_builder, std::shared_ptr<Material> material)
+        : ressource_builder(ressource_builder), material(material)
     {
         Scene::initScene();
     }
@@ -76,7 +76,6 @@ public:
     DirectionalLight sun;
     std::array<PointLight, POINT_LIGHT_COUNT> pointLights{};
 
-    std::shared_ptr<MeshAssetBuilder> mesh_builder;
     RessourceBuilder ressource_builder;
     DeletionQueue deletion_queue{};
 

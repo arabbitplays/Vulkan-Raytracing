@@ -16,7 +16,7 @@ void ReferenceRenderer::mainLoop() {
         if (sample_count == properties_manager->curr_sample_count)
         {
             vkDeviceWaitIdle(device);
-            outputRenderingTarget(base_options->resources_dir + "/references/" + std::to_string(sample_count) + "_render.png");
+            outputRenderingTarget(context->base_options->resources_dir + "/references/" + std::to_string(sample_count) + "_render.png");
             break;
         }
 

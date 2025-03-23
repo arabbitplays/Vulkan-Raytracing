@@ -9,11 +9,12 @@
 
 #include <memory>
 
+class VulkanContext;
 
 class MeshRepository {
 public:
     MeshRepository() = default;
-    MeshRepository(std::shared_ptr<MeshAssetBuilder>& mesh_asset_builder);
+    MeshRepository(const std::shared_ptr<VulkanContext>& context);
 
     std::shared_ptr<MeshAsset> getMesh(const std::string& name);
     std::string addMesh(std::string path);

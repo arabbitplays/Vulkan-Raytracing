@@ -16,5 +16,5 @@ MeshAsset MeshAssetBuilder::loadMeshAsset(std::string path) {
 }
 
 void MeshAssetBuilder::destroyMeshAsset(MeshAsset& meshAsset) {
-    meshAsset.accelerationStructure->destroy();
+    // intentional empty
 }

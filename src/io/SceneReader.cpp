@@ -24,7 +24,7 @@ std::shared_ptr<Scene> SceneReader::readScene(const std::string& filename, std::
         auto material_name = scene_node["material_name"].as<std::string>();
         if (!materials.contains(material_name))
             throw std::runtime_error("Material " + material_name + " does not exist");
-        std::shared_ptr<Scene> scene = std::make_shared<Scene>(context->mesh_builder, *context->resource_builder, materials[material_name]);
+        std::shared_ptr<Scene> scene = std::make_shared<Scene>(*context->resource_builder, materials[material_name]);
 
         scene->camera = loadCamera(scene_node["camera"]);
         loadSceneLights(scene_node["lights"], scene);

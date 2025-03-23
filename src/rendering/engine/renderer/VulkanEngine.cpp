@@ -54,8 +54,9 @@ const uint32_t WIDTH = 6144;
 const uint32_t HEIGHT = 3320;
 
 void VulkanEngine::run(const std::string& config_file, const std::string& resources_dir) {
-    base_options = std::make_shared<BaseOptions>();
-    base_options->resources_dir = resources_dir;
+    context = std::make_shared<VulkanContext>();
+    context->base_options = std::make_shared<BaseOptions>();
+    context->base_options->resources_dir = resources_dir;
     properties_manager = std::make_shared<PropertiesManager>(config_file);
 
     initWindow();
@@ -129,22 +130,19 @@ void VulkanEngine::initVulkan() {
     createCommandManager();
     createRessourceBuilder();
     createDescriptorAllocator();
-    mesh_builder = std::make_shared<MeshAssetBuilder>(device, ressourceBuilder, base_options->resources_dir);
 
     createSwapchain();
 
-    context = std::make_shared<VulkanContext>();
     context->device = device;
     context->physicalDevice = physicalDevice;
     context->instance = instance;
     context->surface = surface;
     context->swapchain = swapchain;
     context->resource_builder = pRessourceBuilder;
-    context->mesh_builder = mesh_builder;
     context->descriptor_allocator = descriptorAllocator;
     context->command_manager = pCommandManager;
     context->texture_repository = std::make_shared<TextureRepository>(context->resource_builder);
-    context->mesh_repository = std::make_shared<MeshRepository>(context->mesh_builder);
+    context->mesh_repository = std::make_shared<MeshRepository>(context);
 
     mainDeletionQueue.pushFunction([&]()
     {
@@ -437,7 +435,7 @@ void VulkanEngine::createCommandManager() {
 }
 
 void VulkanEngine::createRessourceBuilder() {
-    pRessourceBuilder = std::make_shared<RessourceBuilder>(physicalDevice, device, commandManager, base_options->resources_dir);
+    pRessourceBuilder = std::make_shared<RessourceBuilder>(physicalDevice, device, commandManager, context->base_options->resources_dir);
     ressourceBuilder = *pRessourceBuilder;
 }
 
@@ -503,12 +501,12 @@ AllocatedImage VulkanEngine::getRenderTarget()
 
 void VulkanEngine::loadScene()
 {
-    assert(base_options->curr_scene_name != "");
+    assert(context->base_options->curr_scene_name != "");
     vkDeviceWaitIdle(device);
     properties_manager->curr_sample_count = 0;
-    std::string path = base_options->resources_dir + "/scenes/" + base_options->curr_scene_name;
+    std::string path = context->base_options->resources_dir + "/scenes/" + context->base_options->curr_scene_name;
     scene_manager->createScene(path);
-    scene_manager->curr_scene_name = base_options->curr_scene_name;
+    scene_manager->curr_scene_name = context->base_options->curr_scene_name;
     properties_manager->addPropertySection(scene_manager->scene->material->getProperties());
     hierarchy_window->setScene(scene_manager->scene);
 
@@ -560,7 +558,7 @@ void VulkanEngine::mainLoop() {
     while(!glfwWindowShouldClose(window)) {
         glfwPollEvents();
 
-        if (scene_manager->curr_scene_name != base_options->curr_scene_name) {
+        if (scene_manager->curr_scene_name != context->base_options->curr_scene_name) {
             loadScene();
         }
         scene_manager->updateScene(mainDrawContext, currentFrame, getRenderTarget(), rng_tex);
@@ -827,10 +825,10 @@ void VulkanEngine::initProperties()
 {
     renderer_properties = std::make_shared<Properties>(RENDERER_SECTION_NAME);
 
-    renderer_properties->addString(RESOURCES_DIR_OPTION_NAME, &base_options->resources_dir);
-    renderer_properties->addInt(RECURSION_DEPTH_OPTION_NAME, &base_options->max_depth, 1, 5);
+    renderer_properties->addString(RESOURCES_DIR_OPTION_NAME, &context->base_options->resources_dir);
+    renderer_properties->addInt(RECURSION_DEPTH_OPTION_NAME, &context->base_options->max_depth, 1, 5);
 
-    std::string scenes_dir = base_options->resources_dir + "/scenes";
+    std::string scenes_dir = context->base_options->resources_dir + "/scenes";
     std::vector<std::string> scenes;
     try {
         for (const auto& entry : std::filesystem::__cxx11::directory_iterator(scenes_dir)) {
@@ -844,7 +842,7 @@ void VulkanEngine::initProperties()
     {
         throw std::runtime_error("No scenes found in scene directory " + scenes_dir + ".");
     }
-    base_options->curr_scene_name = scenes[0];
+    context->base_options->curr_scene_name = scenes[0];
 
-    renderer_properties->addSelection(CURR_SCENE_OPTION_NAME, &base_options->curr_scene_name, scenes);
+    renderer_properties->addSelection(CURR_SCENE_OPTION_NAME, &context->base_options->curr_scene_name, scenes);
 }

@@ -5,8 +5,12 @@
 #include "MeshRepository.hpp"
 
 #include <spdlog/spdlog.h>
+#include <VulkanContext.hpp>
 
-MeshRepository::MeshRepository(std::shared_ptr<MeshAssetBuilder>& mesh_asset_builder) : mesh_asset_builder(mesh_asset_builder) {}
+MeshRepository::MeshRepository(const std::shared_ptr<VulkanContext>& context)
+{
+    mesh_asset_builder = std::make_shared<MeshAssetBuilder>(context->device, context->base_options->resources_dir);
+}
 
 std::shared_ptr<MeshAsset> MeshRepository::getMesh(const std::string& name)
 {

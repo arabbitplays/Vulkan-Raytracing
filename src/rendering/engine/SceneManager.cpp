@@ -62,6 +62,13 @@ void SceneManager::createBlas() {
         meshAsset->accelerationStructure->build();
         meshAsset->geometry_id = object_id++;
     }
+
+    scene_ressource_deletion_queue.pushFunction([&]()
+    {
+        for (auto& meshAsset : scene->getMeshes()) {
+            meshAsset->accelerationStructure->destroy();
+        }
+    });
 }
 
 void SceneManager::createSceneDescriptorSets() {

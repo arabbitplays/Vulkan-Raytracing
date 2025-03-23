@@ -31,7 +31,7 @@ void AssimpModelLoader::processNode(aiNode *node, const aiScene *scene, std::vec
 void AssimpModelLoader::processMesh(aiMesh *mesh, const aiScene *scene, std::vector<Vertex> &vertices, std::vector<uint32_t> &indices) {
     if (!mesh->mTangents)
     {
-        spdlog::info("No tangent found for mesh!");
+        spdlog::warn("No tangent found for mesh!");
     }
 
     for (uint32_t i = 0; i < mesh->mNumVertices; i++) {

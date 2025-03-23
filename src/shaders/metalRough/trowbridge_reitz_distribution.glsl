@@ -2,6 +2,7 @@
 
 struct Material {
     vec3 albedo;
+    float padding;
     float metallic;
     float roughness;
     float ao;

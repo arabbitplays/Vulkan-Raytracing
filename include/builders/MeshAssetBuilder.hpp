@@ -15,15 +15,14 @@
 class MeshAssetBuilder {
 public:
     MeshAssetBuilder() = default;
-    MeshAssetBuilder(VkDevice device, RessourceBuilder ressource_builder, const std::string& resource_path)
-        : device(device), ressource_builder(ressource_builder), resource_path(resource_path) {};
+    MeshAssetBuilder(VkDevice device, const std::string& resource_path)
+        : device(device), resource_path(resource_path) {};
     MeshAsset loadMeshAsset(std::string path);
     void destroyMeshAsset(MeshAsset& meshAsset);
 
 private:
 
     VkDevice device;
-    RessourceBuilder ressource_builder;
     std::string resource_path;
 };
 
