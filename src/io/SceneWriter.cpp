@@ -185,7 +185,6 @@ void SceneWriter::writeSceneNode(YAML::Emitter& out, const std::shared_ptr<Node>
     std::shared_ptr<MeshRenderer> mesh_renderer = node->getComponent<MeshRenderer>();
     if (mesh_renderer)
     {
-        auto mesh_renderer = dynamic_cast<MeshRenderer*>(node->components.at(0).get());
         out << YAML::Key << "mesh" << YAML::Value << mesh_renderer->meshAsset->name;
         out << YAML::Key << "material_idx" << YAML::Value << mesh_renderer->meshMaterial->material_index;
     }

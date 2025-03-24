@@ -7,6 +7,7 @@
 Node::Node()
 {
     transform = std::make_shared<Transform>();
+    components.push_back(transform);
 }
 
 void Node::refreshTransform(const glm::mat4 &parentMatrix) {

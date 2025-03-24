@@ -15,6 +15,13 @@
 
 class SceneManager {
 public:
+    enum SceneBufferUpdateFlags
+    {
+        NO_UPDATE = 0,
+        MATERIAL_UPDATE = 1 << 0,
+        GEOMETRY_UPDATE = 1 << 1,
+    };
+
     SceneManager() = default;
     SceneManager(std::shared_ptr<VulkanContext>& vulkanContext, uint32_t max_frames_in_flight, VkPhysicalDeviceRayTracingPipelinePropertiesKHR raytracingProperties) : context(vulkanContext), max_frames_in_flight(max_frames_in_flight) {
         createSceneLayout();
@@ -30,7 +37,9 @@ public:
     std::shared_ptr<Material> getMaterial();
     uint32_t getEmittingInstancesCount();
 
+    std::shared_ptr<VulkanContext> context;
     std::shared_ptr<Scene> scene;
+    uint32_t bufferUpdateFlags = 0;
     std::string curr_scene_name;
 
     std::vector<VkDescriptorSet> scene_descriptor_sets{};
@@ -54,7 +63,6 @@ private:
     AllocatedBuffer createEmittingInstancesBuffer(std::vector<RenderObject> &objects, std::shared_ptr<Material> material);
     void createUniformBuffers();
 
-    std::shared_ptr<VulkanContext> context;
     DeletionQueue main_deletion_queue, scene_ressource_deletion_queue;
     uint32_t max_frames_in_flight;
 

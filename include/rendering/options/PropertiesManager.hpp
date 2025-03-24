@@ -11,6 +11,7 @@
 #include <string>
 #include <unordered_map>
 #include <vector>
+#include <glm/vec3.hpp>
 
 constexpr std::string MATERIAL_SECTION_NAME = "Material";
 constexpr std::string RENDERER_SECTION_NAME = "Renderer";
@@ -30,11 +31,25 @@ struct IntProperty
     int32_t min, max;
 };
 
+struct FloatProperty
+{
+    std::string name;
+    float* var;
+    float min, max;
+};
+
 struct StringProperty
 {
     std::string name;
     std::string* var;
 };
+
+struct VectorProperty
+{
+    std::string name;
+    glm::vec3* var;
+};
+
 
 struct SelectionProperty
 {
@@ -57,9 +72,19 @@ public:
         int_properties.push_back(std::make_shared<IntProperty>(name, var, min, max));
     }
 
+    void addFloat(const std::string& name, float* var, float min = 0, float max = -1)
+    {
+        float_properties.push_back(std::make_shared<FloatProperty>(name, var, min, max));
+    }
+
     void addString(const std::string& name, std::string* var)
     {
         string_properties.push_back(std::make_shared<StringProperty>(name, var));
+    }
+
+    void addVector(const std::string& name, glm::vec3* var)
+    {
+        vector_properties.push_back(std::make_shared<VectorProperty>(name, var));
     }
 
     void addSelection(const std::string& name, std::string* var, std::vector<std::string> selection_options)
@@ -74,16 +99,20 @@ public:
     std::string section_name;
     std::vector<std::shared_ptr<BoolProperty>> bool_properties;
     std::vector<std::shared_ptr<IntProperty>> int_properties;
+    std::vector<std::shared_ptr<FloatProperty>> float_properties;
     std::vector<std::shared_ptr<StringProperty>> string_properties;
+    std::vector<std::shared_ptr<VectorProperty>> vector_properties;
     std::vector<std::shared_ptr<SelectionProperty>> selection_properties;
 };
 
 class PropertiesManager {
 public:
+    PropertiesManager() = default;
     PropertiesManager(const std::string& config_file_path);
 
     void addPropertySection(const std::shared_ptr<Properties>& properties);
     void* getPushConstants(uint32_t* size);
+    bool serialize();
 
     std::unordered_map<std::string, std::shared_ptr<Properties>> properties;
     int32_t curr_sample_count, emitting_instances_count;

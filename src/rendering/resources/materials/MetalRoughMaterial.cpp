@@ -54,14 +54,16 @@ void MetalRoughMaterial::buildPipelines(VkDescriptorSetLayout sceneLayout) {
 }
 
 void MetalRoughMaterial::writeMaterial() {
-    materialBuffer = createMaterialBuffer();
-    resetQueue.pushFunction([&]() {
-        context->resource_builder->destroyBuffer(materialBuffer);
-    });
+    if (material_buffer.handle != VK_NULL_HANDLE)
+    {
+        context->resource_builder->destroyBuffer(material_buffer);
+    }
+
+    material_buffer = createMaterialBuffer();
 
     materialDescriptorSet = descriptorAllocator.allocate(context->device, materialLayout);
 
-    descriptorAllocator.writeBuffer(0, materialBuffer.handle, 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+    descriptorAllocator.writeBuffer(0, material_buffer.handle, 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
 
     auto extract_views = [](std::vector<std::shared_ptr<Texture>> textures)
     {
@@ -112,6 +114,16 @@ std::shared_ptr<MetalRoughMaterial::MaterialResources> MetalRoughMaterial::creat
     return resources;
 }
 
+std::shared_ptr<Properties> MetalRoughMaterial::initializeInstanceProperties(const std::shared_ptr<MaterialResources>& resources)
+{
+    auto section = std::make_shared<Properties>("Metal Rough Material");
+    section->addVector("Albedo", &resources->albedo);
+    section->addFloat("Metal", &resources->properties.x, 0, 1);
+    section->addFloat("Roughness", &resources->properties.y, 0, 1);
+    return section;
+}
+
+
 // is unique = true the method assumes that such an instance doesn't exist yet, so safe time when creating lots of instances,
 // where it is clear that they are unique (used for loading scenes for example
 std::shared_ptr<MaterialInstance> MetalRoughMaterial::createInstance(MetalRoughParameters parameters, bool unique) {
@@ -130,6 +142,7 @@ std::shared_ptr<MaterialInstance> MetalRoughMaterial::createInstance(MetalRoughP
     }
 
     instance->material_index = resources_buffer.size();
+    instance->properties = initializeInstanceProperties(resources);
     resources_buffer.push_back(resources);
     instances.push_back(instance);
 

@@ -18,3 +18,19 @@ void MeshRenderer::OnRender(DrawContext& ctx)
 
     ctx.objects.push_back(RenderObject{InstanceData{meshAsset->geometry_id, meshMaterial->material_index}, meshAsset->accelerationStructure, nodeMatrix, meshAsset->triangle_count});
 }
+
+std::shared_ptr<PropertiesManager> MeshRenderer::getProperties()
+{
+    if (!properties)
+    {
+        properties = std::make_shared<PropertiesManager>();
+    }
+
+    properties->properties.clear();
+    if (meshMaterial)
+    {
+        properties->addPropertySection(meshMaterial->properties);
+    }
+
+    return properties;
+}

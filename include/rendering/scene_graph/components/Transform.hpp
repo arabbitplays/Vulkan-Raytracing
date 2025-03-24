@@ -17,6 +17,8 @@ public:
     void OnRender(DrawContext& ctx) override {};
     void OnUpdate() override {};
 
+    std::shared_ptr<PropertiesManager> getProperties() override;
+
     void setLocalTransform(glm::mat4 transform_matrix);
     glm::mat4 getLocalTransform() const;
     void updateTransforms(glm::mat4 parent_matrix);

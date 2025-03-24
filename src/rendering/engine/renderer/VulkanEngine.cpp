@@ -111,9 +111,9 @@ void VulkanEngine::initGui() {
     });
 
     guiManager->addWindow(std::make_shared<OptionsWindow>(properties_manager));
-    auto inspector_window = std::make_shared<InspectorWindow>(properties_manager);
+    auto inspector_window = std::make_shared<InspectorWindow>(properties_manager, scene_manager);
     guiManager->addWindow(inspector_window);
-    hierarchy_window = std::make_shared<HierarchyWindow>(properties_manager, inspector_window);
+    auto hierarchy_window = std::make_shared<HierarchyWindow>(properties_manager, inspector_window, scene_manager);
     guiManager->addWindow(hierarchy_window);
 }
 
@@ -508,8 +508,6 @@ void VulkanEngine::loadScene()
     scene_manager->createScene(path);
     scene_manager->curr_scene_name = context->base_options->curr_scene_name;
     properties_manager->addPropertySection(scene_manager->scene->material->getProperties());
-    hierarchy_window->setScene(scene_manager->scene);
-
 }
 
 void VulkanEngine::createCommandBuffers() {

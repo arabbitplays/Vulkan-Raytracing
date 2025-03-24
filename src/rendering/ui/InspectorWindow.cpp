@@ -5,16 +5,17 @@
 #include "InspectorWindow.hpp"
 
 #include <imgui.h>
-#include <bits/ranges_algo.h>
 
-InspectorWindow::InspectorWindow(std::shared_ptr<PropertiesManager> main_props_manager)
-    : GuiWindow(main_props_manager) {}
+InspectorWindow::InspectorWindow(std::shared_ptr<PropertiesManager> main_props_manager, std::shared_ptr<SceneManager> scene_manager)
+    : GuiWindow(main_props_manager), scene_manager(scene_manager) {}
 
 
 void InspectorWindow::createFrame()
 {
-    if (!node)
+    if (!node || !scene_manager)
         return;
+
+    std::shared_ptr<Node> root_node = scene_manager->scene->nodes["root"];
 
     ImGui::SetNextWindowSize(ImVec2(400, 300), ImGuiCond_Once);
 
@@ -24,10 +25,13 @@ void InspectorWindow::createFrame()
         ImGui::Text(node->name.c_str());
         ImGui::Separator();
 
-        ImGui::Text("Transform");
-        refresh |= ImGui::InputFloat3("Position", &node->transform->decomposed_transform.translation[0]);
-        refresh |= ImGui::InputFloat3("Rotation", &node->transform->decomposed_transform.rotation[0]);
-        refresh |= ImGui::InputFloat3("Scale", &node->transform->decomposed_transform.scale[0]);
+        for (auto& component : node->components)
+        {
+            std::shared_ptr<PropertiesManager> properties = component->getProperties();
+            if (!properties)
+                continue;
+            refresh |= properties->serialize();
+        }
 
         ImGui::End();
     }
@@ -36,12 +40,13 @@ void InspectorWindow::createFrame()
     {
         root_node->refreshTransform(glm::mat4(1.0f));
         main_props_manager->curr_sample_count = 0;
+        scene_manager->bufferUpdateFlags = scene_manager->bufferUpdateFlags | SceneManager::MATERIAL_UPDATE;
     }
 }
 
-void InspectorWindow::setNode(const std::shared_ptr<Node>& node, const std::shared_ptr<Node>& root_node)
+void InspectorWindow::setNode(const std::shared_ptr<Node>& node)
 {
     this->node = node;
-    this->root_node = root_node;
 }
+
 

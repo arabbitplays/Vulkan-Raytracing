@@ -22,7 +22,8 @@ struct MetalRoughParameters {
 class MetalRoughMaterial : public Material {
 public:
     struct MaterialResources {
-        glm::vec4 albedo;
+        glm::vec3 albedo;
+        float padding;
         glm::vec4 properties; // metallic roughness ao eta
         glm::vec4 emission;
         glm::ivec4 tex_indices; // albedo, metal_rough_ao, normal
@@ -52,6 +53,7 @@ public:
 protected:
     void initProperties() override;
     std::shared_ptr<MaterialResources> createMaterialResources(MetalRoughParameters parameters);
+    std::shared_ptr<Properties> initializeInstanceProperties(const std::shared_ptr<MaterialResources>& resources);
 private:
     AllocatedBuffer createMaterialBuffer();
 

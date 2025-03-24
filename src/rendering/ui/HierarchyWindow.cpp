@@ -6,19 +6,14 @@
 
 #include <spdlog/spdlog.h>
 
-HierarchyWindow::HierarchyWindow(std::shared_ptr<PropertiesManager> main_props_manager, std::shared_ptr<InspectorWindow> inspector_window)
-    : GuiWindow(main_props_manager), inspector_window(inspector_window) {}
-
-
-void HierarchyWindow::setScene(const std::shared_ptr<Scene>& scene)
-{
-    this->scene = scene;
-}
-
+HierarchyWindow::HierarchyWindow(std::shared_ptr<PropertiesManager> main_props_manager, std::shared_ptr<InspectorWindow> inspector_window, std::shared_ptr<SceneManager> scene_manager)
+    : GuiWindow(main_props_manager), inspector_window(inspector_window), scene_manager(scene_manager) {}
 
 void HierarchyWindow::createFrame() {
-    if (!scene)
+    if (!scene_manager || !scene_manager->scene)
         return;
+
+    std::shared_ptr<Scene> scene = scene_manager->scene;
 
     ImGui::SetNextWindowSize(ImVec2(400, 300), ImGuiCond_Once);
 
@@ -60,7 +55,7 @@ void HierarchyWindow::createFrame() {
     root_node->refreshTransform(glm::mat4(1.0f));
 
     if (last_clicked_node_key != "")
-        inspector_window->setNode(scene->nodes[last_clicked_node_key], scene->nodes["root"]);
+        inspector_window->setNode(scene->nodes[last_clicked_node_key]);
     last_clicked_node_key = "";
 }
 
@@ -93,7 +88,7 @@ void HierarchyWindow::displayNode(std::shared_ptr<Node> node, std::shared_ptr<No
 
         if (drag_payload) {
            DragPayload dragged_keys = *static_cast<DragPayload*>(drag_payload->Data);
-            std::shared_ptr<Node> dragged_node = scene->nodes[dragged_keys.source_key];
+            std::shared_ptr<Node> dragged_node = scene_manager->scene->nodes[dragged_keys.source_key];
             nodes_to_add.push_back({node->name, dragged_keys.source_key});
             nodes_to_remove.push_back({dragged_keys.parent_key, dragged_keys.source_key});
         }

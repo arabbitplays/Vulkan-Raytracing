@@ -60,10 +60,11 @@ protected:
     std::vector<std::shared_ptr<MaterialInstance>> instances;
     std::shared_ptr<Properties> properties;
 
-    AllocatedBuffer materialBuffer; // maps an instance to its respective material via a common index into the constants and texture buffers
+    AllocatedBuffer material_buffer; // maps an instance to its respective material via a common index into the constants and texture buffers
 };
 
 struct MaterialInstance {
+    std::shared_ptr<Properties> properties;
     uint32_t material_index;
     uint32_t albedo_texture_index;
 };

@@ -28,3 +28,21 @@ void Transform::updateTransforms(glm::mat4 parent_matrix)
 glm::mat4 Transform::getWorldTransform() const {
 	return worldTransform;
 }
+
+std::shared_ptr<PropertiesManager> Transform::getProperties()
+{
+	if (properties != nullptr)
+		return properties;
+
+	properties = std::make_shared<PropertiesManager>();
+
+	auto section = std::make_shared<Properties>("Transform");
+
+	section->addVector("Position", &decomposed_transform.translation);
+	section->addVector("Rotation", &decomposed_transform.rotation);
+	section->addVector("Scale", &decomposed_transform.scale);
+
+	properties->addPropertySection(section);
+
+	return properties;
+}

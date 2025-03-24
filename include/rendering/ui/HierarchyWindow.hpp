@@ -35,20 +35,17 @@ static DragPayload dragPayload;
 class HierarchyWindow final : public GuiWindow {
 public:
     HierarchyWindow() = default;
-    HierarchyWindow(std::shared_ptr<PropertiesManager> main_props_manager, std::shared_ptr<InspectorWindow> inspector_window);
+    HierarchyWindow(std::shared_ptr<PropertiesManager> main_props_manager, std::shared_ptr<InspectorWindow> inspector_window, std::shared_ptr<SceneManager> scene_manager);
     ~HierarchyWindow() override = default;
 
     void createFrame() override;
-    void setScene(const std::shared_ptr<Scene>& scene);
-
     std::string last_clicked_node_key = "";
 
 private:
     void displayNode(std::shared_ptr<Node> node, std::shared_ptr<Node> parent, uint32_t depth);
 
     std::shared_ptr<InspectorWindow> inspector_window;
-
-    std::shared_ptr<Scene> scene;
+    std::shared_ptr<SceneManager> scene_manager;
 
     std::vector<NodeAdd> nodes_to_add{};
     std::vector<NodeRemove> nodes_to_remove{};

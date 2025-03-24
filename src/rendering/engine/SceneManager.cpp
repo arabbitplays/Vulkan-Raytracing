@@ -131,6 +131,14 @@ void SceneManager::createUniformBuffers() {
 void SceneManager::updateScene(DrawContext& draw_context, uint32_t current_image_idx, AllocatedImage current_image, AllocatedImage& rng_tex) {
     //QuickTimer timer{"Scene Update", true};
 
+    if (bufferUpdateFlags != NO_UPDATE)
+    {
+        vkDeviceWaitIdle(context->device);
+        if (static_cast<uint8_t>(bufferUpdateFlags) & static_cast<uint8_t>(MATERIAL_UPDATE) != 0)
+            scene->material->writeMaterial();
+        bufferUpdateFlags = NO_UPDATE;
+    }
+
     scene->update(context->swapchain->extent.width, context->swapchain->extent.height);
 
     if (top_level_acceleration_structure == nullptr) {

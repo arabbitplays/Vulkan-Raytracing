@@ -17,7 +17,8 @@ PropertiesManager::PropertiesManager(const std::string& config_file_path)
 void PropertiesManager::addPropertySection(const std::shared_ptr<Properties>& section)
 {
     properties[section->section_name] = section;
-    initSectionWithConfig(section);
+    if (config)
+        initSectionWithConfig(section);
 }
 
 void PropertiesManager::initSectionWithConfig(const std::shared_ptr<Properties>& section)
@@ -111,5 +112,63 @@ void PropertiesManager::updatePushConstants()
     push_constants.push_back(emitting_instances_count);
 }
 
+bool PropertiesManager::serialize()
+{
+    bool change_detected = false;
+
+    for (auto& section : properties) {
+        if (ImGui::CollapsingHeader(section.second->section_name.c_str())) {
+            for (auto& bool_property : section.second->bool_properties)
+            {
+                if (ImGui::Checkbox(bool_property->name.c_str(), &bool_property->imgui_option)) {
+                    *bool_property->var = bool_property->imgui_option ? 1 : 0;
+                    change_detected = true;
+                }
+            }
+
+            for (auto& int_property : section.second->int_properties)
+            {
+                if (int_property->max > int_property->min) {
+                    change_detected |= ImGui::SliderInt(int_property->name.c_str(), int_property->var, int_property->min, int_property->max);
+                } else
+                {
+                    change_detected |=  ImGui::InputInt(int_property->name.c_str(), int_property->var);
+                }
+            }
+
+            for (auto& float_property : section.second->float_properties)
+            {
+                if (float_property->max > float_property->min) {
+                    change_detected |= ImGui::SliderFloat(float_property->name.c_str(), float_property->var, float_property->min, float_property->max);
+                } else
+                {
+                    change_detected |=  ImGui::InputFloat(float_property->name.c_str(), float_property->var);
+                }
+            }
+
+            for (auto& vector_property : section.second->vector_properties)
+            {
+                change_detected |= ImGui::InputFloat3(vector_property->name.c_str(), &(*vector_property->var)[0]);
+            }
+
+            for (auto& selection_property : section.second->selection_properties)
+            {
+                std::vector<const char*> cStrArray;
+                for (auto& str : selection_property->selection_options) {
+                    cStrArray.push_back(const_cast<char*>(str.c_str())); // Convert std::string to char*
+                }
+                const char** items = cStrArray.data();
+
+                if (ImGui::Combo(selection_property->name.c_str(), &selection_property->option_idx,
+                        items, static_cast<int>(selection_property->selection_options.size()))) {
+                    *selection_property->var= selection_property->selection_options.at(selection_property->option_idx);
+                    change_detected = true;
+                }
+            }
+        }
+    }
+
+    return change_detected;
+}
 
 

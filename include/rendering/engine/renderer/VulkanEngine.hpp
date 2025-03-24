@@ -60,7 +60,6 @@ protected:
 
     GLFWwindow* window;
     std::shared_ptr<GuiManager> guiManager;
-    std::shared_ptr<HierarchyWindow> hierarchy_window;
 
     VkInstance instance;
     VkSurfaceKHR surface;

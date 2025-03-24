@@ -63,6 +63,7 @@ public:
 
     std::shared_ptr<SceneData> createSceneData();
     void update(uint32_t image_width, uint32_t image_height);
+
     std::vector<std::shared_ptr<MeshAsset>> getMeshes();
     void clearRessources();
 
