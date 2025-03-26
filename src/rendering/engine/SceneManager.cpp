@@ -14,7 +14,7 @@ void SceneManager::createScene(std::string scene_path) {
     QuickTimer timer{"Scene Creation", true};
 
     if (scene != nullptr) {
-        scene_ressource_deletion_queue.flush();
+        scene_resource_deletion_queue.flush();
         for (auto& material : defaultMaterials)
         {
             material.second->reset();
@@ -24,7 +24,7 @@ void SceneManager::createScene(std::string scene_path) {
     SceneReader reader = SceneReader(context);
     scene = reader.readScene(scene_path, defaultMaterials);
 
-    scene_ressource_deletion_queue.pushFunction([&]() {
+    scene_resource_deletion_queue.pushFunction([&]() {
         scene->clearRessources();
     });
 
@@ -42,7 +42,7 @@ void SceneManager::createSceneBuffers() {
 
     geometry_mapping_buffer = createGeometryMappingBuffer(meshes);
 
-    scene_ressource_deletion_queue.pushFunction([&]() {
+    scene_resource_deletion_queue.pushFunction([&]() {
         context->resource_builder->destroyBuffer(vertex_buffer);
         context->resource_builder->destroyBuffer(index_buffer);
         context->resource_builder->destroyBuffer(geometry_mapping_buffer);
@@ -63,7 +63,7 @@ void SceneManager::createBlas() {
         meshAsset->geometry_id = object_id++;
     }
 
-    scene_ressource_deletion_queue.pushFunction([&]()
+    scene_resource_deletion_queue.pushFunction([&]()
     {
         for (auto& meshAsset : scene->getMeshes()) {
             meshAsset->accelerationStructure->destroy();
@@ -122,7 +122,7 @@ void SceneManager::createUniformBuffers() {
 
         vkMapMemory(context->device, sceneUniformBuffers[i].bufferMemory, 0, size, 0, &sceneUniformBuffersMapped[i]);
 
-        scene_ressource_deletion_queue.pushFunction([&, i]() {
+        scene_resource_deletion_queue.pushFunction([&, i]() {
             context->resource_builder->destroyBuffer(sceneUniformBuffers[i]);
         });
     }
@@ -131,20 +131,12 @@ void SceneManager::createUniformBuffers() {
 void SceneManager::updateScene(DrawContext& draw_context, uint32_t current_image_idx, AllocatedImage current_image, AllocatedImage& rng_tex) {
     //QuickTimer timer{"Scene Update", true};
 
-    if (bufferUpdateFlags != NO_UPDATE)
-    {
-        vkDeviceWaitIdle(context->device);
-        if (static_cast<uint8_t>(bufferUpdateFlags) & static_cast<uint8_t>(MATERIAL_UPDATE) != 0)
-            scene->material->writeMaterial();
-        bufferUpdateFlags = NO_UPDATE;
-    }
-
     scene->update(context->swapchain->extent.width, context->swapchain->extent.height);
 
     if (top_level_acceleration_structure == nullptr) {
         top_level_acceleration_structure = std::make_shared<AccelerationStructure>(context->device, *context->resource_builder, *context->command_manager, VK_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL_KHR);
 
-        scene_ressource_deletion_queue.pushFunction([&]() {
+        scene_resource_deletion_queue.pushFunction([&]() {
             top_level_acceleration_structure->destroy();
             top_level_acceleration_structure = nullptr;
         });
@@ -153,16 +145,39 @@ void SceneManager::updateScene(DrawContext& draw_context, uint32_t current_image
     draw_context.objects.clear();
     scene->nodes["root"]->draw(draw_context);
 
-    // TODO move this to scene creation time
     if (instance_mapping_buffer.handle == VK_NULL_HANDLE) {
         instance_mapping_buffer = createInstanceMappingBuffer(draw_context.objects);
-        emitting_instances_buffer = createEmittingInstancesBuffer(draw_context.objects, getMaterial());
-        scene_ressource_deletion_queue.pushFunction([&]() {
+        scene_resource_deletion_queue.pushFunction([&]() {
             context->resource_builder->destroyBuffer(instance_mapping_buffer);
-            context->resource_builder->destroyBuffer(emitting_instances_buffer);
             instance_mapping_buffer.handle = VK_NULL_HANDLE;
         });
     }
+
+    if (emitting_instances_buffer.handle == VK_NULL_HANDLE || static_cast<uint8_t>(bufferUpdateFlags) & static_cast<uint8_t>(MATERIAL_UPDATE) != 0)
+    {
+        vkDeviceWaitIdle(context->device);
+        if (emitting_instances_buffer.handle != VK_NULL_HANDLE)
+            context->resource_builder->destroyBuffer(emitting_instances_buffer);
+        else
+        {
+            scene_resource_deletion_queue.pushFunction([&]() {
+                context->resource_builder->destroyBuffer(getEmittingInstancesBuffer());
+                emitting_instances_buffer.handle = VK_NULL_HANDLE;
+            });
+        }
+        emitting_instances_buffer = createEmittingInstancesBuffer(draw_context.objects, getMaterial());
+    }
+
+    if (bufferUpdateFlags != NO_UPDATE)
+    {
+        vkDeviceWaitIdle(context->device);
+        if (static_cast<uint8_t>(bufferUpdateFlags) & static_cast<uint8_t>(MATERIAL_UPDATE) != 0)
+        {
+            scene->material->writeMaterial();
+        }
+        bufferUpdateFlags = NO_UPDATE;
+    }
+
     uint32_t instance_id = 0;
     for (int i = 0; i < draw_context.objects.size(); i++) {
         top_level_acceleration_structure->addInstance(draw_context.objects[i].acceleration_structure, draw_context.objects[i].transform, instance_id++);
@@ -272,6 +287,12 @@ AllocatedBuffer SceneManager::createEmittingInstancesBuffer(std::vector<RenderOb
     return context->resource_builder->stageMemoryToNewBuffer(emitting_instances.data(), emitting_instances.size() * sizeof(EmittingInstanceData), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
 }
 
+AllocatedBuffer SceneManager::getEmittingInstancesBuffer()
+{
+    return emitting_instances_buffer;
+}
+
+
 void SceneManager::initDefaultResources(VkPhysicalDeviceRayTracingPipelinePropertiesKHR raytracingProperties) {
     createDefaultTextures();
     createDefaultSamplers();
@@ -371,6 +392,6 @@ uint32_t SceneManager::getEmittingInstancesCount() {
 
 
 void SceneManager::clearRessources() {
-    scene_ressource_deletion_queue.flush();
+    scene_resource_deletion_queue.flush();
     main_deletion_queue.flush();
 }

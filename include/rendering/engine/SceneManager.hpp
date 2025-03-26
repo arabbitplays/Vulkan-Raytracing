@@ -61,9 +61,10 @@ private:
     AllocatedBuffer createGeometryMappingBuffer(std::vector<std::shared_ptr<MeshAsset>>& mesh_assets);
     AllocatedBuffer createInstanceMappingBuffer(std::vector<RenderObject> &objects);
     AllocatedBuffer createEmittingInstancesBuffer(std::vector<RenderObject> &objects, std::shared_ptr<Material> material);
+    AllocatedBuffer getEmittingInstancesBuffer();
     void createUniformBuffers();
 
-    DeletionQueue main_deletion_queue, scene_ressource_deletion_queue;
+    DeletionQueue main_deletion_queue, scene_resource_deletion_queue;
     uint32_t max_frames_in_flight;
 
     VkDescriptorSetLayout scene_descsriptor_set_layout;

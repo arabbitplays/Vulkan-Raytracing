@@ -120,6 +120,9 @@ std::shared_ptr<Properties> MetalRoughMaterial::initializeInstanceProperties(con
     section->addVector("Albedo", &resources->albedo);
     section->addFloat("Metal", &resources->properties.x, 0, 1);
     section->addFloat("Roughness", &resources->properties.y, 0, 1);
+    section->addFloat("Eta", &resources->properties.w);
+    section->addVector("Emission Color", reinterpret_cast<glm::vec3*>(&resources->emission));
+    section->addFloat("Emission Power", &resources->emission.w);
     return section;
 }
 
