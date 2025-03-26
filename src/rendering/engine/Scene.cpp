@@ -26,6 +26,7 @@ std::shared_ptr<SceneData> Scene::createSceneData() {
     sceneData->pointLightColors = point_light_colors;
     sceneData->sunlightDirection = glm::vec4(sun.direction,sun.intensity);
     sceneData->sunlightColor = glm::vec4(sun.color, 0.0f);
+    sceneData->sunlightColor = glm::vec4{1, 0, 0, 1.0f};
 
     sceneData->ambientColor = glm::vec4(0.05f);
 

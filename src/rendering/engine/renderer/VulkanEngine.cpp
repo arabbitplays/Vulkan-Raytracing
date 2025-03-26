@@ -704,7 +704,7 @@ void VulkanEngine::recordRenderToImage(VkCommandBuffer commandBuffer)
 
     uint32_t pc_size;
     void* pc_data = properties_manager->getPushConstants(&pc_size);
-    vkCmdPushConstants(commandBuffer, pipeline.getLayoutHandle(), VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR | VK_SHADER_STAGE_RAYGEN_BIT_KHR, 0, pc_size, pc_data);
+    vkCmdPushConstants(commandBuffer, pipeline.getLayoutHandle(), VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR | VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_MISS_BIT_KHR, 0, pc_size, pc_data);
 
     CmdTraceRaysKHR(
         device,
