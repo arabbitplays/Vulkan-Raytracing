@@ -1,11 +1,8 @@
-//
-// Created by oschdi on 1/8/25.
-//
-
 #include "AssimpModelLoader.hpp"
 
 #include <spdlog/spdlog.h>
 
+namespace RtEngine {
 void AssimpModelLoader::loadData(std::string path, std::vector<Vertex> &vertices, std::vector<uint32_t> &indices) {
     Assimp::Importer importer;
     const aiScene* scene = importer.ReadFile(path, aiProcess_Triangulate | aiProcess_CalcTangentSpace);
@@ -62,5 +59,6 @@ void AssimpModelLoader::processMesh(aiMesh *mesh, const aiScene *scene, std::vec
             indices.push_back(face.mIndices[j]);
         }
     }
+}
 }
 

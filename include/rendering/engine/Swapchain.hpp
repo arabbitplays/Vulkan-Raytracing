@@ -1,7 +1,3 @@
-//
-// Created by oschdi on 12/29/24.
-//
-
 #ifndef SWAPCHAIN_HPP
 #define SWAPCHAIN_HPP
 
@@ -10,6 +6,7 @@
 #include <GLFW/glfw3.h>
 #include "RessourceBuilder.hpp"
 
+namespace RtEngine {
 struct SwapChainSupportDetails {
     VkSurfaceCapabilitiesKHR capabilities;
     std::vector<VkSurfaceFormatKHR> formats;
@@ -49,4 +46,5 @@ private:
 
 
 
+}
 #endif //SWAPCHAIN_HPP

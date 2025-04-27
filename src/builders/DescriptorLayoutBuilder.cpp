@@ -1,10 +1,7 @@
-//
-// Created by oster on 09.09.2024.
-//
-
 #include <stdexcept>
 #include "DescriptorLayoutBuilder.hpp"
 
+namespace RtEngine {
 void DescriptorLayoutBuilder::addBinding(uint32_t binding, VkDescriptorType type, uint32_t descriptor_count) {
     VkDescriptorSetLayoutBinding layoutBinding{};
     layoutBinding.binding = binding;
@@ -36,4 +33,5 @@ VkDescriptorSetLayout DescriptorLayoutBuilder::build(VkDevice device, uint32_t s
 
 void DescriptorLayoutBuilder::clear() {
     bindings.clear();
+}
 }

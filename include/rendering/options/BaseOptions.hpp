@@ -1,12 +1,9 @@
-//
-// Created by oschdi on 3/4/25.
-//
-
 #ifndef BASEOPTIONS_HPP
 #define BASEOPTIONS_HPP
 
 #include <string>
 
+namespace RtEngine {
 constexpr std::string RECURSION_DEPTH_OPTION_NAME = "Max_Depth";
 constexpr std::string RESOURCES_DIR_OPTION_NAME = "Resources_Dir";
 constexpr std::string CURR_SCENE_OPTION_NAME = "Scene";
@@ -17,4 +14,5 @@ struct BaseOptions {
   std::string curr_scene_name;
 };
 
+}
 #endif //BASEOPTIONS_HPP

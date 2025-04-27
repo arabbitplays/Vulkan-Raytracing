@@ -1,13 +1,10 @@
-//
-// Created by oschdi on 3/19/25.
-//
-
 #ifndef MESHRENDERER_HPP
 #define MESHRENDERER_HPP
 
 #include <Component.hpp>
 #include <Material.hpp>
 
+namespace RtEngine {
 class MeshRenderer : public Component {
 public:
     MeshRenderer() = default;
@@ -24,4 +21,5 @@ public:
 
 
 
+}
 #endif //MESHRENDERER_HPP

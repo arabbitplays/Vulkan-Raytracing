@@ -1,9 +1,6 @@
-//
-// Created by oschdi on 2/16/25.
-//
-
 #include "ReferenceRenderer.hpp"
 
+namespace RtEngine {
 constexpr std::string SAMPLE_COUNT_OPTION_NAME = "Sample_Count";
 
 void ReferenceRenderer::mainLoop() {
@@ -94,4 +91,5 @@ void ReferenceRenderer::initProperties()
 {
     VulkanEngine::initProperties();
     renderer_properties->addInt(SAMPLE_COUNT_OPTION_NAME, &sample_count);
+}
 }

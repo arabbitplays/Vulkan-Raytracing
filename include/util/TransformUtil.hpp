@@ -1,13 +1,10 @@
-//
-// Created by oschdi on 3/20/25.
-//
-
 #ifndef TRANSFORMUTIL_HPP
 #define TRANSFORMUTIL_HPP
 
 #include <glm/glm.hpp>
 #include <glm/gtx/quaternion.hpp>
 
+namespace RtEngine {
 class TransformUtil {
    TransformUtil() = delete;
 
@@ -55,4 +52,5 @@ public:
     }
 };
 
+}
 #endif //TRANSFORMUTIL_HPP

@@ -1,12 +1,9 @@
-//
-// Created by oschdi on 2/26/25.
-//
-
 #ifndef BENCHMARKRENDERER_HPP
 #define BENCHMARKRENDERER_HPP
 #include <VulkanEngine.hpp>
 
 
+namespace RtEngine {
 class BenchmarkRenderer : public VulkanEngine {
     void mainLoop() override;
     void drawFrame() override;
@@ -27,4 +24,5 @@ class BenchmarkRenderer : public VulkanEngine {
 
 
 
+}
 #endif //BENCHMARKRENDERER_HPP

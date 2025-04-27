@@ -1,7 +1,3 @@
-//
-// Created by oster on 05.09.2024.
-//
-
 #ifndef BASICS_DESCRIPTORALLOCATOR_HPP
 #define BASICS_DESCRIPTORALLOCATOR_HPP
 
@@ -11,6 +7,7 @@
 #include <span>
 #include <deque>
 
+namespace RtEngine {
 class DescriptorAllocator {
 public:
     struct PoolSizeRatio {
@@ -53,4 +50,5 @@ private:
 };
 
 
+}
 #endif //BASICS_DESCRIPTORALLOCATOR_HPP

@@ -1,7 +1,3 @@
-//
-// Created by oster on 07.09.2024.
-//
-
 #ifndef BASICS_MESHASSETBUILDER_HPP
 #define BASICS_MESHASSETBUILDER_HPP
 
@@ -12,6 +8,7 @@
 
 #include "RessourceBuilder.hpp"
 
+namespace RtEngine {
 class MeshAssetBuilder {
 public:
     MeshAssetBuilder() = default;
@@ -27,4 +24,5 @@ private:
 };
 
 
+}
 #endif //BASICS_MESHASSETBUILDER_HPP

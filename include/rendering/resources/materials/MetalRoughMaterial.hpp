@@ -1,7 +1,3 @@
-//
-// Created by oschdi on 12/30/24.
-//
-
 #ifndef METALROUGHMATERIAL_HPP
 #define METALROUGHMATERIAL_HPP
 
@@ -11,6 +7,7 @@
 
 #define METAL_ROUGH_MATERIAL_NAME "metal_rough"
 
+namespace RtEngine {
 struct MetalRoughParameters {
     std::string albedo_tex_name, metal_rough_ao_tex_name, normal_tex_name;
     glm::vec3 albedo = glm::vec3(0.0f);
@@ -67,4 +64,5 @@ private:
 
 
 
+}
 #endif //METALROUGHMATERIAL_HPP

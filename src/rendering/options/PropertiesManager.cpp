@@ -1,7 +1,3 @@
-//
-// Created by oschdi on 2/28/25.
-//
-
 #include "PropertiesManager.hpp"
 
 #include <BaseOptions.hpp>
@@ -9,6 +5,7 @@
 #include <ReferenceRenderer.hpp>
 #include <spdlog/spdlog.h>
 
+namespace RtEngine {
 PropertiesManager::PropertiesManager(const std::string& config_file_path)
 {
     config = std::make_shared<ConfigLoader>(config_file_path);
@@ -171,4 +168,5 @@ bool PropertiesManager::serialize()
     return change_detected;
 }
 
+}
 

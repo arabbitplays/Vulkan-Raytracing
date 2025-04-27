@@ -1,7 +1,3 @@
-//
-// Created by oster on 09.09.2024.
-//
-
 #include <stdexcept>
 #include "RessourceBuilder.hpp"
 
@@ -16,6 +12,7 @@
 #include <glm/vector_relational.hpp>
 #include <spdlog/spdlog.h>
 
+namespace RtEngine {
 VkDeviceAddress GetBufferDeviceAddressKHR(VkDevice device, const VkBufferDeviceAddressInfoKHR* address_info) {
     auto func = (PFN_vkGetBufferDeviceAddressKHR) vkGetDeviceProcAddr(device, "vkGetBufferDeviceAddressKHR");
     if (func != nullptr) {
@@ -365,4 +362,5 @@ void RessourceBuilder::writePNG(std::string path, void* data, uint32_t width, ui
     {
         spdlog::error("failed to save output image to {}!", path);
     }
+}
 }

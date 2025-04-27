@@ -1,11 +1,8 @@
-//
-// Created by oschdi on 3/23/25.
-//
-
 #include "TextureRepository.hpp"
 #include <glm/glm.hpp>>
 #include <spdlog/spdlog.h>
 
+namespace RtEngine {
 TextureRepository::TextureRepository(std::shared_ptr<RessourceBuilder> resource_builder) : resource_builder(resource_builder)
 {
     initDefaultTextures();
@@ -59,4 +56,5 @@ void TextureRepository::destroy()
     {
         resource_builder->destroyImage(textures.second->image);
     }
+}
 }

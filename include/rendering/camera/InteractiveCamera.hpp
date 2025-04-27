@@ -1,7 +1,3 @@
-//
-// Created by oschdi on 12/19/24.
-//
-
 #ifndef INTERACTIVECAMERA_HPP
 #define INTERACTIVECAMERA_HPP
 
@@ -9,6 +5,7 @@
 #include <glm/fwd.hpp>
 #include <glm/vec3.hpp>
 
+namespace RtEngine {
 class InteractiveCamera : public Camera {
 public:
     InteractiveCamera() = default;
@@ -43,4 +40,5 @@ private:
 
 
 
+}
 #endif //INTERACTIVECAMERA_HPP

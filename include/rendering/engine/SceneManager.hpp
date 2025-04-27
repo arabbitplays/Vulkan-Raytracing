@@ -1,7 +1,3 @@
-//
-// Created by oschdi on 12/30/24.
-//
-
 #ifndef SCENEMANAGER_HPP
 #define SCENEMANAGER_HPP
 
@@ -13,6 +9,7 @@
 #include <Scene.hpp>
 #include <VulkanContext.hpp>
 
+namespace RtEngine {
 class SceneManager {
 public:
     enum SceneBufferUpdateFlags
@@ -90,4 +87,5 @@ private:
 
 
 
+}
 #endif //SCENEMANAGER_HPP

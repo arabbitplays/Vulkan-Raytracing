@@ -1,7 +1,3 @@
-//
-// Created by oschdi on 12/18/24.
-//
-
 #ifndef SCENE_HPP
 #define SCENE_HPP
 
@@ -19,6 +15,7 @@
 
 #define POINT_LIGHT_COUNT 4
 
+namespace RtEngine {
 struct SceneData {
     glm::mat4 inverse_view;
     glm::mat4 inverse_proj;
@@ -104,4 +101,5 @@ protected:
 
 };
 
+}
 #endif //SCENE_HPP

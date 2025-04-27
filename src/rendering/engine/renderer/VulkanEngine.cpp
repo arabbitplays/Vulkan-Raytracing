@@ -4,6 +4,7 @@
 #include <filesystem>
 #include <HierarchyWindow.hpp>
 
+namespace RtEngine {
 const std::vector<const char*> validationLayers = {
     "VK_LAYER_KHRONOS_validation",
     "VK_LAYER_PROFILER_unified",
@@ -843,4 +844,5 @@ void VulkanEngine::initProperties()
     context->base_options->curr_scene_name = scenes[0];
 
     renderer_properties->addSelection(CURR_SCENE_OPTION_NAME, &context->base_options->curr_scene_name, scenes);
+}
 }

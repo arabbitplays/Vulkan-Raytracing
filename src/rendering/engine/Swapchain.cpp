@@ -1,7 +1,3 @@
-//
-// Created by oschdi on 12/29/24.
-//
-
 #include "Swapchain.hpp"
 
 #include <limits>
@@ -9,6 +5,7 @@
 #include <bits/shared_ptr.h>
 #include <bits/stl_algo.h>
 
+namespace RtEngine {
 void Swapchain::recreate() {
     destroy();
     createSwapChain();
@@ -147,4 +144,5 @@ void Swapchain::destroy() {
         vkDestroyImageView(device, imageView, nullptr);
     }
     vkDestroySwapchainKHR(device, handle, nullptr);
+}
 }

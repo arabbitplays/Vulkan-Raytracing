@@ -1,7 +1,3 @@
-//
-// Created by oster on 07.09.2024.
-//
-
 #include <stdexcept>
 #include <iostream>
 #include "MeshAssetBuilder.hpp"
@@ -10,6 +6,7 @@
 #include <cstring>
 #include <ModelLoader.hpp>
 
+namespace RtEngine {
 MeshAsset MeshAssetBuilder::loadMeshAsset(std::string path) {
     AssimpModelLoader loader;
     return loader.loadMeshAsset(resource_path, path);
@@ -17,4 +14,5 @@ MeshAsset MeshAssetBuilder::loadMeshAsset(std::string path) {
 
 void MeshAssetBuilder::destroyMeshAsset(MeshAsset& meshAsset) {
     // intentional empty
+}
 }

@@ -1,7 +1,3 @@
-//
-// Created by oschdi on 3/23/25.
-//
-
 #ifndef TEXTUREREPOSITORY_HPP
 #define TEXTUREREPOSITORY_HPP
 
@@ -10,6 +6,7 @@
 #include <RessourceBuilder.hpp>
 #include <unordered_map>
 
+namespace RtEngine {
 class TextureRepository {
 public:
     TextureRepository() = default;
@@ -30,4 +27,5 @@ private:
 
 
 
+}
 #endif //TEXTUREREPOSITORY_HPP

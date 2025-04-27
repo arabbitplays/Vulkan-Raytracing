@@ -8,6 +8,7 @@
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/hash.hpp>
 
+namespace RtEngine {
 struct Vertex {
     glm::vec3 pos;
     glm::vec3 normal;
@@ -57,16 +58,15 @@ struct Vertex {
         && texCoord == other.texCoord && normal == other.normal;
     }
 };
+}
 
 namespace std {
-    template<> struct hash<Vertex> {
-        size_t operator()(Vertex const& vertex) const {
+    template<> struct hash<RtEngine::Vertex> {
+        size_t operator()(RtEngine::Vertex const& vertex) const {
             return ((hash<glm::vec3>()(vertex.pos) ^
                      (hash<glm::vec3>()(vertex.color) << 1)) >> 1) ^
                    (hash<glm::vec2>()(vertex.texCoord) << 1);
         }
     };
 }
-
-
 #endif //BASICS_VERTEX_HPP

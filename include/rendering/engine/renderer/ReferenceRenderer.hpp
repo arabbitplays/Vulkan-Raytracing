@@ -1,13 +1,10 @@
-//
-// Created by oschdi on 2/16/25.
-//
-
 #ifndef REFERENCERENDERER_HPP
 #define REFERENCERENDERER_HPP
 
 #include <VulkanEngine.hpp>
 #include "spdlog/stopwatch.h"
 
+namespace RtEngine {
 class ReferenceRenderer : public VulkanEngine {
     void mainLoop() override;
     void drawFrame() override;
@@ -22,4 +19,5 @@ class ReferenceRenderer : public VulkanEngine {
 
 
 
+}
 #endif //REFERENCERENDERER_HPP

@@ -1,11 +1,8 @@
-//
-// Created by oster on 05.09.2024.
-//
-
 #include <stdexcept>
 #include <cmath>
 #include "DescriptorAllocator.hpp"
 
+namespace RtEngine {
 VkDescriptorPool DescriptorAllocator::getPool(VkDevice device) {
     VkDescriptorPool newPool;
     if (readyPools.size() != 0) {
@@ -226,4 +223,5 @@ void DescriptorAllocator::clearWrites() {
     imageInfos.clear();
     accelerationStructureInfos.clear();
     writes.clear();
+}
 }

@@ -1,12 +1,9 @@
-//
-// Created by oschdi on 12/15/24.
-//
-
 #include "AccelerationStructure.hpp"
 
 #include <cassert>
 #include <stdexcept>
 
+namespace RtEngine {
 void GetAccelerationStructureBuildSizesKHR(VkDevice device,
                                            VkAccelerationStructureBuildTypeKHR buildType,
                                            const VkAccelerationStructureBuildGeometryInfoKHR* pBuildInfo,
@@ -269,4 +266,5 @@ VkAccelerationStructureKHR AccelerationStructure::getHandle() const {
 
 uint64_t AccelerationStructure::getDeviceAddress() const {
     return device_address;
+}
 }

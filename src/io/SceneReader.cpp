@@ -1,7 +1,3 @@
-//
-// Created by oschdi on 2/13/25.
-//
-
 #include "SceneReader.hpp"
 
 #include <AccelerationStructure.hpp>
@@ -13,6 +9,7 @@
 #include <YAML_glm.hpp>
 #include <TransformUtil.hpp>
 
+namespace RtEngine {
 std::shared_ptr<Scene> SceneReader::readScene(const std::string& filename, std::unordered_map<std::string, std::shared_ptr<Material>> materials)
 {
     QuickTimer quick_timer("Reading scene from file");
@@ -193,4 +190,5 @@ std::shared_ptr<Node> SceneReader::processSceneNodesRecursiv(const YAML::Node& y
         scene->addNode(scene_graph_node->name, scene_graph_node);
         return scene_graph_node;
     }
+}
 }

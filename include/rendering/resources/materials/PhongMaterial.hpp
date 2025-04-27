@@ -1,7 +1,3 @@
-//
-// Created by oschdi on 12/17/24.
-//
-
 #ifndef PHONGMATERIAL_HPP
 #define PHONGMATERIAL_HPP
 #include <Material.hpp>
@@ -9,6 +5,7 @@
 
 #define PHONG_MATERIAL_NAME "phong"
 
+namespace RtEngine {
 class PhongMaterial : public Material {
 public:
     struct PhongMaterialConstants {
@@ -50,4 +47,5 @@ private:
 
 
 
+}
 #endif //PHONGMATERIAL_HPP

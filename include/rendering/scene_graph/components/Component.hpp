@@ -1,12 +1,9 @@
-//
-// Created by oschdi on 3/19/25.
-//
-
 #ifndef COMPONENT_HPP
 #define COMPONENT_HPP
 #include <IRenderable.hpp>
 #include <PropertiesManager.hpp>
 
+namespace RtEngine {
 class Node;
 
 class Component {
@@ -29,4 +26,5 @@ protected:
 
 
 
+}
 #endif //COMPONENT_HPP

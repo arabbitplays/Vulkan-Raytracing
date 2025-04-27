@@ -1,7 +1,3 @@
-//
-// Created by oschdi on 2/28/25.
-//
-
 #ifndef PROPERTIESMANAGER_HPP
 #define PROPERTIESMANAGER_HPP
 
@@ -13,6 +9,7 @@
 #include <vector>
 #include <glm/vec3.hpp>
 
+namespace RtEngine {
 constexpr std::string MATERIAL_SECTION_NAME = "Material";
 constexpr std::string RENDERER_SECTION_NAME = "Renderer";
 
@@ -127,4 +124,5 @@ private:
 
 
 
+}
 #endif //PROPERTIESMANAGER_HPP

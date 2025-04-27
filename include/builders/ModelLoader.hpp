@@ -1,7 +1,3 @@
-//
-// Created by oschdi on 1/8/25.
-//
-
 #ifndef MODELLOADER_HPP
 #define MODELLOADER_HPP
 
@@ -11,6 +7,7 @@
 #include <MeshAsset.hpp>
 
 
+namespace RtEngine {
 class ModelLoader {
 public:
     ModelLoader() = default;
@@ -24,4 +21,5 @@ protected:
 
 
 
+}
 #endif //MODELLOADER_HPP

@@ -1,7 +1,3 @@
-//
-// Created by oschdi on 3/20/25.
-//
-
 #ifndef HIERARCHYWINDOW_HPP
 #define HIERARCHYWINDOW_HPP
 
@@ -12,6 +8,7 @@
 #include <Scene.hpp>
 #include <string>
 
+namespace RtEngine {
 struct DragPayload
 {
     std::string source_key = "";
@@ -53,4 +50,5 @@ private:
 
 
 
+}
 #endif //HIERARCHYWINDOW_HPP

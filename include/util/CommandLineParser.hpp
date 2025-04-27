@@ -1,7 +1,3 @@
-//
-// Created by oschdi on 1/23/25.
-//
-
 #ifndef COMMANDLINEPARSER_HPP
 #define COMMANDLINEPARSER_HPP
 
@@ -9,6 +5,7 @@
 #include <string>
 #include "spdlog/spdlog.h"
 
+namespace RtEngine {
 class CommandLineParser {
     struct IntArgument {
         int32_t* variable;
@@ -101,4 +98,5 @@ private:
     std::unordered_map<std::string, StringArgument> string_arguments;
 };
 
+}
 #endif //COMMANDLINEPARSER_HPP

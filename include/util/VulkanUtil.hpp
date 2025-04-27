@@ -1,7 +1,3 @@
-//
-// Created by oster on 09.09.2024.
-//
-
 #include <string>
 #include <vector>
 #include <fstream>
@@ -10,8 +6,7 @@
 #ifndef BASICS_VULKANUTIL_HPP
 #define BASICS_VULKANUTIL_HPP
 
-#endif //BASICS_VULKANUTIL_HPP
-
+namespace RtEngine {
 class VulkanUtil {
     VulkanUtil() = delete;
 
@@ -80,3 +75,6 @@ private:
         return buffer;
     }
 };
+}
+
+#endif //BASICS_VULKANUTIL_HPP

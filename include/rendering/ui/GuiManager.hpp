@@ -1,7 +1,3 @@
-//
-// Created by oschdi on 12/29/24.
-//
-
 #ifndef GUIMANAGER_HPP
 #define GUIMANAGER_HPP
 
@@ -14,6 +10,7 @@
 #include <OptionsWindow.hpp>
 #include <bits/shared_ptr.h>
 
+namespace RtEngine {
 class GuiManager {
 public:
     GuiManager() = default;
@@ -54,4 +51,5 @@ private:
 
 
 
+}
 #endif //GUIWINDOW_HPP

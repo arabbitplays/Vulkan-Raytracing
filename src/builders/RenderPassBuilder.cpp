@@ -1,13 +1,10 @@
-//
-// Created by oster on 09.09.2024.
-//
-
 #include <array>
 #include <stdexcept>
 #include "RenderPassBuilder.hpp"
 
 #include <vector>
 
+namespace RtEngine {
 VkRenderPass RenderPassBuilder::createRenderPass(VkDevice device, bool addDepthAttachment) {
     std::vector<VkAttachmentDescription> attachments{};
 
@@ -84,4 +81,5 @@ void RenderPassBuilder::setColorAttachmentFormat(VkFormat colorFormat) {
 
 void RenderPassBuilder::setDepthFormat(VkFormat depthFormat) {
     this->depthFormat = depthFormat;
+}
 }

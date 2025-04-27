@@ -1,10 +1,7 @@
-//
-// Created by oschdi on 2/26/25.
-//raytracing_options
-
 #include "BenchmarkRenderer.hpp"
 #include <omp.h>
 
+namespace RtEngine {
 constexpr std::string SAMPLE_COUNT_OPTION_NAME = "Sample_Count";
 constexpr std::string REFERENCE_IMAGE_PATH_OPTION_NAME = "Reference_Image";
 
@@ -136,4 +133,5 @@ void BenchmarkRenderer::initProperties()
     VulkanEngine::initProperties();
     renderer_properties->addInt(SAMPLE_COUNT_OPTION_NAME, &sample_count);
     renderer_properties->addString(REFERENCE_IMAGE_PATH_OPTION_NAME, &reference_image_path);
+}
 }

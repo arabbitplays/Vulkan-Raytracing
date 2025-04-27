@@ -1,7 +1,3 @@
-//
-// Created by oschdi on 1/8/25.
-//
-
 #ifndef ASSIMPMODELLOADER_HPP
 #define ASSIMPMODELLOADER_HPP
 
@@ -10,6 +6,7 @@
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
 
+namespace RtEngine {
 class AssimpModelLoader : public ModelLoader {
 public:
     AssimpModelLoader() = default;
@@ -22,4 +19,5 @@ protected:
 
 
 
+}
 #endif //ASSIMPMODELLOADER_HPP

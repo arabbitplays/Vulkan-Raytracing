@@ -1,13 +1,10 @@
-//
-// Created by oschdi on 1/8/25.
-//
-
 #include "ModelLoader.hpp"
 
 #include <iostream>
 #include <stdexcept>
 #include <PathUtil.hpp>
 
+namespace RtEngine {
 MeshAsset ModelLoader::loadMeshAsset(std::string resources_path, std::string path) {
     MeshBuffers meshBuffers{};
 
@@ -23,4 +20,5 @@ MeshAsset ModelLoader::loadMeshAsset(std::string resources_path, std::string pat
 
     meshAsset.instance_data = {};
     return meshAsset;
+}
 }

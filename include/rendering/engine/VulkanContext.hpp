@@ -1,7 +1,3 @@
-//
-// Created by oschdi on 12/30/24.
-//
-
 #ifndef VULKANCONTEXT_HPP
 #define VULKANCONTEXT_HPP
 
@@ -16,6 +12,7 @@
 #include <TextureRepository.hpp>
 
 
+namespace RtEngine {
 struct VulkanContext {
     VkDevice device;
     VkPhysicalDevice physicalDevice;
@@ -34,4 +31,5 @@ struct VulkanContext {
     std::shared_ptr<BaseOptions> base_options;
 };
 
+}
 #endif //VULKANCONTEXT_HPP

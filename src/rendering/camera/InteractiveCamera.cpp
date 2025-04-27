@@ -1,6 +1,3 @@
-//
-// Created by oschdi on 12/19/24.
-//
 #define GLM_ENABLE_EXPERIMENTAL
 
 #include "InteractiveCamera.hpp"
@@ -9,6 +6,7 @@
 #include <glm/detail/type_quat.hpp>
 #include <glm/gtx/quaternion.hpp>
 
+namespace RtEngine {
 void InteractiveCamera::update(uint32_t image_width, uint32_t image_height) {
     glm::mat4 cameraRotation = getRotationMatrix();
     position += glm::vec3(cameraRotation * glm::vec4(velocity * 0.5f, 0.f));
@@ -85,5 +83,6 @@ glm::mat4 InteractiveCamera::getRotationMatrix() {
     glm::quat yawRotation = glm::angleAxis(yaw, glm::vec3{0.0f, -1.0f, 0.0f});
 
     return glm::toMat4(yawRotation) * glm::toMat4(pitchRotation);
+}
 }
 

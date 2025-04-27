@@ -1,9 +1,6 @@
-//
-// Created by oschdi on 3/19/25.
-//
-
 #include <Transform.hpp>
 
+namespace RtEngine {
 Transform::Transform() : Component(nullptr) {
     localTransform = glm::mat4(1);
     worldTransform = glm::mat4(1);
@@ -45,4 +42,5 @@ std::shared_ptr<PropertiesManager> Transform::getProperties()
 	properties->addPropertySection(section);
 
 	return properties;
+}
 }

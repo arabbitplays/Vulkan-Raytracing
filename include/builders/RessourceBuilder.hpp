@@ -1,7 +1,3 @@
-//
-// Created by oster on 09.09.2024.
-//
-
 #ifndef BASICS_RESSOURCEBUILDER_HPP
 #define BASICS_RESSOURCEBUILDER_HPP
 
@@ -13,6 +9,7 @@
 #include "../rendering/engine/CommandManager.hpp"
 #include <Texture.hpp>
 
+namespace RtEngine {
 struct AllocatedBuffer {
     VkBuffer handle = VK_NULL_HANDLE;
     VkDeviceMemory bufferMemory;
@@ -74,4 +71,5 @@ private:
 };
 
 
+}
 #endif //BASICS_RESSOURCEBUILDER_HPP

@@ -1,7 +1,3 @@
-//
-// Created by oschdi on 12/16/24.
-//
-
 #ifndef PIPELINE_HPP
 #define PIPELINE_HPP
 #include <DeletionQueue.hpp>
@@ -10,6 +6,7 @@
 #include <vulkan/vulkan_core.h>
 
 
+namespace RtEngine {
 class Pipeline {
 public:
     Pipeline() { clear(); }
@@ -47,4 +44,5 @@ private:
 
 
 
+}
 #endif //PIPELINE_HPP

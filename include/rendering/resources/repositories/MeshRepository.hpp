@@ -1,7 +1,3 @@
-//
-// Created by oschdi on 3/23/25.
-//
-
 #ifndef MESHREPOSITORY_HPP
 #define MESHREPOSITORY_HPP
 #include <DeletionQueue.hpp>
@@ -9,6 +5,7 @@
 
 #include <memory>
 
+namespace RtEngine {
 class VulkanContext;
 
 class MeshRepository {
@@ -28,4 +25,5 @@ private:
 
 
 
+}
 #endif //MESHREPOSITORY_HPP

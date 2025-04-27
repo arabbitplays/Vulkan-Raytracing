@@ -3,6 +3,7 @@
 
 #include "../rendering/Vertex.hpp"
 
+namespace RtEngine {
 void RasterizerPipelineBuilder::buildPipeline(VkDevice& device, VkRenderPass& renderPass, VkPipeline* pipeline, VkPipelineLayout& pipelineLayout) {
 
     std::vector<VkDynamicState> dynamicStates = {
@@ -153,4 +154,5 @@ void RasterizerPipelineBuilder::clear() {
     colorBlendAttachment = { };
     pipelineLayoutInfo = { .sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO };
     shaderStages.clear();
+}
 }

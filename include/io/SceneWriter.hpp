@@ -1,7 +1,3 @@
-//
-// Created by oschdi on 2/4/25.
-//
-
 #ifndef SCENEWRITER_H
 #define SCENEWRITER_H
 
@@ -9,6 +5,7 @@
 #include <string>
 #include <yaml-cpp/yaml.h>
 
+namespace RtEngine {
 class SceneWriter {
 public:
   SceneWriter() = default;
@@ -23,4 +20,5 @@ private:
 
 
 
+}
 #endif //SCENEWRITER_H

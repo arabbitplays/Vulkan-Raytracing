@@ -1,7 +1,3 @@
-//
-// Created by oschdi on 12/18/24.
-//
-
 #ifndef CAMERA_HPP
 #define CAMERA_HPP
 
@@ -11,6 +7,7 @@
 #include <glm/ext/matrix_clip_space.hpp>
 #include <glm/ext/matrix_transform.hpp>
 
+namespace RtEngine {
 class Camera {
 public:
     Camera() = default;
@@ -64,4 +61,5 @@ protected:
 
 
 
+}
 #endif //CAMERA_HPP

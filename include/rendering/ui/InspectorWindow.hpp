@@ -1,7 +1,3 @@
-//
-// Created by oschdi on 3/20/25.
-//
-
 #ifndef INSPECTORWINDOW_HPP
 #define INSPECTORWINDOW_HPP
 
@@ -11,6 +7,7 @@
 #include <SceneManager.hpp>
 #include <VulkanContext.hpp>
 
+namespace RtEngine {
 class InspectorWindow : public GuiWindow {
 public:
     InspectorWindow() = default;
@@ -26,4 +23,5 @@ private:
 
 
 
+}
 #endif //INSPECTORWINDOW_HPP

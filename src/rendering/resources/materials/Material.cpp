@@ -1,9 +1,6 @@
-//
-// Created by oschdi on 12/17/24.
-//
-
 #include "Material.hpp"
 
+namespace RtEngine {
 std::vector<std::shared_ptr<MaterialInstance>> Material::getInstances()
 {
     return instances;
@@ -30,4 +27,5 @@ void Material::clearRessources() {
 
 void Material::reset() {
     resetQueue.flush();
+}
 }

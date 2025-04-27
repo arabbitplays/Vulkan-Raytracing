@@ -1,7 +1,3 @@
-//
-// Created by oschdi on 12/29/24.
-//
-
 #include "GuiManager.hpp"
 
 #include <CommandManager.hpp>
@@ -12,6 +8,7 @@
 #include <stdexcept>
 
 // only used as imgui callback
+namespace RtEngine {
 void checkVulkanResult(VkResult err)
 {
     if (err == 0)
@@ -157,4 +154,5 @@ void GuiManager::shutdownImGui() {
     ImGui_ImplVulkan_Shutdown();
     ImGui_ImplGlfw_Shutdown();
     ImGui::DestroyContext();
+}
 }

@@ -1,9 +1,6 @@
-//
-// Created by oschdi on 12/18/24.
-//
-
 #include "Camera.hpp"
 
+namespace RtEngine {
 glm::vec3 Camera::getPosition() {
     return position;
 }
@@ -24,4 +21,5 @@ glm::mat4 Camera::getInverseProjection() {
     return inverse_projection;
 }
 
+}
 

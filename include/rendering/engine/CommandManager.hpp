@@ -1,7 +1,3 @@
-//
-// Created by oster on 07.09.2024.
-//
-
 #ifndef BASICS_COMMANDMANAGER_HPP
 #define BASICS_COMMANDMANAGER_HPP
 
@@ -9,6 +5,7 @@
 #include <vulkan/vulkan_core.h>
 #include <optional>
 
+namespace RtEngine {
 struct QueueFamilyIndices {
     std::optional<uint32_t> graphicsFamily;
     std::optional<uint32_t> presentFamily;
@@ -36,4 +33,5 @@ private:
 };
 
 
+}
 #endif //BASICS_COMMANDMANAGER_HPP

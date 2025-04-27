@@ -1,7 +1,3 @@
-//
-// Created by oschdi on 12/16/24.
-//
-
 #ifndef MESHASSET_HPP
 #define MESHASSET_HPP
 
@@ -9,6 +5,7 @@
 #include "RessourceBuilder.hpp"
 #include "AccelerationStructure.hpp"
 
+namespace RtEngine {
 struct MeshBuffers {
     std::vector<Vertex> vertices;
     std::vector<uint32_t> indices;
@@ -30,4 +27,5 @@ struct MeshAsset {
     std::shared_ptr<AccelerationStructure> accelerationStructure;
 };
 
+}
 #endif //MESHASSET_HPP

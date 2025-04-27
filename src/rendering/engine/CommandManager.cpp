@@ -1,10 +1,7 @@
-//
-// Created by oster on 07.09.2024.
-//
-
 #include <stdexcept>
 #include "CommandManager.hpp"
 
+namespace RtEngine {
 CommandManager::CommandManager() = default;
 
 CommandManager::CommandManager(VkDevice device, QueueFamilyIndices indices) {
@@ -60,4 +57,5 @@ void CommandManager::endSingleTimeCommand(VkCommandBuffer commandBuffer) {
 
 void CommandManager::destroyCommandManager() {
     vkDestroyCommandPool(device, commandPool, nullptr);
+}
 }

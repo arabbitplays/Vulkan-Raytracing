@@ -1,10 +1,7 @@
-//
-// Created by oschdi on 3/19/25.
-//
-
 #include "MeshRenderer.hpp"
 #include <Node.hpp>
 
+namespace RtEngine {
 MeshRenderer::MeshRenderer(std::shared_ptr<Node> node) : Component(node) {}
 
 void MeshRenderer::OnRender(DrawContext& ctx)
@@ -33,4 +30,5 @@ std::shared_ptr<PropertiesManager> MeshRenderer::getProperties()
     }
 
     return properties;
+}
 }

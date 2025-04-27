@@ -1,7 +1,3 @@
-//
-// Created by oschdi on 12/17/24.
-//
-
 #include "PhongMaterial.hpp"
 
 #include <DescriptorLayoutBuilder.hpp>
@@ -15,6 +11,7 @@
 #include <phong_closesthit.rchit.spv.h>
 #include <environment_miss.rmiss.spv.h>
 
+namespace RtEngine {
 void PhongMaterial::buildPipelines(VkDescriptorSetLayout sceneLayout) {
     DescriptorLayoutBuilder layoutBuilder;
     pipeline = std::make_shared<Pipeline>(context);
@@ -116,5 +113,6 @@ void PhongMaterial::reset() {
     resources_buffer.clear();
     instances.clear();
     Material::reset();
+}
 }
 

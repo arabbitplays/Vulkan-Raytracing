@@ -1,7 +1,3 @@
-//
-// Created by oster on 09.09.2024.
-//
-
 #ifndef BASICS_VULKANENGINE_HPP
 #define BASICS_VULKANENGINE_HPP
 
@@ -44,6 +40,7 @@
 #include <VulkanContext.hpp>
 
 
+namespace RtEngine {
 class VulkanEngine {
 public:
     static constexpr int MAX_FRAMES_IN_FLIGHT = 1;
@@ -165,5 +162,6 @@ protected:
     virtual void initProperties();
 };
 
+}
 #endif //BASICS_VULKANENGINE_HPP
 

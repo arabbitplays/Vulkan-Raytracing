@@ -1,11 +1,8 @@
-//
-// Created by oschdi on 12/29/24.
-//
-
 #include "OptionsWindow.hpp"
 
 #include <imgui.h>
 
+namespace RtEngine {
 void OptionsWindow::createFrame() {
     ImGui::SetNextWindowSize(ImVec2(400, 300), ImGuiCond_Once);
 
@@ -19,4 +16,5 @@ void OptionsWindow::createFrame() {
     if (reset_image) {
         main_props_manager->curr_sample_count = 0;
     }
+}
 }

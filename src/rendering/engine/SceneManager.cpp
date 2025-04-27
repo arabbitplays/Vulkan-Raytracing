@@ -1,7 +1,3 @@
-//
-// Created by oschdi on 12/30/24.
-//
-
 #include "SceneManager.hpp"
 
 #include <DescriptorLayoutBuilder.hpp>
@@ -10,6 +6,7 @@
 #include <SceneReader.hpp>
 #include <SceneWriter.hpp>
 
+namespace RtEngine {
 void SceneManager::createScene(std::string scene_path) {
     QuickTimer timer{"Scene Creation", true};
 
@@ -394,4 +391,5 @@ uint32_t SceneManager::getEmittingInstancesCount() {
 void SceneManager::clearRessources() {
     scene_resource_deletion_queue.flush();
     main_deletion_queue.flush();
+}
 }

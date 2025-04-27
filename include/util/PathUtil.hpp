@@ -1,12 +1,9 @@
-//
-// Created by oschdi on 3/23/25.
-//
-
 #ifndef PATHUTIL_HPP
 #define PATHUTIL_HPP
 
 #include <string>
 
+namespace RtEngine {
 class PathUtil {
   PathUtil() = delete;
 
@@ -21,4 +18,5 @@ class PathUtil {
     }
 };
 
+}
 #endif //PATHUTIL_HPP

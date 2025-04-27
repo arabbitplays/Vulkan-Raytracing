@@ -1,7 +1,3 @@
-//
-// Created by oster on 12.09.2024.
-//
-
 #ifndef BASICS_NODE_HPP
 #define BASICS_NODE_HPP
 
@@ -9,6 +5,7 @@
 #include <IRenderable.hpp>
 #include <Transform.hpp>
 
+namespace RtEngine {
 class Node : public IRenderable {
 public:
     Node();
@@ -40,4 +37,5 @@ public:
 };
 
 
+}
 #endif //BASICS_NODE_HPP

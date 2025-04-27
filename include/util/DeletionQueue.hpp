@@ -1,13 +1,10 @@
-//
-// Created by oster on 18.09.2024.
-//
-
 #ifndef BASICS_DELETIONQUEUE_HPP
 #define BASICS_DELETIONQUEUE_HPP
 
 #include <deque>
 #include <functional>
 
+namespace RtEngine {
 struct DeletionQueue {
     std::deque<std::function<void()>> deletors;
 
@@ -23,4 +20,5 @@ struct DeletionQueue {
     }
 };
 
+}
 #endif //BASICS_DELETIONQUEUE_HPP

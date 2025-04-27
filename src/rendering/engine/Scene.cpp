@@ -1,13 +1,10 @@
-//
-// Created by oschdi on 12/18/24.
-//
-
 #include "Scene.hpp"
 
 #include <PhongMaterial.hpp>
 #include <glm/ext/matrix_clip_space.hpp>
 #include <glm/ext/matrix_transform.hpp>
 
+namespace RtEngine {
 std::shared_ptr<SceneData> Scene::createSceneData() {
     auto sceneData = std::make_shared<SceneData>();
 
@@ -62,4 +59,5 @@ void Scene::update(uint32_t image_width, uint32_t image_height) {
 
 void Scene::clearRessources() {
     deletion_queue.flush();
+}
 }

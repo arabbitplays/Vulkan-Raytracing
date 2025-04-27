@@ -1,7 +1,3 @@
-//
-// Created by oschdi on 3/19/25.
-//
-
 #ifndef TRANSFORM_HPP
 #define TRANSFORM_HPP
 
@@ -9,6 +5,7 @@
 #include <TransformUtil.hpp>
 #include <glm/glm.hpp>
 
+namespace RtEngine {
 class Transform : public Component {
 public:
     Transform();
@@ -35,4 +32,5 @@ private:
 
 
 
+}
 #endif //TRANSFORM_HPP

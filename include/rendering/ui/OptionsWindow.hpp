@@ -1,7 +1,3 @@
-//
-// Created by oschdi on 12/29/24.
-//
-
 #ifndef OPTIONSUI_HPP
 #define OPTIONSUI_HPP
 #include <GuiWindow.hpp>
@@ -9,6 +5,7 @@
 #include <glm/fwd.hpp>
 #include <PropertiesManager.hpp>
 
+namespace RtEngine {
 class OptionsWindow final : public GuiWindow {
 public:
     OptionsWindow() : GuiWindow() {}
@@ -41,4 +38,5 @@ protected:
 
 
 
+}
 #endif //OPTIONSUI_HPP

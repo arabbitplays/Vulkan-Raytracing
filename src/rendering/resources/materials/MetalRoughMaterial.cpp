@@ -1,7 +1,3 @@
-//
-// Created by oschdi on 12/30/24.
-//
-
 #include "MetalRoughMaterial.hpp"
 
 #include <DescriptorLayoutBuilder.hpp>
@@ -12,6 +8,7 @@
 #include <metal_rough_raygen.rgen.spv.h>
 #include <VulkanUtil.hpp>
 
+namespace RtEngine {
 void MetalRoughMaterial::buildPipelines(VkDescriptorSetLayout sceneLayout) {
     DescriptorLayoutBuilder layoutBuilder;
     pipeline = std::make_shared<Pipeline>(context);
@@ -187,4 +184,5 @@ void MetalRoughMaterial::reset() {
     metal_rough_ao_textures.clear();
     normal_textures.clear();
     Material::reset();
+}
 }

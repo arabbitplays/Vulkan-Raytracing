@@ -1,12 +1,9 @@
-//
-// Created by oschdi on 3/23/25.
-//
-
 #include "MeshRepository.hpp"
 
 #include <spdlog/spdlog.h>
 #include <VulkanContext.hpp>
 
+namespace RtEngine {
 MeshRepository::MeshRepository(const std::shared_ptr<VulkanContext>& context)
 {
     mesh_asset_builder = std::make_shared<MeshAssetBuilder>(context->device, context->base_options->resources_dir);
@@ -44,4 +41,5 @@ void MeshRepository::destroy()
     {
         mesh_asset_builder->destroyMeshAsset(*mesh.second);
     }
+}
 }

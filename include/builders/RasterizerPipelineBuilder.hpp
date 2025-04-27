@@ -6,6 +6,7 @@
 #include <stdexcept>
 #include <fstream>
 
+namespace RtEngine {
 class RasterizerPipelineBuilder {
 public:
     std::vector<VkPipelineShaderStageCreateInfo> shaderStages;
@@ -38,4 +39,5 @@ private:
 };
 
 
+}
 #endif //BASICS_PIPELINEBUILDER_HPP

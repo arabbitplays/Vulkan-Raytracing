@@ -1,12 +1,9 @@
-//
-// Created by oschdi on 12/16/24.
-//
-
 #include "Pipeline.hpp"
 
 #include <stdexcept>
 #include <VulkanUtil.hpp>
 
+namespace RtEngine {
 VkResult CreateRayTracingPipelinesKHR(VkDevice device, VkDeferredOperationKHR deferredOperation, VkPipelineCache pipelineCache, uint32_t createInfoCount,
                                       const VkRayTracingPipelineCreateInfoKHR* pCreateInfos, const VkAllocationCallbacks* pAllocator, VkPipeline* pPipelines) {
 
@@ -156,4 +153,5 @@ uint32_t Pipeline::getGroupCount() const {
     return shader_groups.size();
 }
 
+}
 

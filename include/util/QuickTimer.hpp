@@ -1,7 +1,3 @@
-//
-// Created by oschdi on 12/16/24.
-//
-
 #ifndef QUICKTIMER_HPP
 #define QUICKTIMER_HPP
 
@@ -9,6 +5,7 @@
 #include <iostream>
 #include "spdlog/spdlog.h"
 
+namespace RtEngine {
 struct QuickTimer {
     using clock = std::chrono::high_resolution_clock;
     const char* name;
@@ -27,4 +24,5 @@ struct QuickTimer {
     }
 };
 
+}
 #endif //QUICKTIMER_HPP

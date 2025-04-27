@@ -1,13 +1,10 @@
-//
-// Created by oschdi on 2/8/25.
-//
-
 #ifndef TEXTURE_H
 #define TEXTURE_H
 
 #include <vulkan/vulkan_core.h>
 #include <string>
 
+namespace RtEngine {
 struct AllocatedImage {
   VkImage image;
   VkDeviceMemory imageMemory;
@@ -38,4 +35,5 @@ public:
 
 
 
+}
 #endif //TEXTURE_H

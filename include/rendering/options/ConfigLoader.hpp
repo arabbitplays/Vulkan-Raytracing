@@ -1,13 +1,10 @@
-//
-// Created by oschdi on 3/4/25.
-//
-
 #ifndef CONFIGLOADER_HPP
 #define CONFIGLOADER_HPP
 
 #include <optional>
 #include <yaml-cpp/yaml.h>
 
+namespace RtEngine {
 class ConfigLoader {
 public:
     ConfigLoader(std::string file_path)
@@ -36,4 +33,5 @@ private:
 
 
 
+}
 #endif //CONFIGLOADER_HPP

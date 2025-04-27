@@ -1,7 +1,3 @@
-//
-// Created by oschdi on 12/15/24.
-//
-
 #ifndef ACCELERATIONSTRUCTURE_HPP
 #define ACCELERATIONSTRUCTURE_HPP
 
@@ -11,6 +7,7 @@
 #include "Vertex.hpp"
 #include <vulkan/vulkan_core.h>
 
+namespace RtEngine {
 struct Geometry {
     VkAccelerationStructureGeometryKHR handle;
     uint32_t primitiveCount;
@@ -58,4 +55,5 @@ private:
 
 
 
+}
 #endif //ACCELERATIONSTRUCTURE_HPP

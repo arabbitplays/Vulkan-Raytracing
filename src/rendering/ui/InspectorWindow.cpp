@@ -1,11 +1,8 @@
-//
-// Created by oschdi on 3/20/25.
-//
-
 #include "InspectorWindow.hpp"
 
 #include <imgui.h>
 
+namespace RtEngine {
 InspectorWindow::InspectorWindow(std::shared_ptr<PropertiesManager> main_props_manager, std::shared_ptr<SceneManager> scene_manager)
     : GuiWindow(main_props_manager), scene_manager(scene_manager) {}
 
@@ -49,4 +46,5 @@ void InspectorWindow::setNode(const std::shared_ptr<Node>& node)
     this->node = node;
 }
 
+}
 

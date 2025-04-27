@@ -1,7 +1,3 @@
-//
-// Created by oschdi on 12/17/24.
-//
-
 #ifndef MATERIAL_HPP
 #define MATERIAL_HPP
 
@@ -14,6 +10,7 @@
 #include <Pipeline.hpp>
 #include <PropertiesManager.hpp>
 
+namespace RtEngine {
 struct MaterialInstance;
 class Pipeline;
 
@@ -69,4 +66,5 @@ struct MaterialInstance {
     uint32_t albedo_texture_index;
 };
 
+}
 #endif //MATERIAL_HPP

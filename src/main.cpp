@@ -5,6 +5,7 @@
 #include <CommandLineParser.hpp>
 #include <filesystem>
 #include <ReferenceRenderer.hpp>
+using namespace RtEngine;
 
 int main(int argc, char* argv[]) {
     std::string config_file, resources_dir;

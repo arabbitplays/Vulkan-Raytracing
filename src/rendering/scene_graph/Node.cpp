@@ -1,9 +1,6 @@
-//
-// Created by oster on 12.09.2024.
-//
-
 #include <Node.hpp>
 
+namespace RtEngine {
 Node::Node()
 {
     transform = std::make_shared<Transform>();
@@ -31,5 +28,6 @@ void Node::draw(DrawContext &ctx) {
 void Node::addComponent(std::shared_ptr<Component> component)
 {
     components.push_back(component);
+}
 }
 

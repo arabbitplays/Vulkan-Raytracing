@@ -1,7 +1,3 @@
-//
-// Created by oschdi on 2/13/25.
-//
-
 #ifndef SCENEREADER_H
 #define SCENEREADER_H
 
@@ -9,6 +5,7 @@
 #include <string>
 #include <yaml-cpp/yaml.h>
 
+namespace RtEngine {
 class SceneReader {
 public:
     SceneReader() = default;
@@ -28,4 +25,5 @@ private:
 
 
 
+}
 #endif //SCENEREADER_H

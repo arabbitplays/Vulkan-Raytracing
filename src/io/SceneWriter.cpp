@@ -1,7 +1,3 @@
-//
-// Created by oschdi on 2/4/25.
-//
-
 #include "SceneWriter.hpp"
 #include <iostream>
 #include <fstream>
@@ -12,6 +8,7 @@
 #include <YAML_glm.hpp>
 
 
+namespace RtEngine {
 void SceneWriter::writeScene(const std::string& filename, std::shared_ptr<Scene> scene) {
     QuickTimer quick_timer("Writing scene to file");
 
@@ -196,5 +193,6 @@ void SceneWriter::writeSceneNode(YAML::Emitter& out, const std::shared_ptr<Node>
     }
     out << YAML::EndSeq;
     out << YAML::EndMap;
+}
 }
 

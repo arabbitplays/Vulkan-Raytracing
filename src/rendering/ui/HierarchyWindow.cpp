@@ -1,11 +1,8 @@
-//
-// Created by oschdi on 3/20/25.
-//
-
 #include "HierarchyWindow.hpp"
 
 #include <spdlog/spdlog.h>
 
+namespace RtEngine {
 HierarchyWindow::HierarchyWindow(std::shared_ptr<PropertiesManager> main_props_manager, std::shared_ptr<InspectorWindow> inspector_window, std::shared_ptr<SceneManager> scene_manager)
     : GuiWindow(main_props_manager), inspector_window(inspector_window), scene_manager(scene_manager) {}
 
@@ -101,4 +98,5 @@ void HierarchyWindow::displayNode(std::shared_ptr<Node> node, std::shared_ptr<No
         }
         ImGui::TreePop();
     }
+}
 }

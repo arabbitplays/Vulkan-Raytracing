@@ -1,13 +1,10 @@
-//
-// Created by oschdi on 12/29/24.
-//
-
 #ifndef GUIWINDOW_HPP
 #define GUIWINDOW_HPP
 #include <memory>
 #include <PropertiesManager.hpp>
 
 
+namespace RtEngine {
 class GuiWindow {
 public:
     GuiWindow() = default;
@@ -24,4 +21,5 @@ protected:
 
 
 
+}
 #endif //GUIWINDOW_HPP
