@@ -15,7 +15,7 @@ void BenchmarkRenderer::mainLoop() {
         // render one image and then output it if output path is defined
         if (sample_count == properties_manager->curr_sample_count)
         {
-            vkDeviceWaitIdle(device);
+            vkDeviceWaitIdle(context->device_manager->getDevice());
             outputRenderingTarget(std::to_string(sample_count) + "_benchmark.png");
             break;
         }
@@ -32,7 +32,7 @@ void BenchmarkRenderer::mainLoop() {
         }
     }
 
-    vkDeviceWaitIdle(device);
+    vkDeviceWaitIdle(context->device_manager->getDevice());
 
     float mse = calculateMSEToReference();
     spdlog::info("Sample count: {}, Final Error: {:f}", properties_manager->curr_sample_count, mse);
@@ -41,7 +41,7 @@ void BenchmarkRenderer::mainLoop() {
 
 void BenchmarkRenderer::drawFrame()
 {
-    vkWaitForFences(device, 1, &inFlightFences[currentFrame], VK_TRUE, UINT64_MAX);
+    vkWaitForFences(context->device_manager->getDevice(), 1, &inFlightFences[currentFrame], VK_TRUE, UINT64_MAX);
 
     uint32_t curr_sample_count = properties_manager->curr_sample_count;
     if (error_calculation_sample_count == curr_sample_count)
@@ -59,7 +59,7 @@ void BenchmarkRenderer::drawFrame()
             return;
     }
 
-    vkResetFences(device, 1, &inFlightFences[currentFrame]);
+    vkResetFences(context->device_manager->getDevice(), 1, &inFlightFences[currentFrame]);
 
     scene_manager->updateScene(mainDrawContext, currentFrame, getRenderTarget(), rng_tex);
     properties_manager->emitting_instances_count = scene_manager->getEmittingInstancesCount(); // TODO move this together with the creation of the instance buffers

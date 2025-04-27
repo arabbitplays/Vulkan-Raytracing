@@ -27,9 +27,11 @@ VkResult GetRayTracingShaderGroupHandlesKHR(VkDevice device, VkPipeline pipeline
 // --------------------------------------------------------------------------------------------------------------------------
 
 void Pipeline::build() {
+    VkDevice device = context->device_manager->getDevice();
+
     pipelineLayoutInfo.pushConstantRangeCount = static_cast<uint32_t>(pushConstants.size());
     pipelineLayoutInfo.pPushConstantRanges = pushConstants.data();
-    if (vkCreatePipelineLayout(context->device, &pipelineLayoutInfo, nullptr, &layout) != VK_SUCCESS) {
+    if (vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &layout) != VK_SUCCESS) {
         throw std::runtime_error("failed to create pipeline layout!");
     }
 
@@ -41,17 +43,19 @@ void Pipeline::build() {
     pipelineInfo.pGroups = shader_groups.data();
     pipelineInfo.maxPipelineRayRecursionDepth = 31;
     pipelineInfo.layout = layout;
-    if (CreateRayTracingPipelinesKHR(context->device, VK_NULL_HANDLE, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &handle) != VK_SUCCESS) {
+    if (CreateRayTracingPipelinesKHR(device, VK_NULL_HANDLE, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &handle) != VK_SUCCESS) {
         throw std::runtime_error("failed to create ray tracing pipeline!");
     }
 
     deletionQueue.pushFunction([&] () {
-        vkDestroyPipelineLayout(context->device, layout, nullptr);
-        vkDestroyPipeline(context->device, handle, nullptr);
+        vkDestroyPipelineLayout(context->device_manager->getDevice(), layout, nullptr);
+        vkDestroyPipeline(context->device_manager->getDevice(), handle, nullptr);
     });
 }
 
 void Pipeline::createShaderBindingTables(VkPhysicalDeviceRayTracingPipelinePropertiesKHR raytracingProperties) {
+    VkDevice device = context->device_manager->getDevice();
+
     std::vector<uint32_t> rgen_indices{0};
     std::vector<uint32_t> miss_indices{1, 2};
     std::vector<uint32_t> hit_indices{3};
@@ -74,14 +78,14 @@ void Pipeline::createShaderBindingTables(VkPhysicalDeviceRayTracingPipelinePrope
     });
 
     std::vector<uint8_t> shaderHandleStorage(sbt_size);
-    if (GetRayTracingShaderGroupHandlesKHR(context->device, handle, 0, groupCount, sbt_size, shaderHandleStorage.data()) != VK_SUCCESS) {
+    if (GetRayTracingShaderGroupHandlesKHR(device, handle, 0, groupCount, sbt_size, shaderHandleStorage.data()) != VK_SUCCESS) {
         throw std::runtime_error("failed to get shader group handles!");
     }
 
     auto copyHandle = [&](AllocatedBuffer& buffer, std::vector<uint32_t>& indices, uint32_t stride) {
         size_t offset = 0;
         for (uint32_t index = 0; index < indices.size(); index++) {
-            buffer.update(context->device, shaderHandleStorage.data() + (indices[index] * handleSizeAligned), handleSize, offset);
+            buffer.update(device, shaderHandleStorage.data() + (indices[index] * handleSizeAligned), handleSize, offset);
             offset += stride * sizeof(uint8_t);
         }
     };

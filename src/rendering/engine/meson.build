@@ -1,3 +1,4 @@
+subdir('context')
 subdir('renderer')
 
 src += files(

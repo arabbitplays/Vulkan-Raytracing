@@ -12,15 +12,16 @@ namespace RtEngine {
 void MetalRoughMaterial::buildPipelines(VkDescriptorSetLayout sceneLayout) {
     DescriptorLayoutBuilder layoutBuilder;
     pipeline = std::make_shared<Pipeline>(context);
+    VkDevice device = context->device_manager->getDevice();
 
     layoutBuilder.addBinding(0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
     layoutBuilder.addBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 256);
     layoutBuilder.addBinding(2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 256);
     layoutBuilder.addBinding(3, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 256);
 
-    materialLayout = layoutBuilder.build(context->device, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR);
+    materialLayout = layoutBuilder.build(device, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR);
     mainDeletionQueue.pushFunction([&]() {
-        vkDestroyDescriptorSetLayout(context->device, materialLayout, nullptr);
+        vkDestroyDescriptorSetLayout(context->device_manager->getDevice(), materialLayout, nullptr);
     });
 
     std::vector<VkDescriptorSetLayout> descriptorSetLayouts{sceneLayout, materialLayout};
@@ -28,10 +29,10 @@ void MetalRoughMaterial::buildPipelines(VkDescriptorSetLayout sceneLayout) {
 
     pipeline->addPushConstant(MAX_PUSH_CONSTANT_SIZE, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR | VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_MISS_BIT_KHR);
 
-    VkShaderModule raygenShaderModule = VulkanUtil::createShaderModule(context->device, oschd_metal_rough_raygen_rgen_spv_size(), oschd_metal_rough_raygen_rgen_spv());
-    VkShaderModule missShaderModule = VulkanUtil::createShaderModule(context->device, oschd_metal_rough_miss_rmiss_spv_size(), oschd_metal_rough_miss_rmiss_spv());
-    VkShaderModule shadowMissShaderModule = VulkanUtil::createShaderModule(context->device, oschd_shadow_miss_rmiss_spv_size(), oschd_shadow_miss_rmiss_spv());
-    VkShaderModule closestHitShaderModule = VulkanUtil::createShaderModule(context->device, oschd_metal_rough_closesthit_rchit_spv_size(), oschd_metal_rough_closesthit_rchit_spv());
+    VkShaderModule raygenShaderModule = VulkanUtil::createShaderModule(device, oschd_metal_rough_raygen_rgen_spv_size(), oschd_metal_rough_raygen_rgen_spv());
+    VkShaderModule missShaderModule = VulkanUtil::createShaderModule(device, oschd_metal_rough_miss_rmiss_spv_size(), oschd_metal_rough_miss_rmiss_spv());
+    VkShaderModule shadowMissShaderModule = VulkanUtil::createShaderModule(device, oschd_shadow_miss_rmiss_spv_size(), oschd_shadow_miss_rmiss_spv());
+    VkShaderModule closestHitShaderModule = VulkanUtil::createShaderModule(device, oschd_metal_rough_closesthit_rchit_spv_size(), oschd_metal_rough_closesthit_rchit_spv());
 
     pipeline->addShaderStage(raygenShaderModule, VK_SHADER_STAGE_RAYGEN_BIT_KHR, VK_RAY_TRACING_SHADER_GROUP_TYPE_GENERAL_KHR);
     pipeline->addShaderStage(missShaderModule, VK_SHADER_STAGE_MISS_BIT_KHR, VK_RAY_TRACING_SHADER_GROUP_TYPE_GENERAL_KHR);
@@ -44,10 +45,10 @@ void MetalRoughMaterial::buildPipelines(VkDescriptorSetLayout sceneLayout) {
         pipeline->destroy();
     });
 
-    vkDestroyShaderModule(context->device, raygenShaderModule, nullptr);
-    vkDestroyShaderModule(context->device, missShaderModule, nullptr);
-    vkDestroyShaderModule(context->device, shadowMissShaderModule, nullptr);
-    vkDestroyShaderModule(context->device, closestHitShaderModule, nullptr);
+    vkDestroyShaderModule(device, raygenShaderModule, nullptr);
+    vkDestroyShaderModule(device, missShaderModule, nullptr);
+    vkDestroyShaderModule(device, shadowMissShaderModule, nullptr);
+    vkDestroyShaderModule(device, closestHitShaderModule, nullptr);
 }
 
 void MetalRoughMaterial::writeMaterial() {
@@ -58,7 +59,7 @@ void MetalRoughMaterial::writeMaterial() {
 
     material_buffer = createMaterialBuffer();
 
-    materialDescriptorSet = descriptorAllocator.allocate(context->device, materialLayout);
+    materialDescriptorSet = descriptorAllocator.allocate(context->device_manager->getDevice(), materialLayout);
 
     descriptorAllocator.writeBuffer(0, material_buffer.handle, 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
 
@@ -75,8 +76,8 @@ void MetalRoughMaterial::writeMaterial() {
     descriptorAllocator.writeImages(1, extract_views(albedo_textures), sampler, VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
     descriptorAllocator.writeImages(2, extract_views(metal_rough_ao_textures), sampler, VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
     descriptorAllocator.writeImages(3, extract_views(normal_textures), sampler, VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
-
-    descriptorAllocator.updateSet(context->device, materialDescriptorSet);
+    VkDevice device = context->device_manager->getDevice();
+    descriptorAllocator.updateSet(device, materialDescriptorSet);
     descriptorAllocator.clearWrites();
 }
 

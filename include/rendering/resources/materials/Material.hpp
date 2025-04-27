@@ -21,10 +21,10 @@ class Material {
         std::vector<DescriptorAllocator::PoolSizeRatio> poolRatios = {
             { VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1 },
         };
-        descriptorAllocator.init(context->device, 4, poolRatios);
+        descriptorAllocator.init(context->device_manager->getDevice(), 4, poolRatios);
 
         mainDeletionQueue.pushFunction([&]() {
-            descriptorAllocator.destroyPools(this->context->device);
+            descriptorAllocator.destroyPools(this->context->device_manager->getDevice());
         });
     };
 

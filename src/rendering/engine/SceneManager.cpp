@@ -48,10 +48,12 @@ void SceneManager::createSceneBuffers() {
 
 void SceneManager::createBlas() {
     QuickTimer timer{"BLAS Build", true};
+    VkDevice device = context->device_manager->getDevice();
+
     uint32_t object_id = 0;
     std::vector<std::shared_ptr<MeshAsset>> meshes = scene->getMeshes();
     for (auto& meshAsset : meshes) {
-        meshAsset->accelerationStructure = std::make_shared<AccelerationStructure>(context->device, *context->resource_builder, *context->command_manager, VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_KHR);
+        meshAsset->accelerationStructure = std::make_shared<AccelerationStructure>(device, *context->resource_builder, *context->command_manager, VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_KHR);
 
         meshAsset->accelerationStructure->addTriangleGeometry(vertex_buffer, index_buffer,
             meshAsset->vertex_count - 1, meshAsset->triangle_count, sizeof(Vertex),
@@ -79,9 +81,10 @@ void SceneManager::createSceneDescriptorSets() {
     }
     context->descriptor_allocator->writeImages(8, views, defaultSamplerLinear, VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
 
+    VkDevice device = context->device_manager->getDevice();
     for (int i = 0; i < max_frames_in_flight; i++) {
-        scene_descriptor_sets.push_back(context->descriptor_allocator->allocate(context->device, scene_descsriptor_set_layout));
-        context->descriptor_allocator->updateSet(context->device, scene_descriptor_sets[i]);
+        scene_descriptor_sets.push_back(context->descriptor_allocator->allocate(device, scene_descsriptor_set_layout));
+        context->descriptor_allocator->updateSet(device, scene_descriptor_sets[i]);
         context->descriptor_allocator->clearWrites();
     }
 }
@@ -100,9 +103,9 @@ void SceneManager::createSceneLayout() {
     layoutBuilder.addBinding(8, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 6); // env map
     layoutBuilder.addBinding(9, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE); // rng tex
 
-    scene_descsriptor_set_layout = layoutBuilder.build(context->device, VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR | VK_SHADER_STAGE_MISS_BIT_KHR);
+    scene_descsriptor_set_layout = layoutBuilder.build(context->device_manager->getDevice(), VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR | VK_SHADER_STAGE_MISS_BIT_KHR);
     main_deletion_queue.pushFunction([&]() {
-        vkDestroyDescriptorSetLayout(context->device, scene_descsriptor_set_layout, nullptr);
+        vkDestroyDescriptorSetLayout(context->device_manager->getDevice(), scene_descsriptor_set_layout, nullptr);
     });
 }
 
@@ -117,7 +120,7 @@ void SceneManager::createUniformBuffers() {
         sceneUniformBuffers[i] = context->resource_builder->createBuffer(size, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
                                    VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 
-        vkMapMemory(context->device, sceneUniformBuffers[i].bufferMemory, 0, size, 0, &sceneUniformBuffersMapped[i]);
+        vkMapMemory(context->device_manager->getDevice(), sceneUniformBuffers[i].bufferMemory, 0, size, 0, &sceneUniformBuffersMapped[i]);
 
         scene_resource_deletion_queue.pushFunction([&, i]() {
             context->resource_builder->destroyBuffer(sceneUniformBuffers[i]);
@@ -127,11 +130,12 @@ void SceneManager::createUniformBuffers() {
 
 void SceneManager::updateScene(DrawContext& draw_context, uint32_t current_image_idx, AllocatedImage current_image, AllocatedImage& rng_tex) {
     //QuickTimer timer{"Scene Update", true};
+    VkDevice device = context->device_manager->getDevice();
 
     scene->update(context->swapchain->extent.width, context->swapchain->extent.height);
 
     if (top_level_acceleration_structure == nullptr) {
-        top_level_acceleration_structure = std::make_shared<AccelerationStructure>(context->device, *context->resource_builder, *context->command_manager, VK_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL_KHR);
+        top_level_acceleration_structure = std::make_shared<AccelerationStructure>(device, *context->resource_builder, *context->command_manager, VK_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL_KHR);
 
         scene_resource_deletion_queue.pushFunction([&]() {
             top_level_acceleration_structure->destroy();
@@ -152,7 +156,7 @@ void SceneManager::updateScene(DrawContext& draw_context, uint32_t current_image
 
     if (emitting_instances_buffer.handle == VK_NULL_HANDLE || static_cast<uint8_t>(bufferUpdateFlags) & static_cast<uint8_t>(MATERIAL_UPDATE) != 0)
     {
-        vkDeviceWaitIdle(context->device);
+        vkDeviceWaitIdle(device);
         if (emitting_instances_buffer.handle != VK_NULL_HANDLE)
             context->resource_builder->destroyBuffer(emitting_instances_buffer);
         else
@@ -167,7 +171,7 @@ void SceneManager::updateScene(DrawContext& draw_context, uint32_t current_image
 
     if (bufferUpdateFlags != NO_UPDATE)
     {
-        vkDeviceWaitIdle(context->device);
+        vkDeviceWaitIdle(device);
         if (static_cast<uint8_t>(bufferUpdateFlags) & static_cast<uint8_t>(MATERIAL_UPDATE) != 0)
         {
             scene->material->writeMaterial();
@@ -193,7 +197,7 @@ void SceneManager::updateScene(DrawContext& draw_context, uint32_t current_image
     context->descriptor_allocator->writeBuffer(6, instance_mapping_buffer.handle, 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
     context->descriptor_allocator->writeBuffer(7, emitting_instances_buffer.handle, 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
     context->descriptor_allocator->writeImage(9, rng_tex.imageView, VK_NULL_HANDLE, VK_IMAGE_LAYOUT_GENERAL, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
-    context->descriptor_allocator->updateSet(context->device, scene_descriptor_sets[0]);
+    context->descriptor_allocator->updateSet(device, scene_descriptor_sets[0]);
     context->descriptor_allocator->clearWrites();
 
     std::shared_ptr<SceneData> scene_data = scene->createSceneData();
@@ -329,34 +333,36 @@ void SceneManager::createDefaultTextures() {
 }
 
 void SceneManager::createDefaultSamplers() {
+    VkDevice device = context->device_manager->getDevice();
+
     VkSamplerCreateInfo samplerInfo = {.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO};
 
     samplerInfo.magFilter = VK_FILTER_NEAREST;
     samplerInfo.minFilter = VK_FILTER_NEAREST;
-    if (vkCreateSampler(context->device, &samplerInfo, nullptr, &defaultSamplerNearest) != VK_SUCCESS) {
+    if (vkCreateSampler(device, &samplerInfo, nullptr, &defaultSamplerNearest) != VK_SUCCESS) {
         throw std::runtime_error("failed to create texture sampler!");
     }
 
     samplerInfo.magFilter = VK_FILTER_LINEAR;
     samplerInfo.minFilter = VK_FILTER_LINEAR;
-    if (vkCreateSampler(context->device, &samplerInfo, nullptr, &defaultSamplerLinear) != VK_SUCCESS) {
+    if (vkCreateSampler(device, &samplerInfo, nullptr, &defaultSamplerLinear) != VK_SUCCESS) {
         throw std::runtime_error("failed to create texture sampler!");
     }
 
     VkPhysicalDeviceProperties properties{};
-    vkGetPhysicalDeviceProperties(context->physicalDevice, &properties);
+    vkGetPhysicalDeviceProperties(context->device_manager->getPhysicalDevice(), &properties);
     samplerInfo.anisotropyEnable = VK_TRUE;
     samplerInfo.maxAnisotropy = properties.limits.maxSamplerAnisotropy;
     samplerInfo.magFilter = VK_FILTER_NEAREST;
     samplerInfo.minFilter = VK_FILTER_NEAREST;
-    if (vkCreateSampler(context->device, &samplerInfo, nullptr, &defaultSamplerAnisotropic) != VK_SUCCESS) {
+    if (vkCreateSampler(device, &samplerInfo, nullptr, &defaultSamplerAnisotropic) != VK_SUCCESS) {
         throw std::runtime_error("failed to create texture sampler!");
     }
 
     main_deletion_queue.pushFunction([&]() {
-        vkDestroySampler(context->device, defaultSamplerLinear, nullptr);
-        vkDestroySampler(context->device, defaultSamplerNearest, nullptr);
-        vkDestroySampler(context->device, defaultSamplerAnisotropic, nullptr);
+        vkDestroySampler(context->device_manager->getDevice(), defaultSamplerLinear, nullptr);
+        vkDestroySampler(context->device_manager->getDevice(), defaultSamplerNearest, nullptr);
+        vkDestroySampler(context->device_manager->getDevice(), defaultSamplerAnisotropic, nullptr);
     });
 }
 

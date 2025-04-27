@@ -2,8 +2,7 @@
 #define BASICS_VULKANENGINE_HPP
 
 #include <iostream>
-#define GLFW_INCLUDE_VULKAN
-#include <GLFW/glfw3.h>
+
 #include <vector>
 #include <optional>
 #include <fstream>
@@ -41,11 +40,12 @@
 
 
 namespace RtEngine {
+
 class VulkanEngine {
 public:
     static constexpr int MAX_FRAMES_IN_FLIGHT = 1;
 
-    VkDevice device;
+
     std::shared_ptr<CommandManager> pCommandManager;
     CommandManager commandManager;
     std::shared_ptr<RessourceBuilder> pRessourceBuilder;
@@ -54,19 +54,12 @@ public:
 
     void run(const std::string& config_file, const std::string& resources_dir);
 protected:
-
     GLFWwindow* window;
     std::shared_ptr<GuiManager> guiManager;
 
-    VkInstance instance;
-    VkSurfaceKHR surface;
-    VkDebugUtilsMessengerEXT debugMessenger;
     DeletionQueue mainDeletionQueue;
 
     std::shared_ptr<VulkanContext> context;
-
-    VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
-    VkQueue graphicsQueue, presentQueue;
 
     std::shared_ptr<Swapchain> swapchain;
 
@@ -75,8 +68,6 @@ protected:
     DrawContext mainDrawContext;
     std::shared_ptr<PropertiesManager> properties_manager;
     std::shared_ptr<Properties> renderer_properties;
-
-    VkPhysicalDeviceRayTracingPipelinePropertiesKHR raytracingProperties{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_PROPERTIES_KHR};
 
     std::vector<AllocatedImage> render_targets;
     AllocatedImage rng_tex;
@@ -92,6 +83,7 @@ protected:
 
     void initWindow();
     void initVulkan();
+    void createContext();
     void initGui();
     virtual void mainLoop();
     void cleanup();
@@ -100,17 +92,7 @@ protected:
     static void keyCallback(GLFWwindow *window, int key, int scancode, int action, int mods);
     static void mouseCallback(GLFWwindow *window, double xPos, double yPos);
 
-    void createInstance();
-    bool checkValidationLayerSupport();
-    std::vector<const char *> getRequiredExtensions();
-    void setupDebugMessenger();
-    void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT &createInfo);
-    void createSurface();
-    void pickPhysicalDevice();
-    bool isDeviceSuitable(VkPhysicalDevice device);
-    bool checkDeviceExtensionSupport(VkPhysicalDevice device);
 
-    void createLogicalDevice();
     void createImageViews();
 
     void createGuiFrameBuffers();
@@ -146,17 +128,6 @@ protected:
     void recordRenderToImage(VkCommandBuffer commandBuffer);
     void recordCopyToSwapchain(VkCommandBuffer commandBuffer, uint32_t swapchain_image_index);
     void recordEndCommandBuffer(VkCommandBuffer commandBuffer);
-
-    static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
-            VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
-            VkDebugUtilsMessageTypeFlagsEXT messageType,
-            const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
-            void* pUserData) {
-
-        std::cerr << "validation layer: " << pCallbackData->pMessage << std::endl;
-
-        return VK_FALSE;
-    }
 
     void loadScene();
     virtual void initProperties();

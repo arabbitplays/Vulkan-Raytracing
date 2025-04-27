@@ -1,18 +1,13 @@
 #ifndef SWAPCHAIN_HPP
 #define SWAPCHAIN_HPP
 
+#include <DeviceManager.hpp>
 #include <vector>
 #include <vulkan/vulkan_core.h>
 #include <GLFW/glfw3.h>
 #include "RessourceBuilder.hpp"
 
 namespace RtEngine {
-struct SwapChainSupportDetails {
-    VkSurfaceCapabilitiesKHR capabilities;
-    std::vector<VkSurfaceFormatKHR> formats;
-    std::vector<VkPresentModeKHR> presentModes;
-};
-
 class Swapchain {
 public:
     Swapchain() = default;

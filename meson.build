@@ -12,6 +12,7 @@ incdirs = [
     include_directories('include/io'),
     include_directories('include/rendering/camera'),
     include_directories('include/rendering/engine'),
+    include_directories('include/rendering/engine/context'),
     include_directories('include/rendering/engine/renderer'),
     include_directories('include/rendering/options'),
     include_directories('include/rendering/resources'),

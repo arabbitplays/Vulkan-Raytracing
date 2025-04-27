@@ -6,7 +6,7 @@
 namespace RtEngine {
 MeshRepository::MeshRepository(const std::shared_ptr<VulkanContext>& context)
 {
-    mesh_asset_builder = std::make_shared<MeshAssetBuilder>(context->device, context->base_options->resources_dir);
+    mesh_asset_builder = std::make_shared<MeshAssetBuilder>(context->device_manager->getDevice(), context->base_options->resources_dir);
 }
 
 std::shared_ptr<MeshAsset> MeshRepository::getMesh(const std::string& name)

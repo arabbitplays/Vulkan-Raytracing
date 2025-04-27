@@ -2,7 +2,6 @@
 #define VULKANCONTEXT_HPP
 
 #include <BaseOptions.hpp>
-#include <vulkan/vulkan_core.h>
 #include <Swapchain.hpp>
 #include <RessourceBuilder.hpp>
 #include <MeshAssetBuilder.hpp>
@@ -10,14 +9,11 @@
 #include <CommandManager.hpp>
 #include <MeshRepository.hpp>
 #include <TextureRepository.hpp>
-
+#include <DeviceManager.hpp>
 
 namespace RtEngine {
 struct VulkanContext {
-    VkDevice device;
-    VkPhysicalDevice physicalDevice;
-    VkInstance instance;
-    VkSurfaceKHR surface;
+    std::shared_ptr<DeviceManager> device_manager;
 
     std::shared_ptr<Swapchain> swapchain;
 

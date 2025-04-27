@@ -1,12 +1,22 @@
+#ifndef BASICS_VULKANUTIL_HPP
+#define BASICS_VULKANUTIL_HPP
+
 #include <string>
 #include <vector>
 #include <fstream>
 #include <vulkan/vulkan_core.h>
-
-#ifndef BASICS_VULKANUTIL_HPP
-#define BASICS_VULKANUTIL_HPP
+#include <optional>
 
 namespace RtEngine {
+struct QueueFamilyIndices {
+    std::optional<uint32_t> graphicsFamily;
+    std::optional<uint32_t> presentFamily;
+
+    bool isComplete() const {
+        return graphicsFamily.has_value() && presentFamily.has_value();
+    }
+};
+
 class VulkanUtil {
     VulkanUtil() = delete;
 
