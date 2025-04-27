@@ -9,7 +9,7 @@ void BenchmarkRenderer::mainLoop() {
     omp_set_num_threads(omp_get_max_threads());
 
     loadScene();
-    reference_image_data = ressourceBuilder.loadImageData(reference_image_path, &ref_width, &ref_height, &ref_channels);
+    reference_image_data = context->resource_builder->loadImageData(reference_image_path, &ref_width, &ref_height, &ref_channels);
 
     while(!glfwWindowShouldClose(window)) {
         // render one image and then output it if output path is defined

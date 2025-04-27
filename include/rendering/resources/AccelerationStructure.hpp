@@ -1,7 +1,7 @@
 #ifndef ACCELERATIONSTRUCTURE_HPP
 #define ACCELERATIONSTRUCTURE_HPP
 
-#include <RessourceBuilder.hpp>
+#include <ResourceBuilder.hpp>
 #include <vector>
 #include <bits/shared_ptr.h>
 #include "Vertex.hpp"
@@ -17,7 +17,7 @@ struct Geometry {
 class AccelerationStructure {
 public:
     AccelerationStructure() = default;
-    AccelerationStructure(VkDevice& device, RessourceBuilder& ressource_builder, CommandManager& command_manager, VkAccelerationStructureTypeKHR type) :
+    AccelerationStructure(VkDevice& device, ResourceBuilder& ressource_builder, CommandManager& command_manager, VkAccelerationStructureTypeKHR type) :
         device(device), ressource_builder(ressource_builder), command_manager(command_manager), type(type) {};
 
     void addTriangleGeometry(const AllocatedBuffer& vertex_buffer, const AllocatedBuffer& index_buffer,
@@ -39,7 +39,7 @@ private:
     void fillInstanceBuffer();
 
     VkDevice device;
-    RessourceBuilder ressource_builder;
+    ResourceBuilder ressource_builder;
     CommandManager command_manager;
 
     VkAccelerationStructureTypeKHR type;

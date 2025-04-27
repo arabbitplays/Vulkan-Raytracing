@@ -4,7 +4,7 @@
 #include <DeletionQueue.hpp>
 #include <DescriptorAllocator.hpp>
 #include <vulkan/vulkan_core.h>
-#include <RessourceBuilder.hpp>
+#include <ResourceBuilder.hpp>
 #include <bits/shared_ptr.h>
 #include <glm/vec4.hpp>
 #include <Pipeline.hpp>

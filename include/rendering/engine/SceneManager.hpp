@@ -5,7 +5,6 @@
 #include <OptionsWindow.hpp>
 #include <vector>
 #include <vulkan/vulkan_core.h>
-#include <RessourceBuilder.hpp>
 #include <Scene.hpp>
 #include <VulkanContext.hpp>
 

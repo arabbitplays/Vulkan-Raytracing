@@ -2,6 +2,8 @@
 #define BASICS_COMMANDMANAGER_HPP
 
 
+#include <DeviceManager.hpp>
+#include <memory>
 #include <vulkan/vulkan_core.h>
 #include <optional>
 #include <VulkanUtil.hpp>
@@ -12,16 +14,14 @@ public:
     VkCommandPool commandPool{};
 
     CommandManager();
-    CommandManager(VkDevice device, QueueFamilyIndices queueFamilyIndices);
+    CommandManager(std::shared_ptr<DeviceManager> deviceManager);
     void createCommandPool();
     VkCommandBuffer beginSingleTimeCommands();
     void endSingleTimeCommand(VkCommandBuffer commandBuffer);
     void destroyCommandManager();
 
 private:
-    VkDevice device;
-    VkQueue graphicsQueue{};
-    QueueFamilyIndices queueFamilyIndices;
+    std::shared_ptr<DeviceManager> deviceManager;
 };
 
 

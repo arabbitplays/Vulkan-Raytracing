@@ -1,6 +1,5 @@
 #include "GuiManager.hpp"
 
-#include <CommandManager.hpp>
 #include <imgui.h>
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_vulkan.h>
@@ -16,29 +15,27 @@ void checkVulkanResult(VkResult err)
     throw std::runtime_error("Error: VkResult = " + err);
 }
 
-GuiManager::GuiManager(VkDevice device, VkPhysicalDevice physical_device, GLFWwindow* window, VkInstance instance,
-              DescriptorAllocator descriptor_allocator, std::shared_ptr<Swapchain> swapchain,
-              uint32_t grafics_queue_family, VkQueue grafics_queue) : device(device), swapchain(swapchain) {
-
-    createRenderPass(swapchain->imageFormat);
-    createFrameBuffers();
-    createDescriptorPool(descriptor_allocator);
+GuiManager::GuiManager(std::shared_ptr<VulkanContext> context) : context(context) {
+    VkDevice device = context->device_manager->getDevice();
+    createRenderPass(device, context->swapchain->imageFormat);
+    createFrameBuffers(device, context->swapchain);
+    createDescriptorPool(device, context->descriptor_allocator);
 
     deletion_queue.pushFunction([&]() {
-        vkDestroyRenderPass(this->device, render_pass, nullptr);
-        vkDestroyDescriptorPool(this->device, descriptor_pool, nullptr);
+        vkDestroyRenderPass(this->context->device_manager->getDevice(), render_pass, nullptr);
+        vkDestroyDescriptorPool(this->context->device_manager->getDevice(), descriptor_pool, nullptr);
     });
 
-    initImGui(physical_device, window, instance, grafics_queue_family, grafics_queue);
+    initImGui(context->device_manager, context->window, context->swapchain);
 }
 
-void GuiManager::createRenderPass(VkFormat image_format) {
+void GuiManager::createRenderPass(VkDevice device, VkFormat image_format) {
     RenderPassBuilder renderPassBuilder;
     renderPassBuilder.setColorAttachmentFormat(image_format);
     render_pass = renderPassBuilder.createRenderPass(device);
 }
 
-void GuiManager::createFrameBuffers() {
+void GuiManager::createFrameBuffers(VkDevice device, std::shared_ptr<Swapchain> swapchain) {
     frame_buffers.resize(swapchain->imageViews.size());
     for (size_t i = 0; i < frame_buffers.size(); i++) {
         std::array<VkImageView, 1> attachments {
@@ -60,17 +57,16 @@ void GuiManager::createFrameBuffers() {
     }
 }
 
-void GuiManager::createDescriptorPool(DescriptorAllocator descriptor_allocator) {
+void GuiManager::createDescriptorPool(VkDevice device, std::shared_ptr<DescriptorAllocator> descriptor_allocator) {
     std::vector<VkDescriptorPoolSize> pool_sizes =
         {
         { VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1 },
     };
-    descriptor_pool = descriptor_allocator.createPool(device, pool_sizes, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT);
+    descriptor_pool = descriptor_allocator->createPool(device, pool_sizes, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT);
 }
 
 
-void GuiManager::initImGui(VkPhysicalDevice physical_device, GLFWwindow* window, VkInstance instance,
-        uint32_t graphics_queue_family, VkQueue graphics_queue) {
+void GuiManager::initImGui(std::shared_ptr<DeviceManager> device_manager, GLFWwindow* window, std::shared_ptr<Swapchain> swapchain) {
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
     ImGuiIO& io = ImGui::GetIO(); (void)io;
@@ -81,11 +77,11 @@ void GuiManager::initImGui(VkPhysicalDevice physical_device, GLFWwindow* window,
 
     ImGui_ImplGlfw_InitForVulkan(window, true);
     ImGui_ImplVulkan_InitInfo initInfo = {};
-    initInfo.Instance = instance;
-    initInfo.PhysicalDevice = physical_device;
-    initInfo.Device = device;
-    initInfo.QueueFamily = graphics_queue_family;
-    initInfo.Queue = graphics_queue;
+    initInfo.Instance = device_manager->getInstance();
+    initInfo.PhysicalDevice = device_manager->getPhysicalDevice();
+    initInfo.Device = device_manager->getDevice();
+    initInfo.QueueFamily = device_manager->getQueueIndices().graphicsFamily.value();
+    initInfo.Queue = device_manager->getQueue(GRAPHICS);
     initInfo.PipelineCache = VK_NULL_HANDLE;
     initInfo.DescriptorPool = descriptor_pool;
     initInfo.RenderPass = render_pass;
@@ -102,13 +98,12 @@ void GuiManager::addWindow(std::shared_ptr<GuiWindow> window) {
     gui_windows.push_back(window);
 }
 
-void GuiManager::updateWindows(std::shared_ptr<Swapchain> swapchain) {
+void GuiManager::updateWindows() {
     for (auto framebuffer : frame_buffers) {
-        vkDestroyFramebuffer(device, framebuffer, nullptr);
+        vkDestroyFramebuffer(context->device_manager->getDevice(), framebuffer, nullptr);
     }
 
-    this->swapchain = swapchain;
-    createFrameBuffers();
+    createFrameBuffers(context->device_manager->getDevice(), context->swapchain);
 }
 
 void GuiManager::recordGuiCommands(VkCommandBuffer commandBuffer, uint32_t imageIndex) {
@@ -130,7 +125,7 @@ void GuiManager::recordGuiCommands(VkCommandBuffer commandBuffer, uint32_t image
     info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
     info.renderPass = render_pass;
     info.framebuffer = frame_buffers[imageIndex];
-    info.renderArea.extent = swapchain->extent;
+    info.renderArea.extent = context->swapchain->extent;
     info.clearValueCount = static_cast<uint32_t>(clearValues.size());
     info.pClearValues = clearValues.data();
     vkCmdBeginRenderPass(commandBuffer, &info, VK_SUBPASS_CONTENTS_INLINE);
@@ -145,7 +140,7 @@ void GuiManager::destroy() {
     shutdownImGui();
 
     for (auto framebuffer : frame_buffers) {
-        vkDestroyFramebuffer(device, framebuffer, nullptr);
+        vkDestroyFramebuffer(context->device_manager->getDevice(), framebuffer, nullptr);
     }
     deletion_queue.flush();
 }

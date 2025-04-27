@@ -8,11 +8,15 @@
 namespace RtEngine {
 void Swapchain::recreate() {
     destroy();
-    createSwapChain();
+    createSwapchain();
 }
 
 
-void Swapchain::createSwapChain() {
+void Swapchain::createSwapchain() {
+    VkDevice device = device_manager->getDevice();
+    VkPhysicalDevice physical_device = device_manager->getPhysicalDevice();
+    VkSurfaceKHR surface = device_manager->getSurface();
+
     SwapChainSupportDetails swapChainSupport = querySwapChainSupport(physical_device, surface);
 
     VkSurfaceFormatKHR surfaceFormat = chooseSwapSurfaceFormat(swapChainSupport.formats);
@@ -135,11 +139,12 @@ VkExtent2D Swapchain::chooseSwapExtend(const VkSurfaceCapabilitiesKHR& capabilit
 void Swapchain::createImageViews() {
     imageViews.resize(images.size());
     for (size_t i = 0; i < imageViews.size(); i++) {
-        imageViews[i] = ressource_builder.createImageView(images[i], imageFormat, VK_IMAGE_ASPECT_COLOR_BIT);
+        imageViews[i] = resource_builder->createImageView(images[i], imageFormat, VK_IMAGE_ASPECT_COLOR_BIT);
     }
 }
 
 void Swapchain::destroy() {
+    VkDevice device = device_manager->getDevice();
     for (auto imageView : imageViews) {
         vkDestroyImageView(device, imageView, nullptr);
     }

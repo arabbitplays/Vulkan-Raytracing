@@ -3,7 +3,7 @@
 #include <spdlog/spdlog.h>
 
 namespace RtEngine {
-TextureRepository::TextureRepository(std::shared_ptr<RessourceBuilder> resource_builder) : resource_builder(resource_builder)
+TextureRepository::TextureRepository(std::shared_ptr<ResourceBuilder> resource_builder) : resource_builder(resource_builder)
 {
     initDefaultTextures();
 }

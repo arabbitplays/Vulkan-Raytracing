@@ -8,18 +8,17 @@
 #include <GLFW/glfw3.h>
 #include <Swapchain.hpp>
 #include <OptionsWindow.hpp>
+#include <VulkanContext.hpp>
 #include <bits/shared_ptr.h>
 
 namespace RtEngine {
 class GuiManager {
 public:
     GuiManager() = default;
-    GuiManager(VkDevice device, VkPhysicalDevice physical_device, GLFWwindow* window, VkInstance instance,
-              DescriptorAllocator descriptor_allocator, std::shared_ptr<Swapchain> swapchain,
-              uint32_t graphics_queue_family, VkQueue graphics_queue);
+    GuiManager(std::shared_ptr<VulkanContext> context);
 
     void addWindow(std::shared_ptr<GuiWindow> window);
-    void updateWindows(std::shared_ptr<Swapchain> swapchain);
+    void updateWindows();
     void recordGuiCommands(VkCommandBuffer commandBuffer, uint32_t imageIndex);
     void destroy();
 
@@ -27,15 +26,13 @@ public:
     std::vector<VkFramebuffer> frame_buffers;
 
 private:
-    void createRenderPass(VkFormat image_format);
-    void createFrameBuffers();
-    void createDescriptorPool(DescriptorAllocator descriptor_allocator);
-    void initImGui(VkPhysicalDevice physical_device, GLFWwindow* window, VkInstance instance,
-        uint32_t graphics_queue_family, VkQueue graphics_queue);
+    void createRenderPass(VkDevice device, VkFormat image_format);
+    void createFrameBuffers(VkDevice device, std::shared_ptr<Swapchain> swapchain);
+    void createDescriptorPool(VkDevice device, std::shared_ptr<DescriptorAllocator> descriptor_allocator);
+    void initImGui(std::shared_ptr<DeviceManager> device_manager, GLFWwindow* window, std::shared_ptr<Swapchain> swapchain);
     void shutdownImGui();
 
-    VkDevice device;
-    std::shared_ptr<Swapchain> swapchain;
+    std::shared_ptr<VulkanContext> context;
 
     std::shared_ptr<OptionsWindow> options_window;
 	std::vector<std::shared_ptr<GuiWindow>> gui_windows{};

@@ -24,11 +24,11 @@ struct AllocatedBuffer {
     }
 };
 
-class RessourceBuilder {
+class ResourceBuilder {
 public:
-    RessourceBuilder() = default;
-    RessourceBuilder(VkPhysicalDevice physicalDevice, VkDevice device, CommandManager commandManager, const std::string& resource_path)
-        : physicalDevice(physicalDevice), device(device), commandManager(commandManager), resource_path(resource_path) {};
+    ResourceBuilder() = default;
+    ResourceBuilder(std::shared_ptr<DeviceManager> device_manager, std::shared_ptr<CommandManager> commandManager, const std::string& resource_path)
+        : device_manager(device_manager), commandManager(commandManager), resource_path(resource_path) {};
 
     AllocatedBuffer createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties);
     AllocatedBuffer stageMemoryToNewBuffer(void *data, size_t size, VkBufferUsageFlags usage);
@@ -59,9 +59,8 @@ public:
 
 private:
     uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
-    VkPhysicalDevice physicalDevice;
-    VkDevice device;
-    CommandManager commandManager;
+    std::shared_ptr<DeviceManager> device_manager;
+    std::shared_ptr<CommandManager> commandManager;
     std::string resource_path;
 
     void copyBufferToImage(VkBuffer buffer, VkImage image, VkExtent3D extent);

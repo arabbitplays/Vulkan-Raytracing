@@ -73,10 +73,7 @@ void VulkanEngine::mouseCallback(GLFWwindow* window, double xPos, double yPos) {
 }
 
 void VulkanEngine::initGui() {
-    QueueFamilyIndices indices = VulkanUtil::findQueueFamilies(context->device_manager->getPhysicalDevice(), context->device_manager->getSurface());
-    guiManager = std::make_shared<GuiManager>(context->device_manager->getDevice(), context->device_manager->getPhysicalDevice(), window, context->device_manager->getInstance(), *descriptorAllocator,
-        swapchain, indices.graphicsFamily.value(),
-        context->device_manager->getQueue(GRAPHICS));
+    guiManager = std::make_shared<GuiManager>(context);
 
     mainDeletionQueue.pushFunction([&]() {
         guiManager->destroy();
@@ -109,21 +106,16 @@ void VulkanEngine::initVulkan() {
 
 void VulkanEngine::createContext()
 {
+    context->window = window;
     context->device_manager = std::make_shared<DeviceManager>(window, enableValidationLayers);
 
     initProperties();
     properties_manager->addPropertySection(renderer_properties);
 
-    createCommandManager();
-    createRessourceBuilder();
-    createDescriptorAllocator();
-
-    createSwapchain();
-
-    context->swapchain = swapchain;
-    context->resource_builder = pRessourceBuilder;
-    context->descriptor_allocator = descriptorAllocator;
-    context->command_manager = pCommandManager;
+    context->command_manager = std::make_shared<CommandManager>(context->device_manager);
+    context->resource_builder = std::make_shared<ResourceBuilder>(context->device_manager, context->command_manager, context->base_options->resources_dir);
+    context->swapchain = std::make_shared<Swapchain>(context->device_manager, window, context->resource_builder);
+    context->descriptor_allocator = createDescriptorAllocator();
     context->texture_repository = std::make_shared<TextureRepository>(context->resource_builder);
     context->mesh_repository = std::make_shared<MeshRepository>(context);
 
@@ -131,24 +123,14 @@ void VulkanEngine::createContext()
     {
         context->texture_repository->destroy();
         context->mesh_repository->destroy();
+        context->descriptor_allocator->destroyPools(context->device_manager->getDevice());
+        context->swapchain->destroy();
+        context->command_manager->destroyCommandManager();
+        context->device_manager->destroy();
     });
 }
 
-void VulkanEngine::createCommandManager() {
-    pCommandManager = std::make_shared<CommandManager>(context->device_manager->getDevice(), VulkanUtil::findQueueFamilies(context->device_manager->getPhysicalDevice(), context->device_manager->getSurface()));
-    commandManager = *pCommandManager;
-
-    mainDeletionQueue.pushFunction([&]() {
-        commandManager.destroyCommandManager();
-    });
-}
-
-void VulkanEngine::createRessourceBuilder() {
-    pRessourceBuilder = std::make_shared<RessourceBuilder>(context->device_manager->getPhysicalDevice(), context->device_manager->getDevice(), commandManager, context->base_options->resources_dir);
-    ressourceBuilder = *pRessourceBuilder;
-}
-
-void VulkanEngine::createDescriptorAllocator() {
+std::shared_ptr<DescriptorAllocator> VulkanEngine::createDescriptorAllocator() {
     std::vector<DescriptorAllocator::PoolSizeRatio> poolRatios = {
         { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1 },
         { VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1 },
@@ -157,35 +139,28 @@ void VulkanEngine::createDescriptorAllocator() {
         { VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, 1 },
     };
 
-    descriptorAllocator = std::make_shared<DescriptorAllocator>();
+    auto descriptorAllocator = std::make_shared<DescriptorAllocator>();
     descriptorAllocator->init(context->device_manager->getDevice(), 4, poolRatios);
 
-    mainDeletionQueue.pushFunction([&]() {
-        descriptorAllocator->destroyPools(context->device_manager->getDevice());
-    });
+    return descriptorAllocator;
 }
 
 bool VulkanEngine::hasStencilComponent(VkFormat format) {
     return format == VK_FORMAT_D32_SFLOAT_S8_UINT || format == VK_FORMAT_D24_UNORM_S8_UINT;
 }
 
-void VulkanEngine::createSwapchain() {
-    swapchain = std::make_shared<Swapchain>(context->device_manager->getDevice(), context->device_manager->getPhysicalDevice(), window, context->device_manager->getSurface(), ressourceBuilder);
-    mainDeletionQueue.pushFunction([&]() {
-        swapchain->destroy();
-    });
-}
-
 void VulkanEngine::createRenderingTargets() {
+    std::shared_ptr<Swapchain> swapchain = context->swapchain;
+
     render_targets.resize(MAX_FRAMES_IN_FLIGHT);
     for (uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-        render_targets[i] = ressourceBuilder.createImage(
+        render_targets[i] = context->resource_builder->createImage(
             VkExtent3D{swapchain->extent.width, swapchain->extent.height, 1},
             VK_FORMAT_B8G8R8A8_UNORM, VK_IMAGE_TILING_OPTIMAL,
             VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_STORAGE_BIT,
             VK_IMAGE_ASPECT_COLOR_BIT);
 
-        ressourceBuilder.transitionImageLayout(render_targets[i].image, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
+        context->resource_builder->transitionImageLayout(render_targets[i].image, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
             VK_ACCESS_NONE, VK_ACCESS_NONE, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
     }
 
@@ -194,7 +169,7 @@ void VulkanEngine::createRenderingTargets() {
     for (int i = 0; i < swapchain->extent.width * swapchain->extent.height * 4; i++) {
         pixels[i] = std::rand();
     }
-    rng_tex = ressourceBuilder.createImage(pixels.data(),
+    rng_tex = context->resource_builder->createImage(pixels.data(),
             VkExtent3D{swapchain->extent.width, swapchain->extent.height, 1},
             VK_FORMAT_R32G32B32A32_UINT, VK_IMAGE_TILING_OPTIMAL,
             VK_IMAGE_USAGE_STORAGE_BIT,
@@ -224,7 +199,7 @@ void VulkanEngine::createCommandBuffers() {
 
     VkCommandBufferAllocateInfo allocInfo{};
     allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-    allocInfo.commandPool = commandManager.commandPool;
+    allocInfo.commandPool = context->command_manager->commandPool;
     allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
     allocInfo.commandBufferCount = (uint32_t) commandBuffers.size();
 
@@ -299,7 +274,7 @@ void VulkanEngine::drawFrame() {
 int VulkanEngine::aquireNextSwapchainImage()
 {
     uint32_t imageIndex;
-    VkResult result = vkAcquireNextImageKHR(context->device_manager->getDevice(), swapchain->handle, UINT64_MAX, imageAvailableSemaphores[currentFrame], VK_NULL_HANDLE, &imageIndex);
+    VkResult result = vkAcquireNextImageKHR(context->device_manager->getDevice(), context->swapchain->handle, UINT64_MAX, imageAvailableSemaphores[currentFrame], VK_NULL_HANDLE, &imageIndex);
 
     if (result == VK_ERROR_OUT_OF_DATE_KHR) {
         refreshAfterResize();
@@ -335,7 +310,7 @@ void VulkanEngine::presentSwapchainImage(std::vector<VkSemaphore> wait_semaphore
     presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
     presentInfo.waitSemaphoreCount = static_cast<uint32_t>(wait_semaphore.size());
     presentInfo.pWaitSemaphores = wait_semaphore.data();
-    VkSwapchainKHR swapChains[] = {swapchain->handle};
+    VkSwapchainKHR swapChains[] = {context->swapchain->handle};
     presentInfo.swapchainCount = 1;
     presentInfo.pSwapchains = swapChains;
     presentInfo.pImageIndices = &image_index;
@@ -355,10 +330,10 @@ void VulkanEngine::refreshAfterResize() {
     vkDeviceWaitIdle(context->device_manager->getDevice());
 
     properties_manager->curr_sample_count = 0;
-    swapchain->recreate();
+    context->swapchain->recreate();
     cleanupRenderingTargets();
     createRenderingTargets();
-    guiManager->updateWindows(swapchain);
+    guiManager->updateWindows();
     scene_manager->updateScene(mainDrawContext, currentFrame, getRenderTarget(), rng_tex);}
 
 void VulkanEngine::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex) {
@@ -422,8 +397,8 @@ void VulkanEngine::recordRenderToImage(VkCommandBuffer commandBuffer)
         &missShaderSbtEntry,
         &closestHitShaderSbtEntry,
         &callableShaderSbtEntry,
-        swapchain->extent.width,
-        swapchain->extent.height,
+        context->swapchain->extent.width,
+        context->swapchain->extent.height,
         1);
 
     properties_manager->curr_sample_count++;
@@ -432,13 +407,15 @@ void VulkanEngine::recordRenderToImage(VkCommandBuffer commandBuffer)
 void VulkanEngine::recordCopyToSwapchain(VkCommandBuffer commandBuffer, uint32_t swapchain_image_index)
 {
     AllocatedImage render_target = getRenderTarget();
+    std::shared_ptr<ResourceBuilder> resource_builder = context->resource_builder;
+    std::shared_ptr<Swapchain> swapchain = context->swapchain;
 
-    ressourceBuilder.transitionImageLayout(commandBuffer, swapchain->images[swapchain_image_index],
+    resource_builder->transitionImageLayout(commandBuffer, swapchain->images[swapchain_image_index],
         VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
         VK_ACCESS_NONE, VK_ACCESS_TRANSFER_WRITE_BIT,
         VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
-    ressourceBuilder.transitionImageLayout(commandBuffer, render_target.image,
+    resource_builder->transitionImageLayout(commandBuffer, render_target.image,
         VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR, VK_PIPELINE_STAGE_TRANSFER_BIT,
         VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT,
         VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
@@ -457,12 +434,12 @@ void VulkanEngine::recordCopyToSwapchain(VkCommandBuffer commandBuffer, uint32_t
     vkCmdBlitImage(commandBuffer, render_target.image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
         swapchain->images[swapchain_image_index], VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &blitRegion, VK_FILTER_NEAREST);
 
-    ressourceBuilder.transitionImageLayout(commandBuffer, swapchain->images[swapchain_image_index],
+    resource_builder->transitionImageLayout(commandBuffer, swapchain->images[swapchain_image_index],
         VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
         VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_NONE,
         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
 
-    ressourceBuilder.transitionImageLayout(commandBuffer, render_target.image,
+    resource_builder->transitionImageLayout(commandBuffer, render_target.image,
         VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
         VK_ACCESS_TRANSFER_READ_BIT, VK_ACCESS_NONE,
         VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL);
@@ -483,9 +460,9 @@ void VulkanEngine::cleanup() {
 
 void VulkanEngine::cleanupRenderingTargets() {
     for (auto image : render_targets) {
-        ressourceBuilder.destroyImage(image);
+        context->resource_builder->destroyImage(image);
     }
-    ressourceBuilder.destroyImage(rng_tex);
+    context->resource_builder->destroyImage(rng_tex);
 }
 
 void VulkanEngine::outputRenderingTarget(const std::string& output_path)

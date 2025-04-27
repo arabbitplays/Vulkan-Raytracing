@@ -45,13 +45,6 @@ class VulkanEngine {
 public:
     static constexpr int MAX_FRAMES_IN_FLIGHT = 1;
 
-
-    std::shared_ptr<CommandManager> pCommandManager;
-    CommandManager commandManager;
-    std::shared_ptr<RessourceBuilder> pRessourceBuilder;
-    RessourceBuilder ressourceBuilder;
-    std::shared_ptr<DescriptorAllocator> descriptorAllocator;
-
     void run(const std::string& config_file, const std::string& resources_dir);
 protected:
     GLFWwindow* window;
@@ -60,8 +53,6 @@ protected:
     DeletionQueue mainDeletionQueue;
 
     std::shared_ptr<VulkanContext> context;
-
-    std::shared_ptr<Swapchain> swapchain;
 
     std::vector<VkCommandBuffer> commandBuffers;
 
@@ -97,13 +88,9 @@ protected:
 
     void createGuiFrameBuffers();
 
-    void createCommandManager();
-    void createRessourceBuilder();
-
     bool hasStencilComponent(VkFormat format);
-    void createSwapchain();
 
-    void createDescriptorAllocator();
+    std::shared_ptr<DescriptorAllocator> createDescriptorAllocator();
     void createCommandBuffers();
     void createSyncObjects();
 

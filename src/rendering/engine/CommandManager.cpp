@@ -4,10 +4,7 @@
 namespace RtEngine {
 CommandManager::CommandManager() = default;
 
-CommandManager::CommandManager(VkDevice device, QueueFamilyIndices indices) {
-    this->device = device;
-    this->queueFamilyIndices = indices;
-    vkGetDeviceQueue(device, indices.graphicsFamily.value(), 0, &graphicsQueue);
+CommandManager::CommandManager(std::shared_ptr<DeviceManager> deviceManager) : deviceManager(deviceManager) {
     createCommandPool();
 }
 
@@ -15,9 +12,9 @@ void CommandManager::createCommandPool() {
     VkCommandPoolCreateInfo poolInfo{};
     poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
     poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-    poolInfo.queueFamilyIndex = queueFamilyIndices.graphicsFamily.value();
+    poolInfo.queueFamilyIndex = deviceManager->getQueueIndices().graphicsFamily.value();
 
-    if (vkCreateCommandPool(device, &poolInfo, nullptr, &commandPool) != VK_SUCCESS) {
+    if (vkCreateCommandPool(deviceManager->getDevice(), &poolInfo, nullptr, &commandPool) != VK_SUCCESS) {
         throw std::runtime_error("failed to create command pool!");
     }
 }
@@ -30,7 +27,7 @@ VkCommandBuffer CommandManager::beginSingleTimeCommands() {
     allocInfo.commandBufferCount = 1;
 
     VkCommandBuffer commandBuffer;
-    vkAllocateCommandBuffers(device, &allocInfo, &commandBuffer);
+    vkAllocateCommandBuffers(deviceManager->getDevice(), &allocInfo, &commandBuffer);
 
     VkCommandBufferBeginInfo beginInfo{};
     beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -49,13 +46,14 @@ void CommandManager::endSingleTimeCommand(VkCommandBuffer commandBuffer) {
     submitInfo.commandBufferCount = 1;
     submitInfo.pCommandBuffers = &commandBuffer;
 
-    vkQueueSubmit(graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE);
-    vkQueueWaitIdle(graphicsQueue);
+    VkQueue graphics_queue = deviceManager->getQueue(GRAPHICS);
+    vkQueueSubmit(graphics_queue, 1, &submitInfo, VK_NULL_HANDLE);
+    vkQueueWaitIdle(graphics_queue);
 
-    vkFreeCommandBuffers(device, commandPool, 1, &commandBuffer);
+    vkFreeCommandBuffers(deviceManager->getDevice(), commandPool, 1, &commandBuffer);
 }
 
 void CommandManager::destroyCommandManager() {
-    vkDestroyCommandPool(device, commandPool, nullptr);
+    vkDestroyCommandPool(deviceManager->getDevice(), commandPool, nullptr);
 }
 }

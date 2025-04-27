@@ -2,7 +2,7 @@
 #define MESHASSET_HPP
 
 #include <bits/shared_ptr.h>
-#include "RessourceBuilder.hpp"
+#include "ResourceBuilder.hpp"
 #include "AccelerationStructure.hpp"
 
 namespace RtEngine {

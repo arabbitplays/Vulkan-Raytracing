@@ -11,6 +11,7 @@
 #include <iostream>
 #include <vector>
 #include <DeletionQueue.hpp>
+#include <VulkanUtil.hpp>
 
 namespace RtEngine
 {
@@ -31,11 +32,13 @@ public:
     static VkPhysicalDeviceRayTracingPipelinePropertiesKHR RAYTRACING_PROPERTIES;
 
     DeviceManager(GLFWwindow* window, bool enable_validation_layers);
+    void destroy();
 
     VkPhysicalDevice getPhysicalDevice() const;
     VkDevice getDevice() const;
     VkSurfaceKHR getSurface() const;
     VkInstance getInstance() const;
+    QueueFamilyIndices getQueueIndices() const;
     VkQueue getQueue(QueueType type) const;
 private:
     void createInstance(bool enable_validation_layers);
@@ -71,6 +74,7 @@ private:
     VkDevice device;
     VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
     VkDebugUtilsMessengerEXT debugMessenger;
+    QueueFamilyIndices queue_indices;
     VkQueue graphics_queue, present_queue;
 };
 }

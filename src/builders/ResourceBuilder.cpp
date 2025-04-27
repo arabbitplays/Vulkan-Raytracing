@@ -1,5 +1,5 @@
 #include <stdexcept>
-#include "RessourceBuilder.hpp"
+#include "ResourceBuilder.hpp"
 
 #include <cstring>
 
@@ -23,7 +23,9 @@ VkDeviceAddress GetBufferDeviceAddressKHR(VkDevice device, const VkBufferDeviceA
     }
 }
 
-AllocatedBuffer RessourceBuilder::createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties) {
+AllocatedBuffer ResourceBuilder::createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties) {
+    VkDevice device = device_manager->getDevice();
+
     AllocatedBuffer allocatedBuffer{};
     allocatedBuffer.size = size;
 
@@ -65,7 +67,9 @@ AllocatedBuffer RessourceBuilder::createBuffer(VkDeviceSize size, VkBufferUsageF
     return allocatedBuffer;
 }
 
-AllocatedBuffer RessourceBuilder::stageMemoryToNewBuffer(void* data, size_t size, VkBufferUsageFlags usage) {
+AllocatedBuffer ResourceBuilder::stageMemoryToNewBuffer(void* data, size_t size, VkBufferUsageFlags usage) {
+    VkDevice device = device_manager->getDevice();
+
     AllocatedBuffer stagingBuffer = createBuffer(size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
         VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 
@@ -82,9 +86,9 @@ AllocatedBuffer RessourceBuilder::stageMemoryToNewBuffer(void* data, size_t size
     return mapping_buffer;
 }
 
-uint32_t RessourceBuilder::findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties) {
+uint32_t ResourceBuilder::findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties) {
     VkPhysicalDeviceMemoryProperties memProperies;
-    vkGetPhysicalDeviceMemoryProperties(physicalDevice, &memProperies);
+    vkGetPhysicalDeviceMemoryProperties(device_manager->getPhysicalDevice(), &memProperies);
 
     for (uint32_t i = 0; i < memProperies.memoryTypeCount; i++) {
         if (typeFilter & (1 << i) && (memProperies.memoryTypes[i].propertyFlags & properties) == properties) {
@@ -95,23 +99,25 @@ uint32_t RessourceBuilder::findMemoryType(uint32_t typeFilter, VkMemoryPropertyF
     throw std::runtime_error("failed to find suitable memory type!");
 }
 
-void RessourceBuilder::copyBuffer(AllocatedBuffer src, AllocatedBuffer dst, VkDeviceSize size) {
-    VkCommandBuffer commandBuffer = commandManager.beginSingleTimeCommands();
+void ResourceBuilder::copyBuffer(AllocatedBuffer src, AllocatedBuffer dst, VkDeviceSize size) {
+    VkCommandBuffer commandBuffer = commandManager->beginSingleTimeCommands();
 
     VkBufferCopy copyRegion{};
     copyRegion.size = size;
     vkCmdCopyBuffer(commandBuffer, src.handle, dst.handle, 1, &copyRegion);
 
-    commandManager.endSingleTimeCommand(commandBuffer);
+    commandManager->endSingleTimeCommand(commandBuffer);
 }
 
-void RessourceBuilder::destroyBuffer(AllocatedBuffer buffer) {
-    vkDestroyBuffer(device, buffer.handle, nullptr);
-    vkFreeMemory(device, buffer.bufferMemory, nullptr);
+void ResourceBuilder::destroyBuffer(AllocatedBuffer buffer) {
+    vkDestroyBuffer(device_manager->getDevice(), buffer.handle, nullptr);
+    vkFreeMemory(device_manager->getDevice(), buffer.bufferMemory, nullptr);
 }
 
-AllocatedImage RessourceBuilder::createImage(VkExtent3D extent, VkFormat format, VkImageTiling tiling,
+AllocatedImage ResourceBuilder::createImage(VkExtent3D extent, VkFormat format, VkImageTiling tiling,
                                              VkImageUsageFlags usage, VkImageAspectFlags aspectFlags) {
+    VkDevice device = device_manager->getDevice();
+
     AllocatedImage image{};
     image.imageExtent = extent;
     image.imageFormat = format;
@@ -152,7 +158,7 @@ AllocatedImage RessourceBuilder::createImage(VkExtent3D extent, VkFormat format,
 
     return image;}
 
-AllocatedImage RessourceBuilder::createImage(void* data, VkExtent3D extent, VkFormat format, VkImageTiling tiling,
+AllocatedImage ResourceBuilder::createImage(void* data, VkExtent3D extent, VkFormat format, VkImageTiling tiling,
                                              VkImageUsageFlags usage, VkImageAspectFlags aspectFlags, VkImageLayout target_layout) {
     VkDeviceSize imageSize = extent.width * extent.height * extent.depth;
     if (format == VK_FORMAT_R8G8B8_SRGB) {
@@ -168,6 +174,7 @@ AllocatedImage RessourceBuilder::createImage(void* data, VkExtent3D extent, VkFo
     AllocatedBuffer stagingBuffer = createBuffer(imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
                                                  VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 
+    VkDevice device = device_manager->getDevice();
     void* imageData;
     vkMapMemory(device, stagingBuffer.bufferMemory, 0, imageSize, 0, &imageData);
     memcpy(imageData, data, static_cast<size_t>(imageSize));
@@ -185,7 +192,7 @@ AllocatedImage RessourceBuilder::createImage(void* data, VkExtent3D extent, VkFo
     return image;
 }
 
-Texture RessourceBuilder::loadTextureImage(std::string path, TextureType type) {
+Texture ResourceBuilder::loadTextureImage(std::string path, TextureType type) {
     int texWidth, texHeight, texChannels;
     uint8_t* pixels = loadImageData(resource_path + "/" + path, &texWidth, &texHeight, &texChannels);
 
@@ -211,12 +218,12 @@ Texture RessourceBuilder::loadTextureImage(std::string path, TextureType type) {
     return Texture(PathUtil::getFileName(path), type, path, textureImage);
 }
 
-uint8_t* RessourceBuilder::loadImageData(std::string path, int* width, int* height, int* channels)
+uint8_t* ResourceBuilder::loadImageData(std::string path, int* width, int* height, int* channels)
 {
     return stbi_load(path.c_str(), width, height, channels, STBI_rgb_alpha);
 }
 
-void* RessourceBuilder::downloadImage(AllocatedImage image, uint32_t bytes_per_channel)
+void* ResourceBuilder::downloadImage(AllocatedImage image, uint32_t bytes_per_channel)
 {
     size_t buffer_size = image.imageExtent.width * image.imageExtent.height * image.imageExtent.depth * 4 * bytes_per_channel;
     AllocatedBuffer staging_buffer = createBuffer(buffer_size, VK_BUFFER_USAGE_TRANSFER_DST_BIT,
@@ -228,6 +235,7 @@ void* RessourceBuilder::downloadImage(AllocatedImage image, uint32_t bytes_per_c
     transitionImageLayout(image.image, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR,
         VK_ACCESS_TRANSFER_READ_BIT, VK_ACCESS_NONE, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL);
 
+    VkDevice device = device_manager->getDevice();
     void* mapped_data;
     auto* imageData = new uint8_t[buffer_size * bytes_per_channel];
     vkMapMemory(device, staging_buffer.bufferMemory, 0, buffer_size, 0, &mapped_data);
@@ -239,7 +247,7 @@ void* RessourceBuilder::downloadImage(AllocatedImage image, uint32_t bytes_per_c
     return imageData;
 }
 
-void RessourceBuilder::transitionImageLayout(VkCommandBuffer commandBuffer, VkImage image,
+void ResourceBuilder::transitionImageLayout(VkCommandBuffer commandBuffer, VkImage image,
         VkPipelineStageFlags srcStage, VkPipelineStageFlags dstStage,
         VkAccessFlags srcAccessMask, VkAccessFlags dstAccessMask,
         VkImageLayout oldLayout, VkImageLayout newLayout) {
@@ -266,21 +274,21 @@ void RessourceBuilder::transitionImageLayout(VkCommandBuffer commandBuffer, VkIm
 }
 
 
-void RessourceBuilder::transitionImageLayout(VkImage image,
+void ResourceBuilder::transitionImageLayout(VkImage image,
         VkPipelineStageFlags srcStage, VkPipelineStageFlags dstStage,
         VkAccessFlags srcAccessMask, VkAccessFlags dstAccessMask,
         VkImageLayout oldLayout, VkImageLayout newLayout) {
 
-    VkCommandBuffer commandBuffer = commandManager.beginSingleTimeCommands();
+    VkCommandBuffer commandBuffer = commandManager->beginSingleTimeCommands();
     transitionImageLayout(commandBuffer, image,
         srcStage, dstStage,
         srcAccessMask, dstAccessMask,
         oldLayout, newLayout);
-    commandManager.endSingleTimeCommand(commandBuffer);
+    commandManager->endSingleTimeCommand(commandBuffer);
 }
 
-void RessourceBuilder::copyBufferToImage(VkBuffer buffer, VkImage image, VkExtent3D extent) {
-    VkCommandBuffer commandBuffer = commandManager.beginSingleTimeCommands();
+void ResourceBuilder::copyBufferToImage(VkBuffer buffer, VkImage image, VkExtent3D extent) {
+    VkCommandBuffer commandBuffer = commandManager->beginSingleTimeCommands();
 
     VkBufferImageCopy region{};
     region.bufferOffset = 0;
@@ -297,11 +305,11 @@ void RessourceBuilder::copyBufferToImage(VkBuffer buffer, VkImage image, VkExten
 
     vkCmdCopyBufferToImage(commandBuffer, buffer, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
 
-    commandManager.endSingleTimeCommand(commandBuffer);
+    commandManager->endSingleTimeCommand(commandBuffer);
 }
 
-void RessourceBuilder::copyImageToBuffer(VkImage image, VkBuffer buffer, VkExtent3D extent) {
-    VkCommandBuffer commandBuffer = commandManager.beginSingleTimeCommands();
+void ResourceBuilder::copyImageToBuffer(VkImage image, VkBuffer buffer, VkExtent3D extent) {
+    VkCommandBuffer commandBuffer = commandManager->beginSingleTimeCommands();
 
     VkBufferImageCopy region{};
     region.bufferOffset = 0;
@@ -318,10 +326,10 @@ void RessourceBuilder::copyImageToBuffer(VkImage image, VkBuffer buffer, VkExten
 
     vkCmdCopyImageToBuffer(commandBuffer, image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, buffer, 1, &region);
 
-    commandManager.endSingleTimeCommand(commandBuffer);
+    commandManager->endSingleTimeCommand(commandBuffer);
 }
 
-VkImageView RessourceBuilder::createImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags) {
+VkImageView ResourceBuilder::createImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags) {
     VkImageViewCreateInfo createInfo{};
     createInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
     createInfo.image = image;
@@ -340,20 +348,21 @@ VkImageView RessourceBuilder::createImageView(VkImage image, VkFormat format, Vk
     createInfo.subresourceRange.layerCount = 1;
 
     VkImageView imageView;
-    if (vkCreateImageView(device, &createInfo, nullptr, &imageView) != VK_SUCCESS) {
+    if (vkCreateImageView(device_manager->getDevice(), &createInfo, nullptr, &imageView) != VK_SUCCESS) {
         throw std::runtime_error("failed to create image view!");
     }
 
     return imageView;
 }
 
-void RessourceBuilder::destroyImage(AllocatedImage image) {
+void ResourceBuilder::destroyImage(AllocatedImage image) {
+    VkDevice device = device_manager->getDevice();
     vkDestroyImageView(device, image.imageView, nullptr);
     vkDestroyImage(device, image.image, nullptr);
     vkFreeMemory(device, image.imageMemory, nullptr);
 }
 
-void RessourceBuilder::writePNG(std::string path, void* data, uint32_t width, uint32_t height)
+void ResourceBuilder::writePNG(std::string path, void* data, uint32_t width, uint32_t height)
 {
     if (stbi_write_png(path.c_str(), width, height, 4, data, width * 4))
     {

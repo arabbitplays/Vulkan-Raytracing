@@ -6,7 +6,7 @@
 #include <MeshAsset.hpp>
 #include <ModelLoader.hpp>
 
-#include "RessourceBuilder.hpp"
+#include "ResourceBuilder.hpp"
 
 namespace RtEngine {
 class MeshAssetBuilder {

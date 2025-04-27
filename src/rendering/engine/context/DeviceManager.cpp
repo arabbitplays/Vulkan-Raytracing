@@ -72,6 +72,11 @@ VkInstance DeviceManager::getInstance() const {
   return instance;
 }
 
+QueueFamilyIndices DeviceManager::getQueueIndices() const
+{
+    return queue_indices;
+}
+
 VkQueue DeviceManager::getQueue(QueueType type) const {
     switch (type) {
         case QueueType::GRAPHICS:
@@ -276,11 +281,11 @@ bool DeviceManager::checkDeviceExtensionSupport(VkPhysicalDevice device) {
 }
 
 void DeviceManager::createLogicalDevice(bool enable_validation_layers) {
-    QueueFamilyIndices indices = VulkanUtil::findQueueFamilies(physicalDevice, surface);
+    queue_indices = VulkanUtil::findQueueFamilies(physicalDevice, surface);
 
     std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
     // so no family is created multiple times if it covers multiple types
-    std::set<uint32_t> uniqueQueueFamilies = {indices.graphicsFamily.value(), indices.presentFamily.value()};
+    std::set<uint32_t> uniqueQueueFamilies = {queue_indices.graphicsFamily.value(), queue_indices.presentFamily.value()};
 
     float queuePriority = 1.0f;
     for (uint32_t queueFamily : uniqueQueueFamilies) {
@@ -335,7 +340,13 @@ void DeviceManager::createLogicalDevice(bool enable_validation_layers) {
         vkDestroyDevice(device, nullptr);
     });
 
-    vkGetDeviceQueue(device, indices.graphicsFamily.value(), 0, &graphics_queue);
-    vkGetDeviceQueue(device, indices.presentFamily.value(), 0, &present_queue);
+    vkGetDeviceQueue(device, queue_indices.graphicsFamily.value(), 0, &graphics_queue);
+    vkGetDeviceQueue(device, queue_indices.presentFamily.value(), 0, &present_queue);
 }
+
+void DeviceManager::destroy()
+{
+    deletion_queue.flush();
+}
+
 }
