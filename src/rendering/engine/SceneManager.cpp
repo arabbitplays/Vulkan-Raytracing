@@ -33,12 +33,8 @@ void SceneManager::createScene(std::string scene_path) {
 
 void SceneManager::createSceneBuffers() {
     std::vector<std::shared_ptr<MeshAsset>> meshes = scene->getMeshes();
-    geometry_buffers = geometry_manager->createGeometryBuffers(scene->getRootNode());
+    geometry_manager->createGeometryBuffers(scene->getRootNode());
     scene->material->writeMaterial();
-
-    scene_resource_deletion_queue.pushFunction([&]() {
-        geometry_manager->destroyGeometryBuffers(geometry_buffers);
-    });
 }
 
 void SceneManager::createBlas() {
@@ -50,7 +46,7 @@ void SceneManager::createBlas() {
     for (auto& meshAsset : meshes) {
         meshAsset->accelerationStructure = std::make_shared<AccelerationStructure>(device, *context->resource_builder, *context->command_manager, VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_KHR);
 
-        meshAsset->accelerationStructure->addTriangleGeometry(geometry_buffers->vertex_buffer, geometry_buffers->index_buffer,
+        meshAsset->accelerationStructure->addTriangleGeometry(geometry_manager->getVertexBuffer(), geometry_manager->getIndexBuffer(),
             meshAsset->vertex_count - 1, meshAsset->triangle_count, sizeof(Vertex),
             meshAsset->instance_data.vertex_offset, meshAsset->instance_data.triangle_offset);
         meshAsset->accelerationStructure->build();
@@ -68,10 +64,9 @@ void SceneManager::createBlas() {
 void SceneManager::updateSceneDescriptorSets() {
     if (bufferUpdateFlags & GEOMETRY_UPDATE)
     {
-        vkDeviceWaitIdle(context->device_manager->getDevice());
-        context->descriptor_allocator->writeBuffer(3, geometry_buffers->vertex_buffer.handle, 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
-        context->descriptor_allocator->writeBuffer(4, geometry_buffers->index_buffer.handle, 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
-        context->descriptor_allocator->writeBuffer(5, geometry_buffers->geometry_mapping_buffer.handle, 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+        context->descriptor_allocator->writeBuffer(3, geometry_manager->getVertexBuffer().handle, 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+        context->descriptor_allocator->writeBuffer(4, geometry_manager->getIndexBuffer().handle, 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+        context->descriptor_allocator->writeBuffer(5, geometry_manager->getGeometryMappingBuffer().handle, 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
 
         std::vector<VkImageView> views{};
         for (uint32_t i = 0; i < 6; i++) {
@@ -139,6 +134,9 @@ void SceneManager::updateScene(DrawContext& draw_context, uint32_t current_image
 
     scene->update(context->swapchain->extent.width, context->swapchain->extent.height);
 
+    if (!(bufferUpdateFlags & NO_UPDATE))
+        vkDeviceWaitIdle(device);
+
     if (top_level_acceleration_structure == nullptr) {
         top_level_acceleration_structure = std::make_shared<AccelerationStructure>(device, *context->resource_builder, *context->command_manager, VK_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL_KHR);
 
@@ -151,7 +149,7 @@ void SceneManager::updateScene(DrawContext& draw_context, uint32_t current_image
     draw_context.objects.clear();
     scene->nodes["root"]->draw(draw_context);
 
-    if (instance_mapping_buffer.handle == VK_NULL_HANDLE) {
+    if (bufferUpdateFlags & GEOMETRY_UPDATE) {
         instance_mapping_buffer = createInstanceMappingBuffer(draw_context.objects);
         scene_resource_deletion_queue.pushFunction([&]() {
             context->resource_builder->destroyBuffer(instance_mapping_buffer);
@@ -159,9 +157,8 @@ void SceneManager::updateScene(DrawContext& draw_context, uint32_t current_image
         });
     }
 
-    if (emitting_instances_buffer.handle == VK_NULL_HANDLE || static_cast<uint8_t>(bufferUpdateFlags) & static_cast<uint8_t>(MATERIAL_UPDATE) != 0)
+    if (bufferUpdateFlags & GEOMETRY_UPDATE || bufferUpdateFlags & MATERIAL_UPDATE)
     {
-        vkDeviceWaitIdle(device);
         if (emitting_instances_buffer.handle != VK_NULL_HANDLE)
             context->resource_builder->destroyBuffer(emitting_instances_buffer);
         else
@@ -176,8 +173,7 @@ void SceneManager::updateScene(DrawContext& draw_context, uint32_t current_image
 
     if (bufferUpdateFlags != NO_UPDATE)
     {
-        vkDeviceWaitIdle(device);
-        if (static_cast<uint8_t>(bufferUpdateFlags) & static_cast<uint8_t>(MATERIAL_UPDATE) != 0)
+        if (bufferUpdateFlags & MATERIAL_UPDATE)
         {
             scene->material->writeMaterial();
         }

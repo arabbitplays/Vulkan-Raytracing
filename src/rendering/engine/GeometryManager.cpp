@@ -29,21 +29,23 @@ std::vector<std::shared_ptr<MeshAsset>> collect_mesh_assets(const std::shared_pt
     return mesh_assets;
 }
 
-std::shared_ptr<GeometryBuffers> GeometryManager::createGeometryBuffers(const std::shared_ptr<Node>& root_node) const
+void GeometryManager::createGeometryBuffers(const std::shared_ptr<Node>& root_node)
 {
-    auto result = std::make_shared<GeometryBuffers>();
-
     std::vector<std::shared_ptr<MeshAsset>> mesh_assets = collect_mesh_assets(root_node);
-    result->vertex_buffer = createVertexBuffer(mesh_assets);
-    result->index_buffer = createIndexBuffer(mesh_assets);
-    result->geometry_mapping_buffer = createGeometryMappingBuffer(mesh_assets);
-    return result;
+    vertex_buffer = createVertexBuffer(mesh_assets);
+    index_buffer = createIndexBuffer(mesh_assets);
+    geometry_mapping_buffer = createGeometryMappingBuffer(mesh_assets);
 }
 
 
 AllocatedBuffer GeometryManager::createVertexBuffer(std::vector<std::shared_ptr<MeshAsset>>& mesh_assets) const
 {
     assert(!mesh_assets.empty());
+
+    if (vertex_buffer.handle != VK_NULL_HANDLE)
+    {
+        resource_builder->destroyBuffer(vertex_buffer);
+    }
 
     VkDeviceSize size =  0;
     for (auto& mesh_asset : mesh_assets) {
@@ -68,6 +70,11 @@ AllocatedBuffer GeometryManager::createIndexBuffer(std::vector<std::shared_ptr<M
 {
     assert(!mesh_assets.empty());
 
+    if (index_buffer.handle != VK_NULL_HANDLE)
+    {
+        resource_builder->destroyBuffer(index_buffer);
+    }
+
     VkDeviceSize size =  0;
     for (auto& mesh_asset : mesh_assets) {
         size += mesh_asset->meshBuffers.indices.size();
@@ -91,6 +98,11 @@ AllocatedBuffer GeometryManager::createGeometryMappingBuffer(std::vector<std::sh
 {
     assert(!mesh_assets.empty());
 
+    if (geometry_mapping_buffer.handle != VK_NULL_HANDLE)
+    {
+        resource_builder->destroyBuffer(geometry_mapping_buffer);
+    }
+
     std::vector<GeometryData> geometry_datas;
     for (auto& mesh_asset : mesh_assets) {
         geometry_datas.push_back(mesh_asset->instance_data);
@@ -98,11 +110,33 @@ AllocatedBuffer GeometryManager::createGeometryMappingBuffer(std::vector<std::sh
     return resource_builder->stageMemoryToNewBuffer(geometry_datas.data(), mesh_assets.size() * sizeof(GeometryData), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
 }
 
-void GeometryManager::destroyGeometryBuffers(const std::shared_ptr<GeometryBuffers>& geometry_buffers) const
+
+AllocatedBuffer GeometryManager::getVertexBuffer() const
 {
-    resource_builder->destroyBuffer(geometry_buffers->vertex_buffer);
-    resource_builder->destroyBuffer(geometry_buffers->index_buffer);
-    resource_builder->destroyBuffer(geometry_buffers->geometry_mapping_buffer);
+    assert(vertex_buffer.handle != VK_NULL_HANDLE);
+    return vertex_buffer;
+}
+
+AllocatedBuffer GeometryManager::getIndexBuffer() const
+{
+    assert(index_buffer.handle != VK_NULL_HANDLE);
+    return index_buffer;
+}
+
+AllocatedBuffer GeometryManager::getGeometryMappingBuffer() const
+{
+    assert(geometry_mapping_buffer.handle != VK_NULL_HANDLE);
+    return geometry_mapping_buffer;
+}
+
+void GeometryManager::destroy()
+{
+    if (vertex_buffer.handle != VK_NULL_HANDLE)
+        resource_builder->destroyBuffer(vertex_buffer);
+    if (index_buffer.handle != VK_NULL_HANDLE)
+        resource_builder->destroyBuffer(index_buffer);
+    if (geometry_mapping_buffer.handle != VK_NULL_HANDLE)
+        resource_builder->destroyBuffer(geometry_mapping_buffer);
 }
 
 }

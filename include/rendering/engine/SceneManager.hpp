@@ -7,6 +7,7 @@
 #include <vulkan/vulkan_core.h>
 #include <VulkanContext.hpp>
 #include <GeometryManager.hpp>
+#include <InstanceManager.hpp>
 
 namespace RtEngine {
 class SceneManager {
@@ -21,6 +22,12 @@ public:
     SceneManager() = default;
     SceneManager(std::shared_ptr<VulkanContext>& vulkanContext, uint32_t max_frames_in_flight, VkPhysicalDeviceRayTracingPipelinePropertiesKHR raytracingProperties) : context(vulkanContext), max_frames_in_flight(max_frames_in_flight) {
         geometry_manager = std::make_shared<GeometryManager>(context->resource_builder);
+        instance_manager = std::make_shared<InstanceManager>(context->resource_builder);
+        main_deletion_queue.pushFunction([&]()
+        {
+            geometry_manager->destroy();
+            instance_manager->destroy();
+        });
         createSceneLayout();
         createSceneDescriptorSets(scene_descsriptor_set_layout);
         initDefaultResources(raytracingProperties);
@@ -79,7 +86,8 @@ private:
     std::shared_ptr<PhongMaterial> phong_material;
 
     std::shared_ptr<GeometryManager> geometry_manager;
-    std::shared_ptr<GeometryBuffers> geometry_buffers;
+    std::shared_ptr<InstanceManager> instance_manager;
+
     AllocatedBuffer instance_mapping_buffer, emitting_instances_buffer;
     std::shared_ptr<AccelerationStructure> top_level_acceleration_structure;
 
