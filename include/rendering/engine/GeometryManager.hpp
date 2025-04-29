@@ -16,13 +16,14 @@ public:
     GeometryManager() = default;
     GeometryManager(const std::shared_ptr<ResourceBuilder>& resource_builder) : resource_builder(resource_builder) {}
 
-    std::shared_ptr<GeometryBuffers> createGeometryBuffers(std::shared_ptr<Node> root_node);
+    std::shared_ptr<GeometryBuffers> createGeometryBuffers(const std::shared_ptr<Node>& root_node) const;
+    void destroyGeometryBuffers(const std::shared_ptr<GeometryBuffers>& geometry_buffers) const;
 private:
-    AllocatedBuffer createVertexBuffer(std::vector<std::shared_ptr<MeshAsset>>& mesh_assets);
-    AllocatedBuffer createIndexBuffer(std::vector<std::shared_ptr<MeshAsset>>& mesh_assets);
-    AllocatedBuffer createGeometryMappingBuffer(std::vector<std::shared_ptr<MeshAsset>>& mesh_assets);
-    AllocatedBuffer createInstanceMappingBuffer(std::vector<RenderObject> &objects);
-    AllocatedBuffer createEmittingInstancesBuffer(std::vector<RenderObject> &objects, std::shared_ptr<Material> material, uint32_t* emitting_instances_count);
+    AllocatedBuffer createVertexBuffer(std::vector<std::shared_ptr<MeshAsset>>& mesh_assets) const;
+    AllocatedBuffer createIndexBuffer(std::vector<std::shared_ptr<MeshAsset>>& mesh_assets) const;
+    AllocatedBuffer createGeometryMappingBuffer(std::vector<std::shared_ptr<MeshAsset>>& mesh_assets) const;
+    AllocatedBuffer createInstanceMappingBuffer(std::vector<RenderObject> &objects) const;
+    AllocatedBuffer createEmittingInstancesBuffer(std::vector<RenderObject> &objects, std::shared_ptr<Material> material, uint32_t* emitting_instances_count) const;
     AllocatedBuffer getEmittingInstancesBuffer();
 
     std::shared_ptr<ResourceBuilder> resource_builder;

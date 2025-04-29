@@ -20,7 +20,9 @@ public:
 
     SceneManager() = default;
     SceneManager(std::shared_ptr<VulkanContext>& vulkanContext, uint32_t max_frames_in_flight, VkPhysicalDeviceRayTracingPipelinePropertiesKHR raytracingProperties) : context(vulkanContext), max_frames_in_flight(max_frames_in_flight) {
+        geometry_manager = std::make_shared<GeometryManager>(context->resource_builder);
         createSceneLayout();
+        createSceneDescriptorSets(scene_descsriptor_set_layout);
         initDefaultResources(raytracingProperties);
     }
 
@@ -44,17 +46,15 @@ public:
 
 private:
     void createSceneLayout();
+    void createSceneDescriptorSets(const VkDescriptorSetLayout& layout);
     void initDefaultResources(VkPhysicalDeviceRayTracingPipelinePropertiesKHR raytracingProperties);
 
     void createDefaultTextures();
     void createDefaultSamplers();
     void createDefaultMaterials(VkPhysicalDeviceRayTracingPipelinePropertiesKHR raytracingProperties);
 
-    void createSceneDescriptorSets();
+    void updateSceneDescriptorSets();
     void createSceneBuffers();
-    AllocatedBuffer createVertexBuffer(std::vector<std::shared_ptr<MeshAsset>>& mesh_assets);
-    AllocatedBuffer createIndexBuffer(std::vector<std::shared_ptr<MeshAsset>>& mesh_assets);
-    AllocatedBuffer createGeometryMappingBuffer(std::vector<std::shared_ptr<MeshAsset>>& mesh_assets);
     AllocatedBuffer createInstanceMappingBuffer(std::vector<RenderObject> &objects);
     AllocatedBuffer createEmittingInstancesBuffer(std::vector<RenderObject> &objects, std::shared_ptr<Material> material);
     AllocatedBuffer getEmittingInstancesBuffer();
@@ -80,7 +80,7 @@ private:
 
     std::shared_ptr<GeometryManager> geometry_manager;
     std::shared_ptr<GeometryBuffers> geometry_buffers;
-    AllocatedBuffer vertex_buffer, index_buffer, geometry_mapping_buffer, instance_mapping_buffer, emitting_instances_buffer;
+    AllocatedBuffer instance_mapping_buffer, emitting_instances_buffer;
     std::shared_ptr<AccelerationStructure> top_level_acceleration_structure;
 
     uint32_t emitting_instances_count;

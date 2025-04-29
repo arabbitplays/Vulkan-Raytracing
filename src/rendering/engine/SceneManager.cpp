@@ -28,22 +28,16 @@ void SceneManager::createScene(std::string scene_path) {
     createSceneBuffers();
     createBlas();
     createUniformBuffers();
-    createSceneDescriptorSets();
+    bufferUpdateFlags = static_cast<uint8_t>(GEOMETRY_UPDATE) | static_cast<uint8_t>(MATERIAL_UPDATE);
 }
 
 void SceneManager::createSceneBuffers() {
     std::vector<std::shared_ptr<MeshAsset>> meshes = scene->getMeshes();
     geometry_buffers = geometry_manager->createGeometryBuffers(scene->getRootNode());
-    vertex_buffer = createVertexBuffer(meshes);
-    index_buffer = createIndexBuffer(meshes);
     scene->material->writeMaterial();
 
-    geometry_mapping_buffer = createGeometryMappingBuffer(meshes);
-
     scene_resource_deletion_queue.pushFunction([&]() {
-        context->resource_builder->destroyBuffer(vertex_buffer);
-        context->resource_builder->destroyBuffer(index_buffer);
-        context->resource_builder->destroyBuffer(geometry_mapping_buffer);
+        geometry_manager->destroyGeometryBuffers(geometry_buffers);
     });
 }
 
@@ -56,7 +50,7 @@ void SceneManager::createBlas() {
     for (auto& meshAsset : meshes) {
         meshAsset->accelerationStructure = std::make_shared<AccelerationStructure>(device, *context->resource_builder, *context->command_manager, VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_KHR);
 
-        meshAsset->accelerationStructure->addTriangleGeometry(vertex_buffer, index_buffer,
+        meshAsset->accelerationStructure->addTriangleGeometry(geometry_buffers->vertex_buffer, geometry_buffers->index_buffer,
             meshAsset->vertex_count - 1, meshAsset->triangle_count, sizeof(Vertex),
             meshAsset->instance_data.vertex_offset, meshAsset->instance_data.triangle_offset);
         meshAsset->accelerationStructure->build();
@@ -71,23 +65,27 @@ void SceneManager::createBlas() {
     });
 }
 
-void SceneManager::createSceneDescriptorSets() {
-    context->descriptor_allocator->writeBuffer(3, vertex_buffer.handle, 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
-    context->descriptor_allocator->writeBuffer(4, index_buffer.handle, 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
-    context->descriptor_allocator->writeBuffer(5, geometry_mapping_buffer.handle, 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+void SceneManager::updateSceneDescriptorSets() {
+    if (bufferUpdateFlags & GEOMETRY_UPDATE)
+    {
+        vkDeviceWaitIdle(context->device_manager->getDevice());
+        context->descriptor_allocator->writeBuffer(3, geometry_buffers->vertex_buffer.handle, 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+        context->descriptor_allocator->writeBuffer(4, geometry_buffers->index_buffer.handle, 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+        context->descriptor_allocator->writeBuffer(5, geometry_buffers->geometry_mapping_buffer.handle, 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
 
-    std::vector<VkImageView> views{};
-    for (uint32_t i = 0; i < 6; i++) {
-        views.push_back(scene->environment_map[i].imageView);
-    }
-    context->descriptor_allocator->writeImages(8, views, defaultSamplerLinear, VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+        std::vector<VkImageView> views{};
+        for (uint32_t i = 0; i < 6; i++) {
+            views.push_back(scene->environment_map[i].imageView);
+        }
+        context->descriptor_allocator->writeImages(8, views, defaultSamplerLinear, VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
 
-    VkDevice device = context->device_manager->getDevice();
-    for (int i = 0; i < max_frames_in_flight; i++) {
-        scene_descriptor_sets.push_back(context->descriptor_allocator->allocate(device, scene_descsriptor_set_layout));
-        context->descriptor_allocator->updateSet(device, scene_descriptor_sets[i]);
-        context->descriptor_allocator->clearWrites();
+        VkDevice device = context->device_manager->getDevice();
+        for (int i = 0; i < max_frames_in_flight; i++) {
+            context->descriptor_allocator->updateSet(device, scene_descriptor_sets[i]);
+            context->descriptor_allocator->clearWrites();
+        }
     }
+
 }
 
 void SceneManager::createSceneLayout() {
@@ -110,6 +108,12 @@ void SceneManager::createSceneLayout() {
     });
 }
 
+void SceneManager::createSceneDescriptorSets(const VkDescriptorSetLayout& layout)
+{
+    for (int i = 0; i < max_frames_in_flight; i++) {
+        scene_descriptor_sets.push_back(context->descriptor_allocator->allocate(context->device_manager->getDevice(), layout));
+    }
+}
 
 void SceneManager::createUniformBuffers() {
     VkDeviceSize size = sizeof(SceneData);
@@ -177,8 +181,9 @@ void SceneManager::updateScene(DrawContext& draw_context, uint32_t current_image
         {
             scene->material->writeMaterial();
         }
-        bufferUpdateFlags = NO_UPDATE;
     }
+
+    updateSceneDescriptorSets();
 
     uint32_t instance_id = 0;
     for (int i = 0; i < draw_context.objects.size(); i++) {
@@ -203,60 +208,8 @@ void SceneManager::updateScene(DrawContext& draw_context, uint32_t current_image
 
     std::shared_ptr<SceneData> scene_data = scene->createSceneData();
     memcpy(sceneUniformBuffersMapped[current_image_idx], scene_data.get(), sizeof(SceneData));
-}
 
-AllocatedBuffer SceneManager::createVertexBuffer(std::vector<std::shared_ptr<MeshAsset>>& mesh_assets) {
-    assert(!mesh_assets.empty());
-
-    VkDeviceSize size =  0;
-    for (auto& mesh_asset : mesh_assets) {
-        size += mesh_asset->meshBuffers.vertices.size();
-    }
-
-    std::vector<Vertex> vertices(size);
-
-    uint32_t vertex_offset = 0;
-    for (auto& mesh_asset : mesh_assets) {
-        vertices.insert(vertices.begin() + vertex_offset, mesh_asset->meshBuffers.vertices.begin(), mesh_asset->meshBuffers.vertices.end());
-
-        mesh_asset->instance_data.vertex_offset = vertex_offset;
-        vertex_offset += mesh_asset->meshBuffers.vertices.size();
-    }
-
-    return context->resource_builder->stageMemoryToNewBuffer(vertices.data(), vertices.size() * sizeof(Vertex), VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR
-        | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
-}
-
-AllocatedBuffer SceneManager::createIndexBuffer(std::vector<std::shared_ptr<MeshAsset>>& mesh_assets) {
-    assert(!mesh_assets.empty());
-
-    VkDeviceSize size =  0;
-    for (auto& mesh_asset : mesh_assets) {
-        size += mesh_asset->meshBuffers.indices.size();
-    }
-
-    std::vector<uint32_t> indices(size);
-
-    uint32_t index_offset = 0;
-    for (auto& mesh_asset : mesh_assets) {
-        indices.insert(indices.begin() + index_offset, mesh_asset->meshBuffers.indices.begin(), mesh_asset->meshBuffers.indices.end());
-
-        mesh_asset->instance_data.triangle_offset = index_offset;
-        index_offset += mesh_asset->meshBuffers.indices.size();
-    }
-
-    return context->resource_builder->stageMemoryToNewBuffer(indices.data(), indices.size() * sizeof(uint32_t), VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR
-        | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
-}
-
-AllocatedBuffer SceneManager::createGeometryMappingBuffer(std::vector<std::shared_ptr<MeshAsset>>& mesh_assets) {
-    assert(!mesh_assets.empty());
-
-    std::vector<GeometryData> geometry_datas;
-    for (auto& mesh_asset : mesh_assets) {
-        geometry_datas.push_back(mesh_asset->instance_data);
-    }
-    return context->resource_builder->stageMemoryToNewBuffer(geometry_datas.data(), mesh_assets.size() * sizeof(GeometryData), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
+    bufferUpdateFlags = NO_UPDATE;
 }
 
 AllocatedBuffer SceneManager::createInstanceMappingBuffer(std::vector<RenderObject>& objects) {

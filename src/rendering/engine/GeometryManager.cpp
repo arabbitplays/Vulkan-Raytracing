@@ -3,7 +3,7 @@
 
 namespace RtEngine {
 
-void collect_mesh_assets_recursive(std::shared_ptr<Node> root_node, std::shared_ptr<std::unordered_map<std::string, std::shared_ptr<MeshAsset>>>& mesh_map)
+void collect_mesh_assets_recursive(const std::shared_ptr<Node>& root_node, std::shared_ptr<std::unordered_map<std::string, std::shared_ptr<MeshAsset>>>& mesh_map)
 {
     for (auto child_node : root_node->children)
     {
@@ -16,7 +16,7 @@ void collect_mesh_assets_recursive(std::shared_ptr<Node> root_node, std::shared_
     }
 }
 
-std::vector<std::shared_ptr<MeshAsset>> collect_mesh_assets(std::shared_ptr<Node> root_node)
+std::vector<std::shared_ptr<MeshAsset>> collect_mesh_assets(const std::shared_ptr<Node>& root_node)
 {
     auto mesh_map = std::make_shared<std::unordered_map<std::string, std::shared_ptr<MeshAsset>>>();
     collect_mesh_assets_recursive(root_node, mesh_map);
@@ -29,14 +29,20 @@ std::vector<std::shared_ptr<MeshAsset>> collect_mesh_assets(std::shared_ptr<Node
     return mesh_assets;
 }
 
-std::shared_ptr<GeometryBuffers> GeometryManager::createGeometryBuffers(std::shared_ptr<Node> root_node)
+std::shared_ptr<GeometryBuffers> GeometryManager::createGeometryBuffers(const std::shared_ptr<Node>& root_node) const
 {
+    auto result = std::make_shared<GeometryBuffers>();
+
     std::vector<std::shared_ptr<MeshAsset>> mesh_assets = collect_mesh_assets(root_node);
-    return nullptr;
+    result->vertex_buffer = createVertexBuffer(mesh_assets);
+    result->index_buffer = createIndexBuffer(mesh_assets);
+    result->geometry_mapping_buffer = createGeometryMappingBuffer(mesh_assets);
+    return result;
 }
 
 
-AllocatedBuffer GeometryManager::createVertexBuffer(std::vector<std::shared_ptr<MeshAsset>>& mesh_assets) {
+AllocatedBuffer GeometryManager::createVertexBuffer(std::vector<std::shared_ptr<MeshAsset>>& mesh_assets) const
+{
     assert(!mesh_assets.empty());
 
     VkDeviceSize size =  0;
@@ -58,7 +64,8 @@ AllocatedBuffer GeometryManager::createVertexBuffer(std::vector<std::shared_ptr<
         | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
 }
 
-AllocatedBuffer GeometryManager::createIndexBuffer(std::vector<std::shared_ptr<MeshAsset>>& mesh_assets) {
+AllocatedBuffer GeometryManager::createIndexBuffer(std::vector<std::shared_ptr<MeshAsset>>& mesh_assets) const
+{
     assert(!mesh_assets.empty());
 
     VkDeviceSize size =  0;
@@ -80,7 +87,8 @@ AllocatedBuffer GeometryManager::createIndexBuffer(std::vector<std::shared_ptr<M
         | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
 }
 
-AllocatedBuffer GeometryManager::createGeometryMappingBuffer(std::vector<std::shared_ptr<MeshAsset>>& mesh_assets) {
+AllocatedBuffer GeometryManager::createGeometryMappingBuffer(std::vector<std::shared_ptr<MeshAsset>>& mesh_assets) const
+{
     assert(!mesh_assets.empty());
 
     std::vector<GeometryData> geometry_datas;
@@ -90,33 +98,11 @@ AllocatedBuffer GeometryManager::createGeometryMappingBuffer(std::vector<std::sh
     return resource_builder->stageMemoryToNewBuffer(geometry_datas.data(), mesh_assets.size() * sizeof(GeometryData), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
 }
 
-AllocatedBuffer GeometryManager::createInstanceMappingBuffer(std::vector<RenderObject>& objects) {
-    assert(!objects.empty());
-
-    std::vector<InstanceData> instance_datas;
-    for (int i = 0; i < objects.size(); i++) {
-        instance_datas.push_back(objects[i].instance_data);
-    }
-
-    return resource_builder->stageMemoryToNewBuffer(instance_datas.data(), instance_datas.size() * sizeof(InstanceData), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
+void GeometryManager::destroyGeometryBuffers(const std::shared_ptr<GeometryBuffers>& geometry_buffers) const
+{
+    resource_builder->destroyBuffer(geometry_buffers->vertex_buffer);
+    resource_builder->destroyBuffer(geometry_buffers->index_buffer);
+    resource_builder->destroyBuffer(geometry_buffers->geometry_mapping_buffer);
 }
 
-AllocatedBuffer GeometryManager::createEmittingInstancesBuffer(std::vector<RenderObject>& objects, std::shared_ptr<Material> material, uint32_t* emitting_instances_count) {
-    assert(!objects.empty());
-
-    std::vector<EmittingInstanceData> emitting_instances;
-    for (int i = 0; i < objects.size(); i++) {
-        EmittingInstanceData instance_data;
-        instance_data.instance_id = i;
-        instance_data.model_matrix = objects[i].transform;
-        float power = material->getEmissionForInstance(objects[i].instance_data.material_index).w;
-        instance_data.primitive_count = objects[i].primitive_count;
-        if (power > 0.0f || (i == objects.size() - 1 && emitting_instances.empty())) {
-            emitting_instances.push_back(instance_data);
-        }
-    }
-
-    *emitting_instances_count = emitting_instances.size();
-    return resource_builder->stageMemoryToNewBuffer(emitting_instances.data(), emitting_instances.size() * sizeof(EmittingInstanceData), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
-}
 }
