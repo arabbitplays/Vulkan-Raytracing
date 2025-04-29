@@ -42,6 +42,10 @@ void Scene::addNode(std::string name, std::shared_ptr<Node> node)
     nodes[name] = std::move(node);
 }
 
+std::shared_ptr<Node> Scene::getRootNode()
+{
+    return nodes["root"];
+}
 
 std::vector<std::shared_ptr<MeshAsset>> Scene::getMeshes()
 {

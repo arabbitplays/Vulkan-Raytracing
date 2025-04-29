@@ -58,6 +58,8 @@ public:
     void addMesh(std::shared_ptr<MeshAsset> mesh);
     void addNode(std::string name, std::shared_ptr<Node> node);
 
+    std::shared_ptr<Node> getRootNode();
+
     std::shared_ptr<SceneData> createSceneData();
     void update(uint32_t image_width, uint32_t image_height);
 

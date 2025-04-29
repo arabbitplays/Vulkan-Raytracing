@@ -7,4 +7,5 @@ src += files(
     'Scene.cpp',
     'SceneManager.cpp',
     'Swapchain.cpp',
+    'GeometryManager.cpp',
 )

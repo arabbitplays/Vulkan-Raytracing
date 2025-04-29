@@ -5,8 +5,8 @@
 #include <OptionsWindow.hpp>
 #include <vector>
 #include <vulkan/vulkan_core.h>
-#include <Scene.hpp>
 #include <VulkanContext.hpp>
+#include <GeometryManager.hpp>
 
 namespace RtEngine {
 class SceneManager {
@@ -78,6 +78,8 @@ private:
     std::shared_ptr<MetalRoughMaterial> metal_rough_material;
     std::shared_ptr<PhongMaterial> phong_material;
 
+    std::shared_ptr<GeometryManager> geometry_manager;
+    std::shared_ptr<GeometryBuffers> geometry_buffers;
     AllocatedBuffer vertex_buffer, index_buffer, geometry_mapping_buffer, instance_mapping_buffer, emitting_instances_buffer;
     std::shared_ptr<AccelerationStructure> top_level_acceleration_structure;
 

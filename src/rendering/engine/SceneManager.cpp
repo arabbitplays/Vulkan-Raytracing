@@ -33,6 +33,7 @@ void SceneManager::createScene(std::string scene_path) {
 
 void SceneManager::createSceneBuffers() {
     std::vector<std::shared_ptr<MeshAsset>> meshes = scene->getMeshes();
+    geometry_buffers = geometry_manager->createGeometryBuffers(scene->getRootNode());
     vertex_buffer = createVertexBuffer(meshes);
     index_buffer = createIndexBuffer(meshes);
     scene->material->writeMaterial();
