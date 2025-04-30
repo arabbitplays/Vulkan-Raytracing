@@ -62,9 +62,6 @@ private:
 
     void updateSceneDescriptorSets();
     void createSceneBuffers();
-    AllocatedBuffer createInstanceMappingBuffer(std::vector<RenderObject> &objects);
-    AllocatedBuffer createEmittingInstancesBuffer(std::vector<RenderObject> &objects, std::shared_ptr<Material> material);
-    AllocatedBuffer getEmittingInstancesBuffer();
     void createUniformBuffers();
 
     DeletionQueue main_deletion_queue, scene_resource_deletion_queue;
@@ -88,10 +85,7 @@ private:
     std::shared_ptr<GeometryManager> geometry_manager;
     std::shared_ptr<InstanceManager> instance_manager;
 
-    AllocatedBuffer instance_mapping_buffer, emitting_instances_buffer;
     std::shared_ptr<AccelerationStructure> top_level_acceleration_structure;
-
-    uint32_t emitting_instances_count;
 };
 
 

@@ -150,25 +150,12 @@ void SceneManager::updateScene(DrawContext& draw_context, uint32_t current_image
     scene->nodes["root"]->draw(draw_context);
 
     if (bufferUpdateFlags & GEOMETRY_UPDATE) {
-        instance_mapping_buffer = createInstanceMappingBuffer(draw_context.objects);
-        scene_resource_deletion_queue.pushFunction([&]() {
-            context->resource_builder->destroyBuffer(instance_mapping_buffer);
-            instance_mapping_buffer.handle = VK_NULL_HANDLE;
-        });
+        instance_manager->createInstanceMappingBuffer(draw_context.objects);
     }
 
     if (bufferUpdateFlags & GEOMETRY_UPDATE || bufferUpdateFlags & MATERIAL_UPDATE)
     {
-        if (emitting_instances_buffer.handle != VK_NULL_HANDLE)
-            context->resource_builder->destroyBuffer(emitting_instances_buffer);
-        else
-        {
-            scene_resource_deletion_queue.pushFunction([&]() {
-                context->resource_builder->destroyBuffer(getEmittingInstancesBuffer());
-                emitting_instances_buffer.handle = VK_NULL_HANDLE;
-            });
-        }
-        emitting_instances_buffer = createEmittingInstancesBuffer(draw_context.objects, getMaterial());
+        instance_manager->createEmittingInstancesBuffer(draw_context.objects, getMaterial());
     }
 
     if (bufferUpdateFlags != NO_UPDATE)
@@ -193,10 +180,13 @@ void SceneManager::updateScene(DrawContext& draw_context, uint32_t current_image
     }
     top_level_acceleration_structure->build();
 
+    // These two need to stay in scope until the updateSet() call
+    AllocatedBuffer instances_buffer = instance_manager->getInstanceBuffer();
+    AllocatedBuffer emitting_instances_buffer = instance_manager->getEmittingInstancesBuffer();
     context->descriptor_allocator->writeAccelerationStructure(0, top_level_acceleration_structure->getHandle(), VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR);
     context->descriptor_allocator->writeImage(1, current_image.imageView, VK_NULL_HANDLE, VK_IMAGE_LAYOUT_GENERAL, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
     context->descriptor_allocator->writeBuffer(2, sceneUniformBuffers[0].handle, sizeof(SceneData), 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
-    context->descriptor_allocator->writeBuffer(6, instance_mapping_buffer.handle, 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+    context->descriptor_allocator->writeBuffer(6, instances_buffer.handle, 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
     context->descriptor_allocator->writeBuffer(7, emitting_instances_buffer.handle, 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
     context->descriptor_allocator->writeImage(9, rng_tex.imageView, VK_NULL_HANDLE, VK_IMAGE_LAYOUT_GENERAL, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
     context->descriptor_allocator->updateSet(device, scene_descriptor_sets[0]);
@@ -207,42 +197,6 @@ void SceneManager::updateScene(DrawContext& draw_context, uint32_t current_image
 
     bufferUpdateFlags = NO_UPDATE;
 }
-
-AllocatedBuffer SceneManager::createInstanceMappingBuffer(std::vector<RenderObject>& objects) {
-    assert(!objects.empty());
-
-    std::vector<InstanceData> instance_datas;
-    for (int i = 0; i < objects.size(); i++) {
-        instance_datas.push_back(objects[i].instance_data);
-    }
-
-    return context->resource_builder->stageMemoryToNewBuffer(instance_datas.data(), instance_datas.size() * sizeof(InstanceData), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
-}
-
-AllocatedBuffer SceneManager::createEmittingInstancesBuffer(std::vector<RenderObject>& objects, std::shared_ptr<Material> material) {
-    assert(!objects.empty());
-
-    std::vector<EmittingInstanceData> emitting_instances;
-    for (int i = 0; i < objects.size(); i++) {
-        EmittingInstanceData instance_data;
-        instance_data.instance_id = i;
-        instance_data.model_matrix = objects[i].transform;
-        float power = material->getEmissionForInstance(objects[i].instance_data.material_index).w;
-        instance_data.primitive_count = objects[i].primitive_count;
-        if (power > 0.0f || (i == objects.size() - 1 && emitting_instances.empty())) {
-            emitting_instances.push_back(instance_data);
-        }
-    }
-
-    emitting_instances_count = emitting_instances.size();
-    return context->resource_builder->stageMemoryToNewBuffer(emitting_instances.data(), emitting_instances.size() * sizeof(EmittingInstanceData), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
-}
-
-AllocatedBuffer SceneManager::getEmittingInstancesBuffer()
-{
-    return emitting_instances_buffer;
-}
-
 
 void SceneManager::initDefaultResources(VkPhysicalDeviceRayTracingPipelinePropertiesKHR raytracingProperties) {
     createDefaultTextures();
@@ -339,8 +293,7 @@ std::shared_ptr<Material> SceneManager::getMaterial() {
 }
 
 uint32_t SceneManager::getEmittingInstancesCount() {
-    assert(emitting_instances_buffer.handle != VK_NULL_HANDLE);
-    return emitting_instances_count;
+    return instance_manager->getEmittingInstancesCount();
 }
 
 

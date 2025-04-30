@@ -9,7 +9,6 @@ namespace RtEngine
 void InstanceManager::createInstanceMappingBuffer(std::vector<RenderObject>& objects) {
     assert(!objects.empty());
 
-
     if (instance_mapping_buffer.handle != VK_NULL_HANDLE)
     {
         resource_builder->destroyBuffer(instance_mapping_buffer);
