@@ -3,35 +3,10 @@
 
 namespace RtEngine {
 
-void collect_mesh_assets_recursive(const std::shared_ptr<Node>& root_node, std::shared_ptr<std::unordered_map<std::string, std::shared_ptr<MeshAsset>>>& mesh_map)
-{
-    for (auto child_node : root_node->children)
-    {
-        std::shared_ptr<MeshRenderer> mesh_renderer = child_node->getComponent<MeshRenderer>();
-        if (mesh_renderer && !mesh_map->contains(mesh_renderer->meshAsset->name))
-        {
-            (*mesh_map)[mesh_renderer->meshAsset->name] = mesh_renderer->meshAsset;
-        }
-        collect_mesh_assets_recursive(child_node, mesh_map);
-    }
-}
 
-std::vector<std::shared_ptr<MeshAsset>> collect_mesh_assets(const std::shared_ptr<Node>& root_node)
-{
-    auto mesh_map = std::make_shared<std::unordered_map<std::string, std::shared_ptr<MeshAsset>>>();
-    collect_mesh_assets_recursive(root_node, mesh_map);
 
-    std::vector<std::shared_ptr<MeshAsset>> mesh_assets;
-    for (auto mesh_asset : *mesh_map)
-    {
-        mesh_assets.push_back(mesh_asset.second);
-    }
-    return mesh_assets;
-}
-
-void GeometryManager::createGeometryBuffers(const std::shared_ptr<Node>& root_node)
+void GeometryManager::createGeometryBuffers(std::vector<std::shared_ptr<MeshAsset>>& mesh_assets)
 {
-    std::vector<std::shared_ptr<MeshAsset>> mesh_assets = collect_mesh_assets(root_node);
     vertex_buffer = createVertexBuffer(mesh_assets);
     index_buffer = createIndexBuffer(mesh_assets);
     geometry_mapping_buffer = createGeometryMappingBuffer(mesh_assets);

@@ -1,12 +1,39 @@
 #include "SceneManager.hpp"
 
 #include <DescriptorLayoutBuilder.hpp>
+#include <MeshRenderer.hpp>
 #include <OptionsWindow.hpp>
 #include <QuickTimer.hpp>
 #include <SceneReader.hpp>
 #include <SceneWriter.hpp>
 
 namespace RtEngine {
+void collectMeshAssetsRecursive(const std::shared_ptr<Node>& root_node, std::shared_ptr<std::unordered_map<std::string, std::shared_ptr<MeshAsset>>>& mesh_map)
+{
+    for (auto child_node : root_node->children)
+    {
+        std::shared_ptr<MeshRenderer> mesh_renderer = child_node->getComponent<MeshRenderer>();
+        if (mesh_renderer && !mesh_map->contains(mesh_renderer->meshAsset->name))
+        {
+            (*mesh_map)[mesh_renderer->meshAsset->name] = mesh_renderer->meshAsset;
+        }
+        collectMeshAssetsRecursive(child_node, mesh_map);
+    }
+}
+
+std::vector<std::shared_ptr<MeshAsset>> collectMeshAssets(const std::shared_ptr<Node>& root_node)
+{
+    auto mesh_map = std::make_shared<std::unordered_map<std::string, std::shared_ptr<MeshAsset>>>();
+    collectMeshAssetsRecursive(root_node, mesh_map);
+
+    std::vector<std::shared_ptr<MeshAsset>> mesh_assets;
+    for (auto mesh_asset : *mesh_map)
+    {
+        mesh_assets.push_back(mesh_asset.second);
+    }
+    return mesh_assets;
+}
+
 void SceneManager::createScene(std::string scene_path) {
     QuickTimer timer{"Scene Creation", true};
 
@@ -25,24 +52,23 @@ void SceneManager::createScene(std::string scene_path) {
         scene->clearRessources();
     });
 
-    createSceneBuffers();
-    createBlas();
+    std::vector<std::shared_ptr<MeshAsset>> mesh_assets = collectMeshAssets(scene->getRootNode());
+    createSceneBuffers(mesh_assets);
+    createBlas(mesh_assets);
     createUniformBuffers();
     bufferUpdateFlags = static_cast<uint8_t>(GEOMETRY_UPDATE) | static_cast<uint8_t>(MATERIAL_UPDATE);
 }
 
-void SceneManager::createSceneBuffers() {
-    std::vector<std::shared_ptr<MeshAsset>> meshes = scene->getMeshes();
-    geometry_manager->createGeometryBuffers(scene->getRootNode());
+void SceneManager::createSceneBuffers(std::vector<std::shared_ptr<MeshAsset>>& meshes) {
+    geometry_manager->createGeometryBuffers(meshes);
     scene->material->writeMaterial();
 }
 
-void SceneManager::createBlas() {
+void SceneManager::createBlas(std::vector<std::shared_ptr<MeshAsset>>& meshes) {
     QuickTimer timer{"BLAS Build", true};
     VkDevice device = context->device_manager->getDevice();
 
     uint32_t object_id = 0;
-    std::vector<std::shared_ptr<MeshAsset>> meshes = scene->getMeshes();
     for (auto& meshAsset : meshes) {
         meshAsset->accelerationStructure = std::make_shared<AccelerationStructure>(device, *context->resource_builder, *context->command_manager, VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_KHR);
 
@@ -55,7 +81,7 @@ void SceneManager::createBlas() {
 
     scene_resource_deletion_queue.pushFunction([&]()
     {
-        for (auto& meshAsset : scene->getMeshes()) {
+        for (auto& meshAsset : collectMeshAssets(scene->getRootNode())) {
             meshAsset->accelerationStructure->destroy();
         }
     });

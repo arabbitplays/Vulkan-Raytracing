@@ -29,7 +29,6 @@ std::shared_ptr<Scene> SceneReader::readScene(const std::string& filename, std::
         for (const auto& mesh_node : scene_node["meshes"]) {
             std::string mesh_path = mesh_node["path"].as<std::string>();
             std::string mesh_name = context->mesh_repository->addMesh(mesh_path);
-            scene->addMesh(context->mesh_repository->getMesh(mesh_name));
         }
 
         for (const auto& texture_node : scene_node["textures"]) {

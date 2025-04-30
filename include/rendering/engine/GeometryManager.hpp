@@ -11,7 +11,7 @@ public:
     GeometryManager() = default;
     GeometryManager(const std::shared_ptr<ResourceBuilder>& resource_builder) : resource_builder(resource_builder) {}
 
-    void createGeometryBuffers(const std::shared_ptr<Node>& root_node);
+    void createGeometryBuffers(std::vector<std::shared_ptr<MeshAsset>>& mesh_assets);
 
     AllocatedBuffer getVertexBuffer() const;
     AllocatedBuffer getIndexBuffer() const;

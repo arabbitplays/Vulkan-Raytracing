@@ -30,12 +30,6 @@ std::shared_ptr<SceneData> Scene::createSceneData() {
     return sceneData;
 }
 
-void Scene::addMesh(std::shared_ptr<MeshAsset> mesh)
-{
-    meshes[mesh->name] = mesh;
-}
-
-
 void Scene::addNode(std::string name, std::shared_ptr<Node> node)
 {
     assert(!nodes.contains(name));
@@ -47,15 +41,6 @@ std::shared_ptr<Node> Scene::getRootNode()
     return nodes["root"];
 }
 
-std::vector<std::shared_ptr<MeshAsset>> Scene::getMeshes()
-{
-    std::vector<std::shared_ptr<MeshAsset>> values;
-    for (const auto& pair : meshes) {
-        values.push_back(pair.second);
-    }
-
-    return values;
-}
 
 void Scene::update(uint32_t image_width, uint32_t image_height) {
     camera->update(image_width, image_height);

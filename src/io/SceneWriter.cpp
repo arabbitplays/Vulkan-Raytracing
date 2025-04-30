@@ -29,14 +29,15 @@ void SceneWriter::writeScene(const std::string& filename, std::shared_ptr<Scene>
 
     writeSceneLights(out, scene);
 
-    out << YAML::Key << "meshes" << YAML::Value << YAML::BeginSeq;
+    // TODO Collect meshes from scene graph
+    /*out << YAML::Key << "meshes" << YAML::Value << YAML::BeginSeq;
     for (const auto& mesh : scene->meshes) {
       out << YAML::BeginMap;
       out << YAML::Key << "name" << YAML::Value << mesh.first;
       out << YAML::Key << "path" << YAML::Value << mesh.second->path;
       out << YAML::EndMap;
     }
-    out << YAML::EndSeq;
+    out << YAML::EndSeq;*/
 
     /*out << YAML::Key << "textures" << YAML::Value << YAML::BeginSeq;
     for (const auto& texture : scene->textures) {

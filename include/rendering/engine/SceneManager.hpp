@@ -34,7 +34,7 @@ public:
     }
 
     void createScene(std::string scene_path);
-    void createBlas();
+    void createBlas(std::vector<std::shared_ptr<MeshAsset>>& meshes);
     void updateScene(DrawContext& draw_context, uint32_t current_image_idx, AllocatedImage current_image, AllocatedImage& rng_tex);
 
     void clearRessources();
@@ -61,7 +61,7 @@ private:
     void createDefaultMaterials(VkPhysicalDeviceRayTracingPipelinePropertiesKHR raytracingProperties);
 
     void updateSceneDescriptorSets();
-    void createSceneBuffers();
+    void createSceneBuffers(std::vector<std::shared_ptr<MeshAsset>>& meshes);
     void createUniformBuffers();
 
     DeletionQueue main_deletion_queue, scene_resource_deletion_queue;

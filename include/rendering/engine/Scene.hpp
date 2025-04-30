@@ -55,7 +55,6 @@ public:
 
     virtual ~Scene() = default;
 
-    void addMesh(std::shared_ptr<MeshAsset> mesh);
     void addNode(std::string name, std::shared_ptr<Node> node);
 
     std::shared_ptr<Node> getRootNode();
@@ -67,8 +66,6 @@ public:
     void clearRessources();
 
     std::shared_ptr<Camera> camera;
-
-    std::unordered_map<std::string, std::shared_ptr<MeshAsset>> meshes;
 
     std::unordered_map<std::string, std::shared_ptr<Node>> nodes;
     std::array<AllocatedImage, 6> environment_map{};
