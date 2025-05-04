@@ -46,7 +46,7 @@ void Scene::update(uint32_t image_width, uint32_t image_height) {
     camera->update(image_width, image_height);
 }
 
-void Scene::clearRessources() {
+void Scene::clearResources() {
     deletion_queue.flush();
 }
 }

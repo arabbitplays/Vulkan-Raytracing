@@ -21,13 +21,19 @@ public:
 
     SceneManager() = default;
     SceneManager(std::shared_ptr<VulkanContext>& vulkanContext, uint32_t max_frames_in_flight, VkPhysicalDeviceRayTracingPipelinePropertiesKHR raytracingProperties) : context(vulkanContext), max_frames_in_flight(max_frames_in_flight) {
+        VkDevice device = context->device_manager->getDevice();
+
         geometry_manager = std::make_shared<GeometryManager>(context->resource_builder);
         instance_manager = std::make_shared<InstanceManager>(context->resource_builder);
+        top_level_acceleration_structure = std::make_shared<AccelerationStructure>(device, *context->resource_builder, *context->command_manager, VK_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL_KHR);
+
         main_deletion_queue.pushFunction([&]()
         {
             geometry_manager->destroy();
             instance_manager->destroy();
+            top_level_acceleration_structure->destroy();
         });
+
         createSceneLayout();
         createSceneDescriptorSets(scene_descsriptor_set_layout);
         initDefaultResources(raytracingProperties);
@@ -39,7 +45,8 @@ public:
 
     void clearRessources();
 
-    std::shared_ptr<Material> getMaterial();
+    std::shared_ptr<Material> getMaterial() const;
+    VkDescriptorSet getSceneDescriptorSet() const;
     uint32_t getEmittingInstancesCount();
 
     std::shared_ptr<VulkanContext> context;
@@ -47,27 +54,21 @@ public:
     uint32_t bufferUpdateFlags = 0;
     std::string curr_scene_name;
 
-    std::vector<VkDescriptorSet> scene_descriptor_sets{};
-    std::vector<AllocatedBuffer> sceneUniformBuffers;
-    std::vector<void*> sceneUniformBuffersMapped;
-
 private:
     void createSceneLayout();
     void createSceneDescriptorSets(const VkDescriptorSetLayout& layout);
-    void initDefaultResources(VkPhysicalDeviceRayTracingPipelinePropertiesKHR raytracingProperties);
+    void createUniformBuffers();
 
+    void initDefaultResources(VkPhysicalDeviceRayTracingPipelinePropertiesKHR raytracingProperties);
     void createDefaultTextures();
     void createDefaultSamplers();
     void createDefaultMaterials(VkPhysicalDeviceRayTracingPipelinePropertiesKHR raytracingProperties);
 
-    void updateSceneDescriptorSets();
-    void createSceneBuffers(std::vector<std::shared_ptr<MeshAsset>>& meshes);
-    void createUniformBuffers();
+    void updateSceneDescriptorSets(AllocatedImage current_image, AllocatedImage& rng_tex);
+    void updateTlas(std::shared_ptr<AccelerationStructure>& tlas, std::vector<RenderObject> objects);
 
     DeletionQueue main_deletion_queue, scene_resource_deletion_queue;
     uint32_t max_frames_in_flight;
-
-    VkDescriptorSetLayout scene_descsriptor_set_layout;
 
     AllocatedImage whiteImage;
     AllocatedImage greyImage;
@@ -79,13 +80,16 @@ private:
     VkSampler defaultSamplerAnisotropic;
 
     std::unordered_map<std::string, std::shared_ptr<Material>> defaultMaterials;
-    std::shared_ptr<MetalRoughMaterial> metal_rough_material;
-    std::shared_ptr<PhongMaterial> phong_material;
 
     std::shared_ptr<GeometryManager> geometry_manager;
     std::shared_ptr<InstanceManager> instance_manager;
 
     std::shared_ptr<AccelerationStructure> top_level_acceleration_structure;
+
+    VkDescriptorSetLayout scene_descsriptor_set_layout;
+    std::vector<VkDescriptorSet> scene_descriptor_sets{};
+    std::vector<AllocatedBuffer> sceneUniformBuffers;
+    std::vector<void*> sceneUniformBuffersMapped;
 };
 
 

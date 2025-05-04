@@ -49,19 +49,15 @@ void SceneManager::createScene(std::string scene_path) {
     scene = reader.readScene(scene_path, defaultMaterials);
 
     scene_resource_deletion_queue.pushFunction([&]() {
-        scene->clearRessources();
+        scene->clearResources();
     });
 
     std::vector<std::shared_ptr<MeshAsset>> mesh_assets = collectMeshAssets(scene->getRootNode());
-    createSceneBuffers(mesh_assets);
+    geometry_manager->createGeometryBuffers(mesh_assets);
+    scene->material->writeMaterial();
     createBlas(mesh_assets);
     createUniformBuffers();
     bufferUpdateFlags = static_cast<uint8_t>(GEOMETRY_UPDATE) | static_cast<uint8_t>(MATERIAL_UPDATE);
-}
-
-void SceneManager::createSceneBuffers(std::vector<std::shared_ptr<MeshAsset>>& meshes) {
-    geometry_manager->createGeometryBuffers(meshes);
-    scene->material->writeMaterial();
 }
 
 void SceneManager::createBlas(std::vector<std::shared_ptr<MeshAsset>>& meshes) {
@@ -85,28 +81,6 @@ void SceneManager::createBlas(std::vector<std::shared_ptr<MeshAsset>>& meshes) {
             meshAsset->accelerationStructure->destroy();
         }
     });
-}
-
-void SceneManager::updateSceneDescriptorSets() {
-    if (bufferUpdateFlags & GEOMETRY_UPDATE)
-    {
-        context->descriptor_allocator->writeBuffer(3, geometry_manager->getVertexBuffer().handle, 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
-        context->descriptor_allocator->writeBuffer(4, geometry_manager->getIndexBuffer().handle, 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
-        context->descriptor_allocator->writeBuffer(5, geometry_manager->getGeometryMappingBuffer().handle, 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
-
-        std::vector<VkImageView> views{};
-        for (uint32_t i = 0; i < 6; i++) {
-            views.push_back(scene->environment_map[i].imageView);
-        }
-        context->descriptor_allocator->writeImages(8, views, defaultSamplerLinear, VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
-
-        VkDevice device = context->device_manager->getDevice();
-        for (int i = 0; i < max_frames_in_flight; i++) {
-            context->descriptor_allocator->updateSet(device, scene_descriptor_sets[i]);
-            context->descriptor_allocator->clearWrites();
-        }
-    }
-
 }
 
 void SceneManager::createSceneLayout() {
@@ -154,6 +128,8 @@ void SceneManager::createUniformBuffers() {
     }
 }
 
+// ----------------------------------------------------------------------------------------------------------------
+
 void SceneManager::updateScene(DrawContext& draw_context, uint32_t current_image_idx, AllocatedImage current_image, AllocatedImage& rng_tex) {
     //QuickTimer timer{"Scene Update", true};
     VkDevice device = context->device_manager->getDevice();
@@ -162,15 +138,6 @@ void SceneManager::updateScene(DrawContext& draw_context, uint32_t current_image
 
     if (!(bufferUpdateFlags & NO_UPDATE))
         vkDeviceWaitIdle(device);
-
-    if (top_level_acceleration_structure == nullptr) {
-        top_level_acceleration_structure = std::make_shared<AccelerationStructure>(device, *context->resource_builder, *context->command_manager, VK_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL_KHR);
-
-        scene_resource_deletion_queue.pushFunction([&]() {
-            top_level_acceleration_structure->destroy();
-            top_level_acceleration_structure = nullptr;
-        });
-    }
 
     draw_context.objects.clear();
     scene->nodes["root"]->draw(draw_context);
@@ -192,37 +159,64 @@ void SceneManager::updateScene(DrawContext& draw_context, uint32_t current_image
         }
     }
 
-    updateSceneDescriptorSets();
-
-    uint32_t instance_id = 0;
-    for (int i = 0; i < draw_context.objects.size(); i++) {
-        top_level_acceleration_structure->addInstance(draw_context.objects[i].acceleration_structure, draw_context.objects[i].transform, instance_id++);
-    }
-
-    if (top_level_acceleration_structure->getHandle() == VK_NULL_HANDLE) {
-        top_level_acceleration_structure->addInstanceGeometry();
-    } else {
-        top_level_acceleration_structure->update_instance_geometry(0);
-    }
-    top_level_acceleration_structure->build();
-
-    // These two need to stay in scope until the updateSet() call
-    AllocatedBuffer instances_buffer = instance_manager->getInstanceBuffer();
-    AllocatedBuffer emitting_instances_buffer = instance_manager->getEmittingInstancesBuffer();
-    context->descriptor_allocator->writeAccelerationStructure(0, top_level_acceleration_structure->getHandle(), VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR);
-    context->descriptor_allocator->writeImage(1, current_image.imageView, VK_NULL_HANDLE, VK_IMAGE_LAYOUT_GENERAL, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
-    context->descriptor_allocator->writeBuffer(2, sceneUniformBuffers[0].handle, sizeof(SceneData), 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
-    context->descriptor_allocator->writeBuffer(6, instances_buffer.handle, 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
-    context->descriptor_allocator->writeBuffer(7, emitting_instances_buffer.handle, 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
-    context->descriptor_allocator->writeImage(9, rng_tex.imageView, VK_NULL_HANDLE, VK_IMAGE_LAYOUT_GENERAL, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
-    context->descriptor_allocator->updateSet(device, scene_descriptor_sets[0]);
-    context->descriptor_allocator->clearWrites();
+    updateTlas(top_level_acceleration_structure, draw_context.objects);
 
     std::shared_ptr<SceneData> scene_data = scene->createSceneData();
     memcpy(sceneUniformBuffersMapped[current_image_idx], scene_data.get(), sizeof(SceneData));
 
+    updateSceneDescriptorSets(current_image, rng_tex);
+
     bufferUpdateFlags = NO_UPDATE;
 }
+
+void SceneManager::updateTlas(std::shared_ptr<AccelerationStructure>& tlas, std::vector<RenderObject> objects)
+{
+    uint32_t instance_id = 0;
+    for (int i = 0; i < objects.size(); i++) {
+        tlas->addInstance(objects[i].acceleration_structure, objects[i].transform, instance_id++);
+    }
+
+    if (tlas->getHandle() == VK_NULL_HANDLE) {
+        tlas->addInstanceGeometry();
+    } else {
+        tlas->update_instance_geometry(0);
+    }
+    tlas->build();
+}
+
+void SceneManager::updateSceneDescriptorSets(AllocatedImage current_image, AllocatedImage& rng_tex) {
+    VkDevice device = context->device_manager->getDevice();
+
+    VkAccelerationStructureKHR tlas_handle = top_level_acceleration_structure->getHandle();
+    if (bufferUpdateFlags & GEOMETRY_UPDATE)
+    {
+        context->descriptor_allocator->writeAccelerationStructure(0, tlas_handle, VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR);
+        context->descriptor_allocator->writeBuffer(3, geometry_manager->getVertexBuffer().handle, 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+        context->descriptor_allocator->writeBuffer(4, geometry_manager->getIndexBuffer().handle, 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+        context->descriptor_allocator->writeBuffer(5, geometry_manager->getGeometryMappingBuffer().handle, 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+        context->descriptor_allocator->writeBuffer(6, instance_manager->getInstanceBuffer().handle, 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+        context->descriptor_allocator->writeBuffer(7, instance_manager->getEmittingInstancesBuffer().handle, 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+
+        std::vector<VkImageView> views{};
+        for (uint32_t i = 0; i < 6; i++) {
+            views.push_back(scene->environment_map[i].imageView);
+        }
+        context->descriptor_allocator->writeImages(8, views, defaultSamplerLinear, VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+
+        for (int i = 0; i < max_frames_in_flight; i++) {
+            context->descriptor_allocator->updateSet(device, scene_descriptor_sets[i]);
+            context->descriptor_allocator->clearWrites();
+        }
+    }
+
+    context->descriptor_allocator->writeImage(1, current_image.imageView, VK_NULL_HANDLE, VK_IMAGE_LAYOUT_GENERAL, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
+    context->descriptor_allocator->writeBuffer(2, sceneUniformBuffers[0].handle, sizeof(SceneData), 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+    context->descriptor_allocator->writeImage(9, rng_tex.imageView, VK_NULL_HANDLE, VK_IMAGE_LAYOUT_GENERAL, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
+    context->descriptor_allocator->updateSet(device, scene_descriptor_sets[0]);
+    context->descriptor_allocator->clearWrites();
+}
+
+// -----------------------------------------------------------------------------------------------------------------
 
 void SceneManager::initDefaultResources(VkPhysicalDeviceRayTracingPipelinePropertiesKHR raytracingProperties) {
     createDefaultTextures();
@@ -296,27 +290,35 @@ void SceneManager::createDefaultSamplers() {
     });
 }
 
-void SceneManager::createDefaultMaterials(VkPhysicalDeviceRayTracingPipelinePropertiesKHR raytracingProperties) {
-    phong_material = std::make_shared<PhongMaterial>(context);
+void SceneManager::createDefaultMaterials(VkPhysicalDeviceRayTracingPipelinePropertiesKHR raytracingProperties)
+{
+    auto phong_material = std::make_shared<PhongMaterial>(context);
     phong_material->buildPipelines(scene_descsriptor_set_layout);
-    main_deletion_queue.pushFunction([&]() {
-        phong_material->clearRessources();
-    });
     phong_material->pipeline->createShaderBindingTables(raytracingProperties);
     defaultMaterials["phong"] = phong_material;
-
-    metal_rough_material = std::make_shared<MetalRoughMaterial>(context, defaultSamplerLinear);
-    metal_rough_material->buildPipelines(scene_descsriptor_set_layout);
     main_deletion_queue.pushFunction([&]() {
-        metal_rough_material->clearRessources();
+        defaultMaterials["phong"]->clearRessources();
     });
+
+    auto metal_rough_material = std::make_shared<MetalRoughMaterial>(context, defaultSamplerLinear);
+    metal_rough_material->buildPipelines(scene_descsriptor_set_layout);
     metal_rough_material->pipeline->createShaderBindingTables(raytracingProperties);
     defaultMaterials["metal_rough"] = metal_rough_material;
+    main_deletion_queue.pushFunction([&]() {
+        defaultMaterials["metal_rough"]->clearRessources();
+    });
 }
 
-std::shared_ptr<Material> SceneManager::getMaterial() {
+std::shared_ptr<Material> SceneManager::getMaterial() const
+{
     return scene->material;
 }
+
+VkDescriptorSet SceneManager::getSceneDescriptorSet() const
+{
+    return scene_descriptor_sets[0];
+}
+
 
 uint32_t SceneManager::getEmittingInstancesCount() {
     return instance_manager->getEmittingInstancesCount();

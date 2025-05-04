@@ -56,14 +56,12 @@ public:
     virtual ~Scene() = default;
 
     void addNode(std::string name, std::shared_ptr<Node> node);
-
     std::shared_ptr<Node> getRootNode();
 
     std::shared_ptr<SceneData> createSceneData();
     void update(uint32_t image_width, uint32_t image_height);
 
-    std::vector<std::shared_ptr<MeshAsset>> getMeshes();
-    void clearRessources();
+    void clearResources();
 
     std::shared_ptr<Camera> camera;
 
