@@ -53,4 +53,5 @@ void main() {
 
     imageStore(rng_tex, ivec2(gl_LaunchIDEXT.xy), payload.rng_state);
     imageStore(image, ivec2(gl_LaunchIDEXT.xy), vec4(color, 1.0));
+
 }

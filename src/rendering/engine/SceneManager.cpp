@@ -190,7 +190,7 @@ void SceneManager::updateTlas(std::shared_ptr<AccelerationStructure>& tlas, std:
     tlas->build();
 }
 
-void SceneManager::updateSceneDescriptorSets(uint32_t current_image_idx, const AllocatedImage& current_image, const AllocatedImage& rng_tex) {
+void SceneManager::updateSceneDescriptorSets(uint32_t frame_idx, const AllocatedImage& current_image, const AllocatedImage& rng_tex) {
     VkDevice device = context->device_manager->getDevice();
 
     VkAccelerationStructureKHR tlas_handle = top_level_acceleration_structure->getHandle();
@@ -211,14 +211,14 @@ void SceneManager::updateSceneDescriptorSets(uint32_t current_image_idx, const A
 
         for (int i = 0; i < max_frames_in_flight; i++) {
             context->descriptor_allocator->updateSet(device, scene_descriptor_sets[i]);
-            context->descriptor_allocator->clearWrites();
         }
+        context->descriptor_allocator->clearWrites();
     }
 
     context->descriptor_allocator->writeImage(1, current_image.imageView, VK_NULL_HANDLE, VK_IMAGE_LAYOUT_GENERAL, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
-    context->descriptor_allocator->writeBuffer(2, sceneUniformBuffers[current_image_idx].handle, sizeof(SceneData), 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+    context->descriptor_allocator->writeBuffer(2, sceneUniformBuffers[frame_idx].handle, sizeof(SceneData), 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
     context->descriptor_allocator->writeImage(9, rng_tex.imageView, VK_NULL_HANDLE, VK_IMAGE_LAYOUT_GENERAL, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
-    context->descriptor_allocator->updateSet(device, scene_descriptor_sets[current_image_idx]);
+    context->descriptor_allocator->updateSet(device, scene_descriptor_sets[frame_idx]);
     context->descriptor_allocator->clearWrites();
 }
 
@@ -320,9 +320,9 @@ std::shared_ptr<Material> SceneManager::getMaterial() const
     return scene->material;
 }
 
-VkDescriptorSet SceneManager::getSceneDescriptorSet() const
+VkDescriptorSet SceneManager::getSceneDescriptorSet(uint32_t frame_index) const
 {
-    return scene_descriptor_sets[0];
+    return scene_descriptor_sets[frame_index];
 }
 
 

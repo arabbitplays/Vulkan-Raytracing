@@ -390,7 +390,7 @@ void VulkanEngine::recordRenderToImage(VkCommandBuffer commandBuffer)
     VkStridedDeviceAddressRegionKHR callableShaderSbtEntry{};
 
     std::vector<VkDescriptorSet> descriptor_sets{};
-    descriptor_sets.push_back(scene_manager->getSceneDescriptorSet());
+    descriptor_sets.push_back(scene_manager->getSceneDescriptorSet(currentFrame));
     descriptor_sets.push_back(scene_manager->getMaterial()->materialDescriptorSet);
 
     vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, pipeline.getHandle());

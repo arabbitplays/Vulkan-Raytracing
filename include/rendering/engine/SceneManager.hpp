@@ -46,7 +46,7 @@ public:
     void clearRessources();
 
     std::shared_ptr<Material> getMaterial() const;
-    VkDescriptorSet getSceneDescriptorSet() const;
+    VkDescriptorSet getSceneDescriptorSet(uint32_t frame_index) const;
     uint32_t getEmittingInstancesCount();
 
     std::shared_ptr<VulkanContext> context;
@@ -64,7 +64,7 @@ private:
     void createDefaultSamplers();
     void createDefaultMaterials(VkPhysicalDeviceRayTracingPipelinePropertiesKHR raytracingProperties);
 
-    void updateSceneDescriptorSets(uint32_t current_image_idx, const AllocatedImage& current_image, const AllocatedImage& rng_tex);
+    void updateSceneDescriptorSets(uint32_t frame_idx, const AllocatedImage& current_image, const AllocatedImage& rng_tex);
     void updateTlas(std::shared_ptr<AccelerationStructure>& tlas, std::vector<RenderObject> objects);
 
     DeletionQueue main_deletion_queue, scene_resource_deletion_queue;
