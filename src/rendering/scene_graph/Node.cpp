@@ -29,5 +29,14 @@ void Node::addComponent(std::shared_ptr<Component> component)
 {
     components.push_back(component);
 }
+
+void Node::update()
+{
+    for (auto& component : components)
+    {
+        component->OnUpdate();
+    }
+}
+
 }
 

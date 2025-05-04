@@ -162,10 +162,8 @@ void SceneManager::updateScene(DrawContext& draw_context, uint32_t current_image
         }
     }
 
-    if (bufferUpdateFlags & GEOMETRY_UPDATE)
-    {
-        updateTlas(top_level_acceleration_structure, draw_context.objects);
-    }
+    // TODO Only partially update tlas depending on the updated dynamic objects
+    updateTlas(top_level_acceleration_structure, draw_context.objects);
 
     std::shared_ptr<SceneData> scene_data = scene->createSceneData();
     memcpy(sceneUniformBuffersMapped[current_image_idx], scene_data.get(), sizeof(SceneData));

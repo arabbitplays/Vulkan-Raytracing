@@ -172,6 +172,13 @@ std::shared_ptr<Node> SceneReader::processSceneNodesRecursiv(const YAML::Node& y
         scene_graph_node->addComponent(mesh_component);
         scene_graph_node->refreshTransform(glm::mat4(1.0f));
 
+        // TODO remove
+        if (scene_graph_node->name == "Physics")
+        {
+            std::shared_ptr<Rigidbody> rb = std::make_shared<Rigidbody>(scene_graph_node);
+            scene_graph_node->addComponent(rb);
+        }
+
         scene->addNode(scene_graph_node->name, scene_graph_node);
         return scene_graph_node;
     } else // construct a plain node

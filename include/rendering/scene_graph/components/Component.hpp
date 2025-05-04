@@ -6,6 +6,8 @@
 namespace RtEngine {
 class Node;
 
+static constexpr float FIXED_DELTA_TIME = 1.0f / 60.0f;
+
 class Component {
 public:
     Component() = default;

@@ -44,6 +44,11 @@ std::shared_ptr<Node> Scene::getRootNode()
 
 void Scene::update(uint32_t image_width, uint32_t image_height) {
     camera->update(image_width, image_height);
+
+    for (auto& node : nodes)
+    {
+        node.second->update();
+    }
 }
 
 void Scene::clearResources() {

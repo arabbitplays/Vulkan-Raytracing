@@ -5,6 +5,7 @@
 #include <Camera.hpp>
 #include <InteractiveCamera.hpp>
 #include <MeshAsset.hpp>
+#include <Rigidbody.hpp>
 #include <MeshAssetBuilder.hpp>
 #include <MetalRoughMaterial.hpp>
 #include <Node.hpp>

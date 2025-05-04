@@ -26,6 +26,7 @@ public:
         }
         return nullptr;
     }
+    void update();
 
     std::string name;
 
