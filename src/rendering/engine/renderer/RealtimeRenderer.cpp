@@ -4,9 +4,12 @@
 
 #include "RealtimeRenderer.hpp"
 
+#define SAMPLES_PER_PIXEL 100
+
 namespace RtEngine
 {
 void RealtimeRenderer::mainLoop() {
+    properties_manager->samples_per_pixel = SAMPLES_PER_PIXEL;
     while(!glfwWindowShouldClose(window)) {
         glfwPollEvents();
 
@@ -15,6 +18,8 @@ void RealtimeRenderer::mainLoop() {
         }
         scene_manager->updateScene(mainDrawContext, currentFrame, getRenderTarget(), getRngTexture());
         properties_manager->emitting_instances_count = scene_manager->getEmittingInstancesCount(); // TODO move this together with the creation of the instance buffers
+
+        properties_manager->curr_sample_count = 0;
         drawFrame();
     }
 

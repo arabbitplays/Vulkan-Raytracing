@@ -35,7 +35,7 @@ public:
     float yaw { 0.0f };
 
 private:
-    glm::mat4 getRotationMatrix();
+    glm::mat4 getRotationMatrix() const;
 };
 
 

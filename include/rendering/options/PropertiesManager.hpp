@@ -112,7 +112,7 @@ public:
     bool serialize();
 
     std::unordered_map<std::string, std::shared_ptr<Properties>> properties;
-    int32_t curr_sample_count, emitting_instances_count;
+    int32_t curr_sample_count, emitting_instances_count, samples_per_pixel = 1;
 
 private:
     void initSectionWithConfig(const std::shared_ptr<Properties>& properties);

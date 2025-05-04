@@ -5,6 +5,7 @@
 #include <GLFW/glfw3.h>
 #include <glm/detail/type_quat.hpp>
 #include <glm/gtx/quaternion.hpp>
+#include <spdlog/spdlog.h>
 
 namespace RtEngine {
 void InteractiveCamera::update(uint32_t image_width, uint32_t image_height) {
@@ -14,7 +15,7 @@ void InteractiveCamera::update(uint32_t image_width, uint32_t image_height) {
 
 void InteractiveCamera::processGlfwKeyEvent(int key, int action) {
     if (action == GLFW_PRESS) {
-        if (key == GLFW_KEY_SPACE) {
+        if (key == GLFW_KEY_X) {
             isActive = !isActive;
         }
     }
@@ -28,6 +29,8 @@ void InteractiveCamera::processGlfwKeyEvent(int key, int action) {
         if (key == GLFW_KEY_S) { velocity.z = 1; }
         if (key == GLFW_KEY_A) { velocity.x = -1; }
         if (key == GLFW_KEY_D) { velocity.x = 1; }
+        if (key == GLFW_KEY_SPACE) { velocity.y = 0.5; }
+        if (key == GLFW_KEY_LEFT_SHIFT) { velocity.y = -0.5; }
     }
 
     if (action == GLFW_RELEASE) {
@@ -35,6 +38,8 @@ void InteractiveCamera::processGlfwKeyEvent(int key, int action) {
         if (key == GLFW_KEY_S) { velocity.z = 0; }
         if (key == GLFW_KEY_A) { velocity.x = 0; }
         if (key == GLFW_KEY_D) { velocity.x = 0; }
+        if (key == GLFW_KEY_SPACE) { velocity.y = 0; }
+        if (key == GLFW_KEY_LEFT_SHIFT) { velocity.y = 0; }
     }
 }
 
@@ -59,9 +64,8 @@ void InteractiveCamera::processGlfwMouseEvent(double xPos, double yPos) {
     yaw += xOffset / 200.f;
     pitch += yOffset / 200.f;
 
-    // Clamp pitch to avoid flipping
-    if (pitch > 89.0f) pitch = 89.0f;
-    if (pitch < -89.0f) pitch = -89.0f;
+    constexpr float max = M_PI / 2;
+    pitch = std::clamp(pitch, -max, max);
 }
 
 
@@ -78,7 +82,8 @@ glm::mat4 InteractiveCamera::getInverseView() {
 
 
 
-glm::mat4 InteractiveCamera::getRotationMatrix() {
+glm::mat4 InteractiveCamera::getRotationMatrix() const
+{
     glm::quat pitchRotation = glm::angleAxis(pitch, glm::vec3{1.0f, 0.0f, 0.0f});
     glm::quat yawRotation = glm::angleAxis(yaw, glm::vec3{0.0f, -1.0f, 0.0f});
 
