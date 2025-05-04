@@ -130,7 +130,10 @@ void SceneManager::createUniformBuffers() {
 
 // ----------------------------------------------------------------------------------------------------------------
 
-void SceneManager::updateScene(DrawContext& draw_context, uint32_t current_image_idx, AllocatedImage current_image, AllocatedImage& rng_tex) {
+void SceneManager::updateScene(DrawContext& draw_context, uint32_t current_image_idx, const AllocatedImage& current_image, const AllocatedImage&
+                               rng_tex) {
+    assert(scene != nullptr);
+
     //QuickTimer timer{"Scene Update", true};
     VkDevice device = context->device_manager->getDevice();
 
@@ -159,12 +162,15 @@ void SceneManager::updateScene(DrawContext& draw_context, uint32_t current_image
         }
     }
 
-    updateTlas(top_level_acceleration_structure, draw_context.objects);
+    if (bufferUpdateFlags & GEOMETRY_UPDATE)
+    {
+        updateTlas(top_level_acceleration_structure, draw_context.objects);
+    }
 
     std::shared_ptr<SceneData> scene_data = scene->createSceneData();
     memcpy(sceneUniformBuffersMapped[current_image_idx], scene_data.get(), sizeof(SceneData));
 
-    updateSceneDescriptorSets(current_image, rng_tex);
+    updateSceneDescriptorSets(current_image_idx, current_image, rng_tex);
 
     bufferUpdateFlags = NO_UPDATE;
 }
@@ -184,7 +190,7 @@ void SceneManager::updateTlas(std::shared_ptr<AccelerationStructure>& tlas, std:
     tlas->build();
 }
 
-void SceneManager::updateSceneDescriptorSets(AllocatedImage current_image, AllocatedImage& rng_tex) {
+void SceneManager::updateSceneDescriptorSets(uint32_t current_image_idx, const AllocatedImage& current_image, const AllocatedImage& rng_tex) {
     VkDevice device = context->device_manager->getDevice();
 
     VkAccelerationStructureKHR tlas_handle = top_level_acceleration_structure->getHandle();
@@ -210,9 +216,9 @@ void SceneManager::updateSceneDescriptorSets(AllocatedImage current_image, Alloc
     }
 
     context->descriptor_allocator->writeImage(1, current_image.imageView, VK_NULL_HANDLE, VK_IMAGE_LAYOUT_GENERAL, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
-    context->descriptor_allocator->writeBuffer(2, sceneUniformBuffers[0].handle, sizeof(SceneData), 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+    context->descriptor_allocator->writeBuffer(2, sceneUniformBuffers[current_image_idx].handle, sizeof(SceneData), 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
     context->descriptor_allocator->writeImage(9, rng_tex.imageView, VK_NULL_HANDLE, VK_IMAGE_LAYOUT_GENERAL, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
-    context->descriptor_allocator->updateSet(device, scene_descriptor_sets[0]);
+    context->descriptor_allocator->updateSet(device, scene_descriptor_sets[current_image_idx]);
     context->descriptor_allocator->clearWrites();
 }
 

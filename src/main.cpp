@@ -1,4 +1,5 @@
 #include <BenchmarkRenderer.hpp>
+#include <RealtimeRenderer.hpp>
 #include <exception>
 #include <iostream>
 #include <VulkanEngine.hpp>

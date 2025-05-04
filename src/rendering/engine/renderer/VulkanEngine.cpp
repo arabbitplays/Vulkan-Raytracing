@@ -95,7 +95,7 @@ void VulkanEngine::initVulkan() {
         cleanupRenderingTargets();
     });
 
-    scene_manager = std::make_shared<SceneManager>(context, MAX_FRAMES_IN_FLIGHT, DeviceManager::RAYTRACING_PROPERTIES);
+    scene_manager = std::make_shared<SceneManager>(context, max_frames_in_flight, DeviceManager::RAYTRACING_PROPERTIES);
     mainDeletionQueue.pushFunction([&]() {
         scene_manager->clearRessources();
     });
@@ -152,8 +152,8 @@ bool VulkanEngine::hasStencilComponent(VkFormat format) {
 void VulkanEngine::createRenderingTargets() {
     std::shared_ptr<Swapchain> swapchain = context->swapchain;
 
-    render_targets.resize(MAX_FRAMES_IN_FLIGHT);
-    for (uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+    render_targets.resize(max_frames_in_flight);
+    for (uint32_t i = 0; i < max_frames_in_flight; i++) {
         render_targets[i] = context->resource_builder->createImage(
             VkExtent3D{swapchain->extent.width, swapchain->extent.height, 1},
             VK_FORMAT_B8G8R8A8_UNORM, VK_IMAGE_TILING_OPTIMAL,
@@ -169,17 +169,28 @@ void VulkanEngine::createRenderingTargets() {
     for (int i = 0; i < swapchain->extent.width * swapchain->extent.height * 4; i++) {
         pixels[i] = std::rand();
     }
-    rng_tex = context->resource_builder->createImage(pixels.data(),
-            VkExtent3D{swapchain->extent.width, swapchain->extent.height, 1},
-            VK_FORMAT_R32G32B32A32_UINT, VK_IMAGE_TILING_OPTIMAL,
-            VK_IMAGE_USAGE_STORAGE_BIT,
-            VK_IMAGE_ASPECT_COLOR_BIT,
-            VK_IMAGE_LAYOUT_GENERAL);
+
+    rng_textures.resize(max_frames_in_flight);
+    for (uint32_t i = 0; i < max_frames_in_flight; i++)
+    {
+        rng_textures[i] = context->resource_builder->createImage(pixels.data(),
+        VkExtent3D{swapchain->extent.width, swapchain->extent.height, 1},
+        VK_FORMAT_R32G32B32A32_UINT, VK_IMAGE_TILING_OPTIMAL,
+        VK_IMAGE_USAGE_STORAGE_BIT,
+        VK_IMAGE_ASPECT_COLOR_BIT,
+        VK_IMAGE_LAYOUT_GENERAL);
+    }
+
 }
 
 AllocatedImage VulkanEngine::getRenderTarget()
 {
     return render_targets[0];
+}
+
+AllocatedImage VulkanEngine::getRngTexture()
+{
+    return rng_textures[0];
 }
 
 
@@ -195,7 +206,7 @@ void VulkanEngine::loadScene()
 }
 
 void VulkanEngine::createCommandBuffers() {
-    commandBuffers.resize(MAX_FRAMES_IN_FLIGHT);
+    commandBuffers.resize(max_frames_in_flight);
 
     VkCommandBufferAllocateInfo allocInfo{};
     allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
@@ -209,9 +220,9 @@ void VulkanEngine::createCommandBuffers() {
 }
 
 void VulkanEngine::createSyncObjects() {
-    imageAvailableSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
-    renderFinishedSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
-    inFlightFences.resize(MAX_FRAMES_IN_FLIGHT);
+    imageAvailableSemaphores.resize(max_frames_in_flight);
+    renderFinishedSemaphores.resize(max_frames_in_flight);
+    inFlightFences.resize(max_frames_in_flight);
 
     VkSemaphoreCreateInfo semaphoreInfo{};
     semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
@@ -220,7 +231,7 @@ void VulkanEngine::createSyncObjects() {
     fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
     fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
 
-    for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+    for (size_t i = 0; i < max_frames_in_flight; i++) {
         if (vkCreateSemaphore(context->device_manager->getDevice(), &semaphoreInfo, nullptr, &imageAvailableSemaphores[i]) != VK_SUCCESS
             || vkCreateSemaphore(context->device_manager->getDevice(), &semaphoreInfo, nullptr, &renderFinishedSemaphores[i]) != VK_SUCCESS
             || vkCreateFence(context->device_manager->getDevice(), &fenceInfo, nullptr, &inFlightFences[i]) != VK_SUCCESS) {
@@ -243,7 +254,7 @@ void VulkanEngine::mainLoop() {
         if (scene_manager->curr_scene_name != context->base_options->curr_scene_name) {
             loadScene();
         }
-        scene_manager->updateScene(mainDrawContext, currentFrame, getRenderTarget(), rng_tex);
+        scene_manager->updateScene(mainDrawContext, currentFrame, getRenderTarget(), getRngTexture());
         properties_manager->emitting_instances_count = scene_manager->getEmittingInstancesCount(); // TODO move this together with the creation of the instance buffers
         drawFrame();
     }
@@ -268,7 +279,7 @@ void VulkanEngine::drawFrame() {
     submitCommandBuffer(waitSemaphore, signalSemaphore);
     presentSwapchainImage(signalSemaphore, imageIndex);
 
-    currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
+    currentFrame = (currentFrame + 1) % max_frames_in_flight;
 }
 
 int VulkanEngine::aquireNextSwapchainImage()
@@ -334,7 +345,8 @@ void VulkanEngine::refreshAfterResize() {
     cleanupRenderingTargets();
     createRenderingTargets();
     guiManager->updateWindows();
-    scene_manager->updateScene(mainDrawContext, currentFrame, getRenderTarget(), rng_tex);}
+    scene_manager->updateScene(mainDrawContext, currentFrame, getRenderTarget(), getRngTexture());
+}
 
 void VulkanEngine::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex) {
     recordBeginCommandBuffer(commandBuffer);
@@ -459,10 +471,14 @@ void VulkanEngine::cleanup() {
 }
 
 void VulkanEngine::cleanupRenderingTargets() {
-    for (auto image : render_targets) {
+    for (auto& image : render_targets) {
         context->resource_builder->destroyImage(image);
     }
-    context->resource_builder->destroyImage(rng_tex);
+
+    for (auto& image : rng_textures)
+    {
+        context->resource_builder->destroyImage(image);
+    }
 }
 
 void VulkanEngine::outputRenderingTarget(const std::string& output_path)
@@ -512,6 +528,12 @@ void VulkanEngine::initProperties()
     renderer_properties->addString(RESOURCES_DIR_OPTION_NAME, &context->base_options->resources_dir);
     renderer_properties->addInt(RECURSION_DEPTH_OPTION_NAME, &context->base_options->max_depth, 1, 5);
 
+    initSceneSelectionProperty();
+}
+
+void VulkanEngine::initSceneSelectionProperty()
+{
+    assert(renderer_properties != nullptr);
     std::string scenes_dir = context->base_options->resources_dir + "/scenes";
     std::vector<std::string> scenes;
     try {

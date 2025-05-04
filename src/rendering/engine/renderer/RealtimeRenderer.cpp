@@ -1,0 +1,33 @@
+//
+// Created by oschdi on 5/4/25.
+//
+
+#include "RealtimeRenderer.hpp"
+
+namespace RtEngine
+{
+void RealtimeRenderer::mainLoop() {
+    while(!glfwWindowShouldClose(window)) {
+        glfwPollEvents();
+
+        if (scene_manager->curr_scene_name != context->base_options->curr_scene_name) {
+            loadScene();
+        }
+        scene_manager->updateScene(mainDrawContext, currentFrame, getRenderTarget(), getRngTexture());
+        properties_manager->emitting_instances_count = scene_manager->getEmittingInstancesCount(); // TODO move this together with the creation of the instance buffers
+        drawFrame();
+    }
+
+    vkDeviceWaitIdle(context->device_manager->getDevice());
+}
+
+AllocatedImage RealtimeRenderer::getRenderTarget()
+{
+    return render_targets[currentFrame];
+}
+
+AllocatedImage RealtimeRenderer::getRngTexture()
+{
+    return rng_textures[currentFrame];
+}
+}

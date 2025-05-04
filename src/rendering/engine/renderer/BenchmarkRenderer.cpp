@@ -61,7 +61,7 @@ void BenchmarkRenderer::drawFrame()
 
     vkResetFences(context->device_manager->getDevice(), 1, &inFlightFences[currentFrame]);
 
-    scene_manager->updateScene(mainDrawContext, currentFrame, getRenderTarget(), rng_tex);
+    scene_manager->updateScene(mainDrawContext, currentFrame, getRenderTarget(), getRngTexture());
     properties_manager->emitting_instances_count = scene_manager->getEmittingInstancesCount(); // TODO move this together with the creation of the instance buffers
 
     vkResetCommandBuffer(commandBuffers[currentFrame], 0);
@@ -78,7 +78,7 @@ void BenchmarkRenderer::drawFrame()
         submitCommandBuffer({}, {});
     }
 
-    currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
+    currentFrame = (currentFrame + 1) % max_frames_in_flight;
 }
 
 void BenchmarkRenderer::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex)

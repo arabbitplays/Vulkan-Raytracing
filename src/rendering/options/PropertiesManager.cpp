@@ -13,6 +13,8 @@ PropertiesManager::PropertiesManager(const std::string& config_file_path)
 
 void PropertiesManager::addPropertySection(const std::shared_ptr<Properties>& section)
 {
+    if (section == nullptr)
+        return;
     properties[section->section_name] = section;
     if (config)
         initSectionWithConfig(section);

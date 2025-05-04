@@ -43,8 +43,8 @@ namespace RtEngine {
 
 class VulkanEngine {
 public:
-    static constexpr int MAX_FRAMES_IN_FLIGHT = 1;
-
+    VulkanEngine() = default;
+    virtual ~VulkanEngine() = default;
     void run(const std::string& config_file, const std::string& resources_dir);
 protected:
     GLFWwindow* window;
@@ -61,7 +61,7 @@ protected:
     std::shared_ptr<Properties> renderer_properties;
 
     std::vector<AllocatedImage> render_targets;
-    AllocatedImage rng_tex;
+    std::vector<AllocatedImage> rng_textures;
 
     std::shared_ptr<SceneManager> scene_manager;
 
@@ -71,6 +71,8 @@ protected:
 
     uint32_t currentFrame = 0;
     bool framebufferResized = false;
+
+    uint32_t max_frames_in_flight = 1;
 
     void initWindow();
     void initVulkan();
@@ -105,6 +107,7 @@ protected:
 
     void createRenderingTargets();
     virtual AllocatedImage getRenderTarget();
+    virtual AllocatedImage getRngTexture();
     void cleanupRenderingTargets();
 
     void outputRenderingTarget(const std::string& output_path);
@@ -118,6 +121,7 @@ protected:
 
     void loadScene();
     virtual void initProperties();
+    void initSceneSelectionProperty();
 };
 
 }
