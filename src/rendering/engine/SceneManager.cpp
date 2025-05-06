@@ -6,33 +6,9 @@
 #include <QuickTimer.hpp>
 #include <SceneReader.hpp>
 #include <SceneWriter.hpp>
+#include <SceneUtil.hpp>
 
 namespace RtEngine {
-void collectMeshAssetsRecursive(const std::shared_ptr<Node>& root_node, std::shared_ptr<std::unordered_map<std::string, std::shared_ptr<MeshAsset>>>& mesh_map)
-{
-    for (auto child_node : root_node->children)
-    {
-        std::shared_ptr<MeshRenderer> mesh_renderer = child_node->getComponent<MeshRenderer>();
-        if (mesh_renderer && !mesh_map->contains(mesh_renderer->meshAsset->name))
-        {
-            (*mesh_map)[mesh_renderer->meshAsset->name] = mesh_renderer->meshAsset;
-        }
-        collectMeshAssetsRecursive(child_node, mesh_map);
-    }
-}
-
-std::vector<std::shared_ptr<MeshAsset>> collectMeshAssets(const std::shared_ptr<Node>& root_node)
-{
-    auto mesh_map = std::make_shared<std::unordered_map<std::string, std::shared_ptr<MeshAsset>>>();
-    collectMeshAssetsRecursive(root_node, mesh_map);
-
-    std::vector<std::shared_ptr<MeshAsset>> mesh_assets;
-    for (auto mesh_asset : *mesh_map)
-    {
-        mesh_assets.push_back(mesh_asset.second);
-    }
-    return mesh_assets;
-}
 
 void SceneManager::createScene(std::string scene_path) {
     QuickTimer timer{"Scene Creation", true};
@@ -52,7 +28,7 @@ void SceneManager::createScene(std::string scene_path) {
         scene->clearResources();
     });
 
-    std::vector<std::shared_ptr<MeshAsset>> mesh_assets = collectMeshAssets(scene->getRootNode());
+    std::vector<std::shared_ptr<MeshAsset>> mesh_assets = SceneUtil::collectMeshAssets(scene->getRootNode());
     geometry_manager->createGeometryBuffers(mesh_assets);
     scene->material->writeMaterial();
     createBlas(mesh_assets);
@@ -77,7 +53,7 @@ void SceneManager::createBlas(std::vector<std::shared_ptr<MeshAsset>>& meshes) {
 
     scene_resource_deletion_queue.pushFunction([&]()
     {
-        for (auto& meshAsset : collectMeshAssets(scene->getRootNode())) {
+        for (auto& meshAsset : SceneUtil::collectMeshAssets(scene->getRootNode())) {
             meshAsset->accelerationStructure->destroy();
         }
     });

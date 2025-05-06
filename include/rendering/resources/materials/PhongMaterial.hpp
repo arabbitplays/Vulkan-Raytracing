@@ -33,6 +33,7 @@ public:
     void writeMaterial() override;
     std::shared_ptr<MaterialInstance> createInstance(glm::vec3 diffuse, glm::vec3 specular, glm::vec3 ambient, glm::vec3 reflection, glm::vec3 transmission, float n, glm::vec3 eta = glm::vec3(0.0));
     std::vector<std::shared_ptr<MaterialResources>> getResources();
+    std::vector<std::shared_ptr<Texture>> getTextures() override;
     void reset() override;
 
 protected:

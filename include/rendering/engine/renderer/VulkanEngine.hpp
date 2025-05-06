@@ -58,7 +58,7 @@ protected:
 
     DrawContext mainDrawContext;
     std::shared_ptr<PropertiesManager> properties_manager;
-    std::shared_ptr<Properties> renderer_properties;
+    std::shared_ptr<PropertiesSection> renderer_properties;
 
     std::vector<AllocatedImage> render_targets;
     std::vector<AllocatedImage> rng_textures;

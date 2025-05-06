@@ -40,7 +40,8 @@ class Material {
         return glm::vec4(0.0f);
     }
     std::vector<std::shared_ptr<MaterialInstance>> getInstances();
-    std::shared_ptr<Properties> getProperties();
+    std::shared_ptr<PropertiesSection> getProperties();
+    virtual std::vector<std::shared_ptr<Texture>> getTextures() = 0;
 
     void clearRessources();
     virtual void reset();
@@ -55,15 +56,14 @@ protected:
     DeletionQueue mainDeletionQueue, resetQueue;
 
     std::vector<std::shared_ptr<MaterialInstance>> instances;
-    std::shared_ptr<Properties> properties;
+    std::shared_ptr<PropertiesSection> properties;
 
     AllocatedBuffer material_buffer; // maps an instance to its respective material via a common index into the constants and texture buffers
 };
 
 struct MaterialInstance {
-    std::shared_ptr<Properties> properties;
+    std::shared_ptr<PropertiesSection> properties;
     uint32_t material_index;
-    uint32_t albedo_texture_index;
 };
 
 }

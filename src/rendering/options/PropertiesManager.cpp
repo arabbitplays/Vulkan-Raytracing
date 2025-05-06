@@ -11,7 +11,7 @@ PropertiesManager::PropertiesManager(const std::string& config_file_path)
     config = std::make_shared<ConfigLoader>(config_file_path);
 }
 
-void PropertiesManager::addPropertySection(const std::shared_ptr<Properties>& section)
+void PropertiesManager::addPropertySection(const std::shared_ptr<PropertiesSection>& section)
 {
     if (section == nullptr)
         return;
@@ -20,7 +20,7 @@ void PropertiesManager::addPropertySection(const std::shared_ptr<Properties>& se
         initSectionWithConfig(section);
 }
 
-void PropertiesManager::initSectionWithConfig(const std::shared_ptr<Properties>& section)
+void PropertiesManager::initSectionWithConfig(const std::shared_ptr<PropertiesSection>& section)
 {
     for (auto& bool_prop : section->bool_properties)
     {
@@ -101,7 +101,7 @@ void PropertiesManager::updatePushConstants()
     assert(properties.contains(MATERIAL_SECTION_NAME) && properties.contains(RENDERER_SECTION_NAME));
 
     push_constants.push_back(getRecursionDepth(properties[RENDERER_SECTION_NAME]->int_properties));
-    std::shared_ptr<Properties> material_props = properties[MATERIAL_SECTION_NAME];
+    std::shared_ptr<PropertiesSection> material_props = properties[MATERIAL_SECTION_NAME];
     for (auto& bool_option : material_props->bool_properties)
     {
         push_constants.push_back(*bool_option->var);

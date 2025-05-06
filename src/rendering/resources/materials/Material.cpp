@@ -6,7 +6,7 @@ std::vector<std::shared_ptr<MaterialInstance>> Material::getInstances()
     return instances;
 }
 
-std::shared_ptr<Properties> Material::getProperties()
+std::shared_ptr<PropertiesSection> Material::getProperties()
 {
     if (properties == nullptr)
     {

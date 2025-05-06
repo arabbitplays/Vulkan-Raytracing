@@ -33,7 +33,7 @@ std::shared_ptr<PropertiesManager> Transform::getProperties()
 
 	properties = std::make_shared<PropertiesManager>();
 
-	auto section = std::make_shared<Properties>("Transform");
+	auto section = std::make_shared<PropertiesSection>("Transform");
 
 	section->addVector("Position", &decomposed_transform.translation);
 	section->addVector("Rotation", &decomposed_transform.rotation);

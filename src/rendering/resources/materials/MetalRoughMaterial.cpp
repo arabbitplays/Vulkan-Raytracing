@@ -81,7 +81,7 @@ void MetalRoughMaterial::writeMaterial() {
     descriptorAllocator.clearWrites();
 }
 
-std::shared_ptr<MetalRoughMaterial::MaterialResources> MetalRoughMaterial::createMaterialResources(MetalRoughParameters parameters)
+std::shared_ptr<MetalRoughMaterial::MaterialResources> MetalRoughMaterial::createMaterialResources(const MetalRoughParameters& parameters)
 {
     auto resources = std::make_shared<MaterialResources>();
     resources->albedo = glm::vec4(parameters.albedo, 0.0f);
@@ -112,9 +112,9 @@ std::shared_ptr<MetalRoughMaterial::MaterialResources> MetalRoughMaterial::creat
     return resources;
 }
 
-std::shared_ptr<Properties> MetalRoughMaterial::initializeInstanceProperties(const std::shared_ptr<MaterialResources>& resources)
+std::shared_ptr<PropertiesSection> MetalRoughMaterial::initializeInstanceProperties(const std::shared_ptr<MaterialResources>& resources)
 {
-    auto section = std::make_shared<Properties>("Metal Rough Material");
+    auto section = std::make_shared<PropertiesSection>("Metal Rough Material");
     section->addVector("Albedo", &resources->albedo);
     section->addFloat("Metal", &resources->properties.x, 0, 1);
     section->addFloat("Roughness", &resources->properties.y, 0, 1);
@@ -161,7 +161,7 @@ std::vector<std::shared_ptr<MetalRoughMaterial::MaterialResources>> MetalRoughMa
 
 void MetalRoughMaterial::initProperties()
 {
-    properties = std::make_shared<Properties>(MATERIAL_SECTION_NAME);
+    properties = std::make_shared<PropertiesSection>(MATERIAL_SECTION_NAME);
     properties->addBool("Normal_Mapping", &material_properties.normal_mapping);
     properties->addBool("Sample_Lights", &material_properties.sample_lights);
     properties->addBool("Sample_BSDF", &material_properties.sample_bsdf);
@@ -177,6 +177,26 @@ AllocatedBuffer MetalRoughMaterial::createMaterialBuffer() {
     }
     return context->resource_builder->stageMemoryToNewBuffer(material_data.data(), material_data.size() * sizeof(MaterialResources), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
 }
+
+std::vector<std::shared_ptr<Texture>> MetalRoughMaterial::getTextures()
+{
+    auto append = [](std::vector<std::shared_ptr<Texture>>& dest, const std::vector<std::shared_ptr<Texture>>& src) {
+        for (const auto& elem : src) {
+            if (elem->path.empty())
+                continue;
+            dest.push_back(elem);
+        }
+    };
+
+    std::vector<std::shared_ptr<Texture>> result(0);
+
+    append(result, albedo_textures);
+    append(result, metal_rough_ao_textures);
+    append(result, normal_textures);
+
+    return result;
+}
+
 
 void MetalRoughMaterial::reset() {
     resources_buffer.clear();

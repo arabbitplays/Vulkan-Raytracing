@@ -3,6 +3,7 @@
 #include <cstdlib>
 #include <filesystem>
 #include <HierarchyWindow.hpp>
+#include <SceneWriter.hpp>
 
 namespace RtEngine {
 
@@ -203,6 +204,9 @@ void VulkanEngine::loadScene()
     scene_manager->createScene(path);
     scene_manager->curr_scene_name = context->base_options->curr_scene_name;
     properties_manager->addPropertySection(scene_manager->scene->material->getProperties());
+
+    SceneWriter writer;
+    writer.writeScene(scene_manager->curr_scene_name + ".yaml", scene_manager->scene);
 }
 
 void VulkanEngine::createCommandBuffers() {
@@ -523,7 +527,7 @@ uint8_t* VulkanEngine::fixImageFormatForStorage(void* data, size_t pixel_count, 
 
 void VulkanEngine::initProperties()
 {
-    renderer_properties = std::make_shared<Properties>(RENDERER_SECTION_NAME);
+    renderer_properties = std::make_shared<PropertiesSection>(RENDERER_SECTION_NAME);
 
     renderer_properties->addString(RESOURCES_DIR_OPTION_NAME, &context->base_options->resources_dir);
     renderer_properties->addInt(RECURSION_DEPTH_OPTION_NAME, &context->base_options->max_depth, 1, 5);

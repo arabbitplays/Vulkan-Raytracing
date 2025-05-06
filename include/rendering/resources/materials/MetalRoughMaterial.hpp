@@ -43,14 +43,15 @@ public:
     void writeMaterial() override;
     glm::vec4 getEmissionForInstance(uint32_t material_instance_id) override;
     std::vector<std::shared_ptr<MaterialResources>> getResources();
+    std::vector<std::shared_ptr<Texture>> getTextures() override;
 
     std::shared_ptr<MaterialInstance> createInstance(MetalRoughParameters parameters, bool unique = false);
     void reset() override;
 
 protected:
     void initProperties() override;
-    std::shared_ptr<MaterialResources> createMaterialResources(MetalRoughParameters parameters);
-    std::shared_ptr<Properties> initializeInstanceProperties(const std::shared_ptr<MaterialResources>& resources);
+    std::shared_ptr<MaterialResources> createMaterialResources(const MetalRoughParameters& parameters);
+    std::shared_ptr<PropertiesSection> initializeInstanceProperties(const std::shared_ptr<MaterialResources>& resources);
 private:
     AllocatedBuffer createMaterialBuffer();
 

@@ -3,6 +3,7 @@
 #include <fstream>
 #include <MeshRenderer.hpp>
 #include <QuickTimer.hpp>
+#include <SceneUtil.hpp>
 #include <TransformUtil.hpp>
 #include <spdlog/spdlog.h>
 #include <YAML_glm.hpp>
@@ -29,24 +30,25 @@ void SceneWriter::writeScene(const std::string& filename, std::shared_ptr<Scene>
 
     writeSceneLights(out, scene);
 
-    // TODO Collect meshes from scene graph
-    /*out << YAML::Key << "meshes" << YAML::Value << YAML::BeginSeq;
-    for (const auto& mesh : scene->meshes) {
+    std::vector<std::shared_ptr<MeshAsset>> meshes = SceneUtil::collectMeshAssets(scene->getRootNode());
+    out << YAML::Key << "meshes" << YAML::Value << YAML::BeginSeq;
+    for (const auto& mesh : meshes) {
       out << YAML::BeginMap;
-      out << YAML::Key << "name" << YAML::Value << mesh.first;
-      out << YAML::Key << "path" << YAML::Value << mesh.second->path;
+      out << YAML::Key << "name" << YAML::Value << mesh->path;
       out << YAML::EndMap;
     }
-    out << YAML::EndSeq;*/
+    out << YAML::EndSeq;
 
-    /*out << YAML::Key << "textures" << YAML::Value << YAML::BeginSeq;
-    for (const auto& texture : scene->textures) {
+    std::vector<std::shared_ptr<Texture>> textures = scene->material->getTextures();
+    out << YAML::Key << "textures" << YAML::Value << YAML::BeginSeq;
+    for (const auto& texture : textures) {
         out << YAML::BeginMap;
-        out << YAML::Key << "name" << YAML::Value << texture.first;
-        out << YAML::Key << "path" << YAML::Value << texture.second->path;
+        out << YAML::Key << "path" << YAML::Value << texture->path;
+        out << YAML::Key << "type" << YAML::Value << texture->type;
+
         out << YAML::EndMap;
     }
-    out << YAML::EndSeq;*/ // TODO write textures from repo
+    out << YAML::EndSeq;
 
     writeMaterial(out, scene->material);
 
@@ -77,25 +79,18 @@ void SceneWriter::writeMaterial(YAML::Emitter& out, const std::shared_ptr<Materi
         {
             out << YAML::BeginMap;
 
-            // TODO write material
-            /*if (resources->albedo_tex.name.empty() && resources->metal_rough_ao_tex.name.empty() && resources->normal_tex.name.empty())
-            {
-                out << YAML::Key << "albedo" << YAML::Value << YAML::convert<glm::vec3>::encode(resources->constants->albedo);
-                out << YAML::Key << "metallic" << YAML::Value << resources->constants->properties.x;
-                out << YAML::Key << "roughness" << YAML::Value << resources->constants->properties.y;
-                out << YAML::Key << "ao" << YAML::Value << resources->constants->properties.z;
-            } else
-            {
-                out << YAML::Key << "albedo_tex" << YAML::Value << resources->albedo_tex.name;
-                out << YAML::Key << "metal_rough_ao_tex" << YAML::Value << resources->metal_rough_ao_tex.name;
-                out << YAML::Key << "normal_tex" << YAML::Value << resources->normal_tex.name;
-            }
+            out << YAML::Key << "albedo" << YAML::Value << YAML::convert<glm::vec3>::encode(resources->albedo);
+            out << YAML::Key << "metallic" << YAML::Value << resources->properties.x;
+            out << YAML::Key << "roughness" << YAML::Value << resources->properties.y;
+            out << YAML::Key << "ao" << YAML::Value << resources->properties.z;
 
-            if (resources->constants->emission.w != 0)
+            // TODO write texture names (myb use properties to handle serialization of materials)
+
+            if (resources->emission.w != 0)
             {
-                out << YAML::Key << "emission_color" << YAML::Value << YAML::convert<glm::vec3>::encode(resources->constants->emission);
-                out << YAML::Key << "emission_power" << YAML::Value << resources->constants->emission.w;
-            }*/
+                out << YAML::Key << "emission_color" << YAML::Value << YAML::convert<glm::vec3>::encode(resources->emission);
+                out << YAML::Key << "emission_power" << YAML::Value << resources->emission.w;
+            }
 
             out << YAML::EndMap;
         }

@@ -24,7 +24,7 @@ std::shared_ptr<PropertiesManager> Rigidbody::getProperties()
 
     properties = std::make_shared<PropertiesManager>();
 
-    auto section = std::make_shared<Properties>("Rigidbody");
+    auto section = std::make_shared<PropertiesSection>("Rigidbody");
 
     section->addFloat("Gravity", &gravity);
 

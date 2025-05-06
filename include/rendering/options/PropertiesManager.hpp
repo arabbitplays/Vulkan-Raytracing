@@ -15,6 +15,9 @@ constexpr std::string RENDERER_SECTION_NAME = "Renderer";
 
 constexpr uint32_t MAX_PUSH_CONSTANT_SIZE = 16 * sizeof(uint32_t);
 
+#define SERIALIZABLE_FLAG 0u
+#define PERSISTENT_FLAG 1u
+
 struct BoolProperty {
     std::string name;
     int32_t* var;
@@ -56,9 +59,9 @@ struct SelectionProperty
     std::vector<std::string> selection_options;
 };
 
-struct Properties {
+struct PropertiesSection {
 public:
-    Properties(std::string name) : section_name(name) {}
+    PropertiesSection(std::string name) : section_name(name) {}
 
     void addBool(const std::string& name, int32_t* var) {
         bool_properties.push_back(std::make_shared<BoolProperty>(name, var, *var > 0 ? true : false));
@@ -94,6 +97,7 @@ public:
     void addString(const char* str);
 
     std::string section_name;
+    uint32_t section_flags;
     std::vector<std::shared_ptr<BoolProperty>> bool_properties;
     std::vector<std::shared_ptr<IntProperty>> int_properties;
     std::vector<std::shared_ptr<FloatProperty>> float_properties;
@@ -107,15 +111,15 @@ public:
     PropertiesManager() = default;
     PropertiesManager(const std::string& config_file_path);
 
-    void addPropertySection(const std::shared_ptr<Properties>& properties);
+    void addPropertySection(const std::shared_ptr<PropertiesSection>& properties);
     void* getPushConstants(uint32_t* size);
     bool serialize();
 
-    std::unordered_map<std::string, std::shared_ptr<Properties>> properties;
+    std::unordered_map<std::string, std::shared_ptr<PropertiesSection>> properties;
     int32_t curr_sample_count, emitting_instances_count, samples_per_pixel = 1;
 
 private:
-    void initSectionWithConfig(const std::shared_ptr<Properties>& properties);
+    void initSectionWithConfig(const std::shared_ptr<PropertiesSection>& properties);
     void updatePushConstants();
 
     std::shared_ptr<ConfigLoader> config;

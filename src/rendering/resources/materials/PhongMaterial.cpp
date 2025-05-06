@@ -104,11 +104,17 @@ std::vector<std::shared_ptr<PhongMaterial::MaterialResources>> PhongMaterial::ge
 
 void PhongMaterial::initProperties()
 {
-    properties = std::make_shared<Properties>(MATERIAL_SECTION_NAME);
+    properties = std::make_shared<PropertiesSection>(MATERIAL_SECTION_NAME);
     properties->addBool("Shadows", &material_properties.shadows);
     properties->addBool("Fresnel", &material_properties.fresnel);
     properties->addBool("Dispersion", &material_properties.dispersion);
 }
+
+std::vector<std::shared_ptr<Texture>> PhongMaterial::getTextures()
+{
+    return {};
+}
+
 
 
 void PhongMaterial::reset() {
