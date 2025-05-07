@@ -23,10 +23,16 @@ std::shared_ptr<PropertiesManager> MeshRenderer::getProperties()
         properties = std::make_shared<PropertiesManager>();
     }
 
-    properties->properties.clear();
+    properties->property_sections.clear();
+
+    auto mesh_renderer_section = std::make_shared<PropertiesSection>("MeshRenderer");
+    mesh_renderer_section->addInt("material_idx", reinterpret_cast<int32_t*>(&meshMaterial->material_index),PERSISTENT_PROPERTY_FLAG);
+    mesh_renderer_section->addString("mesh", &meshAsset->name, PERSISTENT_PROPERTY_FLAG);
+    properties->addPropertySection(mesh_renderer_section);
+
     if (meshMaterial)
     {
-        properties->addPropertySection(meshMaterial->properties);
+        properties->addPropertySection(meshMaterial->properties, SERIALIZABLE_PROPERTY_FLAG);
     }
 
     return properties;

@@ -11,17 +11,19 @@ PropertiesManager::PropertiesManager(const std::string& config_file_path)
     config = std::make_shared<ConfigLoader>(config_file_path);
 }
 
-void PropertiesManager::addPropertySection(const std::shared_ptr<PropertiesSection>& section)
+void PropertiesManager::addPropertySection(const std::shared_ptr<PropertiesSection>& section, uint32_t flags)
 {
     if (section == nullptr)
         return;
-    properties[section->section_name] = section;
-    if (config)
+    property_sections[section->section_name] = section;
+    section_flags[section->section_name] = flags;
+    if (config && flags & PERSISTENT_PROPERTY_FLAG)
         initSectionWithConfig(section);
 }
 
 void PropertiesManager::initSectionWithConfig(const std::shared_ptr<PropertiesSection>& section)
 {
+    // TODO add other property types here
     for (auto& bool_prop : section->bool_properties)
     {
         std::optional<bool> config_value = config->getConfigValue<bool>(section->section_name, bool_prop->name);
@@ -98,10 +100,10 @@ int32_t getRecursionDepth(std::vector<std::shared_ptr<IntProperty>>& int_options
 void PropertiesManager::updatePushConstants()
 {
     push_constants.clear();
-    assert(properties.contains(MATERIAL_SECTION_NAME) && properties.contains(RENDERER_SECTION_NAME));
+    assert(property_sections.contains(MATERIAL_SECTION_NAME) && property_sections.contains(RENDERER_SECTION_NAME));
 
-    push_constants.push_back(getRecursionDepth(properties[RENDERER_SECTION_NAME]->int_properties));
-    std::shared_ptr<PropertiesSection> material_props = properties[MATERIAL_SECTION_NAME];
+    push_constants.push_back(getRecursionDepth(property_sections[RENDERER_SECTION_NAME]->int_properties));
+    std::shared_ptr<PropertiesSection> material_props = property_sections[MATERIAL_SECTION_NAME];
     for (auto& bool_option : material_props->bool_properties)
     {
         push_constants.push_back(*bool_option->var);
@@ -116,10 +118,17 @@ bool PropertiesManager::serialize()
 {
     bool change_detected = false;
 
-    for (auto& section : properties) {
+
+    for (auto& section : property_sections) {
+        if (!(section_flags[section.first] & SERIALIZABLE_PROPERTY_FLAG))
+            continue;
+
         if (ImGui::CollapsingHeader(section.second->section_name.c_str())) {
             for (auto& bool_property : section.second->bool_properties)
             {
+                if (!(bool_property->flags & SERIALIZABLE_PROPERTY_FLAG))
+                    continue;
+
                 if (ImGui::Checkbox(bool_property->name.c_str(), &bool_property->imgui_option)) {
                     *bool_property->var = bool_property->imgui_option ? 1 : 0;
                     change_detected = true;
@@ -128,6 +137,9 @@ bool PropertiesManager::serialize()
 
             for (auto& int_property : section.second->int_properties)
             {
+                if (!(int_property->flags & SERIALIZABLE_PROPERTY_FLAG))
+                    continue;
+
                 if (int_property->max > int_property->min) {
                     change_detected |= ImGui::SliderInt(int_property->name.c_str(), int_property->var, int_property->min, int_property->max);
                 } else
@@ -138,6 +150,9 @@ bool PropertiesManager::serialize()
 
             for (auto& float_property : section.second->float_properties)
             {
+                if (!(float_property->flags & SERIALIZABLE_PROPERTY_FLAG))
+                    continue;
+
                 if (float_property->max > float_property->min) {
                     change_detected |= ImGui::SliderFloat(float_property->name.c_str(), float_property->var, float_property->min, float_property->max);
                 } else
@@ -148,11 +163,17 @@ bool PropertiesManager::serialize()
 
             for (auto& vector_property : section.second->vector_properties)
             {
+                if (!(vector_property->flags & SERIALIZABLE_PROPERTY_FLAG))
+                    continue;
+
                 change_detected |= ImGui::InputFloat3(vector_property->name.c_str(), &(*vector_property->var)[0]);
             }
 
             for (auto& selection_property : section.second->selection_properties)
             {
+                if (!(selection_property->flags & SERIALIZABLE_PROPERTY_FLAG))
+                    continue;
+
                 std::vector<const char*> cStrArray;
                 for (auto& str : selection_property->selection_options) {
                     cStrArray.push_back(const_cast<char*>(str.c_str())); // Convert std::string to char*

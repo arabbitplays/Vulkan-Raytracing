@@ -190,5 +190,7 @@ void SceneWriter::writeSceneNode(YAML::Emitter& out, const std::shared_ptr<Node>
     out << YAML::EndSeq;
     out << YAML::EndMap;
 }
+
+
 }
 
