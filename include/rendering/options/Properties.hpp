@@ -20,8 +20,6 @@ struct Property {
   Property() = default;
   Property(std::string name, T* var, uint32_t flags = ALL_PROPERTY_FLAGS) : name(name), var(var), flags(flags) {}
 
-
-
   std::string name;
   uint32_t flags;
   T* var;

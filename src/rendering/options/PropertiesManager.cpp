@@ -192,5 +192,18 @@ bool PropertiesManager::serialize()
     return change_detected;
 }
 
+std::vector<std::shared_ptr<PropertiesSection>> PropertiesManager::getSections(uint32_t filter_flags)
+{
+    std::vector<std::shared_ptr<PropertiesSection>> result;
+    for (auto& section : property_sections)
+    {
+        if (filter_flags == 0 || section_flags[section.first] & filter_flags)
+        {
+            result.push_back(section.second);
+        }
+    }
+    return result;
+}
+
 }
 

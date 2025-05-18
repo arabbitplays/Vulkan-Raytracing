@@ -15,6 +15,7 @@ public:
 private:
   void writeMaterial(YAML::Emitter& out, const std::shared_ptr<Material>& material);
   void writeSceneLights(YAML::Emitter& out, const std::shared_ptr<Scene>& scene);
+  void writeComponent(YAML::Emitter& out, const std::shared_ptr<Component>& component);
   void writeSceneNode(YAML::Emitter& out, const std::shared_ptr<Node>& node);
 };
 

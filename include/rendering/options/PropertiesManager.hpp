@@ -72,6 +72,7 @@ public:
 
     void addPropertySection(const std::shared_ptr<PropertiesSection>& properties, uint32_t flags = ALL_PROPERTY_FLAGS);
     void* getPushConstants(uint32_t* size);
+    std::vector<std::shared_ptr<PropertiesSection>> getSections(uint32_t filter_flags = NONE_PROPERTY_FLAG);
     bool serialize();
 
     std::unordered_map<std::string, std::shared_ptr<PropertiesSection>> property_sections;

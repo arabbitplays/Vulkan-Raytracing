@@ -9,7 +9,8 @@
 #include <YAML_glm.hpp>
 
 
-namespace RtEngine {
+namespace RtEngine
+{
 void SceneWriter::writeScene(const std::string& filename, std::shared_ptr<Scene> scene) {
     QuickTimer quick_timer("Writing scene to file");
 
@@ -33,9 +34,9 @@ void SceneWriter::writeScene(const std::string& filename, std::shared_ptr<Scene>
     std::vector<std::shared_ptr<MeshAsset>> meshes = SceneUtil::collectMeshAssets(scene->getRootNode());
     out << YAML::Key << "meshes" << YAML::Value << YAML::BeginSeq;
     for (const auto& mesh : meshes) {
-      out << YAML::BeginMap;
-      out << YAML::Key << "name" << YAML::Value << mesh->path;
-      out << YAML::EndMap;
+        out << YAML::BeginMap;
+        out << YAML::Key << "name" << YAML::Value << mesh->path;
+        out << YAML::EndMap;
     }
     out << YAML::EndSeq;
 
@@ -170,7 +171,7 @@ void SceneWriter::writeSceneNode(YAML::Emitter& out, const std::shared_ptr<Node>
     out << YAML::BeginMap;
     out << YAML::Key << "name" << YAML::Value << node->name;
 
-    TransformUtil::DecomposedTransform transform = TransformUtil::decomposeMatrix(node->transform->getLocalTransform());
+    /*TransformUtil::DecomposedTransform transform = TransformUtil::decomposeMatrix(node->transform->getLocalTransform());
     out << YAML::Key << "translation" << YAML::Value << YAML::convert<glm::vec3>::encode(transform.translation);
     out << YAML::Key << "rotation" << YAML::Value << YAML::convert<glm::vec3>::encode(transform.rotation);
     out << YAML::Key << "scale" << YAML::Value << YAML::convert<glm::vec3>::encode(transform.scale);
@@ -178,9 +179,17 @@ void SceneWriter::writeSceneNode(YAML::Emitter& out, const std::shared_ptr<Node>
     std::shared_ptr<MeshRenderer> mesh_renderer = node->getComponent<MeshRenderer>();
     if (mesh_renderer)
     {
+        mesh_renderer->getProperties();
         out << YAML::Key << "mesh" << YAML::Value << mesh_renderer->meshAsset->name;
         out << YAML::Key << "material_idx" << YAML::Value << mesh_renderer->meshMaterial->material_index;
+    }*/
+
+    out << YAML::Key << "components" << YAML::Value << YAML::BeginSeq;
+    for (auto& component : node->components)
+    {
+        writeComponent(out, component);
     }
+    out << YAML::EndSeq;
 
     out << YAML::Key << "children" << YAML::Value << YAML::BeginSeq;
     for (const auto& child : node->children)
@@ -191,6 +200,55 @@ void SceneWriter::writeSceneNode(YAML::Emitter& out, const std::shared_ptr<Node>
     out << YAML::EndMap;
 }
 
+void SceneWriter::writeComponent(YAML::Emitter& out, const std::shared_ptr<Component>& component)
+{
+    std::shared_ptr<PropertiesManager> properties = component->getProperties();
+    std::vector<std::shared_ptr<PropertiesSection>> sections = properties->getSections(PERSISTENT_PROPERTY_FLAG);
+    assert(sections.size() <= 1);
+    if (sections.empty())
+        return;
+    auto section = sections.at(0);
 
+    out << YAML::BeginMap;
+    out << YAML::Key << "name" << YAML::Value << section->section_name;
+
+    for (auto& prop : section->bool_properties)
+    {
+        if (prop->flags & PERSISTENT_PROPERTY_FLAG)
+            out << YAML::Key << prop->name << YAML::Value << *prop->var;
+    }
+
+    for (auto& prop : section->float_properties)
+    {
+        if (prop->flags & PERSISTENT_PROPERTY_FLAG)
+            out << YAML::Key << prop->name << YAML::Value << *prop->var;
+    }
+
+    for (auto& prop : section->int_properties)
+    {
+        if (prop->flags & PERSISTENT_PROPERTY_FLAG)
+            out << YAML::Key << prop->name << YAML::Value << *prop->var;
+    }
+
+    for (auto& prop : section->string_properties)
+    {
+        if (prop->flags & PERSISTENT_PROPERTY_FLAG)
+            out << YAML::Key << prop->name << YAML::Value << *prop->var;
+    }
+
+    for (auto& prop : section->vector_properties)
+    {
+        if (prop->flags & PERSISTENT_PROPERTY_FLAG)
+            out << YAML::Key << prop->name << YAML::Value << YAML::convert<glm::vec3>::encode(*prop->var);
+    }
+
+    for (auto& prop : section->selection_properties)
+    {
+        if (prop->flags & PERSISTENT_PROPERTY_FLAG)
+            out << YAML::Key << prop->name << YAML::Value << *prop->var;
+    }
+
+    out << YAML::EndMap;
+}
 }
 
