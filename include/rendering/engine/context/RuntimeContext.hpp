@@ -9,9 +9,13 @@
 #include <TextureRepository.hpp>
 
 namespace RtEngine {
-struct RuntimeContext {
+    class Material;
+
+    struct RuntimeContext {
     std::shared_ptr<TextureRepository> texture_repository;
     std::shared_ptr<MeshRepository> mesh_repository;
+
+    std::weak_ptr<Material> curr_material;
 };
 }
 

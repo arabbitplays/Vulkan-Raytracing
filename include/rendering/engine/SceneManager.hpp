@@ -36,7 +36,7 @@ public:
         });
 
         createSceneLayout();
-        createSceneDescriptorSets(scene_descsriptor_set_layout);
+        createSceneDescriptorSets(scene_descriptor_set_layout);
         initDefaultResources(raytracingProperties);
     }
 
@@ -44,7 +44,7 @@ public:
     void createBlas(std::vector<std::shared_ptr<MeshAsset>>& meshes);
     void updateScene(DrawContext& draw_context, uint32_t current_image_idx, const AllocatedImage& current_image, const AllocatedImage& rng_tex);
 
-    void clearRessources();
+    void clearResources();
 
     std::shared_ptr<Material> getMaterial() const;
     VkDescriptorSet getSceneDescriptorSet(uint32_t frame_index) const;
@@ -88,7 +88,7 @@ private:
 
     std::shared_ptr<AccelerationStructure> top_level_acceleration_structure;
 
-    VkDescriptorSetLayout scene_descsriptor_set_layout;
+    VkDescriptorSetLayout scene_descriptor_set_layout;
     std::vector<VkDescriptorSet> scene_descriptor_sets{};
     std::vector<AllocatedBuffer> sceneUniformBuffers;
     std::vector<void*> sceneUniformBuffersMapped;

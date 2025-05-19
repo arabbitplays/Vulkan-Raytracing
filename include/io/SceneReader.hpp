@@ -19,9 +19,9 @@ public:
     void initializeMaterial(const YAML::Node& material_node, std::shared_ptr<Material>& material);
 
 private:
-    std::shared_ptr<Node> processSceneNodesRecursiv(const YAML::Node& yaml_node, const std::shared_ptr<Scene>& scene, const std::vector<std::shared_ptr<MaterialInstance>>& instances);
+    std::shared_ptr<Node> processSceneNodesRecursiv(const YAML::Node& yaml_node, const std::shared_ptr<Scene>& scene);
     void readComponents(const YAML::Node& yaml_node,
-                        std::shared_ptr<Node>& scene_node, const std::vector<std::shared_ptr<MaterialInstance>>& instances);
+                        std::shared_ptr<Node>& scene_node);
 
     std::shared_ptr<VulkanContext> vulkan_context;
     std::shared_ptr<RuntimeContext> runtime_context;

@@ -48,7 +48,7 @@ std::shared_ptr<Scene> SceneReader::readScene(const std::string& filename, std::
         scene_graph_node->children = {};
         for (const auto& yaml_mesh_node : scene_node["nodes"])
         {
-            scene_graph_node->children.push_back(processSceneNodesRecursiv(static_cast<YAML::Node>(yaml_mesh_node), scene, scene->material->getInstances()));
+            scene_graph_node->children.push_back(processSceneNodesRecursiv(static_cast<YAML::Node>(yaml_mesh_node), scene));
         }
         scene->addNode(scene_graph_node->name, scene_graph_node);
 
@@ -102,6 +102,7 @@ void SceneReader::loadSceneLights(const YAML::Node& lights_node, std::shared_ptr
 
 void SceneReader::initializeMaterial(const YAML::Node& material_node, std::shared_ptr<Material>& material)
 {
+    runtime_context->curr_material = material;
     if (typeid(*material) == typeid(MetalRoughMaterial) )
     {
         auto metal_rough_material = dynamic_cast<MetalRoughMaterial*>(material.get());
@@ -156,15 +157,15 @@ void SceneReader::initializeMaterial(const YAML::Node& material_node, std::share
     }
 }
 
-std::shared_ptr<Node> SceneReader::processSceneNodesRecursiv(const YAML::Node& yaml_node, const std::shared_ptr<Scene>& scene, const std::vector<std::shared_ptr<MaterialInstance>>& instances)
+std::shared_ptr<Node> SceneReader::processSceneNodesRecursiv(const YAML::Node& yaml_node, const std::shared_ptr<Scene>& scene)
 {
     std::shared_ptr<Node> scene_graph_node = std::make_shared<Node>();
     scene_graph_node->name = yaml_node["name"].as<std::string>();
-    readComponents(yaml_node, scene_graph_node, instances);
+    readComponents(yaml_node, scene_graph_node);
     scene_graph_node->children = {};
     for (auto& child_node : yaml_node["children"])
     {
-        scene_graph_node->children.push_back(processSceneNodesRecursiv(child_node, scene, instances));
+        scene_graph_node->children.push_back(processSceneNodesRecursiv(child_node, scene));
     }
     scene_graph_node->refreshTransform(glm::mat4(1.0f));
 
@@ -172,7 +173,7 @@ std::shared_ptr<Node> SceneReader::processSceneNodesRecursiv(const YAML::Node& y
     return scene_graph_node;
 }
 
-void SceneReader::readComponents(const YAML::Node& yaml_node, std::shared_ptr<Node>& scene_node, const std::vector<std::shared_ptr<MaterialInstance>>& instances)
+void SceneReader::readComponents(const YAML::Node& yaml_node, std::shared_ptr<Node>& scene_node)
 {
     for (auto& comp_node : yaml_node["components"])
     {
@@ -189,8 +190,7 @@ void SceneReader::readComponents(const YAML::Node& yaml_node, std::shared_ptr<No
             scene_node->transform->updateTransforms(glm::mat4(1.0f));
         } else if (comp_name == MeshRenderer::COMPONENT_NAME) {
             std::shared_ptr<MeshRenderer> mesh_component = std::make_shared<MeshRenderer>(runtime_context, scene_node);
-            mesh_component->meshAsset = runtime_context->mesh_repository->getMesh(section_node["mesh"].as<std::string>());
-            mesh_component->meshMaterial = instances.at(section_node["material_idx"].as<int>());
+            mesh_component->initProperties(comp_node);
             scene_node->addComponent(mesh_component);
         } else if (comp_name == Rigidbody::COMPONENT_NAME)
         {

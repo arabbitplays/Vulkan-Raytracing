@@ -15,7 +15,9 @@ public:
     void OnStart() override {};
     void OnRender(DrawContext &ctx) override;
     void OnUpdate() override {};
+
     void definePropertySections() override;
+    void initProperties(const YAML::Node& config_node) override;
 
     std::shared_ptr<MeshAsset> meshAsset;
     std::shared_ptr<MaterialInstance> meshMaterial;

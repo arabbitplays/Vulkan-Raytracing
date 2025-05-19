@@ -1,5 +1,6 @@
 #include "MeshRenderer.hpp"
 #include <Node.hpp>
+#include <Scene.hpp>
 
 namespace RtEngine {
 
@@ -29,4 +30,13 @@ void MeshRenderer::definePropertySections()
         properties->addPropertySection(meshMaterial->properties, SERIALIZABLE_PROPERTY_FLAG);
     }
 }
+
+void MeshRenderer::initProperties(const YAML::Node& config_node)
+{
+    meshAsset = context->mesh_repository->getMesh(config_node[COMPONENT_NAME]["mesh"].as<std::string>());
+    std::shared_ptr<Material> material = context->curr_material.lock();
+    assert(material != nullptr);
+    meshMaterial = material->getInstances().at(config_node[COMPONENT_NAME]["material_idx"].as<int>());
+}
+
 }

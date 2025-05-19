@@ -99,7 +99,7 @@ void VulkanEngine::initVulkan() {
 
     scene_manager = std::make_shared<SceneManager>(vulkan_context, runtime_context, max_frames_in_flight, DeviceManager::RAYTRACING_PROPERTIES);
     mainDeletionQueue.pushFunction([&]() {
-        scene_manager->clearRessources();
+        scene_manager->clearResources();
     });
 
     createCommandBuffers();

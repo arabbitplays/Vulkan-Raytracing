@@ -73,9 +73,9 @@ void SceneManager::createSceneLayout() {
     layoutBuilder.addBinding(8, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 6); // env map
     layoutBuilder.addBinding(9, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE); // rng tex
 
-    scene_descsriptor_set_layout = layoutBuilder.build(vulkan_context->device_manager->getDevice(), VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR | VK_SHADER_STAGE_MISS_BIT_KHR);
+    scene_descriptor_set_layout = layoutBuilder.build(vulkan_context->device_manager->getDevice(), VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR | VK_SHADER_STAGE_MISS_BIT_KHR);
     main_deletion_queue.pushFunction([&]() {
-        vkDestroyDescriptorSetLayout(vulkan_context->device_manager->getDevice(), scene_descsriptor_set_layout, nullptr);
+        vkDestroyDescriptorSetLayout(vulkan_context->device_manager->getDevice(), scene_descriptor_set_layout, nullptr);
     });
 }
 
@@ -273,7 +273,7 @@ void SceneManager::createDefaultSamplers() {
 void SceneManager::createDefaultMaterials(VkPhysicalDeviceRayTracingPipelinePropertiesKHR raytracingProperties)
 {
     auto phong_material = std::make_shared<PhongMaterial>(vulkan_context, runtime_context);
-    phong_material->buildPipelines(scene_descsriptor_set_layout);
+    phong_material->buildPipelines(scene_descriptor_set_layout);
     phong_material->pipeline->createShaderBindingTables(raytracingProperties);
     defaultMaterials["phong"] = phong_material;
     main_deletion_queue.pushFunction([&]() {
@@ -281,7 +281,7 @@ void SceneManager::createDefaultMaterials(VkPhysicalDeviceRayTracingPipelineProp
     });
 
     auto metal_rough_material = std::make_shared<MetalRoughMaterial>(vulkan_context, runtime_context, defaultSamplerLinear);
-    metal_rough_material->buildPipelines(scene_descsriptor_set_layout);
+    metal_rough_material->buildPipelines(scene_descriptor_set_layout);
     metal_rough_material->pipeline->createShaderBindingTables(raytracingProperties);
     defaultMaterials["metal_rough"] = metal_rough_material;
     main_deletion_queue.pushFunction([&]() {
@@ -305,7 +305,7 @@ uint32_t SceneManager::getEmittingInstancesCount() {
 }
 
 
-void SceneManager::clearRessources() {
+void SceneManager::clearResources() {
     scene_resource_deletion_queue.flush();
     main_deletion_queue.flush();
 }
