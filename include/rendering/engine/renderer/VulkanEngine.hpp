@@ -37,6 +37,7 @@
 #include "../scene_graph/Node.hpp"
 #include "DeletionQueue.hpp"
 #include <VulkanContext.hpp>
+#include <RuntimeContext.hpp>
 
 
 namespace RtEngine {
@@ -52,7 +53,8 @@ protected:
 
     DeletionQueue mainDeletionQueue;
 
-    std::shared_ptr<VulkanContext> context;
+    std::shared_ptr<VulkanContext> vulkan_context;
+    std::shared_ptr<RuntimeContext> runtime_context;
 
     std::vector<VkCommandBuffer> commandBuffers;
 
@@ -76,7 +78,8 @@ protected:
 
     void initWindow();
     void initVulkan();
-    void createContext();
+    void createVulkanContext();
+    void createRuntimeContext();
     void initGui();
     virtual void mainLoop();
     void cleanup();

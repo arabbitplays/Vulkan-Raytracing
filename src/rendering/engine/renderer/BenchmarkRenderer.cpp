@@ -9,13 +9,13 @@ void BenchmarkRenderer::mainLoop() {
     omp_set_num_threads(omp_get_max_threads());
 
     loadScene();
-    reference_image_data = context->resource_builder->loadImageData(reference_image_path, &ref_width, &ref_height, &ref_channels);
+    reference_image_data = vulkan_context->resource_builder->loadImageData(reference_image_path, &ref_width, &ref_height, &ref_channels);
 
     while(!glfwWindowShouldClose(window)) {
         // render one image and then output it if output path is defined
         if (sample_count == properties_manager->curr_sample_count)
         {
-            vkDeviceWaitIdle(context->device_manager->getDevice());
+            vkDeviceWaitIdle(vulkan_context->device_manager->getDevice());
             outputRenderingTarget(std::to_string(sample_count) + "_benchmark.png");
             break;
         }
@@ -32,7 +32,7 @@ void BenchmarkRenderer::mainLoop() {
         }
     }
 
-    vkDeviceWaitIdle(context->device_manager->getDevice());
+    vkDeviceWaitIdle(vulkan_context->device_manager->getDevice());
 
     float mse = calculateMSEToReference();
     spdlog::info("Sample count: {}, Final Error: {:f}", properties_manager->curr_sample_count, mse);
@@ -41,7 +41,7 @@ void BenchmarkRenderer::mainLoop() {
 
 void BenchmarkRenderer::drawFrame()
 {
-    vkWaitForFences(context->device_manager->getDevice(), 1, &inFlightFences[currentFrame], VK_TRUE, UINT64_MAX);
+    vkWaitForFences(vulkan_context->device_manager->getDevice(), 1, &inFlightFences[currentFrame], VK_TRUE, UINT64_MAX);
 
     uint32_t curr_sample_count = properties_manager->curr_sample_count;
     if (error_calculation_sample_count == curr_sample_count)
@@ -59,7 +59,7 @@ void BenchmarkRenderer::drawFrame()
             return;
     }
 
-    vkResetFences(context->device_manager->getDevice(), 1, &inFlightFences[currentFrame]);
+    vkResetFences(vulkan_context->device_manager->getDevice(), 1, &inFlightFences[currentFrame]);
 
     scene_manager->updateScene(mainDrawContext, currentFrame, getRenderTarget(), getRngTexture());
     properties_manager->emitting_instances_count = scene_manager->getEmittingInstancesCount(); // TODO move this together with the creation of the instance buffers
@@ -99,7 +99,7 @@ float BenchmarkRenderer::calculateMSEToReference()
 
     assert(ref_width == width && ref_height == height && ref_channels == 4);
 
-    void* raw_data = context->resource_builder->downloadImage(render_target, sizeof(uint32_t));
+    void* raw_data = vulkan_context->resource_builder->downloadImage(render_target, sizeof(uint32_t));
     uint8_t* image_data = fixImageFormatForStorage(raw_data, width * height, render_target.imageFormat);
 
     assert(image_data != nullptr && reference_image_data != nullptr);

@@ -22,20 +22,21 @@ std::shared_ptr<Scene> SceneReader::readScene(const std::string& filename, std::
         auto material_name = scene_node["material_name"].as<std::string>();
         if (!materials.contains(material_name))
             throw std::runtime_error("Material " + material_name + " does not exist");
-        std::shared_ptr<Scene> scene = std::make_shared<Scene>(*context->resource_builder, materials[material_name]);
+        // TODO remove vulkan context from reader?
+        std::shared_ptr<Scene> scene = std::make_shared<Scene>(*vulkan_context->resource_builder, materials[material_name]);
 
         scene->camera = loadCamera(scene_node["camera"]);
         loadSceneLights(scene_node["lights"], scene);
 
         for (const auto& mesh_node : scene_node["meshes"]) {
             std::string mesh_path = mesh_node["path"].as<std::string>();
-            context->mesh_repository->addMesh(mesh_path);
+            runtime_context->mesh_repository->addMesh(mesh_path);
         }
 
         for (const auto& texture_node : scene_node["textures"]) {
             // todo handle more types
             TextureType type = texture_node["is_normal"].as<bool>() ? NORMAL : PARAMETER;
-            context->texture_repository->addTexture(texture_node["path"].as<std::string>(), type);
+            runtime_context->texture_repository->addTexture(texture_node["path"].as<std::string>(), type);
         }
 
         initializeMaterial(scene_node["materials"], materials[material_name]);
@@ -62,7 +63,7 @@ std::shared_ptr<Camera> SceneReader::loadCamera(const YAML::Node& camera_node) c
     if (camera_node["interactive"].as<bool>())
     {
         return std::make_shared<InteractiveCamera>(
-            context->swapchain->extent.width, context->swapchain->extent.height,
+            vulkan_context->swapchain->extent.width, vulkan_context->swapchain->extent.height,
             camera_node["fov"].as<float>(),
             camera_node["position"].as<glm::vec3>(),
             camera_node["view_dir"].as<glm::vec3>()
@@ -70,7 +71,7 @@ std::shared_ptr<Camera> SceneReader::loadCamera(const YAML::Node& camera_node) c
     } else
     {
         return std::make_shared<Camera>(
-            context->swapchain->extent.width, context->swapchain->extent.height,
+            vulkan_context->swapchain->extent.width, vulkan_context->swapchain->extent.height,
             camera_node["fov"].as<float>(),
             camera_node["position"].as<glm::vec3>(),
             camera_node["view_dir"].as<glm::vec3>()
@@ -187,8 +188,8 @@ void SceneReader::readComponents(const YAML::Node& yaml_node, std::shared_ptr<No
             scene_node->transform->initProperties(comp_node);
             scene_node->transform->updateTransforms(glm::mat4(1.0f));
         } else if (comp_name == MeshRenderer::COMPONENT_NAME) {
-            std::shared_ptr<MeshRenderer> mesh_component = std::make_shared<MeshRenderer>(context, scene_node);
-            mesh_component->meshAsset = context->mesh_repository->getMesh(section_node["mesh"].as<std::string>());
+            std::shared_ptr<MeshRenderer> mesh_component = std::make_shared<MeshRenderer>(runtime_context, scene_node);
+            mesh_component->meshAsset = runtime_context->mesh_repository->getMesh(section_node["mesh"].as<std::string>());
             mesh_component->meshMaterial = instances.at(section_node["material_idx"].as<int>());
             scene_node->addComponent(mesh_component);
         } else if (comp_name == Rigidbody::COMPONENT_NAME)

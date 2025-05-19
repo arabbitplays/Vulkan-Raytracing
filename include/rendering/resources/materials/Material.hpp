@@ -9,6 +9,7 @@
 #include <glm/vec4.hpp>
 #include <Pipeline.hpp>
 #include <PropertiesManager.hpp>
+#include <RuntimeContext.hpp>
 
 namespace RtEngine {
 struct MaterialInstance;
@@ -17,14 +18,14 @@ class Pipeline;
 class Material {
   public:
     Material() = default;
-    Material(std::string name, std::shared_ptr<VulkanContext> context) : name(name), context(context) {
+    Material(std::string name, std::shared_ptr<VulkanContext> vulkan_context, std::shared_ptr<RuntimeContext> runtime_context) : name(name), vulkan_context(vulkan_context), runtime_context(runtime_context) {
         std::vector<DescriptorAllocator::PoolSizeRatio> poolRatios = {
             { VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1 },
         };
-        descriptorAllocator.init(context->device_manager->getDevice(), 4, poolRatios);
+        descriptorAllocator.init(vulkan_context->device_manager->getDevice(), 4, poolRatios);
 
         mainDeletionQueue.pushFunction([&]() {
-            descriptorAllocator.destroyPools(this->context->device_manager->getDevice());
+            descriptorAllocator.destroyPools(this->vulkan_context->device_manager->getDevice());
         });
     };
 
@@ -51,7 +52,8 @@ class Material {
 protected:
     virtual void initProperties() = 0;
 
-    std::shared_ptr<VulkanContext> context;
+    std::shared_ptr<VulkanContext> vulkan_context;
+    std::shared_ptr<RuntimeContext> runtime_context;
     DescriptorAllocator descriptorAllocator;
     DeletionQueue mainDeletionQueue, resetQueue;
 

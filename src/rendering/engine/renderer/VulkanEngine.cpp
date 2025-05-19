@@ -27,9 +27,9 @@ const uint32_t WIDTH = 6144;
 const uint32_t HEIGHT = 3320;
 
 void VulkanEngine::run(const std::string& config_file, const std::string& resources_dir) {
-    context = std::make_shared<VulkanContext>();
-    context->base_options = std::make_shared<BaseOptions>();
-    context->base_options->resources_dir = resources_dir;
+    vulkan_context = std::make_shared<VulkanContext>();
+    vulkan_context->base_options = std::make_shared<BaseOptions>();
+    vulkan_context->base_options->resources_dir = resources_dir;
     properties_manager = std::make_shared<PropertiesManager>(config_file);
 
     initWindow();
@@ -74,7 +74,7 @@ void VulkanEngine::mouseCallback(GLFWwindow* window, double xPos, double yPos) {
 }
 
 void VulkanEngine::initGui() {
-    guiManager = std::make_shared<GuiManager>(context);
+    guiManager = std::make_shared<GuiManager>(vulkan_context);
 
     mainDeletionQueue.pushFunction([&]() {
         guiManager->destroy();
@@ -88,7 +88,8 @@ void VulkanEngine::initGui() {
 }
 
 void VulkanEngine::initVulkan() {
-    createContext();
+    createVulkanContext();
+    createRuntimeContext();
 
     createRenderingTargets();
 
@@ -96,7 +97,7 @@ void VulkanEngine::initVulkan() {
         cleanupRenderingTargets();
     });
 
-    scene_manager = std::make_shared<SceneManager>(context, max_frames_in_flight, DeviceManager::RAYTRACING_PROPERTIES);
+    scene_manager = std::make_shared<SceneManager>(vulkan_context, runtime_context, max_frames_in_flight, DeviceManager::RAYTRACING_PROPERTIES);
     mainDeletionQueue.pushFunction([&]() {
         scene_manager->clearRessources();
     });
@@ -105,29 +106,38 @@ void VulkanEngine::initVulkan() {
     createSyncObjects();
 }
 
-void VulkanEngine::createContext()
+void VulkanEngine::createVulkanContext()
 {
-    context->window = window;
-    context->device_manager = std::make_shared<DeviceManager>(window, enableValidationLayers);
+    vulkan_context->window = window;
+    vulkan_context->device_manager = std::make_shared<DeviceManager>(window, enableValidationLayers);
 
     initProperties();
     properties_manager->addPropertySection(renderer_properties);
 
-    context->command_manager = std::make_shared<CommandManager>(context->device_manager);
-    context->resource_builder = std::make_shared<ResourceBuilder>(context->device_manager, context->command_manager, context->base_options->resources_dir);
-    context->swapchain = std::make_shared<Swapchain>(context->device_manager, window, context->resource_builder);
-    context->descriptor_allocator = createDescriptorAllocator();
-    context->texture_repository = std::make_shared<TextureRepository>(context->resource_builder);
-    context->mesh_repository = std::make_shared<MeshRepository>(context);
+    vulkan_context->command_manager = std::make_shared<CommandManager>(vulkan_context->device_manager);
+    vulkan_context->resource_builder = std::make_shared<ResourceBuilder>(vulkan_context->device_manager, vulkan_context->command_manager, vulkan_context->base_options->resources_dir);
+    vulkan_context->swapchain = std::make_shared<Swapchain>(vulkan_context->device_manager, window, vulkan_context->resource_builder);
+    vulkan_context->descriptor_allocator = createDescriptorAllocator();
 
     mainDeletionQueue.pushFunction([&]()
     {
-        context->texture_repository->destroy();
-        context->mesh_repository->destroy();
-        context->descriptor_allocator->destroyPools(context->device_manager->getDevice());
-        context->swapchain->destroy();
-        context->command_manager->destroyCommandManager();
-        context->device_manager->destroy();
+        vulkan_context->descriptor_allocator->destroyPools(vulkan_context->device_manager->getDevice());
+        vulkan_context->swapchain->destroy();
+        vulkan_context->command_manager->destroyCommandManager();
+        vulkan_context->device_manager->destroy();
+    });
+}
+
+void VulkanEngine::createRuntimeContext()
+{
+    runtime_context = std::make_shared<RuntimeContext>();
+    runtime_context->texture_repository = std::make_shared<TextureRepository>(vulkan_context->resource_builder);
+    runtime_context->mesh_repository = std::make_shared<MeshRepository>(vulkan_context);
+
+    mainDeletionQueue.pushFunction([&]()
+    {
+        runtime_context->texture_repository->destroy();
+        runtime_context->mesh_repository->destroy();
     });
 }
 
@@ -141,7 +151,7 @@ std::shared_ptr<DescriptorAllocator> VulkanEngine::createDescriptorAllocator() {
     };
 
     auto descriptorAllocator = std::make_shared<DescriptorAllocator>();
-    descriptorAllocator->init(context->device_manager->getDevice(), 4, poolRatios);
+    descriptorAllocator->init(vulkan_context->device_manager->getDevice(), 4, poolRatios);
 
     return descriptorAllocator;
 }
@@ -151,17 +161,17 @@ bool VulkanEngine::hasStencilComponent(VkFormat format) {
 }
 
 void VulkanEngine::createRenderingTargets() {
-    std::shared_ptr<Swapchain> swapchain = context->swapchain;
+    std::shared_ptr<Swapchain> swapchain = vulkan_context->swapchain;
 
     render_targets.resize(max_frames_in_flight);
     for (uint32_t i = 0; i < max_frames_in_flight; i++) {
-        render_targets[i] = context->resource_builder->createImage(
+        render_targets[i] = vulkan_context->resource_builder->createImage(
             VkExtent3D{swapchain->extent.width, swapchain->extent.height, 1},
             VK_FORMAT_B8G8R8A8_UNORM, VK_IMAGE_TILING_OPTIMAL,
             VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_STORAGE_BIT,
             VK_IMAGE_ASPECT_COLOR_BIT);
 
-        context->resource_builder->transitionImageLayout(render_targets[i].image, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
+        vulkan_context->resource_builder->transitionImageLayout(render_targets[i].image, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
             VK_ACCESS_NONE, VK_ACCESS_NONE, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
     }
 
@@ -174,7 +184,7 @@ void VulkanEngine::createRenderingTargets() {
     rng_textures.resize(max_frames_in_flight);
     for (uint32_t i = 0; i < max_frames_in_flight; i++)
     {
-        rng_textures[i] = context->resource_builder->createImage(pixels.data(),
+        rng_textures[i] = vulkan_context->resource_builder->createImage(pixels.data(),
         VkExtent3D{swapchain->extent.width, swapchain->extent.height, 1},
         VK_FORMAT_R32G32B32A32_UINT, VK_IMAGE_TILING_OPTIMAL,
         VK_IMAGE_USAGE_STORAGE_BIT,
@@ -197,12 +207,12 @@ AllocatedImage VulkanEngine::getRngTexture()
 
 void VulkanEngine::loadScene()
 {
-    assert(context->base_options->curr_scene_name != "");
-    vkDeviceWaitIdle(context->device_manager->getDevice());
+    assert(vulkan_context->base_options->curr_scene_name != "");
+    vkDeviceWaitIdle(vulkan_context->device_manager->getDevice());
     properties_manager->curr_sample_count = 0;
-    std::string path = context->base_options->resources_dir + "/scenes/" + context->base_options->curr_scene_name;
+    std::string path = vulkan_context->base_options->resources_dir + "/scenes/" + vulkan_context->base_options->curr_scene_name;
     scene_manager->createScene(path);
-    scene_manager->curr_scene_name = context->base_options->curr_scene_name;
+    scene_manager->curr_scene_name = vulkan_context->base_options->curr_scene_name;
     properties_manager->addPropertySection(scene_manager->scene->material->getProperties());
 
     SceneWriter writer;
@@ -214,11 +224,11 @@ void VulkanEngine::createCommandBuffers() {
 
     VkCommandBufferAllocateInfo allocInfo{};
     allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-    allocInfo.commandPool = context->command_manager->commandPool;
+    allocInfo.commandPool = vulkan_context->command_manager->commandPool;
     allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
     allocInfo.commandBufferCount = (uint32_t) commandBuffers.size();
 
-    if (vkAllocateCommandBuffers(context->device_manager->getDevice(), &allocInfo, commandBuffers.data()) != VK_SUCCESS) {
+    if (vkAllocateCommandBuffers(vulkan_context->device_manager->getDevice(), &allocInfo, commandBuffers.data()) != VK_SUCCESS) {
         throw std::runtime_error("failed to allocate command bufer!");
     }
 }
@@ -236,16 +246,16 @@ void VulkanEngine::createSyncObjects() {
     fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
 
     for (size_t i = 0; i < max_frames_in_flight; i++) {
-        if (vkCreateSemaphore(context->device_manager->getDevice(), &semaphoreInfo, nullptr, &imageAvailableSemaphores[i]) != VK_SUCCESS
-            || vkCreateSemaphore(context->device_manager->getDevice(), &semaphoreInfo, nullptr, &renderFinishedSemaphores[i]) != VK_SUCCESS
-            || vkCreateFence(context->device_manager->getDevice(), &fenceInfo, nullptr, &inFlightFences[i]) != VK_SUCCESS) {
+        if (vkCreateSemaphore(vulkan_context->device_manager->getDevice(), &semaphoreInfo, nullptr, &imageAvailableSemaphores[i]) != VK_SUCCESS
+            || vkCreateSemaphore(vulkan_context->device_manager->getDevice(), &semaphoreInfo, nullptr, &renderFinishedSemaphores[i]) != VK_SUCCESS
+            || vkCreateFence(vulkan_context->device_manager->getDevice(), &fenceInfo, nullptr, &inFlightFences[i]) != VK_SUCCESS) {
             throw std::runtime_error("failed to create sync objects");
         }
 
         mainDeletionQueue.pushFunction([&, i]() {
-            vkDestroySemaphore(context->device_manager->getDevice(), imageAvailableSemaphores[i], nullptr);
-            vkDestroySemaphore(context->device_manager->getDevice(), renderFinishedSemaphores[i], nullptr);
-            vkDestroyFence(context->device_manager->getDevice(), inFlightFences[i], nullptr);
+            vkDestroySemaphore(vulkan_context->device_manager->getDevice(), imageAvailableSemaphores[i], nullptr);
+            vkDestroySemaphore(vulkan_context->device_manager->getDevice(), renderFinishedSemaphores[i], nullptr);
+            vkDestroyFence(vulkan_context->device_manager->getDevice(), inFlightFences[i], nullptr);
         });
     }
 }
@@ -255,7 +265,7 @@ void VulkanEngine::mainLoop() {
     while(!glfwWindowShouldClose(window)) {
         glfwPollEvents();
 
-        if (scene_manager->curr_scene_name != context->base_options->curr_scene_name) {
+        if (scene_manager->curr_scene_name != vulkan_context->base_options->curr_scene_name) {
             loadScene();
         }
         scene_manager->updateScene(mainDrawContext, currentFrame, getRenderTarget(), getRngTexture());
@@ -263,17 +273,17 @@ void VulkanEngine::mainLoop() {
         drawFrame();
     }
 
-    vkDeviceWaitIdle(context->device_manager->getDevice());
+    vkDeviceWaitIdle(vulkan_context->device_manager->getDevice());
 }
 
 void VulkanEngine::drawFrame() {
-    vkWaitForFences(context->device_manager->getDevice(), 1, &inFlightFences[currentFrame], VK_TRUE, UINT64_MAX);
+    vkWaitForFences(vulkan_context->device_manager->getDevice(), 1, &inFlightFences[currentFrame], VK_TRUE, UINT64_MAX);
 
     int imageIndex = aquireNextSwapchainImage();
     if (imageIndex < 0)
         return;
 
-    vkResetFences(context->device_manager->getDevice(), 1, &inFlightFences[currentFrame]);
+    vkResetFences(vulkan_context->device_manager->getDevice(), 1, &inFlightFences[currentFrame]);
 
     vkResetCommandBuffer(commandBuffers[currentFrame], 0);
     recordCommandBuffer(commandBuffers[currentFrame], imageIndex);
@@ -289,7 +299,7 @@ void VulkanEngine::drawFrame() {
 int VulkanEngine::aquireNextSwapchainImage()
 {
     uint32_t imageIndex;
-    VkResult result = vkAcquireNextImageKHR(context->device_manager->getDevice(), context->swapchain->handle, UINT64_MAX, imageAvailableSemaphores[currentFrame], VK_NULL_HANDLE, &imageIndex);
+    VkResult result = vkAcquireNextImageKHR(vulkan_context->device_manager->getDevice(), vulkan_context->swapchain->handle, UINT64_MAX, imageAvailableSemaphores[currentFrame], VK_NULL_HANDLE, &imageIndex);
 
     if (result == VK_ERROR_OUT_OF_DATE_KHR) {
         refreshAfterResize();
@@ -314,7 +324,7 @@ void VulkanEngine::submitCommandBuffer(std::vector<VkSemaphore> wait_semaphore, 
     submitInfo.signalSemaphoreCount = static_cast<uint32_t>(signal_semaphore.size());;
     submitInfo.pSignalSemaphores = signal_semaphore.data();
 
-    if (vkQueueSubmit(context->device_manager->getQueue(GRAPHICS), 1, &submitInfo, inFlightFences[currentFrame]) != VK_SUCCESS) {
+    if (vkQueueSubmit(vulkan_context->device_manager->getQueue(GRAPHICS), 1, &submitInfo, inFlightFences[currentFrame]) != VK_SUCCESS) {
         throw std::runtime_error("failed to submit draw command buffer!");
     }
 }
@@ -325,12 +335,12 @@ void VulkanEngine::presentSwapchainImage(std::vector<VkSemaphore> wait_semaphore
     presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
     presentInfo.waitSemaphoreCount = static_cast<uint32_t>(wait_semaphore.size());
     presentInfo.pWaitSemaphores = wait_semaphore.data();
-    VkSwapchainKHR swapChains[] = {context->swapchain->handle};
+    VkSwapchainKHR swapChains[] = {vulkan_context->swapchain->handle};
     presentInfo.swapchainCount = 1;
     presentInfo.pSwapchains = swapChains;
     presentInfo.pImageIndices = &image_index;
 
-    VkResult result = vkQueuePresentKHR(context->device_manager->getQueue(PRESENT), &presentInfo);
+    VkResult result = vkQueuePresentKHR(vulkan_context->device_manager->getQueue(PRESENT), &presentInfo);
 
     if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || framebufferResized) {
         framebufferResized = false;
@@ -342,10 +352,10 @@ void VulkanEngine::presentSwapchainImage(std::vector<VkSemaphore> wait_semaphore
 }
 
 void VulkanEngine::refreshAfterResize() {
-    vkDeviceWaitIdle(context->device_manager->getDevice());
+    vkDeviceWaitIdle(vulkan_context->device_manager->getDevice());
 
     properties_manager->curr_sample_count = 0;
-    context->swapchain->recreate();
+    vulkan_context->swapchain->recreate();
     cleanupRenderingTargets();
     createRenderingTargets();
     guiManager->updateWindows();
@@ -407,14 +417,14 @@ void VulkanEngine::recordRenderToImage(VkCommandBuffer commandBuffer)
     vkCmdPushConstants(commandBuffer, pipeline.getLayoutHandle(), VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR | VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_MISS_BIT_KHR, 0, pc_size, pc_data);
 
     CmdTraceRaysKHR(
-        context->device_manager->getDevice(),
+        vulkan_context->device_manager->getDevice(),
         commandBuffer,
         &raygenShaderSbtEntry,
         &missShaderSbtEntry,
         &closestHitShaderSbtEntry,
         &callableShaderSbtEntry,
-        context->swapchain->extent.width,
-        context->swapchain->extent.height,
+        vulkan_context->swapchain->extent.width,
+        vulkan_context->swapchain->extent.height,
         1);
 
     properties_manager->curr_sample_count++;
@@ -423,8 +433,8 @@ void VulkanEngine::recordRenderToImage(VkCommandBuffer commandBuffer)
 void VulkanEngine::recordCopyToSwapchain(VkCommandBuffer commandBuffer, uint32_t swapchain_image_index)
 {
     AllocatedImage render_target = getRenderTarget();
-    std::shared_ptr<ResourceBuilder> resource_builder = context->resource_builder;
-    std::shared_ptr<Swapchain> swapchain = context->swapchain;
+    std::shared_ptr<ResourceBuilder> resource_builder = vulkan_context->resource_builder;
+    std::shared_ptr<Swapchain> swapchain = vulkan_context->swapchain;
 
     resource_builder->transitionImageLayout(commandBuffer, swapchain->images[swapchain_image_index],
         VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
@@ -476,21 +486,21 @@ void VulkanEngine::cleanup() {
 
 void VulkanEngine::cleanupRenderingTargets() {
     for (auto& image : render_targets) {
-        context->resource_builder->destroyImage(image);
+        vulkan_context->resource_builder->destroyImage(image);
     }
 
     for (auto& image : rng_textures)
     {
-        context->resource_builder->destroyImage(image);
+        vulkan_context->resource_builder->destroyImage(image);
     }
 }
 
 void VulkanEngine::outputRenderingTarget(const std::string& output_path)
 {
     AllocatedImage render_target = getRenderTarget();
-    void* data = context->resource_builder->downloadImage(render_target, sizeof(uint32_t));
+    void* data = vulkan_context->resource_builder->downloadImage(render_target, sizeof(uint32_t));
     uint8_t* fixed_data = fixImageFormatForStorage(data, render_target.imageExtent.width * render_target.imageExtent.height, render_target.imageFormat);
-    context->resource_builder->writePNG(output_path, fixed_data, render_target.imageExtent.width, render_target.imageExtent.height);
+    vulkan_context->resource_builder->writePNG(output_path, fixed_data, render_target.imageExtent.width, render_target.imageExtent.height);
 
     delete fixed_data;
 }
@@ -529,8 +539,8 @@ void VulkanEngine::initProperties()
 {
     renderer_properties = std::make_shared<PropertiesSection>(RENDERER_SECTION_NAME);
 
-    renderer_properties->addString(RESOURCES_DIR_OPTION_NAME, &context->base_options->resources_dir);
-    renderer_properties->addInt(RECURSION_DEPTH_OPTION_NAME, &context->base_options->max_depth, 1, 5);
+    renderer_properties->addString(RESOURCES_DIR_OPTION_NAME, &vulkan_context->base_options->resources_dir);
+    renderer_properties->addInt(RECURSION_DEPTH_OPTION_NAME, &vulkan_context->base_options->max_depth, 1, 5);
 
     initSceneSelectionProperty();
 }
@@ -538,7 +548,7 @@ void VulkanEngine::initProperties()
 void VulkanEngine::initSceneSelectionProperty()
 {
     assert(renderer_properties != nullptr);
-    std::string scenes_dir = context->base_options->resources_dir + "/scenes";
+    std::string scenes_dir = vulkan_context->base_options->resources_dir + "/scenes";
     std::vector<std::string> scenes;
     try {
         for (const auto& entry : std::filesystem::__cxx11::directory_iterator(scenes_dir)) {
@@ -552,8 +562,8 @@ void VulkanEngine::initSceneSelectionProperty()
     {
         throw std::runtime_error("No scenes found in scene directory " + scenes_dir + ".");
     }
-    context->base_options->curr_scene_name = scenes[0];
+    vulkan_context->base_options->curr_scene_name = scenes[0];
 
-    renderer_properties->addSelection(CURR_SCENE_OPTION_NAME, &context->base_options->curr_scene_name, scenes);
+    renderer_properties->addSelection(CURR_SCENE_OPTION_NAME, &vulkan_context->base_options->curr_scene_name, scenes);
 }
 }

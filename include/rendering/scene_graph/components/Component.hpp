@@ -2,6 +2,7 @@
 #define COMPONENT_HPP
 #include <IRenderable.hpp>
 #include <PropertiesManager.hpp>
+#include <RuntimeContext.hpp>
 #include <VulkanContext.hpp>
 
 namespace RtEngine {
@@ -12,7 +13,7 @@ static constexpr float FIXED_DELTA_TIME = 1.0f / 60.0f;
 class Component {
 public:
     Component() = default;
-    Component(std::shared_ptr<VulkanContext> context, std::shared_ptr<Node> node) : context(context), node(node) {};
+    Component(std::shared_ptr<RuntimeContext> context, std::shared_ptr<Node> node) : context(context), node(node) {};
     virtual ~Component() = default;
 
     virtual void OnStart() = 0;
@@ -37,7 +38,7 @@ public:
     };
 
     std::weak_ptr<Node> node;
-    std::shared_ptr<VulkanContext> context;
+    std::shared_ptr<RuntimeContext> context;
 
 protected:
     std::shared_ptr<PropertiesManager> properties;

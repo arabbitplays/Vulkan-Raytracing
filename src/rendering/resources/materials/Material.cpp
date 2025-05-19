@@ -22,7 +22,7 @@ void Material::clearRessources() {
     resetQueue.flush();
     mainDeletionQueue.flush();
     if (material_buffer.handle != VK_NULL_HANDLE)
-        context->resource_builder->destroyBuffer(material_buffer);
+        vulkan_context->resource_builder->destroyBuffer(material_buffer);
 }
 
 void Material::reset() {

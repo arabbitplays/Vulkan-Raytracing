@@ -13,7 +13,7 @@ void RealtimeRenderer::mainLoop() {
     while(!glfwWindowShouldClose(window)) {
         glfwPollEvents();
 
-        if (scene_manager->curr_scene_name != context->base_options->curr_scene_name) {
+        if (scene_manager->curr_scene_name != vulkan_context->base_options->curr_scene_name) {
             loadScene();
         }
         scene_manager->updateScene(mainDrawContext, currentFrame, getRenderTarget(), getRngTexture());
@@ -23,7 +23,7 @@ void RealtimeRenderer::mainLoop() {
         drawFrame();
     }
 
-    vkDeviceWaitIdle(context->device_manager->getDevice());
+    vkDeviceWaitIdle(vulkan_context->device_manager->getDevice());
 }
 
 AllocatedImage RealtimeRenderer::getRenderTarget()

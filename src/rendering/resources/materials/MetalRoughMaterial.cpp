@@ -11,8 +11,8 @@
 namespace RtEngine {
 void MetalRoughMaterial::buildPipelines(VkDescriptorSetLayout sceneLayout) {
     DescriptorLayoutBuilder layoutBuilder;
-    pipeline = std::make_shared<Pipeline>(context);
-    VkDevice device = context->device_manager->getDevice();
+    pipeline = std::make_shared<Pipeline>(vulkan_context);
+    VkDevice device = vulkan_context->device_manager->getDevice();
 
     layoutBuilder.addBinding(0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
     layoutBuilder.addBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 256);
@@ -21,7 +21,7 @@ void MetalRoughMaterial::buildPipelines(VkDescriptorSetLayout sceneLayout) {
 
     materialLayout = layoutBuilder.build(device, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR);
     mainDeletionQueue.pushFunction([&]() {
-        vkDestroyDescriptorSetLayout(context->device_manager->getDevice(), materialLayout, nullptr);
+        vkDestroyDescriptorSetLayout(vulkan_context->device_manager->getDevice(), materialLayout, nullptr);
     });
 
     std::vector<VkDescriptorSetLayout> descriptorSetLayouts{sceneLayout, materialLayout};
@@ -54,12 +54,12 @@ void MetalRoughMaterial::buildPipelines(VkDescriptorSetLayout sceneLayout) {
 void MetalRoughMaterial::writeMaterial() {
     if (material_buffer.handle != VK_NULL_HANDLE)
     {
-        context->resource_builder->destroyBuffer(material_buffer);
+        vulkan_context->resource_builder->destroyBuffer(material_buffer);
     }
 
     material_buffer = createMaterialBuffer();
 
-    materialDescriptorSet = descriptorAllocator.allocate(context->device_manager->getDevice(), materialLayout);
+    materialDescriptorSet = descriptorAllocator.allocate(vulkan_context->device_manager->getDevice(), materialLayout);
 
     descriptorAllocator.writeBuffer(0, material_buffer.handle, 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
 
@@ -76,7 +76,7 @@ void MetalRoughMaterial::writeMaterial() {
     descriptorAllocator.writeImages(1, extract_views(albedo_textures), sampler, VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
     descriptorAllocator.writeImages(2, extract_views(metal_rough_ao_textures), sampler, VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
     descriptorAllocator.writeImages(3, extract_views(normal_textures), sampler, VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
-    VkDevice device = context->device_manager->getDevice();
+    VkDevice device = vulkan_context->device_manager->getDevice();
     descriptorAllocator.updateSet(device, materialDescriptorSet);
     descriptorAllocator.clearWrites();
 }
@@ -98,7 +98,7 @@ std::shared_ptr<MetalRoughMaterial::MaterialResources> MetalRoughMaterial::creat
             }
         }
 
-        textures.push_back(context->texture_repository->getTexture(texture_name));
+        textures.push_back(runtime_context->texture_repository->getTexture(texture_name));
         return textures.size() - 1;
     };
 
@@ -175,7 +175,7 @@ AllocatedBuffer MetalRoughMaterial::createMaterialBuffer() {
     for (uint32_t i = 0; i < resources_buffer.size(); i++) {
         material_data.push_back(*resources_buffer[i]);
     }
-    return context->resource_builder->stageMemoryToNewBuffer(material_data.data(), material_data.size() * sizeof(MaterialResources), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
+    return vulkan_context->resource_builder->stageMemoryToNewBuffer(material_data.data(), material_data.size() * sizeof(MaterialResources), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
 }
 
 std::vector<std::shared_ptr<Texture>> MetalRoughMaterial::getTextures()

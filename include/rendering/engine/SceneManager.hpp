@@ -20,12 +20,13 @@ public:
     };
 
     SceneManager() = default;
-    SceneManager(std::shared_ptr<VulkanContext>& vulkanContext, uint32_t max_frames_in_flight, VkPhysicalDeviceRayTracingPipelinePropertiesKHR raytracingProperties) : context(vulkanContext), max_frames_in_flight(max_frames_in_flight) {
-        VkDevice device = context->device_manager->getDevice();
+    SceneManager(std::shared_ptr<VulkanContext>& vulkanContext, std::shared_ptr<RuntimeContext> runtime_context, uint32_t max_frames_in_flight, VkPhysicalDeviceRayTracingPipelinePropertiesKHR raytracingProperties)
+            : vulkan_context(vulkanContext), runtime_context(runtime_context), max_frames_in_flight(max_frames_in_flight) {
+        VkDevice device = vulkan_context->device_manager->getDevice();
 
-        geometry_manager = std::make_shared<GeometryManager>(context->resource_builder);
-        instance_manager = std::make_shared<InstanceManager>(context->resource_builder);
-        top_level_acceleration_structure = std::make_shared<AccelerationStructure>(device, *context->resource_builder, *context->command_manager, VK_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL_KHR);
+        geometry_manager = std::make_shared<GeometryManager>(vulkan_context->resource_builder);
+        instance_manager = std::make_shared<InstanceManager>(vulkan_context->resource_builder);
+        top_level_acceleration_structure = std::make_shared<AccelerationStructure>(device, *vulkan_context->resource_builder, *vulkan_context->command_manager, VK_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL_KHR);
 
         main_deletion_queue.pushFunction([&]()
         {
@@ -49,7 +50,8 @@ public:
     VkDescriptorSet getSceneDescriptorSet(uint32_t frame_index) const;
     uint32_t getEmittingInstancesCount();
 
-    std::shared_ptr<VulkanContext> context;
+    std::shared_ptr<VulkanContext> vulkan_context;
+    std::shared_ptr<RuntimeContext> runtime_context;
     std::shared_ptr<Scene> scene;
     uint32_t bufferUpdateFlags = 0;
     std::string curr_scene_name;

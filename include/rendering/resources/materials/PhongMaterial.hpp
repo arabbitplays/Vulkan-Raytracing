@@ -27,7 +27,7 @@ public:
         int32_t shadows, dispersion, fresnel;
     };
 
-    PhongMaterial(std::shared_ptr<VulkanContext> context) : Material(PHONG_MATERIAL_NAME, context) {}
+    PhongMaterial(std::shared_ptr<VulkanContext> context, std::shared_ptr<RuntimeContext> runtime_context) : Material(PHONG_MATERIAL_NAME, context, runtime_context) {}
 
     void buildPipelines(VkDescriptorSetLayout sceneLayout) override;
     void writeMaterial() override;

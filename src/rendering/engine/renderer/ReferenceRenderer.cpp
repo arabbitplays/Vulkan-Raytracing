@@ -12,8 +12,8 @@ void ReferenceRenderer::mainLoop() {
         // render one image and then output it if output path is defined
         if (sample_count == properties_manager->curr_sample_count)
         {
-            vkDeviceWaitIdle(context->device_manager->getDevice());
-            outputRenderingTarget(context->base_options->resources_dir + "/references/" + std::to_string(sample_count) + "_render.png");
+            vkDeviceWaitIdle(vulkan_context->device_manager->getDevice());
+            outputRenderingTarget(vulkan_context->base_options->resources_dir + "/references/" + std::to_string(sample_count) + "_render.png");
             break;
         }
 
@@ -22,13 +22,13 @@ void ReferenceRenderer::mainLoop() {
         drawFrame();
     }
 
-    vkDeviceWaitIdle(context->device_manager->getDevice());
+    vkDeviceWaitIdle(vulkan_context->device_manager->getDevice());
 }
 
 
 void ReferenceRenderer::drawFrame()
 {
-    vkWaitForFences(context->device_manager->getDevice(), 1, &inFlightFences[currentFrame], VK_TRUE, UINT64_MAX);
+    vkWaitForFences(vulkan_context->device_manager->getDevice(), 1, &inFlightFences[currentFrame], VK_TRUE, UINT64_MAX);
 
     uint32_t curr_sample_count = properties_manager->curr_sample_count;
     present_image = present_sample_count == curr_sample_count;
@@ -41,7 +41,7 @@ void ReferenceRenderer::drawFrame()
             return;
     }
 
-    vkResetFences(context->device_manager->getDevice(), 1, &inFlightFences[currentFrame]);
+    vkResetFences(vulkan_context->device_manager->getDevice(), 1, &inFlightFences[currentFrame]);
 
     scene_manager->updateScene(mainDrawContext, currentFrame, getRenderTarget(), getRngTexture());
     properties_manager->emitting_instances_count = scene_manager->getEmittingInstancesCount(); // TODO move this together with the creation of the instance buffers

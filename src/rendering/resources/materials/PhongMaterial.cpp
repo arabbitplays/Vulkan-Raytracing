@@ -14,14 +14,14 @@
 namespace RtEngine {
 void PhongMaterial::buildPipelines(VkDescriptorSetLayout sceneLayout) {
     DescriptorLayoutBuilder layoutBuilder;
-    pipeline = std::make_shared<Pipeline>(context);
-    VkDevice device = context->device_manager->getDevice();
+    pipeline = std::make_shared<Pipeline>(vulkan_context);
+    VkDevice device = vulkan_context->device_manager->getDevice();
 
     layoutBuilder.addBinding(0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
 
     materialLayout = layoutBuilder.build(device, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR);
     mainDeletionQueue.pushFunction([&]() {
-        vkDestroyDescriptorSetLayout(context->device_manager->getDevice(), materialLayout, nullptr);
+        vkDestroyDescriptorSetLayout(vulkan_context->device_manager->getDevice(), materialLayout, nullptr);
     });
 
     std::vector<VkDescriptorSetLayout> descriptorSetLayouts{sceneLayout, materialLayout};
@@ -54,10 +54,10 @@ void PhongMaterial::buildPipelines(VkDescriptorSetLayout sceneLayout) {
 void PhongMaterial::writeMaterial() {
     materialBuffer = createMaterialBuffer();
     resetQueue.pushFunction([&]() {
-        context->resource_builder->destroyBuffer(materialBuffer);
+        vulkan_context->resource_builder->destroyBuffer(materialBuffer);
     });
 
-    VkDevice device = context->device_manager->getDevice();
+    VkDevice device = vulkan_context->device_manager->getDevice();
     materialDescriptorSet = descriptorAllocator.allocate(device, materialLayout);
     descriptorAllocator.writeBuffer(0, materialBuffer.handle, 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
     descriptorAllocator.updateSet(device, materialDescriptorSet);
@@ -94,7 +94,7 @@ AllocatedBuffer PhongMaterial::createMaterialBuffer() {
         instances[i]->material_index = i;
         materialConstants.push_back(*resources_buffer[i]->constants);
     }
-    return context->resource_builder->stageMemoryToNewBuffer(materialConstants.data(), materialConstants.size() * sizeof(PhongMaterialConstants), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
+    return vulkan_context->resource_builder->stageMemoryToNewBuffer(materialConstants.data(), materialConstants.size() * sizeof(PhongMaterialConstants), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
 }
 
 std::vector<std::shared_ptr<PhongMaterial::MaterialResources>> PhongMaterial::getResources()

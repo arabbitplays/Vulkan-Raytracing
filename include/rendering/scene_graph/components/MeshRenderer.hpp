@@ -8,7 +8,7 @@ namespace RtEngine {
 class MeshRenderer : public Component {
 public:
     MeshRenderer() = default;
-    MeshRenderer(std::shared_ptr<VulkanContext> context, std::shared_ptr<Node> node) : Component(context, node) {};
+    MeshRenderer(std::shared_ptr<RuntimeContext> context, std::shared_ptr<Node> node) : Component(context, node) {};
 
     static constexpr std::string COMPONENT_NAME = "MeshRenderer";
 
