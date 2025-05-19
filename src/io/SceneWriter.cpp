@@ -35,7 +35,7 @@ void SceneWriter::writeScene(const std::string& filename, std::shared_ptr<Scene>
     out << YAML::Key << "meshes" << YAML::Value << YAML::BeginSeq;
     for (const auto& mesh : meshes) {
         out << YAML::BeginMap;
-        out << YAML::Key << "name" << YAML::Value << mesh->path;
+        out << YAML::Key << "path" << YAML::Value << mesh->path;
         out << YAML::EndMap;
     }
     out << YAML::EndSeq;
@@ -207,46 +207,52 @@ void SceneWriter::writeComponent(YAML::Emitter& out, const std::shared_ptr<Compo
     assert(sections.size() <= 1);
     if (sections.empty())
         return;
-    auto section = sections.at(0);
 
     out << YAML::BeginMap;
-    out << YAML::Key << "name" << YAML::Value << section->section_name;
 
-    for (auto& prop : section->bool_properties)
+    for (auto& section: sections)
     {
-        if (prop->flags & PERSISTENT_PROPERTY_FLAG)
-            out << YAML::Key << prop->name << YAML::Value << *prop->var;
-    }
+        out << YAML::Key << section->section_name << YAML::BeginMap;
 
-    for (auto& prop : section->float_properties)
-    {
-        if (prop->flags & PERSISTENT_PROPERTY_FLAG)
-            out << YAML::Key << prop->name << YAML::Value << *prop->var;
-    }
+        for (auto& prop : section->bool_properties)
+        {
+            if (prop->flags & PERSISTENT_PROPERTY_FLAG)
+                out << YAML::Key << prop->name << YAML::Value << *prop->var;
+        }
 
-    for (auto& prop : section->int_properties)
-    {
-        if (prop->flags & PERSISTENT_PROPERTY_FLAG)
-            out << YAML::Key << prop->name << YAML::Value << *prop->var;
-    }
+        for (auto& prop : section->float_properties)
+        {
+            if (prop->flags & PERSISTENT_PROPERTY_FLAG)
+                out << YAML::Key << prop->name << YAML::Value << *prop->var;
+        }
 
-    for (auto& prop : section->string_properties)
-    {
-        if (prop->flags & PERSISTENT_PROPERTY_FLAG)
-            out << YAML::Key << prop->name << YAML::Value << *prop->var;
-    }
+        for (auto& prop : section->int_properties)
+        {
+            if (prop->flags & PERSISTENT_PROPERTY_FLAG)
+                out << YAML::Key << prop->name << YAML::Value << *prop->var;
+        }
 
-    for (auto& prop : section->vector_properties)
-    {
-        if (prop->flags & PERSISTENT_PROPERTY_FLAG)
-            out << YAML::Key << prop->name << YAML::Value << YAML::convert<glm::vec3>::encode(*prop->var);
-    }
+        for (auto& prop : section->string_properties)
+        {
+            if (prop->flags & PERSISTENT_PROPERTY_FLAG)
+                out << YAML::Key << prop->name << YAML::Value << *prop->var;
+        }
 
-    for (auto& prop : section->selection_properties)
-    {
-        if (prop->flags & PERSISTENT_PROPERTY_FLAG)
-            out << YAML::Key << prop->name << YAML::Value << *prop->var;
+        for (auto& prop : section->vector_properties)
+        {
+            if (prop->flags & PERSISTENT_PROPERTY_FLAG)
+                out << YAML::Key << prop->name << YAML::Value << YAML::convert<glm::vec3>::encode(*prop->var);
+        }
+
+        for (auto& prop : section->selection_properties)
+        {
+            if (prop->flags & PERSISTENT_PROPERTY_FLAG)
+                out << YAML::Key << prop->name << YAML::Value << *prop->var;
+        }
+
+        out << YAML::EndMap;
     }
+    auto section = sections.at(0);
 
     out << YAML::EndMap;
 }

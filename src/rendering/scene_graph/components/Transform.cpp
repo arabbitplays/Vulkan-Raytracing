@@ -1,7 +1,7 @@
 #include <Transform.hpp>
 
 namespace RtEngine {
-Transform::Transform() : Component(nullptr) {
+Transform::Transform() : Component(nullptr, nullptr) {
     localTransform = glm::mat4(1);
     worldTransform = glm::mat4(1);
 }
@@ -26,21 +26,16 @@ glm::mat4 Transform::getWorldTransform() const {
 	return worldTransform;
 }
 
-std::shared_ptr<PropertiesManager> Transform::getProperties()
+void Transform::definePropertySections()
 {
-	if (properties != nullptr)
-		return properties;
+	assert(properties != nullptr);
 
-	properties = std::make_shared<PropertiesManager>();
-
-	auto section = std::make_shared<PropertiesSection>("Transform");
+	auto section = std::make_shared<PropertiesSection>(COMPONENT_NAME);
 
 	section->addVector("Position", &decomposed_transform.translation);
 	section->addVector("Rotation", &decomposed_transform.rotation);
 	section->addVector("Scale", &decomposed_transform.scale);
 
 	properties->addPropertySection(section);
-
-	return properties;
 }
 }

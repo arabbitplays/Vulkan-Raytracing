@@ -9,7 +9,8 @@
 #include <YAML_glm.hpp>
 #include <TransformUtil.hpp>
 
-namespace RtEngine {
+namespace RtEngine
+{
 std::shared_ptr<Scene> SceneReader::readScene(const std::string& filename, std::unordered_map<std::string, std::shared_ptr<Material>> materials)
 {
     QuickTimer quick_timer("Reading scene from file");
@@ -156,45 +157,46 @@ void SceneReader::initializeMaterial(const YAML::Node& material_node, std::share
 
 std::shared_ptr<Node> SceneReader::processSceneNodesRecursiv(const YAML::Node& yaml_node, const std::shared_ptr<Scene>& scene, const std::vector<std::shared_ptr<MaterialInstance>>& instances)
 {
-    if (yaml_node["mesh"]) // construct a mesh node
+    std::shared_ptr<Node> scene_graph_node = std::make_shared<Node>();
+    scene_graph_node->name = yaml_node["name"].as<std::string>();
+    readComponents(yaml_node, scene_graph_node, instances);
+    scene_graph_node->children = {};
+    for (auto& child_node : yaml_node["children"])
     {
-        std::shared_ptr<Node> scene_graph_node = std::make_shared<Node>();
-        scene_graph_node->name = yaml_node["name"].as<std::string>();
-        scene_graph_node->transform->setLocalTransform(TransformUtil::recomposeMatrix({yaml_node["translation"].as<glm::vec3>(), yaml_node["rotation"].as<glm::vec3>(), yaml_node["scale"].as<glm::vec3>()}));
-        scene_graph_node->children = {};
-        for (auto& child_node : yaml_node["children"])
-        {
-            scene_graph_node->children.push_back(processSceneNodesRecursiv(child_node, scene, instances));
-        }
-        std::shared_ptr<MeshRenderer> mesh_component = std::make_shared<MeshRenderer>(scene_graph_node);
-        mesh_component->meshAsset = context->mesh_repository->getMesh(yaml_node["mesh"].as<std::string>());
-        mesh_component->meshMaterial = instances.at(yaml_node["material_idx"].as<int>());
-        scene_graph_node->addComponent(mesh_component);
-        scene_graph_node->refreshTransform(glm::mat4(1.0f));
+        scene_graph_node->children.push_back(processSceneNodesRecursiv(child_node, scene, instances));
+    }
+    scene_graph_node->refreshTransform(glm::mat4(1.0f));
 
-        // TODO remove
-        if (scene_graph_node->name == "Physics")
-        {
-            std::shared_ptr<Rigidbody> rb = std::make_shared<Rigidbody>(scene_graph_node);
-            scene_graph_node->addComponent(rb);
-        }
+    scene->addNode(scene_graph_node->name, scene_graph_node);
+    return scene_graph_node;
+}
 
-        scene->addNode(scene_graph_node->name, scene_graph_node);
-        return scene_graph_node;
-    } else // construct a plain node
+void SceneReader::readComponents(const YAML::Node& yaml_node, std::shared_ptr<Node>& scene_node, const std::vector<std::shared_ptr<MaterialInstance>>& instances)
+{
+    for (auto& comp_node : yaml_node["components"])
     {
-        std::shared_ptr<Node> scene_graph_node = std::make_shared<Node>();
-        scene_graph_node->name = yaml_node["name"].as<std::string>();
-        scene_graph_node->transform->setLocalTransform(TransformUtil::recomposeMatrix({yaml_node["translation"].as<glm::vec3>(), yaml_node["rotation"].as<glm::vec3>(), yaml_node["scale"].as<glm::vec3>()}));
-        scene_graph_node->children = {};
-        for (auto& child_node : yaml_node["children"])
+        std::string comp_name = "";
+        YAML::Node section_node;
+        for (auto& pair:comp_node)
         {
-            scene_graph_node->children.push_back(processSceneNodesRecursiv(child_node, scene, instances));
+            comp_name = pair.first.as<std::string>();
+            section_node = comp_node[comp_name];
         }
-        scene_graph_node->refreshTransform(glm::mat4(1.0f));
-
-        scene->addNode(scene_graph_node->name, scene_graph_node);
-        return scene_graph_node;
+        if (comp_name == Transform::COMPONENT_NAME)
+        {
+            scene_node->transform->initProperties(comp_node);
+            scene_node->transform->updateTransforms(glm::mat4(1.0f));
+        } else if (comp_name == MeshRenderer::COMPONENT_NAME) {
+            std::shared_ptr<MeshRenderer> mesh_component = std::make_shared<MeshRenderer>(context, scene_node);
+            mesh_component->meshAsset = context->mesh_repository->getMesh(section_node["mesh"].as<std::string>());
+            mesh_component->meshMaterial = instances.at(section_node["material_idx"].as<int>());
+            scene_node->addComponent(mesh_component);
+        } else if (comp_name == Rigidbody::COMPONENT_NAME)
+        {
+            auto rb = std::make_shared<Rigidbody>(scene_node);
+            rb->initProperties(comp_node);
+            scene_node->addComponent(rb);
+        }
     }
 }
 }

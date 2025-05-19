@@ -11,16 +11,18 @@ namespace RtEngine
 class Rigidbody : public Component {
 public:
     Rigidbody() = default;
-    Rigidbody(std::shared_ptr<Node> node) : Component(node) {};
+    Rigidbody(std::shared_ptr<Node> node) : Component(nullptr, node) {};
+
+    static constexpr std::string COMPONENT_NAME = "Rigidbody";
 
     void OnStart() override {};
     void OnRender(DrawContext &ctx) override {};
     void OnUpdate() override;
 
-    std::shared_ptr<PropertiesManager> getProperties() override;
+    void definePropertySections() override;
 
 private:
-    float gravity = 1.0f;
+    float gravity = 0.0f;
 };
 }
 

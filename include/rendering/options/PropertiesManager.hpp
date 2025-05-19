@@ -69,6 +69,7 @@ class PropertiesManager {
 public:
     PropertiesManager() = default;
     PropertiesManager(const std::string& config_file_path);
+    PropertiesManager(const YAML::Node& config);
 
     void addPropertySection(const std::shared_ptr<PropertiesSection>& properties, uint32_t flags = ALL_PROPERTY_FLAGS);
     void* getPushConstants(uint32_t* size);

@@ -206,7 +206,7 @@ void VulkanEngine::loadScene()
     properties_manager->addPropertySection(scene_manager->scene->material->getProperties());
 
     SceneWriter writer;
-    writer.writeScene(scene_manager->curr_scene_name + ".yaml", scene_manager->scene);
+    writer.writeScene(scene_manager->curr_scene_name, scene_manager->scene);
 }
 
 void VulkanEngine::createCommandBuffers() {

@@ -2,7 +2,6 @@
 #include <Node.hpp>
 
 namespace RtEngine {
-MeshRenderer::MeshRenderer(std::shared_ptr<Node> node) : Component(node) {}
 
 void MeshRenderer::OnRender(DrawContext& ctx)
 {
@@ -16,16 +15,11 @@ void MeshRenderer::OnRender(DrawContext& ctx)
     ctx.objects.push_back(RenderObject{InstanceData{meshAsset->geometry_id, meshMaterial->material_index}, meshAsset->accelerationStructure, nodeMatrix, meshAsset->triangle_count});
 }
 
-std::shared_ptr<PropertiesManager> MeshRenderer::getProperties()
+void MeshRenderer::definePropertySections()
 {
-    if (!properties)
-    {
-        properties = std::make_shared<PropertiesManager>();
-    }
+    assert(properties != nullptr);
 
-    properties->property_sections.clear();
-
-    auto mesh_renderer_section = std::make_shared<PropertiesSection>("MeshRenderer");
+    auto mesh_renderer_section = std::make_shared<PropertiesSection>(COMPONENT_NAME);
     mesh_renderer_section->addInt("material_idx", reinterpret_cast<int32_t*>(&meshMaterial->material_index),PERSISTENT_PROPERTY_FLAG);
     mesh_renderer_section->addString("mesh", &meshAsset->name, PERSISTENT_PROPERTY_FLAG);
     properties->addPropertySection(mesh_renderer_section);
@@ -34,7 +28,5 @@ std::shared_ptr<PropertiesManager> MeshRenderer::getProperties()
     {
         properties->addPropertySection(meshMaterial->properties, SERIALIZABLE_PROPERTY_FLAG);
     }
-
-    return properties;
 }
 }

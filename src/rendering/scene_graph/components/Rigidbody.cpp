@@ -17,20 +17,14 @@ void Rigidbody::OnUpdate()
     shared_node->transform->decomposed_transform.translation.y -= gravity * FIXED_DELTA_TIME;
 }
 
-std::shared_ptr<PropertiesManager> Rigidbody::getProperties()
+void Rigidbody::definePropertySections()
 {
-    if (properties != nullptr)
-        return properties;
-
-    properties = std::make_shared<PropertiesManager>();
-
-    auto section = std::make_shared<PropertiesSection>("Rigidbody");
+    assert(properties != nullptr);
+    auto section = std::make_shared<PropertiesSection>(COMPONENT_NAME);
 
     section->addFloat("Gravity", &gravity);
 
     properties->addPropertySection(section);
-
-    return properties;
 }
 
 

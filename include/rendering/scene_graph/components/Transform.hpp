@@ -9,12 +9,13 @@ namespace RtEngine {
 class Transform : public Component {
 public:
     Transform();
+    static constexpr std::string COMPONENT_NAME = "Transform";
 
     void OnStart() override {};
     void OnRender(DrawContext& ctx) override {};
     void OnUpdate() override {};
 
-    std::shared_ptr<PropertiesManager> getProperties() override;
+    void definePropertySections() override;
 
     void setLocalTransform(glm::mat4 transform_matrix);
     glm::mat4 getLocalTransform() const;

@@ -2,7 +2,7 @@
 #define CONFIGLOADER_HPP
 
 #include <optional>
-#include <yaml-cpp/yaml.h>
+#include <YAML_glm.hpp>
 
 namespace RtEngine {
 class ConfigLoader {
@@ -11,6 +11,8 @@ public:
     {
         loadConfig(file_path);
     }
+
+    ConfigLoader(YAML::Node config) : config(config) {}
 
     template<typename T>
     std::optional<T> getConfigValue(const std::string& section_name, const std::string& key)

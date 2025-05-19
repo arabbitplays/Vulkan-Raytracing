@@ -8,12 +8,14 @@ namespace RtEngine {
 class MeshRenderer : public Component {
 public:
     MeshRenderer() = default;
-    MeshRenderer(std::shared_ptr<Node> node);
+    MeshRenderer(std::shared_ptr<VulkanContext> context, std::shared_ptr<Node> node) : Component(context, node) {};
+
+    static constexpr std::string COMPONENT_NAME = "MeshRenderer";
 
     void OnStart() override {};
     void OnRender(DrawContext &ctx) override;
     void OnUpdate() override {};
-    std::shared_ptr<PropertiesManager> getProperties() override;
+    void definePropertySections() override;
 
     std::shared_ptr<MeshAsset> meshAsset;
     std::shared_ptr<MaterialInstance> meshMaterial;

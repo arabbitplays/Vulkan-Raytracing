@@ -11,6 +11,11 @@ PropertiesManager::PropertiesManager(const std::string& config_file_path)
     config = std::make_shared<ConfigLoader>(config_file_path);
 }
 
+PropertiesManager::PropertiesManager(const YAML::Node& config_node)
+{
+    config = std::make_shared<ConfigLoader>(config_node);
+}
+
 void PropertiesManager::addPropertySection(const std::shared_ptr<PropertiesSection>& section, uint32_t flags)
 {
     if (section == nullptr)
@@ -23,9 +28,10 @@ void PropertiesManager::addPropertySection(const std::shared_ptr<PropertiesSecti
 
 void PropertiesManager::initSectionWithConfig(const std::shared_ptr<PropertiesSection>& section)
 {
-    // TODO add other property types here
     for (auto& bool_prop : section->bool_properties)
     {
+        if (!(bool_prop->flags & PERSISTENT_PROPERTY_FLAG))
+            continue;
         std::optional<bool> config_value = config->getConfigValue<bool>(section->section_name, bool_prop->name);
         if (config_value.has_value())
         {
@@ -36,6 +42,8 @@ void PropertiesManager::initSectionWithConfig(const std::shared_ptr<PropertiesSe
 
     for (auto& int_prop : section->int_properties)
     {
+        if (!(int_prop->flags & PERSISTENT_PROPERTY_FLAG))
+            continue;
         std::optional<int32_t> config_value = config->getConfigValue<int32_t>(section->section_name, int_prop->name);
         if (config_value.has_value())
         {
@@ -43,8 +51,21 @@ void PropertiesManager::initSectionWithConfig(const std::shared_ptr<PropertiesSe
         }
     }
 
+    for (auto& float_prop : section->float_properties)
+    {
+        if (!(float_prop->flags & PERSISTENT_PROPERTY_FLAG))
+            continue;
+        std::optional<float> config_value = config->getConfigValue<float>(section->section_name, float_prop->name);
+        if (config_value.has_value())
+        {
+            *float_prop->var = config_value.value();
+        }
+    }
+
     for (auto& string_prop : section->string_properties)
     {
+        if (!(string_prop->flags & PERSISTENT_PROPERTY_FLAG))
+            continue;
         std::optional<std::string> config_value = config->getConfigValue<std::string>(section->section_name, string_prop->name);
         if (config_value.has_value())
         {
@@ -52,8 +73,21 @@ void PropertiesManager::initSectionWithConfig(const std::shared_ptr<PropertiesSe
         }
     }
 
+    for (auto& vector_prop : section->vector_properties)
+    {
+        if (!(vector_prop->flags & PERSISTENT_PROPERTY_FLAG))
+            continue;
+        std::optional<glm::vec3> config_value = config->getConfigValue<glm::vec3>(section->section_name, vector_prop->name);
+        if (config_value.has_value())
+        {
+            *vector_prop->var = config_value.value();
+        }
+    }
+
     for (auto& selection_prop : section->selection_properties)
     {
+        if (!(selection_prop->flags & PERSISTENT_PROPERTY_FLAG))
+            continue;
         std::optional<std::string> config_value = config->getConfigValue<std::string>(section->section_name, selection_prop->name);
         if (config_value.has_value())
         {
