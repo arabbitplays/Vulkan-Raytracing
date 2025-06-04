@@ -1,42 +1,37 @@
 #ifndef OPTIONSUI_HPP
 #define OPTIONSUI_HPP
 #include <GuiWindow.hpp>
+#include <PropertiesManager.hpp>
 #include <bits/shared_ptr.h>
 #include <glm/fwd.hpp>
-#include <PropertiesManager.hpp>
 
 namespace RtEngine {
-class OptionsWindow final : public GuiWindow {
-public:
-    OptionsWindow() : GuiWindow() {}
-    explicit OptionsWindow(std::shared_ptr<PropertiesManager> props_manager)
-        : GuiWindow(props_manager) {}
+	class OptionsWindow final : public GuiWindow {
+	public:
+		OptionsWindow() : GuiWindow() {}
+		explicit OptionsWindow(std::shared_ptr<PropertiesManager> props_manager) : GuiWindow(props_manager) {}
 
-    void createFrame() override;
+		void createFrame() override;
 
+	private:
+		struct ImguiOptions {
+			bool shadows, fresnel, dispersion, normal_mapping;
+			bool sample_light;
+			bool sample_brdf;
+			int curr_scene;
+		};
 
-private:
-    struct ImguiOptions {
-        bool shadows, fresnel, dispersion, normal_mapping;
-        bool sample_light;
-        bool sample_brdf;
-        int curr_scene;
-    };
+		ImguiOptions imgui_options{
+				.shadows = true,
+				.fresnel = true,
+				.dispersion = false,
+				.normal_mapping = true,
+				.sample_light = false,
+				.sample_brdf = true,
+		};
 
-    ImguiOptions imgui_options {
-        .shadows = true,
-        .fresnel = true,
-        .dispersion = false,
-        .normal_mapping = true,
-        .sample_light = false,
-        .sample_brdf = true,
-    };
+	protected:
+	};
 
-
-protected:
-};
-
-
-
-}
-#endif //OPTIONSUI_HPP
+} // namespace RtEngine
+#endif // OPTIONSUI_HPP

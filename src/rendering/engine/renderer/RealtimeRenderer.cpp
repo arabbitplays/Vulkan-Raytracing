@@ -6,33 +6,28 @@
 
 #define SAMPLES_PER_PIXEL 100
 
-namespace RtEngine
-{
-void RealtimeRenderer::mainLoop() {
-    properties_manager->samples_per_pixel = SAMPLES_PER_PIXEL;
-    while(!glfwWindowShouldClose(window)) {
-        glfwPollEvents();
+namespace RtEngine {
+	void RealtimeRenderer::mainLoop() {
+		properties_manager->samples_per_pixel = SAMPLES_PER_PIXEL;
+		while (!glfwWindowShouldClose(window)) {
+			glfwPollEvents();
 
-        if (scene_manager->curr_scene_name != vulkan_context->base_options->curr_scene_name) {
-            loadScene();
-        }
-        scene_manager->updateScene(mainDrawContext, currentFrame, getRenderTarget(), getRngTexture());
-        properties_manager->emitting_instances_count = scene_manager->getEmittingInstancesCount(); // TODO move this together with the creation of the instance buffers
+			if (scene_manager->curr_scene_name != vulkan_context->base_options->curr_scene_name) {
+				loadScene();
+			}
+			scene_manager->updateScene(mainDrawContext, currentFrame, getRenderTarget(), getRngTexture());
+			properties_manager->emitting_instances_count =
+					scene_manager->getEmittingInstancesCount(); // TODO move this together with the creation of the
+																// instance buffers
 
-        properties_manager->curr_sample_count = 0;
-        drawFrame();
-    }
+			properties_manager->curr_sample_count = 0;
+			drawFrame();
+		}
 
-    vkDeviceWaitIdle(vulkan_context->device_manager->getDevice());
-}
+		vkDeviceWaitIdle(vulkan_context->device_manager->getDevice());
+	}
 
-AllocatedImage RealtimeRenderer::getRenderTarget()
-{
-    return render_targets[currentFrame];
-}
+	AllocatedImage RealtimeRenderer::getRenderTarget() { return render_targets[currentFrame]; }
 
-AllocatedImage RealtimeRenderer::getRngTexture()
-{
-    return rng_textures[currentFrame];
-}
-}
+	AllocatedImage RealtimeRenderer::getRngTexture() { return rng_textures[currentFrame]; }
+} // namespace RtEngine

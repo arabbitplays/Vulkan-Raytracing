@@ -5,32 +5,31 @@
 #ifndef INSTANCEMANAGER_HPP
 #define INSTANCEMANAGER_HPP
 
-#include <VulkanContext.hpp>
-#include <Material.hpp>
 #include <IRenderable.hpp>
+#include <Material.hpp>
+#include <VulkanContext.hpp>
 
 namespace RtEngine {
-class InstanceManager {
-public:
-  InstanceManager() = default;
-  InstanceManager(std::shared_ptr<ResourceBuilder> resource_builder) : resource_builder(resource_builder) {}
+	class InstanceManager {
+	public:
+		InstanceManager() = default;
+		InstanceManager(std::shared_ptr<ResourceBuilder> resource_builder) : resource_builder(resource_builder) {}
 
-  void createInstanceMappingBuffer(std::vector<RenderObject> &objects);
-  void createEmittingInstancesBuffer(std::vector<RenderObject> &objects, std::shared_ptr<Material> material);
+		void createInstanceMappingBuffer(std::vector<RenderObject> &objects);
+		void createEmittingInstancesBuffer(std::vector<RenderObject> &objects, std::shared_ptr<Material> material);
 
-  AllocatedBuffer getInstanceBuffer() const;
-  AllocatedBuffer getEmittingInstancesBuffer() const;
-  uint32_t getEmittingInstancesCount() const;
+		AllocatedBuffer getInstanceBuffer() const;
+		AllocatedBuffer getEmittingInstancesBuffer() const;
+		uint32_t getEmittingInstancesCount() const;
 
-  void destroy();
+		void destroy();
 
-private:
-  std::shared_ptr<ResourceBuilder> resource_builder;
+	private:
+		std::shared_ptr<ResourceBuilder> resource_builder;
 
-  AllocatedBuffer instance_mapping_buffer, emitting_instances_buffer;
-  uint32_t emitting_instances_count;
+		AllocatedBuffer instance_mapping_buffer, emitting_instances_buffer;
+		uint32_t emitting_instances_count;
+	};
+} // namespace RtEngine
 
-};
-}
-
-#endif //INSTANCEMANAGER_HPP
+#endif // INSTANCEMANAGER_HPP

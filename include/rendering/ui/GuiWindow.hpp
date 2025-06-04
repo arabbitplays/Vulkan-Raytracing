@@ -1,25 +1,22 @@
 #ifndef GUIWINDOW_HPP
 #define GUIWINDOW_HPP
-#include <memory>
 #include <PropertiesManager.hpp>
-
+#include <memory>
 
 namespace RtEngine {
-class GuiWindow {
-public:
-    GuiWindow() = default;
-    GuiWindow(std::shared_ptr<PropertiesManager> main_props_manager) : main_props_manager(main_props_manager) {};
+	class GuiWindow {
+	public:
+		GuiWindow() = default;
+		GuiWindow(std::shared_ptr<PropertiesManager> main_props_manager) : main_props_manager(main_props_manager){};
 
-    virtual ~GuiWindow() = default;
+		virtual ~GuiWindow() = default;
 
-    virtual void createFrame() = 0;
+		virtual void createFrame() = 0;
 
-protected:
-    bool show_window = true;
-    std::shared_ptr<PropertiesManager> main_props_manager;
-};
+	protected:
+		bool show_window = true;
+		std::shared_ptr<PropertiesManager> main_props_manager;
+	};
 
-
-
-}
-#endif //GUIWINDOW_HPP
+} // namespace RtEngine
+#endif // GUIWINDOW_HPP

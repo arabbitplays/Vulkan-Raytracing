@@ -5,25 +5,23 @@
 #include <Material.hpp>
 
 namespace RtEngine {
-class MeshRenderer : public Component {
-public:
-    MeshRenderer() = default;
-    MeshRenderer(std::shared_ptr<RuntimeContext> context, std::shared_ptr<Node> node) : Component(context, node) {};
+	class MeshRenderer : public Component {
+	public:
+		MeshRenderer() = default;
+		MeshRenderer(std::shared_ptr<RuntimeContext> context, std::shared_ptr<Node> node) : Component(context, node){};
 
-    static constexpr std::string COMPONENT_NAME = "MeshRenderer";
+		static constexpr std::string COMPONENT_NAME = "MeshRenderer";
 
-    void OnStart() override {};
-    void OnRender(DrawContext &ctx) override;
-    void OnUpdate() override {};
+		void OnStart() override {};
+		void OnRender(DrawContext &ctx) override;
+		void OnUpdate() override {};
 
-    void definePropertySections() override;
-    void initProperties(const YAML::Node& config_node) override;
+		void definePropertySections() override;
+		void initProperties(const YAML::Node &config_node) override;
 
-    std::shared_ptr<MeshAsset> meshAsset;
-    std::shared_ptr<MaterialInstance> meshMaterial;
-};
+		std::shared_ptr<MeshAsset> meshAsset;
+		std::shared_ptr<MaterialInstance> meshMaterial;
+	};
 
-
-
-}
-#endif //MESHRENDERER_HPP
+} // namespace RtEngine
+#endif // MESHRENDERER_HPP

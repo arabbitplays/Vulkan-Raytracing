@@ -3,115 +3,108 @@
 
 namespace RtEngine {
 
+	void GeometryManager::createGeometryBuffers(std::vector<std::shared_ptr<MeshAsset>> &mesh_assets) {
+		vertex_buffer = createVertexBuffer(mesh_assets);
+		index_buffer = createIndexBuffer(mesh_assets);
+		geometry_mapping_buffer = createGeometryMappingBuffer(mesh_assets);
+	}
 
+	AllocatedBuffer GeometryManager::createVertexBuffer(std::vector<std::shared_ptr<MeshAsset>> &mesh_assets) const {
+		assert(!mesh_assets.empty());
 
-void GeometryManager::createGeometryBuffers(std::vector<std::shared_ptr<MeshAsset>>& mesh_assets)
-{
-    vertex_buffer = createVertexBuffer(mesh_assets);
-    index_buffer = createIndexBuffer(mesh_assets);
-    geometry_mapping_buffer = createGeometryMappingBuffer(mesh_assets);
-}
+		if (vertex_buffer.handle != VK_NULL_HANDLE) {
+			resource_builder->destroyBuffer(vertex_buffer);
+		}
 
+		VkDeviceSize size = 0;
+		for (auto &mesh_asset: mesh_assets) {
+			size += mesh_asset->meshBuffers.vertices.size();
+		}
 
-AllocatedBuffer GeometryManager::createVertexBuffer(std::vector<std::shared_ptr<MeshAsset>>& mesh_assets) const
-{
-    assert(!mesh_assets.empty());
+		std::vector<Vertex> vertices(size);
 
-    if (vertex_buffer.handle != VK_NULL_HANDLE)
-    {
-        resource_builder->destroyBuffer(vertex_buffer);
-    }
+		uint32_t vertex_offset = 0;
+		for (auto &mesh_asset: mesh_assets) {
+			vertices.insert(vertices.begin() + vertex_offset, mesh_asset->meshBuffers.vertices.begin(),
+							mesh_asset->meshBuffers.vertices.end());
 
-    VkDeviceSize size =  0;
-    for (auto& mesh_asset : mesh_assets) {
-        size += mesh_asset->meshBuffers.vertices.size();
-    }
+			mesh_asset->instance_data.vertex_offset = vertex_offset;
+			vertex_offset += mesh_asset->meshBuffers.vertices.size();
+		}
 
-    std::vector<Vertex> vertices(size);
+		return resource_builder->stageMemoryToNewBuffer(
+				vertices.data(), vertices.size() * sizeof(Vertex),
+				VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR |
+						VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
+	}
 
-    uint32_t vertex_offset = 0;
-    for (auto& mesh_asset : mesh_assets) {
-        vertices.insert(vertices.begin() + vertex_offset, mesh_asset->meshBuffers.vertices.begin(), mesh_asset->meshBuffers.vertices.end());
+	AllocatedBuffer GeometryManager::createIndexBuffer(std::vector<std::shared_ptr<MeshAsset>> &mesh_assets) const {
+		assert(!mesh_assets.empty());
 
-        mesh_asset->instance_data.vertex_offset = vertex_offset;
-        vertex_offset += mesh_asset->meshBuffers.vertices.size();
-    }
+		if (index_buffer.handle != VK_NULL_HANDLE) {
+			resource_builder->destroyBuffer(index_buffer);
+		}
 
-    return resource_builder->stageMemoryToNewBuffer(vertices.data(), vertices.size() * sizeof(Vertex), VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR
-        | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
-}
+		VkDeviceSize size = 0;
+		for (auto &mesh_asset: mesh_assets) {
+			size += mesh_asset->meshBuffers.indices.size();
+		}
 
-AllocatedBuffer GeometryManager::createIndexBuffer(std::vector<std::shared_ptr<MeshAsset>>& mesh_assets) const
-{
-    assert(!mesh_assets.empty());
+		std::vector<uint32_t> indices(size);
 
-    if (index_buffer.handle != VK_NULL_HANDLE)
-    {
-        resource_builder->destroyBuffer(index_buffer);
-    }
+		uint32_t index_offset = 0;
+		for (auto &mesh_asset: mesh_assets) {
+			indices.insert(indices.begin() + index_offset, mesh_asset->meshBuffers.indices.begin(),
+						   mesh_asset->meshBuffers.indices.end());
 
-    VkDeviceSize size =  0;
-    for (auto& mesh_asset : mesh_assets) {
-        size += mesh_asset->meshBuffers.indices.size();
-    }
+			mesh_asset->instance_data.triangle_offset = index_offset;
+			index_offset += mesh_asset->meshBuffers.indices.size();
+		}
 
-    std::vector<uint32_t> indices(size);
+		return resource_builder->stageMemoryToNewBuffer(
+				indices.data(), indices.size() * sizeof(uint32_t),
+				VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR |
+						VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
+	}
 
-    uint32_t index_offset = 0;
-    for (auto& mesh_asset : mesh_assets) {
-        indices.insert(indices.begin() + index_offset, mesh_asset->meshBuffers.indices.begin(), mesh_asset->meshBuffers.indices.end());
+	AllocatedBuffer
+	GeometryManager::createGeometryMappingBuffer(std::vector<std::shared_ptr<MeshAsset>> &mesh_assets) const {
+		assert(!mesh_assets.empty());
 
-        mesh_asset->instance_data.triangle_offset = index_offset;
-        index_offset += mesh_asset->meshBuffers.indices.size();
-    }
+		if (geometry_mapping_buffer.handle != VK_NULL_HANDLE) {
+			resource_builder->destroyBuffer(geometry_mapping_buffer);
+		}
 
-    return resource_builder->stageMemoryToNewBuffer(indices.data(), indices.size() * sizeof(uint32_t), VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR
-        | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
-}
+		std::vector<GeometryData> geometry_datas;
+		for (auto &mesh_asset: mesh_assets) {
+			geometry_datas.push_back(mesh_asset->instance_data);
+		}
+		return resource_builder->stageMemoryToNewBuffer(
+				geometry_datas.data(), mesh_assets.size() * sizeof(GeometryData), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
+	}
 
-AllocatedBuffer GeometryManager::createGeometryMappingBuffer(std::vector<std::shared_ptr<MeshAsset>>& mesh_assets) const
-{
-    assert(!mesh_assets.empty());
+	AllocatedBuffer GeometryManager::getVertexBuffer() const {
+		assert(vertex_buffer.handle != VK_NULL_HANDLE);
+		return vertex_buffer;
+	}
 
-    if (geometry_mapping_buffer.handle != VK_NULL_HANDLE)
-    {
-        resource_builder->destroyBuffer(geometry_mapping_buffer);
-    }
+	AllocatedBuffer GeometryManager::getIndexBuffer() const {
+		assert(index_buffer.handle != VK_NULL_HANDLE);
+		return index_buffer;
+	}
 
-    std::vector<GeometryData> geometry_datas;
-    for (auto& mesh_asset : mesh_assets) {
-        geometry_datas.push_back(mesh_asset->instance_data);
-    }
-    return resource_builder->stageMemoryToNewBuffer(geometry_datas.data(), mesh_assets.size() * sizeof(GeometryData), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
-}
+	AllocatedBuffer GeometryManager::getGeometryMappingBuffer() const {
+		assert(geometry_mapping_buffer.handle != VK_NULL_HANDLE);
+		return geometry_mapping_buffer;
+	}
 
+	void GeometryManager::destroy() {
+		if (vertex_buffer.handle != VK_NULL_HANDLE)
+			resource_builder->destroyBuffer(vertex_buffer);
+		if (index_buffer.handle != VK_NULL_HANDLE)
+			resource_builder->destroyBuffer(index_buffer);
+		if (geometry_mapping_buffer.handle != VK_NULL_HANDLE)
+			resource_builder->destroyBuffer(geometry_mapping_buffer);
+	}
 
-AllocatedBuffer GeometryManager::getVertexBuffer() const
-{
-    assert(vertex_buffer.handle != VK_NULL_HANDLE);
-    return vertex_buffer;
-}
-
-AllocatedBuffer GeometryManager::getIndexBuffer() const
-{
-    assert(index_buffer.handle != VK_NULL_HANDLE);
-    return index_buffer;
-}
-
-AllocatedBuffer GeometryManager::getGeometryMappingBuffer() const
-{
-    assert(geometry_mapping_buffer.handle != VK_NULL_HANDLE);
-    return geometry_mapping_buffer;
-}
-
-void GeometryManager::destroy()
-{
-    if (vertex_buffer.handle != VK_NULL_HANDLE)
-        resource_builder->destroyBuffer(vertex_buffer);
-    if (index_buffer.handle != VK_NULL_HANDLE)
-        resource_builder->destroyBuffer(index_buffer);
-    if (geometry_mapping_buffer.handle != VK_NULL_HANDLE)
-        resource_builder->destroyBuffer(geometry_mapping_buffer);
-}
-
-}
+} // namespace RtEngine

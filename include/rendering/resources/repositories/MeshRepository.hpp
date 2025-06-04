@@ -6,24 +6,23 @@
 #include <memory>
 
 namespace RtEngine {
-class VulkanContext;
+	class VulkanContext;
 
-class MeshRepository {
-public:
-    MeshRepository() = default;
-    MeshRepository(const std::shared_ptr<VulkanContext>& context);
+	class MeshRepository {
+	public:
+		MeshRepository() = default;
+		MeshRepository(const std::shared_ptr<VulkanContext> &context);
 
-    std::shared_ptr<MeshAsset> getMesh(const std::string& name);
-    std::string addMesh(std::string path);
-    void destroy();
-private:
-    std::shared_ptr<MeshAssetBuilder> mesh_asset_builder;
-    DeletionQueue deletion_queue;
+		std::shared_ptr<MeshAsset> getMesh(const std::string &name);
+		std::string addMesh(std::string path);
+		void destroy();
 
-    std::unordered_map<std::string, std::shared_ptr<MeshAsset>> mesh_name_cache, mesh_path_cache;
-};
+	private:
+		std::shared_ptr<MeshAssetBuilder> mesh_asset_builder;
+		DeletionQueue deletion_queue;
 
+		std::unordered_map<std::string, std::shared_ptr<MeshAsset>> mesh_name_cache, mesh_path_cache;
+	};
 
-
-}
-#endif //MESHREPOSITORY_HPP
+} // namespace RtEngine
+#endif // MESHREPOSITORY_HPP

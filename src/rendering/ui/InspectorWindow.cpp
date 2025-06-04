@@ -3,48 +3,41 @@
 #include <imgui.h>
 
 namespace RtEngine {
-InspectorWindow::InspectorWindow(std::shared_ptr<PropertiesManager> main_props_manager, std::shared_ptr<SceneManager> scene_manager)
-    : GuiWindow(main_props_manager), scene_manager(scene_manager) {}
+	InspectorWindow::InspectorWindow(std::shared_ptr<PropertiesManager> main_props_manager,
+									 std::shared_ptr<SceneManager> scene_manager) :
+		GuiWindow(main_props_manager), scene_manager(scene_manager) {}
 
+	void InspectorWindow::createFrame() {
+		if (!node || !scene_manager)
+			return;
 
-void InspectorWindow::createFrame()
-{
-    if (!node || !scene_manager)
-        return;
+		std::shared_ptr<Node> root_node = scene_manager->scene->nodes["root"];
 
-    std::shared_ptr<Node> root_node = scene_manager->scene->nodes["root"];
+		ImGui::SetNextWindowSize(ImVec2(400, 300), ImGuiCond_Once);
 
-    ImGui::SetNextWindowSize(ImVec2(400, 300), ImGuiCond_Once);
+		bool refresh = false;
+		if (show_window) {
+			ImGui::Begin("Inspector", &show_window);
+			ImGui::Text(node->name.c_str());
+			ImGui::Separator();
 
-    bool refresh = false;
-    if (show_window) {
-        ImGui::Begin("Inspector", &show_window);
-        ImGui::Text(node->name.c_str());
-        ImGui::Separator();
+			for (auto &component: node->components) {
+				std::shared_ptr<PropertiesManager> properties = component->getProperties();
+				if (!properties)
+					continue;
+				refresh |= properties->serialize();
+			}
 
-        for (auto& component : node->components)
-        {
-            std::shared_ptr<PropertiesManager> properties = component->getProperties();
-            if (!properties)
-                continue;
-            refresh |= properties->serialize();
-        }
+			ImGui::End();
+		}
 
-        ImGui::End();
-    }
+		if (refresh) {
+			root_node->refreshTransform(glm::mat4(1.0f));
+			main_props_manager->curr_sample_count = 0;
+			scene_manager->bufferUpdateFlags = scene_manager->bufferUpdateFlags | SceneManager::MATERIAL_UPDATE;
+		}
+	}
 
-    if (refresh)
-    {
-        root_node->refreshTransform(glm::mat4(1.0f));
-        main_props_manager->curr_sample_count = 0;
-        scene_manager->bufferUpdateFlags = scene_manager->bufferUpdateFlags | SceneManager::MATERIAL_UPDATE;
-    }
-}
+	void InspectorWindow::setNode(const std::shared_ptr<Node> &node) { this->node = node; }
 
-void InspectorWindow::setNode(const std::shared_ptr<Node>& node)
-{
-    this->node = node;
-}
-
-}
-
+} // namespace RtEngine

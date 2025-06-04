@@ -6,45 +6,40 @@
 #include <VulkanContext.hpp>
 
 namespace RtEngine {
-class Node;
+	class Node;
 
-static constexpr float FIXED_DELTA_TIME = 1.0f / 60.0f;
+	static constexpr float FIXED_DELTA_TIME = 1.0f / 60.0f;
 
-class Component {
-public:
-    Component() = default;
-    Component(std::shared_ptr<RuntimeContext> context, std::shared_ptr<Node> node) : context(context), node(node) {};
-    virtual ~Component() = default;
+	class Component {
+	public:
+		Component() = default;
+		Component(std::shared_ptr<RuntimeContext> context, std::shared_ptr<Node> node) : context(context), node(node){};
+		virtual ~Component() = default;
 
-    virtual void OnStart() = 0;
-    virtual void OnRender(DrawContext &ctx) = 0;
-    virtual void OnUpdate() = 0;
+		virtual void OnStart() = 0;
+		virtual void OnRender(DrawContext &ctx) = 0;
+		virtual void OnUpdate() = 0;
 
-    virtual void definePropertySections() = 0;
-    std::shared_ptr<PropertiesManager> getProperties()
-    {
-        if (properties == nullptr)
-        {
-            properties = std::make_shared<PropertiesManager>();
-        }
-        properties->property_sections.clear();
-        definePropertySections();
-        return properties;
-    };
-    virtual void initProperties(const YAML::Node& config_node)
-    {
-        properties = std::make_shared<PropertiesManager>(config_node);
-        definePropertySections();
-    };
+		virtual void definePropertySections() = 0;
+		std::shared_ptr<PropertiesManager> getProperties() {
+			if (properties == nullptr) {
+				properties = std::make_shared<PropertiesManager>();
+			}
+			properties->property_sections.clear();
+			definePropertySections();
+			return properties;
+		};
+		virtual void initProperties(const YAML::Node &config_node) {
+			properties = std::make_shared<PropertiesManager>(config_node);
+			definePropertySections();
+		};
 
-    std::weak_ptr<Node> node;
-    std::shared_ptr<RuntimeContext> context;
+		std::weak_ptr<Node> node;
+		std::shared_ptr<RuntimeContext> context;
 
-protected:
-    std::shared_ptr<PropertiesManager> properties;
-};
+	protected:
+		std::shared_ptr<PropertiesManager> properties;
+	};
 
-
-
-}
-#endif //COMPONENT_HPP
+} // namespace RtEngine
+#endif // COMPONENT_HPP

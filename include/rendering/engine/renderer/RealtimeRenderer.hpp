@@ -7,24 +7,16 @@
 
 #include <VulkanEngine.hpp>
 
-namespace RtEngine
-{
-class RealtimeRenderer : public VulkanEngine {
-public:
-    RealtimeRenderer()
-    {
-        max_frames_in_flight = 2;
-    };
+namespace RtEngine {
+	class RealtimeRenderer : public VulkanEngine {
+	public:
+		RealtimeRenderer() { max_frames_in_flight = 2; };
 
-protected:
+	protected:
+		void mainLoop() override;
+		AllocatedImage getRenderTarget() override;
+		AllocatedImage getRngTexture() override;
+	};
+} // namespace RtEngine
 
-    void mainLoop() override;
-    AllocatedImage getRenderTarget() override;
-    AllocatedImage getRngTexture() override;
-};
-}
-
-
-
-
-#endif //REALTIMERENDERER_HPP
+#endif // REALTIMERENDERER_HPP

@@ -6,23 +6,24 @@
 #include "spdlog/spdlog.h"
 
 namespace RtEngine {
-struct QuickTimer {
-    using clock = std::chrono::high_resolution_clock;
-    const char* name;
-    clock::time_point start;
-    bool print_on_exit;
-    explicit QuickTimer(const char* name_, bool print_on_exit_ = true) : name(name_), print_on_exit(print_on_exit_) {
-        start = clock::now();
-    }
+	struct QuickTimer {
+		using clock = std::chrono::high_resolution_clock;
+		const char *name;
+		clock::time_point start;
+		bool print_on_exit;
+		explicit QuickTimer(const char *name_, bool print_on_exit_ = true) :
+			name(name_), print_on_exit(print_on_exit_) {
+			start = clock::now();
+		}
 
-    ~QuickTimer() {
-      if (print_on_exit) {
-        using namespace std::chrono;
-        const auto dur = duration_cast<microseconds>(clock::now() - start).count();
-        spdlog::debug("{}: {} ms", name, dur / 1000.0f);
-      }
-    }
-};
+		~QuickTimer() {
+			if (print_on_exit) {
+				using namespace std::chrono;
+				const auto dur = duration_cast<microseconds>(clock::now() - start).count();
+				spdlog::debug("{}: {} ms", name, dur / 1000.0f);
+			}
+		}
+	};
 
-}
-#endif //QUICKTIMER_HPP
+} // namespace RtEngine
+#endif // QUICKTIMER_HPP

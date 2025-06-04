@@ -7,80 +7,74 @@
 
 #include <vulkan/vulkan_core.h>
 #define GLFW_INCLUDE_VULKAN
+#include <DeletionQueue.hpp>
 #include <GLFW/glfw3.h>
+#include <VulkanUtil.hpp>
 #include <iostream>
 #include <vector>
-#include <DeletionQueue.hpp>
-#include <VulkanUtil.hpp>
 
-namespace RtEngine
-{
-struct SwapChainSupportDetails {
-    VkSurfaceCapabilitiesKHR capabilities;
-    std::vector<VkSurfaceFormatKHR> formats;
-    std::vector<VkPresentModeKHR> presentModes;
-};
+namespace RtEngine {
+	struct SwapChainSupportDetails {
+		VkSurfaceCapabilitiesKHR capabilities;
+		std::vector<VkSurfaceFormatKHR> formats;
+		std::vector<VkPresentModeKHR> presentModes;
+	};
 
-enum QueueType
-{
-    GRAPHICS,
-    PRESENT,
-};
+	enum QueueType {
+		GRAPHICS,
+		PRESENT,
+	};
 
-class DeviceManager {
-public:
-    static VkPhysicalDeviceRayTracingPipelinePropertiesKHR RAYTRACING_PROPERTIES;
+	class DeviceManager {
+	public:
+		static VkPhysicalDeviceRayTracingPipelinePropertiesKHR RAYTRACING_PROPERTIES;
 
-    DeviceManager(GLFWwindow* window, bool enable_validation_layers);
-    void destroy();
+		DeviceManager(GLFWwindow *window, bool enable_validation_layers);
+		void destroy();
 
-    VkPhysicalDevice getPhysicalDevice() const;
-    VkDevice getDevice() const;
-    VkSurfaceKHR getSurface() const;
-    VkInstance getInstance() const;
-    QueueFamilyIndices getQueueIndices() const;
-    VkQueue getQueue(QueueType type) const;
-private:
-    void createInstance(bool enable_validation_layers);
-    bool checkValidationLayerSupport();
-    std::vector<const char *> getRequiredExtensions(bool enable_validation_layers);
+		VkPhysicalDevice getPhysicalDevice() const;
+		VkDevice getDevice() const;
+		VkSurfaceKHR getSurface() const;
+		VkInstance getInstance() const;
+		QueueFamilyIndices getQueueIndices() const;
+		VkQueue getQueue(QueueType type) const;
 
-    void setupDebugMessenger();
-    void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT &createInfo);
+	private:
+		void createInstance(bool enable_validation_layers);
+		bool checkValidationLayerSupport();
+		std::vector<const char *> getRequiredExtensions(bool enable_validation_layers);
 
-    void createSurface(GLFWwindow* window);
+		void setupDebugMessenger();
+		void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT &createInfo);
 
-    void pickPhysicalDevice();
-    bool isDeviceSuitable(VkPhysicalDevice device);
-    bool checkDeviceExtensionSupport(VkPhysicalDevice device);
+		void createSurface(GLFWwindow *window);
 
-    void createLogicalDevice(bool enable_validation_layers);
+		void pickPhysicalDevice();
+		bool isDeviceSuitable(VkPhysicalDevice device);
+		bool checkDeviceExtensionSupport(VkPhysicalDevice device);
 
-    static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
-        VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
-        VkDebugUtilsMessageTypeFlagsEXT messageType,
-        const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
-        void* pUserData) {
+		void createLogicalDevice(bool enable_validation_layers);
 
-        std::cerr << "validation layer: " << pCallbackData->pMessage << std::endl;
+		static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
+															VkDebugUtilsMessageTypeFlagsEXT messageType,
+															const VkDebugUtilsMessengerCallbackDataEXT *pCallbackData,
+															void *pUserData) {
 
-        return VK_FALSE;
-    }
+			std::cerr << "validation layer: " << pCallbackData->pMessage << std::endl;
 
-    DeletionQueue deletion_queue;
+			return VK_FALSE;
+		}
 
-    VkInstance instance;
-    VkSurfaceKHR surface;
-    VkDevice device;
-    VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
-    VkDebugUtilsMessengerEXT debugMessenger;
-    QueueFamilyIndices queue_indices;
-    VkQueue graphics_queue, present_queue;
-};
-}
+		DeletionQueue deletion_queue;
 
+		VkInstance instance;
+		VkSurfaceKHR surface;
+		VkDevice device;
+		VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
+		VkDebugUtilsMessengerEXT debugMessenger;
+		QueueFamilyIndices queue_indices;
+		VkQueue graphics_queue, present_queue;
+	};
+} // namespace RtEngine
 
-
-
-
-#endif //DEVICEMANAGER_HPP
+#endif // DEVICEMANAGER_HPP

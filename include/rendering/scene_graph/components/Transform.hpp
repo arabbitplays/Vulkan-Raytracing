@@ -6,32 +6,29 @@
 #include <glm/glm.hpp>
 
 namespace RtEngine {
-class Transform : public Component {
-public:
-    Transform();
-    static constexpr std::string COMPONENT_NAME = "Transform";
+	class Transform : public Component {
+	public:
+		Transform();
+		static constexpr std::string COMPONENT_NAME = "Transform";
 
-    void OnStart() override {};
-    void OnRender(DrawContext& ctx) override {};
-    void OnUpdate() override {};
+		void OnStart() override {};
+		void OnRender(DrawContext &ctx) override {};
+		void OnUpdate() override {};
 
-    void definePropertySections() override;
+		void definePropertySections() override;
 
-    void setLocalTransform(glm::mat4 transform_matrix);
-    glm::mat4 getLocalTransform() const;
-    void updateTransforms(glm::mat4 parent_matrix);
-    glm::mat4 getWorldTransform() const;
+		void setLocalTransform(glm::mat4 transform_matrix);
+		glm::mat4 getLocalTransform() const;
+		void updateTransforms(glm::mat4 parent_matrix);
+		glm::mat4 getWorldTransform() const;
 
-public:
-    TransformUtil::DecomposedTransform decomposed_transform;
+	public:
+		TransformUtil::DecomposedTransform decomposed_transform;
 
-private:
+	private:
+		glm::mat4 localTransform{};
+		glm::mat4 worldTransform{};
+	};
 
-    glm::mat4 localTransform{};
-    glm::mat4 worldTransform{};
-};
-
-
-
-}
-#endif //TRANSFORM_HPP
+} // namespace RtEngine
+#endif // TRANSFORM_HPP

@@ -2,30 +2,29 @@
 #define TEXTUREREPOSITORY_HPP
 
 #include <DeletionQueue.hpp>
-#include <memory>
 #include <ResourceBuilder.hpp>
+#include <memory>
 #include <unordered_map>
 
 namespace RtEngine {
-class TextureRepository {
-public:
-    TextureRepository() = default;
-    TextureRepository(std::shared_ptr<ResourceBuilder> resource_builder);
+	class TextureRepository {
+	public:
+		TextureRepository() = default;
+		TextureRepository(std::shared_ptr<ResourceBuilder> resource_builder);
 
-    std::shared_ptr<Texture> getTexture(const std::string& name, TextureType type = PARAMETER);
-    void addTexture(std::string path, TextureType type);
-    void destroy();
-private:
-    void initDefaultTextures();
+		std::shared_ptr<Texture> getTexture(const std::string &name, TextureType type = PARAMETER);
+		void addTexture(std::string path, TextureType type);
+		void destroy();
 
-    std::shared_ptr<ResourceBuilder> resource_builder;
-    DeletionQueue deletion_queue;
+	private:
+		void initDefaultTextures();
 
-    std::unordered_map<std::string, std::shared_ptr<Texture>> texture_name_cache, texture_path_cache;
-    std::shared_ptr<Texture> default_tex, default_normal_tex;
-};
+		std::shared_ptr<ResourceBuilder> resource_builder;
+		DeletionQueue deletion_queue;
 
+		std::unordered_map<std::string, std::shared_ptr<Texture>> texture_name_cache, texture_path_cache;
+		std::shared_ptr<Texture> default_tex, default_normal_tex;
+	};
 
-
-}
-#endif //TEXTUREREPOSITORY_HPP
+} // namespace RtEngine
+#endif // TEXTUREREPOSITORY_HPP
