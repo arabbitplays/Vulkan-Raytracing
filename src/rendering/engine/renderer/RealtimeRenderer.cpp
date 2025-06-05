@@ -4,6 +4,8 @@
 
 #include "RealtimeRenderer.hpp"
 
+#include <PathUtil.hpp>
+
 #define SAMPLES_PER_PIXEL 100
 
 namespace RtEngine {
@@ -12,12 +14,12 @@ namespace RtEngine {
 		while (!glfwWindowShouldClose(window)) {
 			glfwPollEvents();
 
-			if (scene_manager->curr_scene_name != vulkan_context->base_options->curr_scene_name) {
+			if (PathUtil::getFile(scene_manager->getSceneInformation().path) != vulkan_context->base_options->curr_scene_name) {
 				loadScene();
 			}
 			scene_manager->updateScene(mainDrawContext, currentFrame, getRenderTarget(), getRngTexture());
 			properties_manager->emitting_instances_count =
-					scene_manager->getEmittingInstancesCount(); // TODO move this together with the creation of the
+					scene_manager->getSceneInformation().emitting_instances_count; // TODO move this together with the creation of the
 																// instance buffers
 
 			properties_manager->curr_sample_count = 0;

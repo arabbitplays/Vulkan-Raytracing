@@ -4,8 +4,8 @@
 #include "../rendering/Vertex.hpp"
 
 namespace RtEngine {
-	void RasterizerPipelineBuilder::buildPipeline(VkDevice &device, VkRenderPass &renderPass, VkPipeline *pipeline,
-												  VkPipelineLayout &pipelineLayout) {
+	void RasterizerPipelineBuilder::buildPipeline(const VkDevice &device, const VkRenderPass &render_pass, VkPipeline *pipeline,
+												  const VkPipelineLayout &pipeline_layout) {
 
 		std::vector<VkDynamicState> dynamicStates = {VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR};
 
@@ -54,8 +54,8 @@ namespace RtEngine {
 		pipelineInfo.pDepthStencilState = &depthStencilInfo;
 		pipelineInfo.pColorBlendState = &colorBlending;
 		pipelineInfo.pDynamicState = &dynamicState;
-		pipelineInfo.layout = pipelineLayout;
-		pipelineInfo.renderPass = renderPass;
+		pipelineInfo.layout = pipeline_layout;
+		pipelineInfo.renderPass = render_pass;
 		pipelineInfo.subpass = 0;
 		pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
 		pipelineInfo.basePipelineIndex = -1;
@@ -65,8 +65,9 @@ namespace RtEngine {
 		}
 	}
 
-	void RasterizerPipelineBuilder::buildPipelineLayout(VkDevice &device, VkPipelineLayout *pipelineLayout) {
-		if (vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, pipelineLayout) != VK_SUCCESS) {
+	void RasterizerPipelineBuilder::buildPipelineLayout(const VkDevice &device, VkPipelineLayout *pipeline_layout) const
+	{
+		if (vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, pipeline_layout) != VK_SUCCESS) {
 			throw std::runtime_error("failed to create pipeline layout!");
 		}
 	}
@@ -88,7 +89,7 @@ namespace RtEngine {
 		shaderStages.push_back(fragShaderStageInfo);
 	}
 
-	void RasterizerPipelineBuilder::setInputTopology(VkPrimitiveTopology topology) {
+	void RasterizerPipelineBuilder::setInputTopology(const VkPrimitiveTopology topology) {
 		inputAssemblyInfo.topology = topology;
 	}
 
@@ -97,7 +98,7 @@ namespace RtEngine {
 		rasterizerInfo.lineWidth = 1.0f;
 	}
 
-	void RasterizerPipelineBuilder::setCullMode(VkCullModeFlags cullMode, VkFrontFace frontFace) {
+	void RasterizerPipelineBuilder::setCullMode(const VkCullModeFlags cullMode, const VkFrontFace frontFace) {
 		rasterizerInfo.cullMode = cullMode;
 		rasterizerInfo.frontFace = frontFace;
 	}
@@ -107,7 +108,7 @@ namespace RtEngine {
 		multisamplingInfo.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
 	}
 
-	void RasterizerPipelineBuilder::enableDepthTest(VkBool32 enabled, VkCompareOp compareOp) {
+	void RasterizerPipelineBuilder::enableDepthTest(const VkBool32 enabled, const VkCompareOp compareOp) {
 		depthStencilInfo.depthTestEnable = enabled;
 		depthStencilInfo.depthWriteEnable = enabled;
 		depthStencilInfo.depthCompareOp = compareOp;
@@ -133,12 +134,12 @@ namespace RtEngine {
 		colorBlendAttachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
 	}
 
-	void RasterizerPipelineBuilder::setDescriptorSetLayouts(std::vector<VkDescriptorSetLayout> &descriptorSetLayouts) {
-		pipelineLayoutInfo.setLayoutCount = static_cast<uint32_t>(descriptorSetLayouts.size());
-		pipelineLayoutInfo.pSetLayouts = descriptorSetLayouts.data();
+	void RasterizerPipelineBuilder::setDescriptorSetLayouts(const std::vector<VkDescriptorSetLayout> &descriptor_set_layouts) {
+		pipelineLayoutInfo.setLayoutCount = static_cast<uint32_t>(descriptor_set_layouts.size());
+		pipelineLayoutInfo.pSetLayouts = descriptor_set_layouts.data();
 	}
 
-	void RasterizerPipelineBuilder::setPushConstantRanges(std::vector<VkPushConstantRange> &ranges) {
+	void RasterizerPipelineBuilder::setPushConstantRanges(const std::vector<VkPushConstantRange> &ranges) {
 		pipelineLayoutInfo.pushConstantRangeCount = static_cast<uint32_t>(ranges.size());
 		pipelineLayoutInfo.pPushConstantRanges = ranges.data();
 	}

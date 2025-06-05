@@ -1,9 +1,12 @@
 #include "SceneReader.hpp"
 
 #include <AccelerationStructure.hpp>
+#include <InteractiveCamera.hpp>
 #include <MeshRenderer.hpp>
+#include <MetalRoughMaterial.hpp>
 #include <Node.hpp>
 #include <QuickTimer.hpp>
+#include <Rigidbody.hpp>
 #include <TransformUtil.hpp>
 #include <YAML_glm.hpp>
 #include <glm/gtx/quaternion.hpp>
@@ -11,12 +14,12 @@
 
 namespace RtEngine {
 	std::shared_ptr<Scene>
-	SceneReader::readScene(const std::string &filename,
+	SceneReader::readScene(const std::string &file_path,
 						   std::unordered_map<std::string, std::shared_ptr<Material>> materials) {
 		QuickTimer quick_timer("Reading scene from file");
 
 		try {
-			YAML::Node config = YAML::LoadFile(filename);
+			YAML::Node config = YAML::LoadFile(file_path);
 			YAML::Node scene_node = config["scene"];
 
 			auto material_name = scene_node["material_name"].as<std::string>();
@@ -24,7 +27,7 @@ namespace RtEngine {
 				throw std::runtime_error("Material " + material_name + " does not exist");
 			// TODO remove vulkan context from reader?
 			std::shared_ptr<Scene> scene =
-					std::make_shared<Scene>(*vulkan_context->resource_builder, materials[material_name]);
+					std::make_shared<Scene>(file_path, *vulkan_context->resource_builder, materials[material_name]);
 
 			scene->camera = loadCamera(scene_node["camera"]);
 			loadSceneLights(scene_node["lights"], scene);

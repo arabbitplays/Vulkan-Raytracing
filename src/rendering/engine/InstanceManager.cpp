@@ -59,8 +59,12 @@ namespace RtEngine {
 	}
 
 	uint32_t InstanceManager::getEmittingInstancesCount() const {
-		assert(emitting_instances_buffer.handle != VK_NULL_HANDLE);
-		return emitting_instances_count;
+		if (emitting_instances_buffer.handle != VK_NULL_HANDLE)
+		{
+			return emitting_instances_count;
+		}
+
+		return 0;
 	}
 
 	void InstanceManager::destroy() {

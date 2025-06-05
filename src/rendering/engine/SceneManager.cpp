@@ -2,15 +2,15 @@
 
 #include <DescriptorLayoutBuilder.hpp>
 #include <MeshRenderer.hpp>
+#include <MetalRoughMaterial.hpp>
 #include <OptionsWindow.hpp>
 #include <QuickTimer.hpp>
 #include <SceneReader.hpp>
 #include <SceneUtil.hpp>
-#include <SceneWriter.hpp>
 
 namespace RtEngine {
 
-	void SceneManager::createScene(std::string scene_path) {
+	void SceneManager::createScene(const std::string& scene_path) {
 		QuickTimer timer{"Scene Creation", true};
 
 		if (scene != nullptr) {
@@ -31,6 +31,15 @@ namespace RtEngine {
 		createBlas(mesh_assets);
 		createUniformBuffers();
 		bufferUpdateFlags = static_cast<uint8_t>(GEOMETRY_UPDATE) | static_cast<uint8_t>(MATERIAL_UPDATE);
+
+		VkDevice device = vulkan_context->device_manager->getDevice();
+		top_level_acceleration_structure = std::make_shared<AccelerationStructure>(
+			device, *vulkan_context->resource_builder, *vulkan_context->command_manager,
+			VK_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL_KHR);
+		scene_resource_deletion_queue.pushFunction([&]()
+		{
+			top_level_acceleration_structure->destroy();
+		});
 	}
 
 	void SceneManager::createBlas(std::vector<std::shared_ptr<MeshAsset>> &meshes) {
@@ -89,12 +98,11 @@ namespace RtEngine {
 	}
 
 	void SceneManager::createUniformBuffers() {
-		VkDeviceSize size = sizeof(SceneData);
-
 		sceneUniformBuffers.resize(max_frames_in_flight);
 		sceneUniformBuffersMapped.resize(max_frames_in_flight);
 
 		for (size_t i = 0; i < max_frames_in_flight; i++) {
+			VkDeviceSize size = sizeof(SceneData);
 			sceneUniformBuffers[i] = vulkan_context->resource_builder->createBuffer(
 					size, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
 					VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
@@ -139,7 +147,7 @@ namespace RtEngine {
 		}
 
 		// TODO Only partially update tlas depending on the updated dynamic objects
-		updateTlas(top_level_acceleration_structure, draw_context.objects);
+		updateTlas(draw_context.objects);
 
 		std::shared_ptr<SceneData> scene_data = scene->createSceneData();
 		memcpy(sceneUniformBuffersMapped[current_image_idx], scene_data.get(), sizeof(SceneData));
@@ -149,18 +157,19 @@ namespace RtEngine {
 		bufferUpdateFlags = NO_UPDATE;
 	}
 
-	void SceneManager::updateTlas(std::shared_ptr<AccelerationStructure> &tlas, std::vector<RenderObject> objects) {
+	void SceneManager::updateTlas(std::vector<RenderObject> objects) const
+	{
 		uint32_t instance_id = 0;
-		for (int i = 0; i < objects.size(); i++) {
-			tlas->addInstance(objects[i].acceleration_structure, objects[i].transform, instance_id++);
+		for (auto & object : objects) {
+			top_level_acceleration_structure->addInstance(object.acceleration_structure, object.transform, instance_id++);
 		}
 
-		if (tlas->getHandle() == VK_NULL_HANDLE) {
-			tlas->addInstanceGeometry();
+		if (top_level_acceleration_structure->getHandle() == VK_NULL_HANDLE) {
+			top_level_acceleration_structure->addInstanceGeometry();
 		} else {
-			tlas->update_instance_geometry(0);
+			top_level_acceleration_structure->update_instance_geometry(0);
 		}
-		tlas->build();
+		top_level_acceleration_structure->build();
 	}
 
 	void SceneManager::updateSceneDescriptorSets(uint32_t frame_idx, const AllocatedImage &current_image,
@@ -208,7 +217,7 @@ namespace RtEngine {
 
 	// -----------------------------------------------------------------------------------------------------------------
 
-	void SceneManager::initDefaultResources(VkPhysicalDeviceRayTracingPipelinePropertiesKHR raytracingProperties) {
+	void SceneManager::initDefaultResources(const VkPhysicalDeviceRayTracingPipelinePropertiesKHR& raytracingProperties) {
 		createDefaultTextures();
 		createDefaultSamplers();
 		createDefaultMaterials(raytracingProperties);
@@ -231,8 +240,8 @@ namespace RtEngine {
 				VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_ASPECT_COLOR_BIT);
 
 		// checkerboard image
-		uint32_t magenta = glm::packUnorm4x8(glm::vec4(1, 0, 1, 1));
-		std::array<uint32_t, 16 * 16> pixels; // for 16x16 checkerboard texture
+		const uint32_t magenta = glm::packUnorm4x8(glm::vec4(1, 0, 1, 1));
+		std::array<uint32_t, 16 * 16> pixels{}; // for 16x16 checkerboard texture
 		for (int x = 0; x < 16; x++) {
 			for (int y = 0; y < 16; y++) {
 				pixels[y * 16 + x] = ((x % 2) ^ (y % 2)) ? magenta : black;
@@ -284,7 +293,7 @@ namespace RtEngine {
 		});
 	}
 
-	void SceneManager::createDefaultMaterials(VkPhysicalDeviceRayTracingPipelinePropertiesKHR raytracingProperties) {
+	void SceneManager::createDefaultMaterials(const VkPhysicalDeviceRayTracingPipelinePropertiesKHR& raytracingProperties) {
 		auto phong_material = std::make_shared<PhongMaterial>(vulkan_context, runtime_context);
 		phong_material->buildPipelines(scene_descriptor_set_layout);
 		phong_material->pipeline->createShaderBindingTables(raytracingProperties);
@@ -305,7 +314,14 @@ namespace RtEngine {
 		return scene_descriptor_sets[frame_index];
 	}
 
-	uint32_t SceneManager::getEmittingInstancesCount() { return instance_manager->getEmittingInstancesCount(); }
+	SceneManager::SceneInfo SceneManager::getSceneInformation() const
+	{
+		SceneInfo scene_info {
+			.path = scene != nullptr ? scene->path : "",
+			.emitting_instances_count = instance_manager->getEmittingInstancesCount()
+		};
+		return scene_info;
+	}
 
 	void SceneManager::clearResources() {
 		scene_resource_deletion_queue.flush();

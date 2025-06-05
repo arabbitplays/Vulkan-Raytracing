@@ -3,7 +3,9 @@
 #include <VulkanEngine.hpp>
 #include <cstdlib>
 #include <filesystem>
+#include <PathUtil.hpp>
 #include <set>
+#include <RandomUtil.hpp>
 
 namespace RtEngine {
 
@@ -152,7 +154,7 @@ namespace RtEngine {
 		return descriptorAllocator;
 	}
 
-	bool VulkanEngine::hasStencilComponent(VkFormat format) {
+	bool VulkanEngine::hasStencilComponent(const VkFormat format) {
 		return format == VK_FORMAT_D32_SFLOAT_S8_UINT || format == VK_FORMAT_D24_UNORM_S8_UINT;
 	}
 
@@ -172,9 +174,9 @@ namespace RtEngine {
 		}
 
 		std::vector<uint32_t> pixels(swapchain->extent.width * swapchain->extent.height * 4);
-		std::srand(time(0));
+
 		for (int i = 0; i < swapchain->extent.width * swapchain->extent.height * 4; i++) {
-			pixels[i] = std::rand();
+			pixels[i] = RandomUtil::generateInt();
 		}
 
 		rng_textures.resize(max_frames_in_flight);
@@ -191,17 +193,16 @@ namespace RtEngine {
 	AllocatedImage VulkanEngine::getRngTexture() { return rng_textures[0]; }
 
 	void VulkanEngine::loadScene() {
-		assert(vulkan_context->base_options->curr_scene_name != "");
+		assert(!vulkan_context->base_options->curr_scene_name.empty());
 		vkDeviceWaitIdle(vulkan_context->device_manager->getDevice());
 		properties_manager->curr_sample_count = 0;
 		std::string path = vulkan_context->base_options->resources_dir + "/scenes/" +
 						   vulkan_context->base_options->curr_scene_name;
 		scene_manager->createScene(path);
-		scene_manager->curr_scene_name = vulkan_context->base_options->curr_scene_name;
 		properties_manager->addPropertySection(scene_manager->scene->material->getProperties());
 
 		SceneWriter writer;
-		writer.writeScene(scene_manager->curr_scene_name, scene_manager->scene);
+		writer.writeScene(PathUtil::getFileName(scene_manager->getSceneInformation().path), scene_manager->scene);
 	}
 
 	void VulkanEngine::createCommandBuffers() {
@@ -253,12 +254,12 @@ namespace RtEngine {
 		while (!glfwWindowShouldClose(window)) {
 			glfwPollEvents();
 
-			if (scene_manager->curr_scene_name != vulkan_context->base_options->curr_scene_name) {
+			if (PathUtil::getFile(scene_manager->getSceneInformation().path) != vulkan_context->base_options->curr_scene_name) {
 				loadScene();
 			}
 			scene_manager->updateScene(mainDrawContext, currentFrame, getRenderTarget(), getRngTexture());
-			properties_manager->emitting_instances_count =
-					scene_manager->getEmittingInstancesCount(); // TODO move this together with the creation of the
+			properties_manager->emitting_instances_count = static_cast<int32_t>(
+					scene_manager->getSceneInformation().emitting_instances_count); // TODO move this together with the creation of the
 																// instance buffers
 			drawFrame();
 		}
@@ -270,7 +271,7 @@ namespace RtEngine {
 		vkWaitForFences(vulkan_context->device_manager->getDevice(), 1, &inFlightFences[currentFrame], VK_TRUE,
 						UINT64_MAX);
 
-		int imageIndex = aquireNextSwapchainImage();
+		const int32_t imageIndex = aquireNextSwapchainImage();
 		if (imageIndex < 0)
 			return;
 
@@ -287,7 +288,7 @@ namespace RtEngine {
 		currentFrame = (currentFrame + 1) % max_frames_in_flight;
 	}
 
-	int VulkanEngine::aquireNextSwapchainImage() {
+	int32_t VulkanEngine::aquireNextSwapchainImage() {
 		uint32_t imageIndex;
 		VkResult result =
 				vkAcquireNextImageKHR(vulkan_context->device_manager->getDevice(), vulkan_context->swapchain->handle,
@@ -297,9 +298,9 @@ namespace RtEngine {
 			refreshAfterResize();
 			return -1;
 		} else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
-			std::runtime_error("failed to acquire swap chain image!");
+			throw std::runtime_error("failed to acquire swap chain image!");
 		}
-		return imageIndex;
+		return static_cast<int32_t>(imageIndex);
 	}
 
 	void VulkanEngine::submitCommandBuffer(std::vector<VkSemaphore> wait_semaphore,
@@ -323,7 +324,7 @@ namespace RtEngine {
 		}
 	}
 
-	void VulkanEngine::presentSwapchainImage(std::vector<VkSemaphore> wait_semaphore, uint32_t image_index) {
+	void VulkanEngine::presentSwapchainImage(const std::vector<VkSemaphore>& wait_semaphore, const uint32_t image_index) {
 		VkPresentInfoKHR presentInfo{};
 		presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
 		presentInfo.waitSemaphoreCount = static_cast<uint32_t>(wait_semaphore.size());
@@ -340,7 +341,7 @@ namespace RtEngine {
 			refreshAfterResize();
 			return;
 		} else if (result != VK_SUCCESS) {
-			std::runtime_error("failed to present swap chain image!");
+			throw std::runtime_error("failed to present swap chain image!");
 		}
 	}
 
@@ -355,7 +356,7 @@ namespace RtEngine {
 		scene_manager->updateScene(mainDrawContext, currentFrame, getRenderTarget(), getRngTexture());
 	}
 
-	void VulkanEngine::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex) {
+	void VulkanEngine::recordCommandBuffer(VkCommandBuffer commandBuffer, const uint32_t imageIndex) {
 		recordBeginCommandBuffer(commandBuffer);
 		recordRenderToImage(commandBuffer);
 		recordCopyToSwapchain(commandBuffer, imageIndex);
@@ -418,7 +419,7 @@ namespace RtEngine {
 		properties_manager->curr_sample_count++;
 	}
 
-	void VulkanEngine::recordCopyToSwapchain(VkCommandBuffer commandBuffer, uint32_t swapchain_image_index) {
+	void VulkanEngine::recordCopyToSwapchain(VkCommandBuffer commandBuffer, const uint32_t swapchain_image_index) {
 		AllocatedImage render_target = getRenderTarget();
 		std::shared_ptr<ResourceBuilder> resource_builder = vulkan_context->resource_builder;
 		std::shared_ptr<Swapchain> swapchain = vulkan_context->swapchain;
@@ -516,6 +517,7 @@ namespace RtEngine {
 			return output_image;
 		} else {
 			spdlog::error("Image format of the storage image is not supported to be stored correctly!");
+			return nullptr;
 		}
 	}
 
@@ -528,7 +530,8 @@ namespace RtEngine {
 		initSceneSelectionProperty();
 	}
 
-	void VulkanEngine::initSceneSelectionProperty() {
+	void VulkanEngine::initSceneSelectionProperty() const
+	{
 		assert(renderer_properties != nullptr);
 		std::string scenes_dir = vulkan_context->base_options->resources_dir + "/scenes";
 		std::vector<std::string> scenes;

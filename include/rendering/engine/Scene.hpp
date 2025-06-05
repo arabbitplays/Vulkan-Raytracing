@@ -2,17 +2,14 @@
 #define SCENE_HPP
 
 #include <Camera.hpp>
-#include <InteractiveCamera.hpp>
 #include <MeshAsset.hpp>
 #include <MeshAssetBuilder.hpp>
-#include <MetalRoughMaterial.hpp>
 #include <Node.hpp>
 #include <PhongMaterial.hpp>
-#include <Rigidbody.hpp>
 #include <array>
 #include <bits/shared_ptr.h>
 #include <glm/vec3.hpp>
-#include <vector>
+#include <utility>
 
 #define POINT_LIGHT_COUNT 4
 
@@ -48,10 +45,11 @@ namespace RtEngine {
 		float intensity = 0.0f;
 	};
 
-	class Scene {
+	class Scene
+	{
 	public:
-		Scene(ResourceBuilder &ressource_builder, std::shared_ptr<Material> material) :
-			ressource_builder(ressource_builder), material(material) {
+		Scene(std::string  path, ResourceBuilder resource_builder, const std::shared_ptr<Material>& material) :
+			path(std::move(path)), resource_builder(std::move(resource_builder)), material(material) {
 			Scene::initScene();
 		}
 
@@ -65,6 +63,8 @@ namespace RtEngine {
 
 		void clearResources();
 
+		std::string path;
+
 		std::shared_ptr<Camera> camera;
 
 		std::unordered_map<std::string, std::shared_ptr<Node>> nodes;
@@ -73,25 +73,24 @@ namespace RtEngine {
 		DirectionalLight sun;
 		std::array<PointLight, POINT_LIGHT_COUNT> pointLights{};
 
-		ResourceBuilder ressource_builder;
+		ResourceBuilder resource_builder;
 		DeletionQueue deletion_queue{};
 
 		std::shared_ptr<Material> material;
 
 	protected:
-		virtual void initCamera(uint32_t image_width, uint32_t image_height) {};
-		virtual void initScene() {
+		void initScene() {
 			std::string folder = "textures/environmentMaps/";
-			environment_map[0] = ressource_builder.loadTextureImage(folder + "posx.jpg").image;
-			environment_map[1] = ressource_builder.loadTextureImage(folder + "negx.jpg").image;
-			environment_map[2] = ressource_builder.loadTextureImage(folder + "posy.jpg").image;
-			environment_map[3] = ressource_builder.loadTextureImage(folder + "negy.jpg").image;
-			environment_map[4] = ressource_builder.loadTextureImage(folder + "posz.jpg").image;
-			environment_map[5] = ressource_builder.loadTextureImage(folder + "negz.jpg").image;
+			environment_map[0] = resource_builder.loadTextureImage(folder + "posx.jpg").image;
+			environment_map[1] = resource_builder.loadTextureImage(folder + "negx.jpg").image;
+			environment_map[2] = resource_builder.loadTextureImage(folder + "posy.jpg").image;
+			environment_map[3] = resource_builder.loadTextureImage(folder + "negy.jpg").image;
+			environment_map[4] = resource_builder.loadTextureImage(folder + "posz.jpg").image;
+			environment_map[5] = resource_builder.loadTextureImage(folder + "negz.jpg").image;
 
 			deletion_queue.pushFunction([&]() {
 				for (auto image: environment_map) {
-					ressource_builder.destroyImage(image);
+					resource_builder.destroyImage(image);
 				}
 			});
 		};

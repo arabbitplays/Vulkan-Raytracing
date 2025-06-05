@@ -1,37 +1,17 @@
 #ifndef BASICS_VULKANENGINE_HPP
 #define BASICS_VULKANENGINE_HPP
 
-#include <iostream>
-
-#include <fstream>
-#include <optional>
 #include <vector>
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEFAULT_ALIGNED_GENTYPES
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
-#include <array>
 #include <chrono>
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-#include <stb_image.h>
 #define TINYOBJLOADER_IMPLEMENTATION
 #include <AccelerationStructure.hpp>
-#include <BaseOptions.hpp>
 #include <GuiManager.hpp>
 #include <GuiWindow.hpp>
-#include <HierarchyWindow.hpp>
-#include <PhongMaterial.hpp>
-#include <Scene.hpp>
 #include <SceneManager.hpp>
-#include <Swapchain.hpp>
-#include <imgui_impl_vulkan.h>
-#include <unordered_map>
-#include "../../builders/MeshAssetBuilder.hpp"
 #include "../../util/QuickTimer.hpp"
-#include "../../util/VulkanUtil.hpp"
-#include "../IRenderable.hpp"
-#include "../Vertex.hpp"
-#include "CommandManager.hpp"
 #include "DescriptorAllocator.hpp"
 
 #include <RuntimeContext.hpp>
@@ -92,7 +72,7 @@ namespace RtEngine {
 
 		void createGuiFrameBuffers();
 
-		bool hasStencilComponent(VkFormat format);
+		static bool hasStencilComponent(VkFormat format);
 
 		std::shared_ptr<DescriptorAllocator> createDescriptorAllocator();
 		void createCommandBuffers();
@@ -101,9 +81,9 @@ namespace RtEngine {
 		void pollSdlEvents();
 
 		virtual void drawFrame();
-		int aquireNextSwapchainImage();
+		int32_t aquireNextSwapchainImage();
 		void submitCommandBuffer(std::vector<VkSemaphore> wait_semaphore, std::vector<VkSemaphore> signal_semaphore);
-		void presentSwapchainImage(std::vector<VkSemaphore> wait_semaphore, uint32_t image_index);
+		void presentSwapchainImage(const std::vector<VkSemaphore>& wait_semaphore, uint32_t image_index);
 
 		void refreshAfterResize();
 
@@ -123,7 +103,7 @@ namespace RtEngine {
 
 		void loadScene();
 		virtual void initProperties();
-		void initSceneSelectionProperty();
+		void initSceneSelectionProperty() const;
 	};
 
 } // namespace RtEngine

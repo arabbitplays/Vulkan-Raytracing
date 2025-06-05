@@ -5,7 +5,9 @@
 #include <TransformUtil.hpp>
 #include <YAML_glm.hpp>
 #include <fstream>
+#include <InteractiveCamera.hpp>
 #include <iostream>
+#include <MetalRoughMaterial.hpp>
 #include <spdlog/spdlog.h>
 
 namespace RtEngine {

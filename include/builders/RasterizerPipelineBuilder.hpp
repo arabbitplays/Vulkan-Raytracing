@@ -22,9 +22,9 @@ namespace RtEngine {
 
 		void clear();
 
-		void buildPipeline(VkDevice &device, VkRenderPass &renderPass, VkPipeline *pipeline,
-						   VkPipelineLayout &pipelineLayout);
-		void buildPipelineLayout(VkDevice &device, VkPipelineLayout *layout);
+		void buildPipeline(const VkDevice &device, const VkRenderPass &render_pass, VkPipeline *pipeline,
+						   const VkPipelineLayout &pipeline_layout);
+		void buildPipelineLayout(const VkDevice &device, VkPipelineLayout *pipeline_layout) const;
 		void setShaders(VkShaderModule vertShaderModule, VkShaderModule fragShaderModule);
 		void setInputTopology(VkPrimitiveTopology topology);
 		void setPolygonMode(VkPolygonMode polygonMode);
@@ -33,8 +33,8 @@ namespace RtEngine {
 		void enableDepthTest(VkBool32 enabled, VkCompareOp compareOp);
 		void disableColorBlending();
 		void enableAdditiveBlending();
-		void setDescriptorSetLayouts(std::vector<VkDescriptorSetLayout> &descriptorSetLayouts);
-		void setPushConstantRanges(std::vector<VkPushConstantRange> &ranges);
+		void setDescriptorSetLayouts(const std::vector<VkDescriptorSetLayout> &descriptor_set_layouts);
+		void setPushConstantRanges(const std::vector<VkPushConstantRange> &ranges);
 
 	private:
 	};

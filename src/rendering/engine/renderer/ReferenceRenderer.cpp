@@ -43,7 +43,7 @@ namespace RtEngine {
 
 		scene_manager->updateScene(mainDrawContext, currentFrame, getRenderTarget(), getRngTexture());
 		properties_manager->emitting_instances_count =
-				scene_manager->getEmittingInstancesCount(); // TODO move this together with the creation of the instance
+				scene_manager->getSceneInformation().emitting_instances_count; // TODO move this together with the creation of the instance
 															// buffers
 
 		vkResetCommandBuffer(commandBuffers[currentFrame], 0);
