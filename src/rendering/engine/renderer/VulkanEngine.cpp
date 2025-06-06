@@ -105,11 +105,12 @@ namespace RtEngine {
 		createVulkanContext();
 		createRuntimeContext();
 
-		createRenderingTargets();
+		mainDrawContext = std::make_shared<DrawContext>();
+		mainDrawContext->max_frames_in_flight = max_frames_in_flight;
+		mainDrawContext->target = std::make_shared<RenderTarget>(vulkan_context->resource_builder, vulkan_context->swapchain->extent, mainDrawContext->max_frames_in_flight);
+		mainDeletionQueue.pushFunction([&]() { mainDrawContext->target->destroy(); });
 
-		mainDeletionQueue.pushFunction([&]() { cleanupRenderingTargets(); });
-
-		scene_manager = std::make_shared<SceneManager>(vulkan_context, runtime_context, max_frames_in_flight,
+		scene_manager = std::make_shared<SceneManager>(vulkan_context, runtime_context, mainDrawContext->max_frames_in_flight,
 													   DeviceManager::RAYTRACING_PROPERTIES);
 		mainDeletionQueue.pushFunction([&]() { scene_manager->clearResources(); });
 
@@ -170,39 +171,7 @@ namespace RtEngine {
 		return format == VK_FORMAT_D32_SFLOAT_S8_UINT || format == VK_FORMAT_D24_UNORM_S8_UINT;
 	}
 
-	void VulkanEngine::createRenderingTargets() {
-		std::shared_ptr<Swapchain> swapchain = vulkan_context->swapchain;
 
-		render_targets.resize(max_frames_in_flight);
-		for (uint32_t i = 0; i < max_frames_in_flight; i++) {
-			render_targets[i] = vulkan_context->resource_builder->createImage(
-					VkExtent3D{swapchain->extent.width, swapchain->extent.height, 1}, VK_FORMAT_B8G8R8A8_UNORM,
-					VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_STORAGE_BIT,
-					VK_IMAGE_ASPECT_COLOR_BIT);
-
-			vulkan_context->resource_builder->transitionImageLayout(
-					render_targets[i].image, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
-					VK_ACCESS_NONE, VK_ACCESS_NONE, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
-		}
-
-		std::vector<uint32_t> pixels(swapchain->extent.width * swapchain->extent.height * 4);
-
-		for (int i = 0; i < swapchain->extent.width * swapchain->extent.height * 4; i++) {
-			pixels[i] = RandomUtil::generateInt();
-		}
-
-		rng_textures.resize(max_frames_in_flight);
-		for (uint32_t i = 0; i < max_frames_in_flight; i++) {
-			rng_textures[i] = vulkan_context->resource_builder->createImage(
-					pixels.data(), VkExtent3D{swapchain->extent.width, swapchain->extent.height, 1},
-					VK_FORMAT_R32G32B32A32_UINT, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_STORAGE_BIT,
-					VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_LAYOUT_GENERAL);
-		}
-	}
-
-	AllocatedImage VulkanEngine::getRenderTarget() { return render_targets[0]; }
-
-	AllocatedImage VulkanEngine::getRngTexture() { return rng_textures[0]; }
 
 	void VulkanEngine::loadScene() {
 		assert(!vulkan_context->base_options->curr_scene_name.empty());
@@ -218,7 +187,7 @@ namespace RtEngine {
 	}
 
 	void VulkanEngine::createCommandBuffers() {
-		commandBuffers.resize(max_frames_in_flight);
+		commandBuffers.resize(mainDrawContext->max_frames_in_flight);
 
 		VkCommandBufferAllocateInfo allocInfo{};
 		allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
@@ -233,9 +202,9 @@ namespace RtEngine {
 	}
 
 	void VulkanEngine::createSyncObjects() {
-		imageAvailableSemaphores.resize(max_frames_in_flight);
-		renderFinishedSemaphores.resize(max_frames_in_flight);
-		inFlightFences.resize(max_frames_in_flight);
+		imageAvailableSemaphores.resize(mainDrawContext->max_frames_in_flight);
+		renderFinishedSemaphores.resize(mainDrawContext->max_frames_in_flight);
+		inFlightFences.resize(mainDrawContext->max_frames_in_flight);
 
 		VkSemaphoreCreateInfo semaphoreInfo{};
 		semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
@@ -244,7 +213,7 @@ namespace RtEngine {
 		fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
 		fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
 
-		for (size_t i = 0; i < max_frames_in_flight; i++) {
+		for (size_t i = 0; i < mainDrawContext->max_frames_in_flight; i++) {
 			if (vkCreateSemaphore(vulkan_context->device_manager->getDevice(), &semaphoreInfo, nullptr,
 								  &imageAvailableSemaphores[i]) != VK_SUCCESS ||
 				vkCreateSemaphore(vulkan_context->device_manager->getDevice(), &semaphoreInfo, nullptr,
@@ -269,7 +238,7 @@ namespace RtEngine {
 			if (PathUtil::getFile(scene_manager->getSceneInformation().path) != vulkan_context->base_options->curr_scene_name) {
 				loadScene();
 			}
-			scene_manager->updateScene(mainDrawContext, currentFrame, getRenderTarget(), getRngTexture());
+			scene_manager->updateScene(mainDrawContext);
 			properties_manager->emitting_instances_count = static_cast<int32_t>(
 					scene_manager->getSceneInformation().emitting_instances_count); // TODO move this together with the creation of the
 																// instance buffers
@@ -280,31 +249,31 @@ namespace RtEngine {
 	}
 
 	void VulkanEngine::drawFrame() {
-		vkWaitForFences(vulkan_context->device_manager->getDevice(), 1, &inFlightFences[currentFrame], VK_TRUE,
+		vkWaitForFences(vulkan_context->device_manager->getDevice(), 1, &inFlightFences[mainDrawContext->currentFrame], VK_TRUE,
 						UINT64_MAX);
 
 		const int32_t imageIndex = aquireNextSwapchainImage();
 		if (imageIndex < 0)
 			return;
 
-		vkResetFences(vulkan_context->device_manager->getDevice(), 1, &inFlightFences[currentFrame]);
+		vkResetFences(vulkan_context->device_manager->getDevice(), 1, &inFlightFences[mainDrawContext->currentFrame]);
 
-		vkResetCommandBuffer(commandBuffers[currentFrame], 0);
-		recordCommandBuffer(commandBuffers[currentFrame], imageIndex);
+		vkResetCommandBuffer(commandBuffers[mainDrawContext->currentFrame], 0);
+		recordCommandBuffer(commandBuffers[mainDrawContext->currentFrame], imageIndex);
 
-		std::vector<VkSemaphore> waitSemaphore = {imageAvailableSemaphores[currentFrame]};
-		std::vector<VkSemaphore> signalSemaphore = {renderFinishedSemaphores[currentFrame]};
+		std::vector<VkSemaphore> waitSemaphore = {imageAvailableSemaphores[mainDrawContext->currentFrame]};
+		std::vector<VkSemaphore> signalSemaphore = {renderFinishedSemaphores[mainDrawContext->currentFrame]};
 		submitCommandBuffer(waitSemaphore, signalSemaphore);
 		presentSwapchainImage(signalSemaphore, imageIndex);
 
-		currentFrame = (currentFrame + 1) % max_frames_in_flight;
+		mainDrawContext->nextFrame();
 	}
 
 	int32_t VulkanEngine::aquireNextSwapchainImage() {
 		uint32_t imageIndex;
 		VkResult result =
 				vkAcquireNextImageKHR(vulkan_context->device_manager->getDevice(), vulkan_context->swapchain->handle,
-									  UINT64_MAX, imageAvailableSemaphores[currentFrame], VK_NULL_HANDLE, &imageIndex);
+									  UINT64_MAX, imageAvailableSemaphores[mainDrawContext->currentFrame], VK_NULL_HANDLE, &imageIndex);
 
 		if (result == VK_ERROR_OUT_OF_DATE_KHR) {
 			refreshAfterResize();
@@ -325,13 +294,13 @@ namespace RtEngine {
 		submitInfo.pWaitSemaphores = wait_semaphore.data();
 		submitInfo.pWaitDstStageMask = waitStages;
 		submitInfo.commandBufferCount = 1;
-		submitInfo.pCommandBuffers = &commandBuffers[currentFrame];
+		submitInfo.pCommandBuffers = &commandBuffers[mainDrawContext->currentFrame];
 		submitInfo.signalSemaphoreCount = static_cast<uint32_t>(signal_semaphore.size());
 		;
 		submitInfo.pSignalSemaphores = signal_semaphore.data();
 
 		if (vkQueueSubmit(vulkan_context->device_manager->getQueue(GRAPHICS), 1, &submitInfo,
-						  inFlightFences[currentFrame]) != VK_SUCCESS) {
+						  inFlightFences[mainDrawContext->currentFrame]) != VK_SUCCESS) {
 			throw std::runtime_error("failed to submit draw command buffer!");
 		}
 	}
@@ -362,10 +331,9 @@ namespace RtEngine {
 
 		properties_manager->curr_sample_count = 0;
 		vulkan_context->swapchain->recreate();
-		cleanupRenderingTargets();
-		createRenderingTargets();
+		mainDrawContext->target->recreate(vulkan_context->swapchain->extent);
 		guiManager->updateWindows();
-		scene_manager->updateScene(mainDrawContext, currentFrame, getRenderTarget(), getRngTexture());
+		scene_manager->updateScene(mainDrawContext);
 	}
 
 	void VulkanEngine::recordCommandBuffer(VkCommandBuffer commandBuffer, const uint32_t imageIndex) {
@@ -410,7 +378,7 @@ namespace RtEngine {
 		VkStridedDeviceAddressRegionKHR callableShaderSbtEntry{};
 
 		std::vector<VkDescriptorSet> descriptor_sets{};
-		descriptor_sets.push_back(scene_manager->getSceneDescriptorSet(currentFrame));
+		descriptor_sets.push_back(scene_manager->getSceneDescriptorSet(mainDrawContext->currentFrame));
 		descriptor_sets.push_back(scene_manager->getMaterial()->materialDescriptorSet);
 
 		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, pipeline.getHandle());
@@ -432,7 +400,7 @@ namespace RtEngine {
 	}
 
 	void VulkanEngine::recordCopyToSwapchain(VkCommandBuffer commandBuffer, const uint32_t swapchain_image_index) {
-		AllocatedImage render_target = getRenderTarget();
+		AllocatedImage render_target = mainDrawContext->target->getCurrentTargetImage();
 		std::shared_ptr<ResourceBuilder> resource_builder = vulkan_context->resource_builder;
 		std::shared_ptr<Swapchain> swapchain = vulkan_context->swapchain;
 
@@ -484,18 +452,8 @@ namespace RtEngine {
 		glfwTerminate();
 	}
 
-	void VulkanEngine::cleanupRenderingTargets() {
-		for (auto &image: render_targets) {
-			vulkan_context->resource_builder->destroyImage(image);
-		}
-
-		for (auto &image: rng_textures) {
-			vulkan_context->resource_builder->destroyImage(image);
-		}
-	}
-
 	void VulkanEngine::outputRenderingTarget(const std::string &output_path) {
-		AllocatedImage render_target = getRenderTarget();
+		AllocatedImage render_target = mainDrawContext->target->getCurrentTargetImage();
 		void *data = vulkan_context->resource_builder->downloadImage(render_target, sizeof(uint32_t));
 		uint8_t *fixed_data = fixImageFormatForStorage(
 				data, render_target.imageExtent.width * render_target.imageExtent.height, render_target.imageFormat);

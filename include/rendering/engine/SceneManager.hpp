@@ -46,8 +46,7 @@ namespace RtEngine {
 
 		void createScene(const std::string& scene_path);
 		void createBlas(std::vector<std::shared_ptr<MeshAsset>> &meshes);
-		void updateScene(DrawContext &draw_context, uint32_t current_image_idx, const AllocatedImage &current_image,
-						 const AllocatedImage &rng_tex);
+		void updateScene(const std::shared_ptr<DrawContext> &draw_context);
 
 		void clearResources();
 
@@ -70,8 +69,7 @@ namespace RtEngine {
 		void createDefaultSamplers();
 		void createDefaultMaterials(const VkPhysicalDeviceRayTracingPipelinePropertiesKHR& raytracingProperties);
 
-		void updateSceneDescriptorSets(uint32_t frame_idx, const AllocatedImage &current_image,
-									   const AllocatedImage &rng_tex);
+		void updateSceneDescriptorSets(uint32_t current_frame, const std::shared_ptr<RenderTarget>& render_target);
 		void updateTlas(std::vector<RenderObject> objects) const;
 
 		DeletionQueue main_deletion_queue, scene_resource_deletion_queue;

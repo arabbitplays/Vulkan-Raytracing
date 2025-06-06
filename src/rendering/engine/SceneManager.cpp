@@ -117,8 +117,7 @@ namespace RtEngine {
 
 	// ----------------------------------------------------------------------------------------------------------------
 
-	void SceneManager::updateScene(DrawContext &draw_context, uint32_t current_image_idx,
-								   const AllocatedImage &current_image, const AllocatedImage &rng_tex) {
+	void SceneManager::updateScene(const std::shared_ptr<DrawContext> &draw_context) {
 		assert(scene != nullptr);
 
 		// QuickTimer timer{"Scene Update", true};
@@ -129,15 +128,15 @@ namespace RtEngine {
 		if (!(bufferUpdateFlags & NO_UPDATE))
 			vkDeviceWaitIdle(device);
 
-		draw_context.objects.clear();
-		scene->nodes["root"]->draw(draw_context);
+		draw_context->objects.clear();
+		scene->nodes["root"]->draw(*draw_context);
 
 		if (bufferUpdateFlags & GEOMETRY_UPDATE) {
-			instance_manager->createInstanceMappingBuffer(draw_context.objects);
+			instance_manager->createInstanceMappingBuffer(draw_context->objects);
 		}
 
 		if (bufferUpdateFlags & GEOMETRY_UPDATE || bufferUpdateFlags & MATERIAL_UPDATE) {
-			instance_manager->createEmittingInstancesBuffer(draw_context.objects, getMaterial());
+			instance_manager->createEmittingInstancesBuffer(draw_context->objects, getMaterial());
 		}
 
 		if (bufferUpdateFlags != NO_UPDATE) {
@@ -147,12 +146,12 @@ namespace RtEngine {
 		}
 
 		// TODO Only partially update tlas depending on the updated dynamic objects
-		updateTlas(draw_context.objects);
+		updateTlas(draw_context->objects);
 
 		std::shared_ptr<SceneData> scene_data = scene->createSceneData();
-		memcpy(sceneUniformBuffersMapped[current_image_idx], scene_data.get(), sizeof(SceneData));
+		memcpy(sceneUniformBuffersMapped[draw_context->currentFrame], scene_data.get(), sizeof(SceneData));
 
-		updateSceneDescriptorSets(current_image_idx, current_image, rng_tex);
+		updateSceneDescriptorSets(draw_context->currentFrame, draw_context->target);
 
 		bufferUpdateFlags = NO_UPDATE;
 	}
@@ -172,8 +171,7 @@ namespace RtEngine {
 		top_level_acceleration_structure->build();
 	}
 
-	void SceneManager::updateSceneDescriptorSets(uint32_t frame_idx, const AllocatedImage &current_image,
-												 const AllocatedImage &rng_tex) {
+	void SceneManager::updateSceneDescriptorSets(uint32_t current_frame, const std::shared_ptr<RenderTarget>& render_target) {
 		VkDevice device = vulkan_context->device_manager->getDevice();
 
 		VkAccelerationStructureKHR tlas_handle = top_level_acceleration_structure->getHandle();
@@ -205,13 +203,13 @@ namespace RtEngine {
 			vulkan_context->descriptor_allocator->clearWrites();
 		}
 
-		vulkan_context->descriptor_allocator->writeImage(1, current_image.imageView, VK_NULL_HANDLE,
+		vulkan_context->descriptor_allocator->writeImage(1, render_target->getCurrentTargetImage().imageView, VK_NULL_HANDLE,
 														 VK_IMAGE_LAYOUT_GENERAL, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
-		vulkan_context->descriptor_allocator->writeBuffer(2, sceneUniformBuffers[frame_idx].handle, sizeof(SceneData),
+		vulkan_context->descriptor_allocator->writeBuffer(2, sceneUniformBuffers[current_frame].handle, sizeof(SceneData),
 														  0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
-		vulkan_context->descriptor_allocator->writeImage(9, rng_tex.imageView, VK_NULL_HANDLE, VK_IMAGE_LAYOUT_GENERAL,
+		vulkan_context->descriptor_allocator->writeImage(9, render_target->getCurrentRngImage().imageView, VK_NULL_HANDLE, VK_IMAGE_LAYOUT_GENERAL,
 														 VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
-		vulkan_context->descriptor_allocator->updateSet(device, scene_descriptor_sets[frame_idx]);
+		vulkan_context->descriptor_allocator->updateSet(device, scene_descriptor_sets[current_frame]);
 		vulkan_context->descriptor_allocator->clearWrites();
 	}
 

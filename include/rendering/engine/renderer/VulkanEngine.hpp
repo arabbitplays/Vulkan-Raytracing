@@ -10,6 +10,7 @@
 #include <AccelerationStructure.hpp>
 #include <GuiManager.hpp>
 #include <GuiWindow.hpp>
+#include <RenderTarget.hpp>
 #include <SceneManager.hpp>
 #include "../../util/QuickTimer.hpp"
 #include "DescriptorAllocator.hpp"
@@ -38,12 +39,9 @@ namespace RtEngine {
 
 		std::vector<VkCommandBuffer> commandBuffers;
 
-		DrawContext mainDrawContext;
+		std::shared_ptr<DrawContext> mainDrawContext;
 		std::shared_ptr<PropertiesManager> properties_manager;
 		std::shared_ptr<PropertiesSection> renderer_properties;
-
-		std::vector<AllocatedImage> render_targets;
-		std::vector<AllocatedImage> rng_textures;
 
 		std::shared_ptr<SceneManager> scene_manager;
 
@@ -51,7 +49,6 @@ namespace RtEngine {
 		std::vector<VkSemaphore> renderFinishedSemaphores;
 		std::vector<VkFence> inFlightFences;
 
-		uint32_t currentFrame = 0;
 		bool framebufferResized = false;
 
 		uint32_t max_frames_in_flight = 1;
@@ -86,11 +83,6 @@ namespace RtEngine {
 		void presentSwapchainImage(const std::vector<VkSemaphore>& wait_semaphore, uint32_t image_index);
 
 		void refreshAfterResize();
-
-		void createRenderingTargets();
-		virtual AllocatedImage getRenderTarget();
-		virtual AllocatedImage getRngTexture();
-		void cleanupRenderingTargets();
 
 		void outputRenderingTarget(const std::string &output_path);
 		uint8_t *fixImageFormatForStorage(void *image_data, size_t pixel_count, VkFormat originalFormat);

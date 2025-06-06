@@ -1,4 +1,5 @@
 #include <AccelerationStructure.hpp>
+#include <RenderTarget.hpp>
 
 #ifndef BASICS_IRENDERABLE_HPP
 #define BASICS_IRENDERABLE_HPP
@@ -24,7 +25,16 @@ namespace RtEngine {
 	};
 
 	struct DrawContext {
+		uint32_t currentFrame = 0;
+		uint32_t max_frames_in_flight = 1;
+		std::shared_ptr<RenderTarget> target;
 		std::vector<RenderObject> objects;
+
+		void nextFrame()
+		{
+			currentFrame = (currentFrame + 1) % max_frames_in_flight;
+			target->nextImage();
+		}
 	};
 
 	class IRenderable {

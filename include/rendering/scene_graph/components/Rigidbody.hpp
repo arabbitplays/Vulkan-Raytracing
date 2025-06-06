@@ -10,7 +10,7 @@ namespace RtEngine {
 	class Rigidbody : public Component {
 	public:
 		Rigidbody() = default;
-		Rigidbody(std::shared_ptr<Node> node) : Component(nullptr, node){};
+		explicit Rigidbody(const std::shared_ptr<Node>& node) : Component(nullptr, node){};
 
 		static constexpr std::string COMPONENT_NAME = "Rigidbody";
 

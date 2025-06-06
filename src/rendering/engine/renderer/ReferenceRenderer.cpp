@@ -26,7 +26,7 @@ namespace RtEngine {
 	}
 
 	void ReferenceRenderer::drawFrame() {
-		vkWaitForFences(vulkan_context->device_manager->getDevice(), 1, &inFlightFences[currentFrame], VK_TRUE,
+		vkWaitForFences(vulkan_context->device_manager->getDevice(), 1, &inFlightFences[mainDrawContext->currentFrame], VK_TRUE,
 						UINT64_MAX);
 
 		uint32_t curr_sample_count = properties_manager->curr_sample_count;
@@ -39,19 +39,19 @@ namespace RtEngine {
 				return;
 		}
 
-		vkResetFences(vulkan_context->device_manager->getDevice(), 1, &inFlightFences[currentFrame]);
+		vkResetFences(vulkan_context->device_manager->getDevice(), 1, &inFlightFences[mainDrawContext->currentFrame]);
 
-		scene_manager->updateScene(mainDrawContext, currentFrame, getRenderTarget(), getRngTexture());
+		scene_manager->updateScene(mainDrawContext);
 		properties_manager->emitting_instances_count =
 				scene_manager->getSceneInformation().emitting_instances_count; // TODO move this together with the creation of the instance
 															// buffers
 
-		vkResetCommandBuffer(commandBuffers[currentFrame], 0);
-		recordCommandBuffer(commandBuffers[currentFrame], imageIndex);
+		vkResetCommandBuffer(commandBuffers[mainDrawContext->currentFrame], 0);
+		recordCommandBuffer(commandBuffers[mainDrawContext->currentFrame], imageIndex);
 
 		if (present_image) {
-			std::vector<VkSemaphore> waitSemaphore = {imageAvailableSemaphores[currentFrame]};
-			std::vector<VkSemaphore> signalSemaphore = {renderFinishedSemaphores[currentFrame]};
+			std::vector<VkSemaphore> waitSemaphore = {imageAvailableSemaphores[mainDrawContext->currentFrame]};
+			std::vector<VkSemaphore> signalSemaphore = {renderFinishedSemaphores[mainDrawContext->currentFrame]};
 			submitCommandBuffer(waitSemaphore, signalSemaphore);
 			presentSwapchainImage(signalSemaphore, imageIndex);
 
@@ -73,7 +73,7 @@ namespace RtEngine {
 						 curr_sample_count, progress, hours, minutes, sec);
 		}
 
-		currentFrame = (currentFrame + 1) % max_frames_in_flight;
+		mainDrawContext->nextFrame();
 	}
 
 	void ReferenceRenderer::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex) {

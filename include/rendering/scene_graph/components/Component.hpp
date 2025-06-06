@@ -1,9 +1,8 @@
 #ifndef COMPONENT_HPP
 #define COMPONENT_HPP
-#include <IRenderable.hpp>
 #include <PropertiesManager.hpp>
 #include <RuntimeContext.hpp>
-#include <VulkanContext.hpp>
+#include <IRenderable.hpp>
 
 namespace RtEngine {
 	class Node;
@@ -13,7 +12,7 @@ namespace RtEngine {
 	class Component {
 	public:
 		Component() = default;
-		Component(std::shared_ptr<RuntimeContext> context, std::shared_ptr<Node> node) : context(context), node(node){};
+		Component(const std::shared_ptr<RuntimeContext>& context, const std::shared_ptr<Node>& node) : node(node), context(context){};
 		virtual ~Component() = default;
 
 		virtual void OnStart() = 0;
@@ -24,9 +23,11 @@ namespace RtEngine {
 		std::shared_ptr<PropertiesManager> getProperties() {
 			if (properties == nullptr) {
 				properties = std::make_shared<PropertiesManager>();
+
+				properties->property_sections.clear();
+				definePropertySections();
 			}
-			properties->property_sections.clear();
-			definePropertySections();
+
 			return properties;
 		};
 		virtual void initProperties(const YAML::Node &config_node) {

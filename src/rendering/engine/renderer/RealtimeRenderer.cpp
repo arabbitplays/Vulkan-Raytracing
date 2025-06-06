@@ -17,7 +17,7 @@ namespace RtEngine {
 			if (PathUtil::getFile(scene_manager->getSceneInformation().path) != vulkan_context->base_options->curr_scene_name) {
 				loadScene();
 			}
-			scene_manager->updateScene(mainDrawContext, currentFrame, getRenderTarget(), getRngTexture());
+			scene_manager->updateScene(mainDrawContext);
 			properties_manager->emitting_instances_count =
 					scene_manager->getSceneInformation().emitting_instances_count; // TODO move this together with the creation of the
 																// instance buffers
@@ -28,8 +28,4 @@ namespace RtEngine {
 
 		vkDeviceWaitIdle(vulkan_context->device_manager->getDevice());
 	}
-
-	AllocatedImage RealtimeRenderer::getRenderTarget() { return render_targets[currentFrame]; }
-
-	AllocatedImage RealtimeRenderer::getRngTexture() { return rng_textures[currentFrame]; }
 } // namespace RtEngine

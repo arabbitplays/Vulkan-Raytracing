@@ -14,8 +14,6 @@ namespace RtEngine {
 
 	protected:
 		void mainLoop() override;
-		AllocatedImage getRenderTarget() override;
-		AllocatedImage getRngTexture() override;
 	};
 } // namespace RtEngine
 

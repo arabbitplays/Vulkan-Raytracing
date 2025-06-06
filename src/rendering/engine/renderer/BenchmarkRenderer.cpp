@@ -39,7 +39,7 @@ namespace RtEngine {
 	}
 
 	void BenchmarkRenderer::drawFrame() {
-		vkWaitForFences(vulkan_context->device_manager->getDevice(), 1, &inFlightFences[currentFrame], VK_TRUE,
+		vkWaitForFences(vulkan_context->device_manager->getDevice(), 1, &inFlightFences[mainDrawContext->currentFrame], VK_TRUE,
 						UINT64_MAX);
 
 		uint32_t curr_sample_count = properties_manager->curr_sample_count;
@@ -56,26 +56,26 @@ namespace RtEngine {
 				return;
 		}
 
-		vkResetFences(vulkan_context->device_manager->getDevice(), 1, &inFlightFences[currentFrame]);
+		vkResetFences(vulkan_context->device_manager->getDevice(), 1, &inFlightFences[mainDrawContext->currentFrame]);
 
-		scene_manager->updateScene(mainDrawContext, currentFrame, getRenderTarget(), getRngTexture());
+		scene_manager->updateScene(mainDrawContext);
 		properties_manager->emitting_instances_count =
 				scene_manager->getSceneInformation().emitting_instances_count; // TODO move this together with the creation of the instance
 															// buffers
 
-		vkResetCommandBuffer(commandBuffers[currentFrame], 0);
-		recordCommandBuffer(commandBuffers[currentFrame], imageIndex);
+		vkResetCommandBuffer(commandBuffers[mainDrawContext->currentFrame], 0);
+		recordCommandBuffer(commandBuffers[mainDrawContext->currentFrame], imageIndex);
 
 		if (present_image) {
-			std::vector<VkSemaphore> waitSemaphore = {imageAvailableSemaphores[currentFrame]};
-			std::vector<VkSemaphore> signalSemaphore = {renderFinishedSemaphores[currentFrame]};
+			std::vector<VkSemaphore> waitSemaphore = {imageAvailableSemaphores[mainDrawContext->currentFrame]};
+			std::vector<VkSemaphore> signalSemaphore = {renderFinishedSemaphores[mainDrawContext->currentFrame]};
 			submitCommandBuffer(waitSemaphore, signalSemaphore);
 			presentSwapchainImage(signalSemaphore, imageIndex);
 		} else {
 			submitCommandBuffer({}, {});
 		}
 
-		currentFrame = (currentFrame + 1) % max_frames_in_flight;
+		mainDrawContext->nextFrame();
 	}
 
 	void BenchmarkRenderer::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex) {
@@ -88,7 +88,7 @@ namespace RtEngine {
 
 	float BenchmarkRenderer::calculateMSEToReference() {
 		QuickTimer timer("MSE Calculation");
-		AllocatedImage render_target = getRenderTarget();
+		AllocatedImage render_target = mainDrawContext->target->getCurrentTargetImage();
 		uint32_t width = render_target.imageExtent.width;
 		uint32_t height = render_target.imageExtent.height;
 
