@@ -104,6 +104,8 @@ namespace RtEngine {
 		void loadScene();
 		virtual void initProperties();
 		void initSceneSelectionProperty() const;
+
+		void handleGuiUpdate(uint32_t update_flags) const;
 	};
 
 } // namespace RtEngine

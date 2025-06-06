@@ -84,6 +84,9 @@ namespace RtEngine {
 
 		guiManager->addWindow(std::make_shared<OptionsWindow>(properties_manager));
 		auto inspector_window = std::make_shared<InspectorWindow>(properties_manager, scene_manager);
+		inspector_window->addCallback([this](uint32_t flags) {
+			this->handleGuiUpdate(flags);
+		});
 		guiManager->addWindow(inspector_window);
 		auto hierarchy_window = std::make_shared<HierarchyWindow>(properties_manager, inspector_window, scene_manager);
 		guiManager->addWindow(hierarchy_window);
@@ -551,4 +554,11 @@ namespace RtEngine {
 		renderer_properties->addSelection(CURR_SCENE_OPTION_NAME, &vulkan_context->base_options->curr_scene_name,
 										  scenes);
 	}
+
+	void VulkanEngine::handleGuiUpdate(uint32_t update_flags) const
+	{
+		properties_manager->curr_sample_count = 0;
+		scene_manager->bufferUpdateFlags |= update_flags;
+	}
+
 } // namespace RtEngine

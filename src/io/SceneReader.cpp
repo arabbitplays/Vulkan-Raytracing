@@ -164,7 +164,6 @@ namespace RtEngine {
 			}
 			if (comp_name == Transform::COMPONENT_NAME) {
 				scene_node->transform->initProperties(comp_node);
-				scene_node->transform->updateTransforms(glm::mat4(1.0f));
 			} else if (comp_name == MeshRenderer::COMPONENT_NAME) {
 				std::shared_ptr<MeshRenderer> mesh_component =
 						std::make_shared<MeshRenderer>(runtime_context, scene_node);

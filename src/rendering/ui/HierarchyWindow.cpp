@@ -48,8 +48,6 @@ namespace RtEngine {
 		nodes_to_add.clear();
 		nodes_to_remove.clear();
 
-		root_node->refreshTransform(glm::mat4(1.0f));
-
 		if (last_clicked_node_key != "")
 			inspector_window->setNode(scene->nodes[last_clicked_node_key]);
 		last_clicked_node_key = "";

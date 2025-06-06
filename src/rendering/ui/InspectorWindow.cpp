@@ -32,9 +32,7 @@ namespace RtEngine {
 		}
 
 		if (refresh) {
-			root_node->refreshTransform(glm::mat4(1.0f));
-			main_props_manager->curr_sample_count = 0;
-			scene_manager->bufferUpdateFlags = scene_manager->bufferUpdateFlags | SceneManager::MATERIAL_UPDATE;
+			notifyUpdate(SceneManager::MATERIAL_UPDATE);
 		}
 	}
 

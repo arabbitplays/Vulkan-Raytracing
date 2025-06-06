@@ -40,6 +40,8 @@ namespace RtEngine {
 	void Scene::update(uint32_t image_width, uint32_t image_height) {
 		camera->update(image_width, image_height);
 
+		getRootNode()->refreshTransform(glm::mat4(1.0f));
+
 		for (auto &node: nodes) {
 			node.second->update();
 		}
