@@ -28,7 +28,7 @@ namespace RtEngine {
 	private:
 		void createRenderPass(VkDevice device, VkFormat image_format);
 		void createFrameBuffers(VkDevice device, std::shared_ptr<Swapchain> swapchain);
-		void createDescriptorPool(VkDevice device, std::shared_ptr<DescriptorAllocator> descriptor_allocator);
+		void createDescriptorPool(VkDevice device);
 		void initImGui(std::shared_ptr<DeviceManager> device_manager, GLFWwindow *window,
 					   std::shared_ptr<Swapchain> swapchain);
 		void shutdownImGui();

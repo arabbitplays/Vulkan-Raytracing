@@ -1,7 +1,7 @@
 #ifndef BASICS_DESCRIPTORALLOCATOR_HPP
 #define BASICS_DESCRIPTORALLOCATOR_HPP
 
-#include <deque>
+#include <list>
 #include <span>
 #include <vector>
 #include <vulkan/vulkan.h>
@@ -14,38 +14,43 @@ namespace RtEngine {
 			float ratio;
 		};
 
+		struct ImageInfoWrapper
+		{
+			std::vector<VkDescriptorImageInfo> image_infos;
+		};
+
 		void init(VkDevice device, uint32_t initialSetCount, std::span<PoolSizeRatio> poolRatios);
 		void clearPools(VkDevice device);
 		void destroyPools(VkDevice device);
-		VkDescriptorSet allocate(VkDevice device, VkDescriptorSetLayout layout, void *pNext = nullptr);
-		VkDescriptorPool createPool(VkDevice device, std::vector<VkDescriptorPoolSize> pool_sizes,
+		VkDescriptorSet allocate(VkDevice device, VkDescriptorSetLayout layout, const void *pNext = nullptr);
+		static VkDescriptorPool createPool(VkDevice device, const std::vector<VkDescriptorPoolSize>& pool_sizes,
 									VkDescriptorPoolCreateFlags flags);
 
 		void writeBuffer(uint32_t binding, VkBuffer buffer, VkDeviceSize size, uint32_t offset, VkDescriptorType type);
 		void writeBuffer(uint32_t binding, VkBuffer buffer, uint32_t offset, VkDescriptorType type);
 		void writeImage(uint32_t binding, VkImageView imageView, VkSampler sampler, VkImageLayout layout,
-						VkDescriptorType type, uint32_t array_idx = 0);
-		void writeImages(uint32_t binding, std::vector<VkImageView> imageViews, VkSampler sampler, VkImageLayout layout,
+						VkDescriptorType type);
+		void writeImages(uint32_t binding, const std::vector<VkImageView>& imageViews, VkSampler sampler, VkImageLayout layout,
 						 VkDescriptorType type);
 		void writeAccelerationStructure(uint32_t binding, const VkAccelerationStructureKHR &accelerationStructure,
 										VkDescriptorType type);
-		void updateSet(VkDevice &device, VkDescriptorSet &set);
+		void updateSet(const VkDevice &device, const VkDescriptorSet &set);
 		void clearWrites();
 
 		VkDescriptorPool getGUIDescriptorPool();
 
 	private:
 		VkDescriptorPool getPool(VkDevice device);
-		VkDescriptorPool createPool(VkDevice device, uint32_t setCount, std::span<PoolSizeRatio> poolRatios);
+		static VkDescriptorPool createPool(VkDevice device, uint32_t setCount, std::span<PoolSizeRatio> poolRatios);
 
 		std::vector<PoolSizeRatio> ratios;
 		std::vector<VkDescriptorPool> fullPools;
 		std::vector<VkDescriptorPool> readyPools;
 		uint32_t setsPerPool;
 
-		std::vector<VkDescriptorImageInfo> imageInfos{};
-		std::deque<VkDescriptorBufferInfo> bufferInfos;
-		std::deque<VkWriteDescriptorSetAccelerationStructureKHR> accelerationStructureInfos;
+		std::list<ImageInfoWrapper> imageInfos{};
+		std::list<VkDescriptorBufferInfo> bufferInfos;
+		std::list<VkWriteDescriptorSetAccelerationStructureKHR> accelerationStructureInfos;
 		std::vector<VkWriteDescriptorSet> writes;
 
 		const uint32_t GROW_RATIO = 2;

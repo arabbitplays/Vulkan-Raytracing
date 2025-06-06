@@ -18,7 +18,7 @@ namespace RtEngine {
 		VkDevice device = context->device_manager->getDevice();
 		createRenderPass(device, context->swapchain->imageFormat);
 		createFrameBuffers(device, context->swapchain);
-		createDescriptorPool(device, context->descriptor_allocator);
+		createDescriptorPool(device);
 
 		deletion_queue.pushFunction([&]() {
 			vkDestroyRenderPass(this->context->device_manager->getDevice(), render_pass, nullptr);
@@ -56,12 +56,12 @@ namespace RtEngine {
 		}
 	}
 
-	void GuiManager::createDescriptorPool(VkDevice device, std::shared_ptr<DescriptorAllocator> descriptor_allocator) {
+	void GuiManager::createDescriptorPool(VkDevice device) {
 		std::vector<VkDescriptorPoolSize> pool_sizes = {
 				{VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1},
 		};
 		descriptor_pool =
-				descriptor_allocator->createPool(device, pool_sizes, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT);
+				DescriptorAllocator::createPool(device, pool_sizes, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT);
 	}
 
 	void GuiManager::initImGui(std::shared_ptr<DeviceManager> device_manager, GLFWwindow *window,
