@@ -3,9 +3,8 @@
 #include <imgui.h>
 
 namespace RtEngine {
-	InspectorWindow::InspectorWindow(std::shared_ptr<PropertiesManager> main_props_manager,
-									 std::shared_ptr<SceneManager> scene_manager) :
-		GuiWindow(main_props_manager), scene_manager(scene_manager) {}
+	InspectorWindow::InspectorWindow(const std::shared_ptr<SceneManager>& scene_manager) :
+		GuiWindow(), scene_manager(scene_manager) {}
 
 	void InspectorWindow::createFrame() {
 		if (!node || !scene_manager)

@@ -9,7 +9,6 @@ namespace RtEngine {
 	class GuiWindow {
 	public:
 		GuiWindow() = default;
-		GuiWindow(std::shared_ptr<PropertiesManager> main_props_manager) : main_props_manager(main_props_manager){};
 
 		virtual ~GuiWindow() = default;
 
@@ -31,7 +30,6 @@ namespace RtEngine {
 		}
 
 		bool show_window = true;
-		std::shared_ptr<PropertiesManager> main_props_manager;
 
 		std::deque<std::function<void(uint32_t)>> update_callbacks;
 	};

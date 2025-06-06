@@ -14,7 +14,7 @@ namespace RtEngine {
 		}
 
 		if (reset_image) {
-			main_props_manager->curr_sample_count = 0;
+			notifyUpdate(0);
 		}
 	}
 } // namespace RtEngine

@@ -29,8 +29,7 @@ namespace RtEngine {
 	class HierarchyWindow final : public GuiWindow {
 	public:
 		HierarchyWindow() = default;
-		HierarchyWindow(std::shared_ptr<PropertiesManager> main_props_manager,
-						std::shared_ptr<InspectorWindow> inspector_window, std::shared_ptr<SceneManager> scene_manager);
+		HierarchyWindow(const std::shared_ptr<InspectorWindow>& inspector_window, const std::shared_ptr<SceneManager>& scene_manager);
 		~HierarchyWindow() override = default;
 
 		void createFrame() override;

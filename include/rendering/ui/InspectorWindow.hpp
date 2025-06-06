@@ -11,8 +11,7 @@ namespace RtEngine {
 	class InspectorWindow : public GuiWindow {
 	public:
 		InspectorWindow() = default;
-		InspectorWindow(std::shared_ptr<PropertiesManager> main_props_manager,
-						std::shared_ptr<SceneManager> scene_manager);
+		explicit InspectorWindow(const std::shared_ptr<SceneManager>& scene_manager);
 		~InspectorWindow() override = default;
 
 		void createFrame() override;

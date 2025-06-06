@@ -9,7 +9,7 @@ namespace RtEngine {
 	class OptionsWindow final : public GuiWindow {
 	public:
 		OptionsWindow() : GuiWindow() {}
-		explicit OptionsWindow(std::shared_ptr<PropertiesManager> props_manager) : GuiWindow(props_manager) {}
+		explicit OptionsWindow(const std::shared_ptr<PropertiesManager>& props_manager) : GuiWindow(), main_props_manager(props_manager) {}
 
 		void createFrame() override;
 
@@ -30,7 +30,7 @@ namespace RtEngine {
 				.sample_brdf = true,
 		};
 
-	protected:
+		std::shared_ptr<PropertiesManager> main_props_manager;
 	};
 
 } // namespace RtEngine

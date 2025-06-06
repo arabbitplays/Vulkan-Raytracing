@@ -3,10 +3,9 @@
 #include <spdlog/spdlog.h>
 
 namespace RtEngine {
-	HierarchyWindow::HierarchyWindow(std::shared_ptr<PropertiesManager> main_props_manager,
-									 std::shared_ptr<InspectorWindow> inspector_window,
-									 std::shared_ptr<SceneManager> scene_manager) :
-		GuiWindow(main_props_manager), inspector_window(inspector_window), scene_manager(scene_manager) {}
+	HierarchyWindow::HierarchyWindow(const std::shared_ptr<InspectorWindow>& inspector_window,
+									 const std::shared_ptr<SceneManager>& scene_manager) :
+		GuiWindow(), inspector_window(inspector_window), scene_manager(scene_manager) {}
 
 	void HierarchyWindow::createFrame() {
 		if (!scene_manager || !scene_manager->scene)
@@ -42,7 +41,7 @@ namespace RtEngine {
 		std::shared_ptr<Node> root_node = scene->nodes["root"];
 
 		if (!nodes_to_add.empty() || !nodes_to_remove.empty()) {
-			main_props_manager->curr_sample_count = 0;
+			notifyUpdate(0);
 		}
 
 		nodes_to_add.clear();

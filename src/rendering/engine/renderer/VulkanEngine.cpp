@@ -82,13 +82,22 @@ namespace RtEngine {
 
 		mainDeletionQueue.pushFunction([&]() { guiManager->destroy(); });
 
-		guiManager->addWindow(std::make_shared<OptionsWindow>(properties_manager));
-		auto inspector_window = std::make_shared<InspectorWindow>(properties_manager, scene_manager);
+		auto options_window = std::make_shared<OptionsWindow>(properties_manager);
+		options_window->addCallback([this](uint32_t flags) {
+			this->handleGuiUpdate(flags);
+		});
+		guiManager->addWindow(options_window);
+
+		auto inspector_window = std::make_shared<InspectorWindow>(scene_manager);
 		inspector_window->addCallback([this](uint32_t flags) {
 			this->handleGuiUpdate(flags);
 		});
 		guiManager->addWindow(inspector_window);
-		auto hierarchy_window = std::make_shared<HierarchyWindow>(properties_manager, inspector_window, scene_manager);
+
+		auto hierarchy_window = std::make_shared<HierarchyWindow>(inspector_window, scene_manager);
+		hierarchy_window->addCallback([this](uint32_t flags) {
+			this->handleGuiUpdate(flags);
+		});
 		guiManager->addWindow(hierarchy_window);
 	}
 
