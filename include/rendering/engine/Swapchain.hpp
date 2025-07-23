@@ -13,7 +13,7 @@ namespace RtEngine {
 		Swapchain() = default;
 		Swapchain(std::shared_ptr<DeviceManager> device_manager, GLFWwindow *window,
 				  std::shared_ptr<ResourceBuilder> resource_builder) :
-			device_manager(device_manager), resource_builder(resource_builder) {
+			device_manager(device_manager), resource_builder(resource_builder), window(window) {
 			createSwapchain();
 		};
 		static SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice device, VkSurfaceKHR surface);

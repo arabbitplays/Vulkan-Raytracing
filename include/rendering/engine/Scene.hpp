@@ -81,12 +81,12 @@ namespace RtEngine {
 	protected:
 		void initScene() {
 			std::string folder = "textures/environmentMaps/";
-			environment_map[0] = resource_builder.loadTextureImage(folder + "posx.jpg").image;
+			/*environment_map[0] = resource_builder.loadTextureImage(folder + "posx.jpg").image;
 			environment_map[1] = resource_builder.loadTextureImage(folder + "negx.jpg").image;
 			environment_map[2] = resource_builder.loadTextureImage(folder + "posy.jpg").image;
 			environment_map[3] = resource_builder.loadTextureImage(folder + "negy.jpg").image;
 			environment_map[4] = resource_builder.loadTextureImage(folder + "posz.jpg").image;
-			environment_map[5] = resource_builder.loadTextureImage(folder + "negz.jpg").image;
+			environment_map[5] = resource_builder.loadTextureImage(folder + "negz.jpg").image;*/
 
 			deletion_queue.pushFunction([&]() {
 				for (auto image: environment_map) {

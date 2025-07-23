@@ -2,7 +2,7 @@
 // Created by oschdi on 4/27/25.
 //
 
-#include "DeviceManager.hpp"
+#include <DeviceManager.hpp>
 #include <Swapchain.hpp>
 #include <VulkanUtil.hpp>
 #include <cstring>
@@ -11,7 +11,7 @@
 namespace RtEngine {
 	const std::vector<const char *> validationLayers = {
 			"VK_LAYER_KHRONOS_validation",
-			"VK_LAYER_PROFILER_unified",
+		//	"VK_LAYER_PROFILER_unified",
 	};
 
 	const std::vector<const char *> deviceExtensions = {

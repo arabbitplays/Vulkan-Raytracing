@@ -17,7 +17,7 @@ namespace RtEngine {
 		bool refresh = false;
 		if (show_window) {
 			ImGui::Begin("Inspector", &show_window);
-			ImGui::Text(node->name.c_str());
+			ImGui::Text("%s", node->name.c_str());
 			ImGui::Separator();
 
 			for (auto &component: node->components) {

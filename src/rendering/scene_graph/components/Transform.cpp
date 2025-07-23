@@ -25,9 +25,9 @@ namespace RtEngine {
 
 		auto section = std::make_shared<PropertiesSection>(COMPONENT_NAME);
 
-		section->addVector("Position", &decomposed_transform.translation);
-		section->addVector("Rotation", &decomposed_transform.rotation);
-		section->addVector("Scale", &decomposed_transform.scale);
+		section->addVector("position", &decomposed_transform.translation);
+		section->addVector("rotation", &decomposed_transform.rotation);
+		section->addVector("scale", &decomposed_transform.scale);
 
 		properties->addPropertySection(section);
 	}

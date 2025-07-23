@@ -162,7 +162,7 @@ namespace RtEngine {
 		};
 
 		auto descriptorAllocator = std::make_shared<DescriptorAllocator>();
-		descriptorAllocator->init(vulkan_context->device_manager->getDevice(), 4, poolRatios);
+		descriptorAllocator->init(vulkan_context->device_manager->getDevice(), 8, poolRatios);
 
 		return descriptorAllocator;
 	}

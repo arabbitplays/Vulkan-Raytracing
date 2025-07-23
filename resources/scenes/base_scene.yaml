@@ -1,0 +1,25 @@
+scene:
+  material_name: metal_rough
+  camera:
+    interactive: false
+    fov: 45.0
+    view_dir: [0.0, 0.0, -1.0]
+    position: [0.0, 0.0, 10.0]
+  meshes:
+    - path: meshes/plane.obj
+  materials:
+    - albedo: [1.0, 0.0, 1.0]
+      metallic: 0.5
+      roughness: 0.5
+      emission_power: 1
+      emission_color: [1.0, 1.0, 1.0]
+  nodes:
+    - name: "test"
+      components:
+        - Transform:
+            position: [0.0, 0.0, 0.0]
+            rotation: [0.0, 0.0, 0.0]
+            scale: [1.0, 1.0, 1.0]
+        - MeshRenderer:
+            mesh: plane
+            material_idx: 0
