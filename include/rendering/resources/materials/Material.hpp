@@ -23,8 +23,9 @@ namespace RtEngine {
 			name(name), vulkan_context(vulkan_context), runtime_context(runtime_context) {
 			std::vector<DescriptorAllocator::PoolSizeRatio> poolRatios = {
 					{VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1},
+					{VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 10},
 			};
-			descriptorAllocator.init(vulkan_context->device_manager->getDevice(), 4, poolRatios);
+			descriptorAllocator.init(vulkan_context->device_manager->getDevice(), 8, poolRatios);
 
 			mainDeletionQueue.pushFunction(
 					[&]() { descriptorAllocator.destroyPools(this->vulkan_context->device_manager->getDevice()); });

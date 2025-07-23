@@ -15,9 +15,9 @@ namespace RtEngine {
 		VkDevice device = vulkan_context->device_manager->getDevice();
 
 		layoutBuilder.addBinding(0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
-		layoutBuilder.addBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 256);
-		layoutBuilder.addBinding(2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 256);
-		layoutBuilder.addBinding(3, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 256);
+		layoutBuilder.addBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 16); // TODO make this dynamic depending on the scene
+		layoutBuilder.addBinding(2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 16);
+		layoutBuilder.addBinding(3, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 16);
 
 		materialLayout = layoutBuilder.build(device, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR);
 		mainDeletionQueue.pushFunction([&]() {
@@ -75,6 +75,11 @@ namespace RtEngine {
 			std::vector<VkImageView> imageViews{};
 			for (auto &texture: textures) {
 				imageViews.push_back(texture->image.imageView);
+			}
+
+			// TODO make this clean so that holes get filled with the default tex
+			while (imageViews.size() < 16) {
+				imageViews.push_back(textures[0]->image.imageView);
 			}
 			return imageViews;
 		};

@@ -76,11 +76,11 @@ namespace RtEngine {
 				VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
 
 		raygenShaderBindingTable =
-				context->resource_builder->createBuffer(handleSize, sbtUsageFlags, sbtMemoryPropertyFlags);
+				context->resource_builder->createBuffer(rgen_indices.size() * handleSizeAligned, sbtUsageFlags, sbtMemoryPropertyFlags);
 		missShaderBindingTable =
-				context->resource_builder->createBuffer(handleSize, sbtUsageFlags, sbtMemoryPropertyFlags);
+				context->resource_builder->createBuffer(miss_indices.size() * handleSizeAligned, sbtUsageFlags, sbtMemoryPropertyFlags);
 		hitShaderBindingTable =
-				context->resource_builder->createBuffer(handleSize, sbtUsageFlags, sbtMemoryPropertyFlags);
+				context->resource_builder->createBuffer(hit_indices.size() * handleSizeAligned, sbtUsageFlags, sbtMemoryPropertyFlags);
 		deletionQueue.pushFunction([&]() {
 			context->resource_builder->destroyBuffer(raygenShaderBindingTable);
 			context->resource_builder->destroyBuffer(missShaderBindingTable);
