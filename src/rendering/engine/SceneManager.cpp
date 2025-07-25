@@ -137,6 +137,8 @@ namespace RtEngine {
 
 		if (bufferUpdateFlags & GEOMETRY_UPDATE || bufferUpdateFlags & MATERIAL_UPDATE) {
 			instance_manager->createEmittingInstancesBuffer(draw_context->objects, getMaterial());
+			vulkan_context->descriptor_allocator->writeBuffer(7, instance_manager->getEmittingInstancesBuffer().handle,
+												  0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
 		}
 
 		if (bufferUpdateFlags != NO_UPDATE) {
@@ -186,8 +188,7 @@ namespace RtEngine {
 															  VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
 			vulkan_context->descriptor_allocator->writeBuffer(6, instance_manager->getInstanceBuffer().handle, 0,
 															  VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
-			vulkan_context->descriptor_allocator->writeBuffer(7, instance_manager->getEmittingInstancesBuffer().handle,
-															  0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+
 
 			std::vector<VkImageView> views{};
 			for (uint32_t i = 0; i < 6; i++) {
@@ -196,11 +197,6 @@ namespace RtEngine {
 			vulkan_context->descriptor_allocator->writeImages(8, views, defaultSamplerLinear,
 															  VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL,
 															  VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
-
-			for (int i = 0; i < max_frames_in_flight; i++) {
-				vulkan_context->descriptor_allocator->updateSet(device, scene_descriptor_sets[i]);
-			}
-			vulkan_context->descriptor_allocator->clearWrites();
 		}
 
 		vulkan_context->descriptor_allocator->writeImage(1, render_target->getCurrentTargetImage().imageView, VK_NULL_HANDLE,
@@ -209,7 +205,10 @@ namespace RtEngine {
 														  0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
 		vulkan_context->descriptor_allocator->writeImage(9, render_target->getCurrentRngImage().imageView, VK_NULL_HANDLE, VK_IMAGE_LAYOUT_GENERAL,
 														 VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
-		vulkan_context->descriptor_allocator->updateSet(device, scene_descriptor_sets[current_frame]);
+
+		for (int i = 0; i < max_frames_in_flight; i++) {
+			vulkan_context->descriptor_allocator->updateSet(device, scene_descriptor_sets[i]);
+		}
 		vulkan_context->descriptor_allocator->clearWrites();
 	}
 

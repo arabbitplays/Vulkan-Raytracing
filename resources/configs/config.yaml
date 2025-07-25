@@ -1,0 +1,8 @@
+Material:
+  Normal_Mapping: false
+  Sample_Lights: true
+  Sample_BSDF: true
+  Russian_Roulette: false
+Renderer:
+  Max_Depth: 5
+  Scene: base_scene.yaml

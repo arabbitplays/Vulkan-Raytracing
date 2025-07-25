@@ -127,8 +127,8 @@ namespace RtEngine {
 	MetalRoughMaterial::initializeInstanceProperties(const std::shared_ptr<MaterialResources> &resources) {
 		auto section = std::make_shared<PropertiesSection>("Metal Rough Material");
 		section->addVector("Albedo", &resources->albedo);
-		section->addFloat("Metal", &resources->properties.x, 0, 1);
-		section->addFloat("Roughness", &resources->properties.y, 0, 1);
+		section->addFloat("Metal", &resources->properties.x, ALL_PROPERTY_FLAGS, 0, 1);
+		section->addFloat("Roughness", &resources->properties.y, ALL_PROPERTY_FLAGS, 0, 1);
 		section->addFloat("Eta", &resources->properties.w);
 		section->addVector("Emission Color", reinterpret_cast<glm::vec3 *>(&resources->emission));
 		section->addFloat("Emission Power", &resources->emission.w);

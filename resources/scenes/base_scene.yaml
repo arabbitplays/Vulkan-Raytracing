@@ -7,19 +7,93 @@ scene:
     position: [0.0, 0.0, 10.0]
   meshes:
     - path: meshes/plane.obj
+    - path: meshes/sphere.obj
   materials:
-    - albedo: [1.0, 0.0, 1.0]
-      metallic: 0.5
-      roughness: 0.5
-      emission_power: 1
+    - emission_power: 1
       emission_color: [1.0, 1.0, 1.0]
+    - albedo: [ 0.9, 0.9, 0.9 ]
+      metallic: 0.1
+      roughness: 1
+    - albedo: [ 1, 0, 0 ]
+      metallic: 0.1
+      roughness: 1
+    - albedo: [ 0, 1, 0 ]
+      metallic: 0.1
+      roughness: 1
+    - albedo: [ 0, 0, 1 ]
+      metallic: 0.1
+      roughness: 1
+    - albedo: [ 1, 1, 1 ]
+      metallic: 0.1
+      roughness: 1
   nodes:
-    - name: "test"
+    - name: "Light"
       components:
         - Transform:
-            position: [0.0, 0.0, 0.0]
-            rotation: [0.0, 0.0, 0.0]
-            scale: [1.0, 1.0, 1.0]
+            position: [0.0, 2.4, 0.0]
+            rotation: [90.0, 0.0, 0.0]
+            scale: [3.0, 3.0, 3.0]
         - MeshRenderer:
             mesh: plane
             material_idx: 0
+    - name: "Sphere"
+      components:
+        - Transform:
+            position: [ 0.0, 0.0, 0.0 ]
+            rotation: [ 0.0, 0.0, 0.0 ]
+            scale: [ 1.0, 1.0, 1.0 ]
+        - MeshRenderer:
+            mesh: sphere
+            material_idx: 5
+    - name: "Room"
+      components:
+        - Transform:
+            position: [ 0.0, 0.0, 0.0 ]
+            rotation: [ 0, 0.0, 0.0 ]
+            scale: [ 1.0, 1.0, 1.0 ]
+      children:
+        - name: "Floor"
+          components:
+            - Transform:
+                position: [ 0.0, -2.5, 0.0 ]
+                rotation: [ -90.0, 0.0, 0.0 ]
+                scale: [ 5.0, 5.0, 5.0 ]
+            - MeshRenderer:
+                mesh: plane
+                material_idx: 1
+        - name: "Ceil"
+          components:
+            - Transform:
+                position: [ 0.0, 2.5, 0.0 ]
+                rotation: [ 90.0, 0.0, 0.0 ]
+                scale: [ 5.0, 5.0, 5.0 ]
+            - MeshRenderer:
+                mesh: plane
+                material_idx: 1
+        - name: "Left"
+          components:
+            - Transform:
+                position: [ -2.5, 0.0, 0.0 ]
+                rotation: [ 0.0, 90.0, 0.0 ]
+                scale: [ 5.0, 5.0, 5.0 ]
+            - MeshRenderer:
+                mesh: plane
+                material_idx: 2
+        - name: "Right"
+          components:
+            - Transform:
+                position: [ 2.5, 0.0, 0.0 ]
+                rotation: [ 0.0, -90.0, 0.0 ]
+                scale: [ 5.0, 5.0, 5.0 ]
+            - MeshRenderer:
+                mesh: plane
+                material_idx: 3
+        - name: "Back"
+          components:
+            - Transform:
+                position: [ 0.0, 0.0, -2.5 ]
+                rotation: [ 0.0, 0.0, 0.0 ]
+                scale: [ 5.0, 5.0, 5.0 ]
+            - MeshRenderer:
+                mesh: plane
+                material_idx: 4
