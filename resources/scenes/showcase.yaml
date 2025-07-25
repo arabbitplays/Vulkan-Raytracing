@@ -24,27 +24,27 @@ scene:
     - albedo: [ 0, 0, 1 ]
       metallic: 0.1
       roughness: 1
-    - albedo: [ 0.9, 0.9, 0.9 ]
-      metallic: 0.1
-      roughness: 1
+    - albedo: [ 0.35, 0.066, 0.4 ]
+      metallic: 0.75
+      roughness: 0.17
   nodes:
     - name: "Light"
       components:
         - Transform:
-            position: [ 0.0, 2.4, 0.0 ]
-            rotation: [ 90.0, 0.0, 0.0 ]
-            scale: [ 3.0, 3.0, 3.0 ]
+            position: [0.0, 2.4, 0.0]
+            rotation: [90.0, 0.0, 0.0]
+            scale: [3.0, 3.0, 3.0]
         - MeshRenderer:
             mesh: plane
             material_idx: 0
     - name: "Sphere"
       components:
         - Transform:
-            position: [ 0.0, 0.0, 0.0 ]
-            rotation: [ 0.0, 0.0, 0.0 ]
-            scale: [ 1, 1, 1 ]
+            position: [ 0.0, -2.5, 0.0 ]
+            rotation: [ -90.0, 25.0, 0.0 ]
+            scale: [ 0.03, 0.03, 0.03 ]
         - MeshRenderer:
-            mesh: sphere
+            mesh: marika
             material_idx: 5
     - name: "Room"
       components:
