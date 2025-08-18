@@ -8,6 +8,7 @@
 #include "options.glsl"
 #include "../common/random.glsl"
 #include "../common/constants.glsl"
+#include "../common/engine_layout.glsl"
 
 #define STORE_RNG false
 
@@ -77,4 +78,6 @@ void main() {
     }
     imageStore(image, ivec2(gl_LaunchIDEXT.xy), vec4(color, 1.0));
 
+    uint idx = gl_LaunchIDEXT.y * gl_LaunchSizeEXT.x + gl_LaunchIDEXT.x;
+    imageStore(image, ivec2(gl_LaunchIDEXT.xy), vec4(denoising_buffer.data[idx].xyz, 1));
 }

@@ -31,6 +31,9 @@ namespace RtEngine {
 			device_manager(device_manager), commandManager(commandManager), resource_path(resource_path){};
 
 		AllocatedBuffer createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties);
+
+		AllocatedBuffer createZeroBuffer(size_t size, VkBufferUsageFlags usage);
+
 		AllocatedBuffer stageMemoryToNewBuffer(void *data, size_t size, VkBufferUsageFlags usage);
 		void copyBuffer(AllocatedBuffer src, AllocatedBuffer dst, VkDeviceSize size);
 		void destroyBuffer(AllocatedBuffer buffer);

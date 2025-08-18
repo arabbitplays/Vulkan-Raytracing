@@ -144,4 +144,8 @@ namespace RtEngine {
 		}
 		vkDestroySwapchainKHR(device, handle, nullptr);
 	}
+
+	uint32_t Swapchain::getPixelCount() const {
+		return extent.height * extent.width;
+	}
 } // namespace RtEngine

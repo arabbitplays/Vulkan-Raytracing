@@ -20,6 +20,8 @@ namespace RtEngine {
 		void recreate();
 		void destroy();
 
+		uint32_t getPixelCount() const;
+
 		std::shared_ptr<DeviceManager> device_manager;
 		GLFWwindow *window;
 		std::shared_ptr<ResourceBuilder> resource_builder;

@@ -40,7 +40,7 @@ namespace RtEngine {
 						   VkSampler sampler) :
 			Material(METAL_ROUGH_MATERIAL_NAME, context, runtime_context), sampler(sampler) {}
 
-		void buildPipelines(VkDescriptorSetLayout sceneLayout) override;
+		void buildPipelines(VkDescriptorSetLayout engineLayout, VkDescriptorSetLayout sceneLayout) override;
 		void writeMaterial() override;
 		glm::vec4 getEmissionForInstance(uint32_t material_instance_id) override;
 		std::vector<std::shared_ptr<MaterialResources>> getResources();

@@ -67,6 +67,26 @@ namespace RtEngine {
 		return allocatedBuffer;
 	}
 
+	AllocatedBuffer ResourceBuilder::createZeroBuffer(size_t size, VkBufferUsageFlags usage) {
+		VkDevice device = device_manager->getDevice();
+
+		AllocatedBuffer stagingBuffer =
+				createBuffer(size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+							 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+
+		void *mapped_data;
+		vkMapMemory(device, stagingBuffer.bufferMemory, 0, size, 0, &mapped_data);
+		memset(mapped_data, 0, size);
+		vkUnmapMemory(device, stagingBuffer.bufferMemory);
+
+		AllocatedBuffer mapping_buffer =
+				createBuffer(size, VK_BUFFER_USAGE_TRANSFER_DST_BIT | usage, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+
+		copyBuffer(stagingBuffer, mapping_buffer, size);
+		destroyBuffer(stagingBuffer);
+		return mapping_buffer;
+	}
+
 	AllocatedBuffer ResourceBuilder::stageMemoryToNewBuffer(void *data, size_t size, VkBufferUsageFlags usage) {
 		VkDevice device = device_manager->getDevice();
 

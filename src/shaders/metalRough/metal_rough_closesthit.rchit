@@ -7,6 +7,7 @@
 #include "../common/payload.glsl"
 #include "../common/scene_data.glsl"
 #include "../common/layout.glsl"
+#include "../common/engine_layout.glsl"
 #include "options.glsl"
 #include "../common/random.glsl"
 
@@ -127,5 +128,10 @@ void main() {
                 beta /= 1 - q;
             }
         }
+    }
+
+    if (payload.depth == 0) {
+        uint idx = gl_LaunchIDEXT.y * gl_LaunchSizeEXT.x + gl_LaunchIDEXT.x;
+        denoising_buffer.data[idx] = vec4(N, 1);
     }
 }

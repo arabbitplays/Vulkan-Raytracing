@@ -8,7 +8,6 @@ scene:
   meshes:
     - path: meshes/plane.obj
     - path: meshes/sphere.obj
-    - path: meshes/elden_ring/marika.obj
   materials:
     - emission_power: 1
       emission_color: [ 1.0, 0.95, 0.71 ]

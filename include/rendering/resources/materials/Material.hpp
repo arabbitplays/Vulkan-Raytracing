@@ -37,7 +37,7 @@ namespace RtEngine {
 		VkDescriptorSetLayout materialLayout;
 		VkDescriptorSet materialDescriptorSet;
 
-		virtual void buildPipelines(VkDescriptorSetLayout sceneLayout) = 0;
+		virtual void buildPipelines(VkDescriptorSetLayout engineLayout, VkDescriptorSetLayout sceneLayout) = 0;
 		virtual void writeMaterial() = 0;
 		virtual glm::vec4 getEmissionForInstance(uint32_t material_instance_id) { return glm::vec4(0.0f); }
 		std::vector<std::shared_ptr<MaterialInstance>> getInstances();

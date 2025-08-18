@@ -12,7 +12,7 @@
 #include "shadow_miss.rmiss.spv.h"
 
 namespace RtEngine {
-	void PhongMaterial::buildPipelines(VkDescriptorSetLayout sceneLayout) {
+	void PhongMaterial::buildPipelines(VkDescriptorSetLayout engineLayout, VkDescriptorSetLayout sceneLayout) {
 		DescriptorLayoutBuilder layoutBuilder;
 		pipeline = std::make_shared<Pipeline>(vulkan_context);
 		VkDevice device = vulkan_context->device_manager->getDevice();

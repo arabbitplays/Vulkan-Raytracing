@@ -292,14 +292,14 @@ namespace RtEngine {
 
 	void SceneManager::createDefaultMaterials(const VkPhysicalDeviceRayTracingPipelinePropertiesKHR& raytracingProperties) {
 		auto phong_material = std::make_shared<PhongMaterial>(vulkan_context, runtime_context);
-		phong_material->buildPipelines(scene_descriptor_set_layout);
+		phong_material->buildPipelines(VK_NULL_HANDLE, scene_descriptor_set_layout);
 		phong_material->pipeline->createShaderBindingTables(raytracingProperties);
 		defaultMaterials["phong"] = phong_material;
 		main_deletion_queue.pushFunction([&]() { defaultMaterials["phong"]->clearRessources(); });
 
 		auto metal_rough_material =
 				std::make_shared<MetalRoughMaterial>(vulkan_context, runtime_context, defaultSamplerLinear);
-		metal_rough_material->buildPipelines(scene_descriptor_set_layout);
+		metal_rough_material->buildPipelines(runtime_context->engine_resources->getEngineLayout(), scene_descriptor_set_layout);
 		metal_rough_material->pipeline->createShaderBindingTables(raytracingProperties);
 		defaultMaterials["metal_rough"] = metal_rough_material;
 		main_deletion_queue.pushFunction([&]() { defaultMaterials["metal_rough"]->clearRessources(); });
