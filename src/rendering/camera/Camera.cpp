@@ -11,4 +11,5 @@ namespace RtEngine {
 
 	glm::mat4 Camera::getInverseProjection() { return inverse_projection; }
 
+	glm::mat4 Camera::getLastViewProjection() { return last_view_projection; }
 } // namespace RtEngine

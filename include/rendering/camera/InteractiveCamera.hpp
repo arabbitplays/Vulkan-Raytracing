@@ -16,15 +16,15 @@ namespace RtEngine {
 			yaw = 0.0f;
 		}
 
-		glm::mat4 getView() override;
-		glm::mat4 getInverseView() override;
-
 		void processGlfwKeyEvent(int key, int action) override;
 		void processGlfwMouseEvent(double xPos, double yPos) override;
+
+
 		void update(uint32_t image_width, uint32_t image_height) override;
 
 		glm::vec3 velocity;
 		bool isActive = true;
+		bool need_view_update = true;
 
 		// Mouse state
 		float lastX = 400, lastY = 300;
@@ -36,6 +36,7 @@ namespace RtEngine {
 		float yaw{0.0f};
 
 	private:
+		void updateViewMatrices();
 		glm::mat4 getRotationMatrix() const;
 	};
 

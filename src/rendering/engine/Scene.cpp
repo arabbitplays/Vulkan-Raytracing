@@ -10,6 +10,7 @@ namespace RtEngine {
 
 		sceneData->inverse_view = camera->getInverseView();
 		sceneData->inverse_proj = camera->getInverseProjection();
+		sceneData->prev_view_proj = camera->getLastViewProjection();
 		sceneData->view_pos = glm::vec4(camera->getPosition(), 0.0f);
 
 		std::array<glm::vec4, POINT_LIGHT_COUNT> point_light_positions = {};

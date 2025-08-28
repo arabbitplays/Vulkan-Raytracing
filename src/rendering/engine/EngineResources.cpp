@@ -1,5 +1,7 @@
 #include "EngineResources.hpp"
 
+#include <spdlog/spdlog.h>
+
 #include "DescriptorLayoutBuilder.hpp"
 
 namespace RtEngine {
@@ -13,6 +15,7 @@ namespace RtEngine {
         DescriptorLayoutBuilder layoutBuilder;
 
         layoutBuilder.addBinding(0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER); // denoising buffer
+        layoutBuilder.addBinding(1, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER); // denoising hist buffer
 
         engine_descriptor_set_layout = layoutBuilder.build(
                 vulkan_context->device_manager->getDevice(),
@@ -36,10 +39,12 @@ namespace RtEngine {
     void EngineResources::createEngineBuffers() {
         if (denoisingBuffer.handle != VK_NULL_HANDLE) {
             vulkan_context->resource_builder->destroyBuffer(denoisingBuffer);
+            vulkan_context->resource_builder->destroyBuffer(denoisingHistBuffer);
         }
 
         uint32_t pixel_count = vulkan_context->swapchain->getPixelCount();
         denoisingBuffer = vulkan_context->resource_builder->createZeroBuffer(pixel_count * sizeof(SvgfData), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
+        denoisingHistBuffer = vulkan_context->resource_builder->createZeroBuffer(pixel_count * sizeof(SvgfHistData), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
     }
 
     void EngineResources::bindEngineBuffers(const VkDescriptorSet &descriptor_set) {
@@ -48,6 +53,8 @@ namespace RtEngine {
         uint32_t pixel_count = vulkan_context->swapchain->getPixelCount();
 		vulkan_context->descriptor_allocator->writeBuffer(0, denoisingBuffer.handle, pixel_count * sizeof(SvgfData),
 														  0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+        vulkan_context->descriptor_allocator->writeBuffer(1, denoisingHistBuffer.handle, pixel_count * sizeof(SvgfHistData),
+                                                          0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
 
 		vulkan_context->descriptor_allocator->updateSet(device, descriptor_set);
 		vulkan_context->descriptor_allocator->clearWrites();
@@ -64,5 +71,6 @@ namespace RtEngine {
     void EngineResources::destroy() {
         main_deletion_queue.flush();
         vulkan_context->resource_builder->destroyBuffer(denoisingBuffer);
+        vulkan_context->resource_builder->destroyBuffer(denoisingHistBuffer);
     }
 }

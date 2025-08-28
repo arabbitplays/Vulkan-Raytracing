@@ -11,6 +11,19 @@ namespace RtEngine {
 	void InteractiveCamera::update(uint32_t image_width, uint32_t image_height) {
 		glm::mat4 cameraRotation = getRotationMatrix();
 		position += glm::vec3(cameraRotation * glm::vec4(velocity * 0.5f, 0.f));
+		if (need_view_update) {
+			updateViewMatrices();
+			need_view_update = false;
+		}
+	}
+
+	void InteractiveCamera::updateViewMatrices() {
+		last_view_projection = projection * view;
+
+		glm::mat4 cameraTranslation = glm::translate(glm::mat4(1.0f), position);
+		glm::mat4 cameraRotation = getRotationMatrix();
+		inverse_view = cameraTranslation * cameraRotation;
+		view = glm::inverse(inverse_view);
 	}
 
 	void InteractiveCamera::processGlfwKeyEvent(int key, int action) {
@@ -65,6 +78,8 @@ namespace RtEngine {
 				velocity.y = 0;
 			}
 		}
+
+		need_view_update = true;
 	}
 
 	void InteractiveCamera::processGlfwMouseEvent(double xPos, double yPos) {
@@ -90,17 +105,8 @@ namespace RtEngine {
 
 		constexpr float max = M_PI / 2;
 		pitch = std::clamp(pitch, -max, max);
-	}
 
-	glm::mat4 InteractiveCamera::getView() {
-		// the view matrix is the opposite of the camera transform calculated in getInverseView()
-		return glm::inverse(getInverseView());
-	}
-
-	glm::mat4 InteractiveCamera::getInverseView() {
-		glm::mat4 cameraTranslation = glm::translate(glm::mat4(1.0f), position);
-		glm::mat4 cameraRotation = getRotationMatrix();
-		return cameraTranslation * cameraRotation;
+		need_view_update = true;
 	}
 
 	glm::mat4 InteractiveCamera::getRotationMatrix() const {

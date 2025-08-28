@@ -7,7 +7,7 @@
 #include "../common/payload.glsl"
 #include "../common/scene_data.glsl"
 #include "../common/layout.glsl"
-#include "../common/engine_layout.glsl"
+#include "../denoising/svgf_primary_hit.glsl"
 #include "options.glsl"
 #include "../common/random.glsl"
 
@@ -22,6 +22,7 @@ hitAttributeEXT vec3 attribs;
 
 #include "bsdf_sampler.glsl"
 #include "light_sampler.glsl"
+
 
 void main() {
     Triangle triangle = getTriangle(gl_InstanceCustomIndexEXT, gl_PrimitiveID);
@@ -112,7 +113,7 @@ void main() {
 
         vec3 wo = normalize(transpose_tbn * V);
         vec3 wi = normalize(transpose_tbn * payload.next_direction);
-        //payload.beta *= calcBRDF(wo, wi, albedo, metallic, roughness) * PI;
+        //payload.beta svgf_*= calcBRDF(wo, wi, albedo, metallic, roughness) * PI;
         payload.beta *= computeBsdf(wo, wi, albedo, metallic, roughness, eta) * abs(dot(payload.next_direction, N)) * 4 * PI;
     }
 
@@ -131,7 +132,6 @@ void main() {
     }
 
     if (payload.depth == 0) {
-        uint idx = gl_LaunchIDEXT.y * gl_LaunchSizeEXT.x + gl_LaunchIDEXT.x;
-        denoising_buffer.data[idx] = vec4(N, 1);
+        writePrimaryHitData(P, N, gl_HitTEXT);
     }
 }

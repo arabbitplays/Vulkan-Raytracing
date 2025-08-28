@@ -44,7 +44,7 @@ int main(int argc, char *argv[]) {
 	} else if (reference) {
 		app = std::make_shared<ReferenceRenderer>();
 	} else {
-		app = std::make_shared<VulkanEngine>();
+		app = std::make_shared<RealtimeRenderer>();
 	}
 
 	try {

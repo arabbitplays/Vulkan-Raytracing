@@ -9,7 +9,18 @@
 
 namespace RtEngine {
     struct SvgfData {
-        glm::vec4 color;
+        glm::vec3 color;
+        glm::vec3 position;
+        glm::vec3 normal;
+        float depth;
+        glm::vec2 motion;
+    };
+
+    struct SvgfHistData {
+        glm::vec3 color;
+        glm::vec3 normal;
+        float depth;
+        float padding;
     };
 
     class EngineResources {
@@ -36,7 +47,7 @@ namespace RtEngine {
         VkDescriptorSetLayout engine_descriptor_set_layout;
         VkDescriptorSet engine_descriptor_set;
 
-        AllocatedBuffer denoisingBuffer;
+        AllocatedBuffer denoisingBuffer, denoisingHistBuffer;
 
     };
 }

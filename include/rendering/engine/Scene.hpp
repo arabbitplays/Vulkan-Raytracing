@@ -17,6 +17,7 @@ namespace RtEngine {
 	struct SceneData {
 		glm::mat4 inverse_view;
 		glm::mat4 inverse_proj;
+		glm::mat4 prev_view_proj;
 		glm::vec4 view_pos;
 		std::array<glm::vec4, POINT_LIGHT_COUNT> pointLightPositions;
 		std::array<glm::vec4, POINT_LIGHT_COUNT> pointLightColors;

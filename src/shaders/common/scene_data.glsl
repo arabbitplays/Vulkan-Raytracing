@@ -1,6 +1,7 @@
 layout(binding = 2, set = 0) uniform SceneData {
     mat4 inv_view;
     mat4 inv_proj;
+    mat4 prev_view_proj;
     vec4 viewPos;
     vec4 pointLightPositions[4];
     vec3 pointLightColors[4];
