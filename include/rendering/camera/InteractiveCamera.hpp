@@ -7,6 +7,9 @@
 
 namespace RtEngine {
 	class InteractiveCamera : public Camera {
+		static constexpr float MOVE_SPEED = 0.2f;
+		static constexpr float MOUSE_SPEED = 0.5f;
+
 	public:
 		InteractiveCamera() = default;
 		InteractiveCamera(uint32_t image_width, uint32_t image_height, float fov, glm::vec3 position,

@@ -9,14 +9,13 @@
 #include <shadow_miss.rmiss.spv.h>
 
 namespace RtEngine {
-	void MetalRoughMaterial::buildPipelines(VkDescriptorSetLayout engineLayout, VkDescriptorSetLayout sceneLayout) {
+	void MetalRoughMaterial::buildPipelines() {
 		pipeline = std::make_shared<Pipeline>(vulkan_context);
 		VkDevice device = vulkan_context->device_manager->getDevice();
 
 		initLayout();
 
-
-		std::vector<VkDescriptorSetLayout> descriptorSetLayouts{sceneLayout, descriptor_layout, engineLayout};
+		std::vector<VkDescriptorSetLayout> descriptorSetLayouts = vulkan_context->layout_manager->getLayouts();
 		pipeline->setDescriptorSetLayouts(descriptorSetLayouts);
 
 		pipeline->addPushConstant(MAX_PUSH_CONSTANT_SIZE, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR |

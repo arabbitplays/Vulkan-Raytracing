@@ -9,6 +9,8 @@
 #include <ResourceBuilder.hpp>
 #include <Swapchain.hpp>
 
+#include "LayoutManager.hpp"
+
 namespace RtEngine {
 	struct VulkanContext {
 		std::shared_ptr<DeviceManager> device_manager;
@@ -18,6 +20,8 @@ namespace RtEngine {
 		std::shared_ptr<ResourceBuilder> resource_builder;
 		std::shared_ptr<DescriptorAllocator> descriptor_allocator;
 		std::shared_ptr<CommandManager> command_manager;
+
+		std::shared_ptr<LayoutManager> layout_manager;
 
 		std::shared_ptr<BaseOptions> base_options;
 	};

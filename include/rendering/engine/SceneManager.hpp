@@ -29,11 +29,13 @@ namespace RtEngine {
 					 uint32_t max_frames_in_flight,
 					 const VkPhysicalDeviceRayTracingPipelinePropertiesKHR& raytracingProperties);
 
+		void initDefaultResources(const VkPhysicalDeviceRayTracingPipelinePropertiesKHR& raytracingProperties);
+
 		void createScene(const std::string& scene_path);
 		void createBlas(const std::vector<std::shared_ptr<MeshAsset>> &meshes);
 		void updateScene(const std::shared_ptr<DrawContext> &draw_context);
 
-		void destroyLayout() override;
+		void destroyResources();
 
 		std::shared_ptr<Material> getMaterial() const;
 		SceneInfo getSceneInformation() const;
@@ -48,13 +50,14 @@ namespace RtEngine {
 		std::shared_ptr<DescriptorSet> createDescriptorSet(const VkDescriptorSetLayout &layout) override;
 		void createUniformBuffers();
 
-		void initDefaultResources(const VkPhysicalDeviceRayTracingPipelinePropertiesKHR& raytracingProperties);
 		void createDefaultTextures();
 		void createDefaultSamplers();
 		void createDefaultMaterials(const VkPhysicalDeviceRayTracingPipelinePropertiesKHR& raytracingProperties);
 
 		void updateSceneDescriptorSets(uint32_t current_frame, const std::shared_ptr<RenderTarget>& render_target) const;
 		void updateTlas(std::vector<RenderObject> objects) const;
+
+		void destroyLayout() override;
 
 		DeletionQueue main_deletion_queue, scene_resource_deletion_queue;
 		uint32_t max_frames_in_flight;

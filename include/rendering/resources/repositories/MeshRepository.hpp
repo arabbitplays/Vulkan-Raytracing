@@ -6,7 +6,7 @@
 #include <memory>
 
 namespace RtEngine {
-	class VulkanContext;
+	struct VulkanContext;
 
 	class MeshRepository {
 	public:

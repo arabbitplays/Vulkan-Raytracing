@@ -112,7 +112,9 @@ namespace RtEngine {
 
 		scene_manager = std::make_shared<SceneManager>(vulkan_context, runtime_context, mainDrawContext->max_frames_in_flight,
 													   DeviceManager::RAYTRACING_PROPERTIES);
-		mainDeletionQueue.pushFunction([&]() { scene_manager->destroyLayout(); });
+		vulkan_context->layout_manager->addLayout(0, scene_manager);
+		scene_manager->initDefaultResources(DeviceManager::RAYTRACING_PROPERTIES);
+		mainDeletionQueue.pushFunction([&]() { scene_manager->destroyResources(); });
 
 		createCommandBuffers();
 		createSyncObjects();
@@ -132,6 +134,7 @@ namespace RtEngine {
 		vulkan_context->swapchain =
 				std::make_shared<Swapchain>(vulkan_context->device_manager, window, vulkan_context->resource_builder);
 		vulkan_context->descriptor_allocator = createDescriptorAllocator();
+		vulkan_context->layout_manager = std::make_shared<LayoutManager>();
 
 		mainDeletionQueue.pushFunction([&]() {
 			vulkan_context->descriptor_allocator->destroyPools(vulkan_context->device_manager->getDevice());
@@ -146,6 +149,7 @@ namespace RtEngine {
 		runtime_context->texture_repository = std::make_shared<TextureRepository>(vulkan_context->resource_builder);
 		runtime_context->mesh_repository = std::make_shared<MeshRepository>(vulkan_context);
 		runtime_context->engine_resources = std::make_shared<EngineResources>(vulkan_context);
+		vulkan_context->layout_manager->addLayout(2, runtime_context->engine_resources);
 
 		mainDeletionQueue.pushFunction([&]() {
 			runtime_context->texture_repository->destroy();
@@ -356,7 +360,7 @@ namespace RtEngine {
 		}
 	}
 
-	void VulkanEngine::recordRenderToImage(VkCommandBuffer commandBuffer) {
+	void VulkanEngine::recordRenderToImage(VkCommandBuffer commandBuffer) const {
 		Pipeline pipeline = *scene_manager->getMaterial()->pipeline;
 
 		const uint32_t handleSizeAligned =
@@ -380,10 +384,7 @@ namespace RtEngine {
 
 		VkStridedDeviceAddressRegionKHR callableShaderSbtEntry{};
 
-		std::vector<VkDescriptorSet> descriptor_sets{};
-		descriptor_sets.push_back(scene_manager->getDescriptorSet(mainDrawContext->currentFrame));
-		descriptor_sets.push_back(scene_manager->getMaterial()->getDescriptorSet());
-		descriptor_sets.push_back(runtime_context->engine_resources->getDescriptorSet());
+		const std::vector<VkDescriptorSet> descriptor_sets = vulkan_context->layout_manager->getDescriptorSets(mainDrawContext->currentFrame);
 
 		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, pipeline.getHandle());
 		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, pipeline.getLayoutHandle(), 0,

@@ -28,6 +28,7 @@ namespace RtEngine {
 			// TODO remove vulkan context from reader?
 			std::shared_ptr<Scene> scene =
 					std::make_shared<Scene>(file_path, *vulkan_context->resource_builder, materials[material_name]);
+			vulkan_context->layout_manager->addLayout(1, materials[material_name]);
 
 			scene->camera = loadCamera(scene_node["camera"]);
 			loadSceneLights(scene_node["lights"], scene);

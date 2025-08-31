@@ -10,13 +10,13 @@
 #include "shadow_miss.rmiss.spv.h"
 
 namespace RtEngine {
-	void PhongMaterial::buildPipelines(VkDescriptorSetLayout engineLayout, VkDescriptorSetLayout sceneLayout) {
+	void PhongMaterial::buildPipelines() {
 		pipeline = std::make_shared<Pipeline>(vulkan_context);
 		VkDevice device = vulkan_context->device_manager->getDevice();
 
 		initLayout();
 
-		std::vector<VkDescriptorSetLayout> descriptorSetLayouts{sceneLayout, descriptor_layout};
+		std::vector<VkDescriptorSetLayout> descriptorSetLayouts = vulkan_context->layout_manager->getLayouts();
 		pipeline->setDescriptorSetLayouts(descriptorSetLayouts);
 
 		pipeline->addPushConstant(MAX_PUSH_CONSTANT_SIZE,

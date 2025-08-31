@@ -10,7 +10,7 @@
 namespace RtEngine {
 	class RealtimeRenderer : public VulkanEngine {
 	public:
-		RealtimeRenderer() { max_frames_in_flight = 2; };
+		RealtimeRenderer() { max_frames_in_flight = 1; }; // todo make more frames in flight
 
 	protected:
 		void mainLoop() override;

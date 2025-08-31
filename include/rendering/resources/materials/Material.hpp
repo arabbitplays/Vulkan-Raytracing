@@ -35,7 +35,7 @@ namespace RtEngine {
 
 		std::shared_ptr<Pipeline> pipeline;
 
-		virtual void buildPipelines(VkDescriptorSetLayout engineLayout, VkDescriptorSetLayout sceneLayout) = 0;
+		virtual void buildPipelines() = 0;
 		virtual void writeMaterial() = 0;
 		virtual glm::vec4 getEmissionForInstance([[maybe_unused]] uint32_t material_instance_id) { return glm::vec4(0.0f); }
 		std::vector<std::shared_ptr<MaterialInstance>> getInstances();

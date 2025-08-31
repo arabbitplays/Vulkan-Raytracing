@@ -29,7 +29,7 @@ namespace RtEngine {
 		PhongMaterial(const std::shared_ptr<VulkanContext> &context, const std::shared_ptr<RuntimeContext> &runtime_context) :
 			Material(PHONG_MATERIAL_NAME, context, runtime_context) {}
 
-		void buildPipelines(VkDescriptorSetLayout engineLayout, VkDescriptorSetLayout sceneLayout) override;
+		void buildPipelines() override;
 		void writeMaterial() override;
 		std::shared_ptr<MaterialInstance> createInstance(glm::vec3 diffuse, glm::vec3 specular, glm::vec3 ambient,
 														 glm::vec3 reflection, glm::vec3 transmission, float n,
