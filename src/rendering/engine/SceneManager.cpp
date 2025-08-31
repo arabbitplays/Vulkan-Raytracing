@@ -299,7 +299,7 @@ namespace RtEngine {
 
 		auto metal_rough_material =
 				std::make_shared<MetalRoughMaterial>(vulkan_context, runtime_context, defaultSamplerLinear);
-		metal_rough_material->buildPipelines(runtime_context->engine_resources->getEngineLayout(), scene_descriptor_set_layout);
+		metal_rough_material->buildPipelines(runtime_context->engine_resources->getLayout(), scene_descriptor_set_layout);
 		metal_rough_material->pipeline->createShaderBindingTables(raytracingProperties);
 		defaultMaterials["metal_rough"] = metal_rough_material;
 		main_deletion_queue.pushFunction([&]() { defaultMaterials["metal_rough"]->clearRessources(); });

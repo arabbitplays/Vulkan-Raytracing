@@ -151,7 +151,7 @@ namespace RtEngine {
 		mainDeletionQueue.pushFunction([&]() {
 			runtime_context->texture_repository->destroy();
 			runtime_context->mesh_repository->destroy();
-			runtime_context->engine_resources->destroy();
+			runtime_context->engine_resources->destroyResources();
 		});
 	}
 
@@ -335,7 +335,7 @@ namespace RtEngine {
 		properties_manager->curr_sample_count = 0;
 		vulkan_context->swapchain->recreate();
 		mainDrawContext->target->recreate(vulkan_context->swapchain->extent);
-		runtime_context->engine_resources->createAndBindEngineBuffers(); // TODO combine this with the main draw context!?
+		runtime_context->engine_resources->createAndBindResources(); // TODO combine this with the main draw context!?
 		guiManager->updateWindows();
 		scene_manager->updateScene(mainDrawContext);
 	}
@@ -384,7 +384,7 @@ namespace RtEngine {
 		std::vector<VkDescriptorSet> descriptor_sets{};
 		descriptor_sets.push_back(scene_manager->getSceneDescriptorSet(mainDrawContext->currentFrame));
 		descriptor_sets.push_back(scene_manager->getMaterial()->materialDescriptorSet);
-		descriptor_sets.push_back(runtime_context->engine_resources->getEngineDescriptorSet());
+		descriptor_sets.push_back(runtime_context->engine_resources->getDescriptorSet());
 
 		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, pipeline.getHandle());
 		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, pipeline.getLayoutHandle(), 0,

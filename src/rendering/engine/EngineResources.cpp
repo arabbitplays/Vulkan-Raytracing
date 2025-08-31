@@ -6,34 +6,28 @@
 
 namespace RtEngine {
     EngineResources::EngineResources(const std::shared_ptr<VulkanContext> &vulkanContext) : vulkan_context(vulkanContext) {
-        createEngineLayout();
-        createEngineDescriptorSet(engine_descriptor_set_layout);
-        createAndBindEngineBuffers();
+        initLayout();
     }
 
-    void EngineResources::createEngineLayout() {
+    VkDescriptorSetLayout EngineResources::createLayout() {
         DescriptorLayoutBuilder layoutBuilder;
 
         layoutBuilder.addBinding(0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER); // denoising buffer
         layoutBuilder.addBinding(1, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER); // denoising hist buffer
 
-        engine_descriptor_set_layout = layoutBuilder.build(
+        return layoutBuilder.build(
                 vulkan_context->device_manager->getDevice(),
                 VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR | VK_SHADER_STAGE_MISS_BIT_KHR);
-        main_deletion_queue.pushFunction([&]() {
-            vkDestroyDescriptorSetLayout(vulkan_context->device_manager->getDevice(), engine_descriptor_set_layout,
-                                         nullptr);
-        });
+
     }
 
-    void EngineResources::createEngineDescriptorSet(const VkDescriptorSetLayout &layout) {
-        engine_descriptor_set = vulkan_context->descriptor_allocator->allocate(
-                vulkan_context->device_manager->getDevice(), layout);
+    std::shared_ptr<DescriptorSet> EngineResources::createDescriptorSet(const VkDescriptorSetLayout &layout) {
+        return std::make_shared<DescriptorSet>(vulkan_context->descriptor_allocator, vulkan_context->device_manager, layout, 1); // TODO 1 may not be right here, but the denoising buffers need to stay consistent so!?!?
     }
 
-    void EngineResources::createAndBindEngineBuffers() {
+    void EngineResources::createAndBindResources() {
         createEngineBuffers();
-        bindEngineBuffers(engine_descriptor_set);
+        bindEngineBuffers(descriptor_set->getCurrentSet());
     }
 
     void EngineResources::createEngineBuffers() {
@@ -47,7 +41,7 @@ namespace RtEngine {
         denoisingHistBuffer = vulkan_context->resource_builder->createZeroBuffer(pixel_count * sizeof(SvgfHistData), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
     }
 
-    void EngineResources::bindEngineBuffers(const VkDescriptorSet &descriptor_set) {
+    void EngineResources::bindEngineBuffers(const VkDescriptorSet &descriptor_set) const {
         VkDevice device = vulkan_context->device_manager->getDevice();
 
         uint32_t pixel_count = vulkan_context->swapchain->getPixelCount();
@@ -60,16 +54,9 @@ namespace RtEngine {
 		vulkan_context->descriptor_allocator->clearWrites();
     }
 
-    VkDescriptorSetLayout EngineResources::getEngineLayout() const {
-        return engine_descriptor_set_layout;
-    }
-
-    VkDescriptorSet EngineResources::getEngineDescriptorSet() const {
-        return engine_descriptor_set;
-    }
-
-    void EngineResources::destroy() {
-        main_deletion_queue.flush();
+    void EngineResources::destroyResources() {
+        vkDestroyDescriptorSetLayout(vulkan_context->device_manager->getDevice(), descriptor_layout,
+                                         nullptr);
         vulkan_context->resource_builder->destroyBuffer(denoisingBuffer);
         vulkan_context->resource_builder->destroyBuffer(denoisingHistBuffer);
     }
