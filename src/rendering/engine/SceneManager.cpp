@@ -10,6 +10,25 @@
 
 namespace RtEngine {
 
+	SceneManager::SceneManager(const std::shared_ptr<VulkanContext> &vulkanContext,
+				const std::shared_ptr<RuntimeContext> &runtime_context,
+				const uint32_t max_frames_in_flight,
+				const VkPhysicalDeviceRayTracingPipelinePropertiesKHR &raytracingProperties)
+				: vulkan_context(vulkanContext), runtime_context(runtime_context),
+				max_frames_in_flight(max_frames_in_flight) {
+		geometry_manager = std::make_shared<GeometryManager>(vulkan_context->resource_builder);
+		instance_manager = std::make_shared<InstanceManager>(vulkan_context->resource_builder);
+
+		main_deletion_queue.pushFunction([&]() {
+			geometry_manager->destroy();
+			instance_manager->destroy();
+		});
+
+		initLayout();
+		initDefaultResources(raytracingProperties);
+	}
+
+
 	void SceneManager::createScene(const std::string& scene_path) {
 		QuickTimer timer{"Scene Creation", true};
 
@@ -42,7 +61,7 @@ namespace RtEngine {
 		});
 	}
 
-	void SceneManager::createBlas(std::vector<std::shared_ptr<MeshAsset>> &meshes) {
+	void SceneManager::createBlas(const std::vector<std::shared_ptr<MeshAsset>> &meshes) {
 		QuickTimer timer{"BLAS Build", true};
 		VkDevice device = vulkan_context->device_manager->getDevice();
 
@@ -67,7 +86,8 @@ namespace RtEngine {
 		});
 	}
 
-	void SceneManager::createSceneLayout() {
+
+	VkDescriptorSetLayout SceneManager::createLayout() {
 		DescriptorLayoutBuilder layoutBuilder;
 
 		layoutBuilder.addBinding(0, VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR); // TLAS
@@ -81,20 +101,13 @@ namespace RtEngine {
 		layoutBuilder.addBinding(8, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 6); // env map
 		layoutBuilder.addBinding(9, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE); // rng tex
 
-		scene_descriptor_set_layout = layoutBuilder.build(
+		return layoutBuilder.build(
 				vulkan_context->device_manager->getDevice(),
 				VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR | VK_SHADER_STAGE_MISS_BIT_KHR);
-		main_deletion_queue.pushFunction([&]() {
-			vkDestroyDescriptorSetLayout(vulkan_context->device_manager->getDevice(), scene_descriptor_set_layout,
-										 nullptr);
-		});
 	}
 
-	void SceneManager::createSceneDescriptorSets(const VkDescriptorSetLayout &layout) {
-		for (int i = 0; i < max_frames_in_flight; i++) {
-			scene_descriptor_sets.push_back(vulkan_context->descriptor_allocator->allocate(
-					vulkan_context->device_manager->getDevice(), layout));
-		}
+	std::shared_ptr<DescriptorSet> SceneManager::createDescriptorSet(const VkDescriptorSetLayout &layout) {
+		return std::make_shared<DescriptorSet>(vulkan_context->descriptor_allocator, vulkan_context->device_manager, layout, max_frames_in_flight);
 	}
 
 	void SceneManager::createUniformBuffers() {
@@ -173,7 +186,7 @@ namespace RtEngine {
 		top_level_acceleration_structure->build();
 	}
 
-	void SceneManager::updateSceneDescriptorSets(uint32_t current_frame, const std::shared_ptr<RenderTarget>& render_target) {
+	void SceneManager::updateSceneDescriptorSets(uint32_t current_frame, const std::shared_ptr<RenderTarget>& render_target) const {
 		VkDevice device = vulkan_context->device_manager->getDevice();
 
 		VkAccelerationStructureKHR tlas_handle = top_level_acceleration_structure->getHandle();
@@ -207,7 +220,7 @@ namespace RtEngine {
 														 VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
 
 		for (int i = 0; i < max_frames_in_flight; i++) {
-			vulkan_context->descriptor_allocator->updateSet(device, scene_descriptor_sets[i]);
+			vulkan_context->descriptor_allocator->updateSet(device, descriptor_set->getCurrentSet(i));
 		}
 		vulkan_context->descriptor_allocator->clearWrites();
 	}
@@ -292,24 +305,20 @@ namespace RtEngine {
 
 	void SceneManager::createDefaultMaterials(const VkPhysicalDeviceRayTracingPipelinePropertiesKHR& raytracingProperties) {
 		auto phong_material = std::make_shared<PhongMaterial>(vulkan_context, runtime_context);
-		phong_material->buildPipelines(VK_NULL_HANDLE, scene_descriptor_set_layout);
+		phong_material->buildPipelines(VK_NULL_HANDLE, getDescriptorLayout());
 		phong_material->pipeline->createShaderBindingTables(raytracingProperties);
 		defaultMaterials["phong"] = phong_material;
 		main_deletion_queue.pushFunction([&]() { defaultMaterials["phong"]->clearRessources(); });
 
 		auto metal_rough_material =
 				std::make_shared<MetalRoughMaterial>(vulkan_context, runtime_context, defaultSamplerLinear);
-		metal_rough_material->buildPipelines(runtime_context->engine_resources->getLayout(), scene_descriptor_set_layout);
+		metal_rough_material->buildPipelines(runtime_context->engine_resources->getDescriptorLayout(), getDescriptorLayout());
 		metal_rough_material->pipeline->createShaderBindingTables(raytracingProperties);
 		defaultMaterials["metal_rough"] = metal_rough_material;
 		main_deletion_queue.pushFunction([&]() { defaultMaterials["metal_rough"]->clearRessources(); });
 	}
 
 	std::shared_ptr<Material> SceneManager::getMaterial() const { return scene->material; }
-
-	VkDescriptorSet SceneManager::getSceneDescriptorSet(uint32_t frame_index) const {
-		return scene_descriptor_sets[frame_index];
-	}
 
 	SceneManager::SceneInfo SceneManager::getSceneInformation() const
 	{
@@ -320,8 +329,10 @@ namespace RtEngine {
 		return scene_info;
 	}
 
-	void SceneManager::clearResources() {
+	void SceneManager::destroyLayout() {
 		scene_resource_deletion_queue.flush();
 		main_deletion_queue.flush();
+		vkDestroyDescriptorSetLayout(vulkan_context->device_manager->getDevice(), descriptor_layout,
+								 nullptr);
 	}
 } // namespace RtEngine

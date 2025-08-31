@@ -9,7 +9,7 @@
 #include <vulkan/vulkan_core.h>
 
 namespace RtEngine {
-	class SceneManager {
+	class SceneManager : public ILayoutProvider {
 	public:
 		struct SceneInfo
 		{
@@ -27,31 +27,15 @@ namespace RtEngine {
 		SceneManager(const std::shared_ptr<VulkanContext> &vulkanContext,
 					 const std::shared_ptr<RuntimeContext>& runtime_context,
 					 const uint32_t max_frames_in_flight,
-					 const VkPhysicalDeviceRayTracingPipelinePropertiesKHR& raytracingProperties) :
-			vulkan_context(vulkanContext), runtime_context(runtime_context),
-			max_frames_in_flight(max_frames_in_flight) {
-
-			geometry_manager = std::make_shared<GeometryManager>(vulkan_context->resource_builder);
-			instance_manager = std::make_shared<InstanceManager>(vulkan_context->resource_builder);
-
-			main_deletion_queue.pushFunction([&]() {
-				geometry_manager->destroy();
-				instance_manager->destroy();
-			});
-
-			createSceneLayout();
-			createSceneDescriptorSets(scene_descriptor_set_layout);
-			initDefaultResources(raytracingProperties);
-		}
+					 const VkPhysicalDeviceRayTracingPipelinePropertiesKHR& raytracingProperties);
 
 		void createScene(const std::string& scene_path);
-		void createBlas(std::vector<std::shared_ptr<MeshAsset>> &meshes);
+		void createBlas(const std::vector<std::shared_ptr<MeshAsset>> &meshes);
 		void updateScene(const std::shared_ptr<DrawContext> &draw_context);
 
-		void clearResources();
+		void destroyLayout() override;
 
 		std::shared_ptr<Material> getMaterial() const;
-		VkDescriptorSet getSceneDescriptorSet(uint32_t frame_index) const;
 		SceneInfo getSceneInformation() const;
 
 		std::shared_ptr<VulkanContext> vulkan_context;
@@ -60,8 +44,8 @@ namespace RtEngine {
 		uint32_t bufferUpdateFlags = 0;
 
 	private:
-		void createSceneLayout();
-		void createSceneDescriptorSets(const VkDescriptorSetLayout &layout);
+		VkDescriptorSetLayout createLayout() override;
+		std::shared_ptr<DescriptorSet> createDescriptorSet(const VkDescriptorSetLayout &layout) override;
 		void createUniformBuffers();
 
 		void initDefaultResources(const VkPhysicalDeviceRayTracingPipelinePropertiesKHR& raytracingProperties);
@@ -69,7 +53,7 @@ namespace RtEngine {
 		void createDefaultSamplers();
 		void createDefaultMaterials(const VkPhysicalDeviceRayTracingPipelinePropertiesKHR& raytracingProperties);
 
-		void updateSceneDescriptorSets(uint32_t current_frame, const std::shared_ptr<RenderTarget>& render_target);
+		void updateSceneDescriptorSets(uint32_t current_frame, const std::shared_ptr<RenderTarget>& render_target) const;
 		void updateTlas(std::vector<RenderObject> objects) const;
 
 		DeletionQueue main_deletion_queue, scene_resource_deletion_queue;
@@ -91,8 +75,6 @@ namespace RtEngine {
 
 		std::shared_ptr<AccelerationStructure> top_level_acceleration_structure;
 
-		VkDescriptorSetLayout scene_descriptor_set_layout;
-		std::vector<VkDescriptorSet> scene_descriptor_sets{};
 		std::vector<AllocatedBuffer> sceneUniformBuffers;
 		std::vector<void *> sceneUniformBuffersMapped;
 	};

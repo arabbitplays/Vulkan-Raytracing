@@ -9,9 +9,11 @@
 namespace RtEngine {
 	class Camera {
 	public:
+		virtual ~Camera() = default;
+
 		Camera() = default;
-		Camera(uint32_t image_width, uint32_t image_height, float fov, glm::vec3 position, glm::vec3 view_dir) :
-			position(position), view_dir(view_dir), fov(fov), image_width(image_width), image_height(image_height) {
+		Camera(const uint32_t image_width, const uint32_t image_height, const float fov, const glm::vec3 position, const glm::vec3 view_dir) :
+			fov(fov), position(position), view_dir(view_dir), image_width(image_width), image_height(image_height) {
 			initCamera(static_cast<float>(image_width) / static_cast<float>(image_height));
 		}
 
@@ -24,8 +26,8 @@ namespace RtEngine {
 
 		virtual void processGlfwKeyEvent(int key, int action) {}
 
-		virtual void processGlfwMouseEvent(double xPos, double yPos) {};
-		virtual void update(uint32_t image_width, uint32_t image_height) {
+		virtual void processGlfwMouseEvent(double xPos, double yPos) {}
+		virtual void update(const uint32_t image_width, const uint32_t image_height) {
 			if (image_width != this->image_width || image_height != this->image_height) {
 				initCamera(static_cast<float>(image_width) / static_cast<float>(image_height));
 				this->image_width = image_width;

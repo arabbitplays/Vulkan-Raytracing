@@ -7,6 +7,7 @@
 namespace RtEngine {
     EngineResources::EngineResources(const std::shared_ptr<VulkanContext> &vulkanContext) : vulkan_context(vulkanContext) {
         initLayout();
+        createAndBindResources();
     }
 
     VkDescriptorSetLayout EngineResources::createLayout() {
@@ -54,7 +55,7 @@ namespace RtEngine {
 		vulkan_context->descriptor_allocator->clearWrites();
     }
 
-    void EngineResources::destroyResources() {
+    void EngineResources::destroyLayout() {
         vkDestroyDescriptorSetLayout(vulkan_context->device_manager->getDevice(), descriptor_layout,
                                          nullptr);
         vulkan_context->resource_builder->destroyBuffer(denoisingBuffer);

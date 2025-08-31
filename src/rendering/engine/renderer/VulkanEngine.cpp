@@ -113,7 +113,7 @@ namespace RtEngine {
 
 		scene_manager = std::make_shared<SceneManager>(vulkan_context, runtime_context, mainDrawContext->max_frames_in_flight,
 													   DeviceManager::RAYTRACING_PROPERTIES);
-		mainDeletionQueue.pushFunction([&]() { scene_manager->clearResources(); });
+		mainDeletionQueue.pushFunction([&]() { scene_manager->destroyLayout(); });
 
 		createCommandBuffers();
 		createSyncObjects();
@@ -151,7 +151,7 @@ namespace RtEngine {
 		mainDeletionQueue.pushFunction([&]() {
 			runtime_context->texture_repository->destroy();
 			runtime_context->mesh_repository->destroy();
-			runtime_context->engine_resources->destroyResources();
+			runtime_context->engine_resources->destroyLayout();
 		});
 	}
 
@@ -382,7 +382,7 @@ namespace RtEngine {
 		VkStridedDeviceAddressRegionKHR callableShaderSbtEntry{};
 
 		std::vector<VkDescriptorSet> descriptor_sets{};
-		descriptor_sets.push_back(scene_manager->getSceneDescriptorSet(mainDrawContext->currentFrame));
+		descriptor_sets.push_back(scene_manager->getDescriptorSet(mainDrawContext->currentFrame));
 		descriptor_sets.push_back(scene_manager->getMaterial()->materialDescriptorSet);
 		descriptor_sets.push_back(runtime_context->engine_resources->getDescriptorSet());
 

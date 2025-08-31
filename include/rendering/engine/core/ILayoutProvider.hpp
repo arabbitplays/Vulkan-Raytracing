@@ -14,13 +14,10 @@ namespace RtEngine {
         void initLayout() {
             descriptor_layout = createLayout();
             descriptor_set = createDescriptorSet(descriptor_layout);
-            createAndBindResources();
         }
+        virtual void destroyLayout() = 0;
 
-        virtual void createAndBindResources() = 0;
-        virtual void destroyResources() = 0;
-
-        virtual VkDescriptorSetLayout getLayout() const {
+        virtual VkDescriptorSetLayout getDescriptorLayout() const {
             return descriptor_layout;
         };
         virtual VkDescriptorSet getDescriptorSet(uint32_t current_frame = 0) const {
