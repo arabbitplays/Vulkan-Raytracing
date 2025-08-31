@@ -31,6 +31,12 @@ namespace RtEngine {
         bindEngineBuffers(descriptor_set->getCurrentSet());
     }
 
+    void EngineResources::destroyResources() {
+        destroyLayout();
+        vulkan_context->resource_builder->destroyBuffer(denoisingBuffer);
+        vulkan_context->resource_builder->destroyBuffer(denoisingHistBuffer);
+    }
+
     void EngineResources::createEngineBuffers() {
         if (denoisingBuffer.handle != VK_NULL_HANDLE) {
             vulkan_context->resource_builder->destroyBuffer(denoisingBuffer);
@@ -58,7 +64,5 @@ namespace RtEngine {
     void EngineResources::destroyLayout() {
         vkDestroyDescriptorSetLayout(vulkan_context->device_manager->getDevice(), descriptor_layout,
                                          nullptr);
-        vulkan_context->resource_builder->destroyBuffer(denoisingBuffer);
-        vulkan_context->resource_builder->destroyBuffer(denoisingHistBuffer);
     }
 }

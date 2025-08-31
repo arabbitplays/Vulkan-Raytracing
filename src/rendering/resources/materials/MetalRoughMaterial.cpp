@@ -10,21 +10,13 @@
 
 namespace RtEngine {
 	void MetalRoughMaterial::buildPipelines(VkDescriptorSetLayout engineLayout, VkDescriptorSetLayout sceneLayout) {
-		DescriptorLayoutBuilder layoutBuilder;
 		pipeline = std::make_shared<Pipeline>(vulkan_context);
 		VkDevice device = vulkan_context->device_manager->getDevice();
 
-		layoutBuilder.addBinding(0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
-		layoutBuilder.addBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 16); // TODO make this dynamic depending on the scene
-		layoutBuilder.addBinding(2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 16);
-		layoutBuilder.addBinding(3, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 16);
+		initLayout();
 
-		materialLayout = layoutBuilder.build(device, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR);
-		mainDeletionQueue.pushFunction([&]() {
-			vkDestroyDescriptorSetLayout(vulkan_context->device_manager->getDevice(), materialLayout, nullptr);
-		});
 
-		std::vector<VkDescriptorSetLayout> descriptorSetLayouts{sceneLayout, materialLayout, engineLayout};
+		std::vector<VkDescriptorSetLayout> descriptorSetLayouts{sceneLayout, descriptor_layout, engineLayout};
 		pipeline->setDescriptorSetLayouts(descriptorSetLayouts);
 
 		pipeline->addPushConstant(MAX_PUSH_CONSTANT_SIZE, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR |
@@ -59,6 +51,22 @@ namespace RtEngine {
 		vkDestroyShaderModule(device, closestHitShaderModule, nullptr);
 	}
 
+	VkDescriptorSetLayout MetalRoughMaterial::createLayout() {
+		DescriptorLayoutBuilder layoutBuilder;
+
+		layoutBuilder.addBinding(0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+		layoutBuilder.addBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 16); // TODO make this dynamic depending on the scene
+		layoutBuilder.addBinding(2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 16);
+		layoutBuilder.addBinding(3, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 16);
+
+		return layoutBuilder.build(vulkan_context->device_manager->getDevice(), VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR);
+	}
+
+	std::shared_ptr<DescriptorSet> MetalRoughMaterial::createDescriptorSet(const VkDescriptorSetLayout &layout) {
+		return std::make_shared<DescriptorSet>(vulkan_context->descriptor_allocator, vulkan_context->device_manager, descriptor_layout);
+	}
+
+
 	void MetalRoughMaterial::writeMaterial() {
 		if (material_buffer.handle != VK_NULL_HANDLE) {
 			vulkan_context->resource_builder->destroyBuffer(material_buffer);
@@ -66,12 +74,9 @@ namespace RtEngine {
 
 		material_buffer = createMaterialBuffer();
 
-		materialDescriptorSet =
-				descriptorAllocator.allocate(vulkan_context->device_manager->getDevice(), materialLayout);
-
 		descriptorAllocator.writeBuffer(0, material_buffer.handle, 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
 
-		auto extract_views = [](std::vector<std::shared_ptr<Texture>> textures) {
+		auto extract_views = [](const std::vector<std::shared_ptr<Texture>> &textures) {
 			std::vector<VkImageView> imageViews{};
 			for (auto &texture: textures) {
 				imageViews.push_back(texture->image.imageView);
@@ -91,7 +96,7 @@ namespace RtEngine {
 		descriptorAllocator.writeImages(3, extract_views(normal_textures), sampler, VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL,
 										VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
 		VkDevice device = vulkan_context->device_manager->getDevice();
-		descriptorAllocator.updateSet(device, materialDescriptorSet);
+		descriptorAllocator.updateSet(device, descriptor_set->getCurrentSet());
 		descriptorAllocator.clearWrites();
 	}
 
@@ -137,7 +142,7 @@ namespace RtEngine {
 
 	// is unique = true the method assumes that such an instance doesn't exist yet, so safe time when creating lots of
 	// instances, where it is clear that they are unique (used for loading scenes for example
-	std::shared_ptr<MaterialInstance> MetalRoughMaterial::createInstance(MetalRoughParameters parameters, bool unique) {
+	std::shared_ptr<MaterialInstance> MetalRoughMaterial::createInstance(const MetalRoughParameters& parameters, bool unique) {
 		std::shared_ptr<MaterialInstance> instance = std::make_shared<MaterialInstance>();
 		std::shared_ptr<MaterialResources> resources = createMaterialResources(parameters);
 
@@ -173,12 +178,12 @@ namespace RtEngine {
 		properties->addBool("Russian_Roulette", &material_properties.russian_roulette);
 	}
 
-	AllocatedBuffer MetalRoughMaterial::createMaterialBuffer() {
+	AllocatedBuffer MetalRoughMaterial::createMaterialBuffer() const {
 		assert(resources_buffer.size() == instances.size());
 
 		std::vector<MaterialResources> material_data{};
-		for (uint32_t i = 0; i < resources_buffer.size(); i++) {
-			material_data.push_back(*resources_buffer[i]);
+		for (const auto & resources : resources_buffer) {
+			material_data.push_back(*resources);
 		}
 		return vulkan_context->resource_builder->stageMemoryToNewBuffer(
 				material_data.data(), material_data.size() * sizeof(MaterialResources),

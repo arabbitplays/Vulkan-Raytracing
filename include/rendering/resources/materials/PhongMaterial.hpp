@@ -1,7 +1,6 @@
 #ifndef PHONGMATERIAL_HPP
 #define PHONGMATERIAL_HPP
 #include <Material.hpp>
-#include <glm/vec3.hpp>
 
 #define PHONG_MATERIAL_NAME "phong"
 
@@ -27,7 +26,7 @@ namespace RtEngine {
 			int32_t shadows, dispersion, fresnel;
 		};
 
-		PhongMaterial(std::shared_ptr<VulkanContext> context, std::shared_ptr<RuntimeContext> runtime_context) :
+		PhongMaterial(const std::shared_ptr<VulkanContext> &context, const std::shared_ptr<RuntimeContext> &runtime_context) :
 			Material(PHONG_MATERIAL_NAME, context, runtime_context) {}
 
 		void buildPipelines(VkDescriptorSetLayout engineLayout, VkDescriptorSetLayout sceneLayout) override;
@@ -42,12 +41,15 @@ namespace RtEngine {
 	protected:
 		void initProperties() override;
 
-	private:
-		AllocatedBuffer createMaterialBuffer();
+		VkDescriptorSetLayout createLayout() override;
+		std::shared_ptr<DescriptorSet> createDescriptorSet(const VkDescriptorSetLayout &layout) override;
 
-		MaterialProperties material_properties;
+	private:
+		[[nodiscard]] AllocatedBuffer createMaterialBuffer() const;
+
+		MaterialProperties material_properties{};
 		std::vector<std::shared_ptr<MaterialResources>> resources_buffer;
-		AllocatedBuffer materialBuffer;
+		AllocatedBuffer materialBuffer{};
 	};
 
 } // namespace RtEngine

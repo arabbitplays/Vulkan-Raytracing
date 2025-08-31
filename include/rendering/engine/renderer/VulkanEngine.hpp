@@ -7,10 +7,8 @@
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #include <chrono>
 #define TINYOBJLOADER_IMPLEMENTATION
-#include <AccelerationStructure.hpp>
 #include <GuiManager.hpp>
 #include <GuiWindow.hpp>
-#include <RenderTarget.hpp>
 #include <SceneManager.hpp>
 #include "../../util/QuickTimer.hpp"
 #include "DescriptorAllocator.hpp"
@@ -71,7 +69,7 @@ namespace RtEngine {
 
 		static bool hasStencilComponent(VkFormat format);
 
-		std::shared_ptr<DescriptorAllocator> createDescriptorAllocator();
+		std::shared_ptr<DescriptorAllocator> createDescriptorAllocator() const;
 		void createCommandBuffers();
 		void createSyncObjects();
 
@@ -93,7 +91,7 @@ namespace RtEngine {
 		void recordCopyToSwapchain(VkCommandBuffer commandBuffer, uint32_t swapchain_image_index);
 		void recordEndCommandBuffer(VkCommandBuffer commandBuffer);
 
-		void loadScene();
+		void loadScene() const;
 		virtual void initProperties();
 		void initSceneSelectionProperty() const;
 

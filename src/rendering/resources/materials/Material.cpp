@@ -12,11 +12,16 @@ namespace RtEngine {
 		return properties;
 	}
 
-	void Material::clearRessources() {
+	void Material::destroyResources() {
 		resetQueue.flush();
 		mainDeletionQueue.flush();
 		if (material_buffer.handle != VK_NULL_HANDLE)
 			vulkan_context->resource_builder->destroyBuffer(material_buffer);
+		destroyLayout();
+	}
+
+	void Material::destroyLayout() {
+		vkDestroyDescriptorSetLayout(vulkan_context->device_manager->getDevice(), descriptor_layout, nullptr);
 	}
 
 	void Material::reset() { resetQueue.flush(); }

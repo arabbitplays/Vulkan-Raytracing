@@ -30,10 +30,11 @@ namespace RtEngine {
         EngineResources(const std::shared_ptr<VulkanContext> &vulkanContext);
 
         void createAndBindResources();
-        void destroyLayout() override;
-
+        void destroyResources();
     private:
         VkDescriptorSetLayout createLayout() override;
+        void destroyLayout() override;
+
         std::shared_ptr<DescriptorSet> createDescriptorSet(const VkDescriptorSetLayout &layout) override;
 
         void createEngineBuffers();

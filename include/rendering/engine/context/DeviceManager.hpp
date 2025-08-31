@@ -32,12 +32,12 @@ namespace RtEngine {
 		DeviceManager(GLFWwindow *window, bool enable_validation_layers);
 		void destroy();
 
-		VkPhysicalDevice getPhysicalDevice() const;
-		VkDevice getDevice() const;
-		VkSurfaceKHR getSurface() const;
-		VkInstance getInstance() const;
-		QueueFamilyIndices getQueueIndices() const;
-		VkQueue getQueue(QueueType type) const;
+		[[nodiscard]] VkPhysicalDevice getPhysicalDevice() const;
+		[[nodiscard]] VkDevice getDevice() const;
+		[[nodiscard]] VkSurfaceKHR getSurface() const;
+		[[nodiscard]] VkInstance getInstance() const;
+		[[nodiscard]] QueueFamilyIndices getQueueIndices() const;
+		[[nodiscard]] VkQueue getQueue(QueueType type) const;
 
 	private:
 		void createInstance(bool enable_validation_layers);
@@ -55,10 +55,10 @@ namespace RtEngine {
 
 		void createLogicalDevice(bool enable_validation_layers);
 
-		static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
-															VkDebugUtilsMessageTypeFlagsEXT messageType,
+		static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback([[maybe_unused]] VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
+															[[maybe_unused]] VkDebugUtilsMessageTypeFlagsEXT messageType,
 															const VkDebugUtilsMessengerCallbackDataEXT *pCallbackData,
-															void *pUserData) {
+															[[maybe_unused]] void *pUserData) {
 
 			std::cerr << "validation layer: " << pCallbackData->pMessage << std::endl;
 

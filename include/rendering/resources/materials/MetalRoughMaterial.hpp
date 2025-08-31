@@ -2,8 +2,6 @@
 #define METALROUGHMATERIAL_HPP
 
 #include <Material.hpp>
-#include <TextureRepository.hpp>
-#include <glm/vec3.hpp>
 
 #define METAL_ROUGH_MATERIAL_NAME "metal_rough"
 
@@ -36,7 +34,7 @@ namespace RtEngine {
 			int32_t normal_mapping = 0, sample_lights = 0, sample_bsdf = 0, russian_roulette = 0;
 		};
 
-		MetalRoughMaterial(std::shared_ptr<VulkanContext> context, std::shared_ptr<RuntimeContext> runtime_context,
+		MetalRoughMaterial(const std::shared_ptr<VulkanContext> &context, const std::shared_ptr<RuntimeContext> &runtime_context,
 						   VkSampler sampler) :
 			Material(METAL_ROUGH_MATERIAL_NAME, context, runtime_context), sampler(sampler) {}
 
@@ -46,17 +44,21 @@ namespace RtEngine {
 		std::vector<std::shared_ptr<MaterialResources>> getResources();
 		std::vector<std::shared_ptr<Texture>> getTextures() override;
 
-		std::shared_ptr<MaterialInstance> createInstance(MetalRoughParameters parameters, bool unique = false);
+		std::shared_ptr<MaterialInstance> createInstance(const MetalRoughParameters& parameters, bool unique = false);
 		void reset() override;
 
 	protected:
 		void initProperties() override;
+
+		VkDescriptorSetLayout createLayout() override;
+		std::shared_ptr<DescriptorSet> createDescriptorSet(const VkDescriptorSetLayout &layout) override;
+
 		std::shared_ptr<MaterialResources> createMaterialResources(const MetalRoughParameters &parameters);
-		std::shared_ptr<PropertiesSection>
-		initializeInstanceProperties(const std::shared_ptr<MaterialResources> &resources);
+		static std::shared_ptr<PropertiesSection>
+			initializeInstanceProperties(const std::shared_ptr<MaterialResources> &resources);
 
 	private:
-		AllocatedBuffer createMaterialBuffer();
+		[[nodiscard]] AllocatedBuffer createMaterialBuffer() const;
 
 		std::vector<std::shared_ptr<MaterialResources>> resources_buffer;
 		std::vector<std::shared_ptr<Texture>> albedo_textures, metal_rough_ao_textures, normal_textures;

@@ -3,28 +3,20 @@
 #include <DescriptorLayoutBuilder.hpp>
 #include <OptionsWindow.hpp>
 #include <VulkanUtil.hpp>
-#include <glm/detail/type_mat4x3.hpp>
 
 #include <environment_miss.rmiss.spv.h>
 #include <phong_closesthit.rchit.spv.h>
 #include <phong_raygen.rgen.spv.h>
-#include "miss.rmiss.spv.h"
 #include "shadow_miss.rmiss.spv.h"
 
 namespace RtEngine {
 	void PhongMaterial::buildPipelines(VkDescriptorSetLayout engineLayout, VkDescriptorSetLayout sceneLayout) {
-		DescriptorLayoutBuilder layoutBuilder;
 		pipeline = std::make_shared<Pipeline>(vulkan_context);
 		VkDevice device = vulkan_context->device_manager->getDevice();
 
-		layoutBuilder.addBinding(0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+		initLayout();
 
-		materialLayout = layoutBuilder.build(device, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR);
-		mainDeletionQueue.pushFunction([&]() {
-			vkDestroyDescriptorSetLayout(vulkan_context->device_manager->getDevice(), materialLayout, nullptr);
-		});
-
-		std::vector<VkDescriptorSetLayout> descriptorSetLayouts{sceneLayout, materialLayout};
+		std::vector<VkDescriptorSetLayout> descriptorSetLayouts{sceneLayout, descriptor_layout};
 		pipeline->setDescriptorSetLayouts(descriptorSetLayouts);
 
 		pipeline->addPushConstant(MAX_PUSH_CONSTANT_SIZE,
@@ -58,14 +50,23 @@ namespace RtEngine {
 		vkDestroyShaderModule(device, closestHitShaderModule, nullptr);
 	}
 
+	VkDescriptorSetLayout PhongMaterial::createLayout() {
+		DescriptorLayoutBuilder layoutBuilder;
+		layoutBuilder.addBinding(0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+		return layoutBuilder.build(vulkan_context->device_manager->getDevice(), VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR);
+	}
+
+	std::shared_ptr<DescriptorSet> PhongMaterial::createDescriptorSet(const VkDescriptorSetLayout &layout) {
+		return std::make_shared<DescriptorSet>(vulkan_context->descriptor_allocator, vulkan_context->device_manager, descriptor_layout);
+	}
+
 	void PhongMaterial::writeMaterial() {
 		materialBuffer = createMaterialBuffer();
 		resetQueue.pushFunction([&]() { vulkan_context->resource_builder->destroyBuffer(materialBuffer); });
 
 		VkDevice device = vulkan_context->device_manager->getDevice();
-		materialDescriptorSet = descriptorAllocator.allocate(device, materialLayout);
 		descriptorAllocator.writeBuffer(0, materialBuffer.handle, 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
-		descriptorAllocator.updateSet(device, materialDescriptorSet);
+		descriptorAllocator.updateSet(device, descriptor_set->getCurrentSet());
 		descriptorAllocator.clearWrites();
 	}
 
@@ -90,7 +91,7 @@ namespace RtEngine {
 		return instance;
 	}
 
-	AllocatedBuffer PhongMaterial::createMaterialBuffer() {
+	AllocatedBuffer PhongMaterial::createMaterialBuffer() const {
 		assert(resources_buffer.size() == instances.size());
 
 		std::vector<PhongMaterialConstants> materialConstants{};

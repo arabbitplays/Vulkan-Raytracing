@@ -12,7 +12,7 @@ namespace RtEngine {
 		static constexpr std::string COMPONENT_NAME = "Transform";
 
 		void OnStart() override {};
-		void OnRender(DrawContext &ctx) override {};
+		void OnRender([[maybe_unused]] DrawContext &ctx) override {};
 		void OnUpdate() override {};
 
 		void definePropertySections() override;

@@ -4,7 +4,6 @@
 #include <cstdlib>
 #include <filesystem>
 #include <PathUtil.hpp>
-#include <set>
 #include <RandomUtil.hpp>
 
 namespace RtEngine {
@@ -28,8 +27,8 @@ namespace RtEngine {
 		}
 	}
 
-	const uint32_t WIDTH = 6144;
-	const uint32_t HEIGHT = 3320;
+	constexpr uint32_t WIDTH = 6144;
+	constexpr uint32_t HEIGHT = 3320;
 
 	void VulkanEngine::run(const std::string &config_file, const std::string &resources_dir) {
 		vulkan_context = std::make_shared<VulkanContext>();
@@ -60,19 +59,19 @@ namespace RtEngine {
 	}
 
 	void VulkanEngine::framebufferResizeCallback(GLFWwindow *window, int width, int height) {
-		auto app = reinterpret_cast<VulkanEngine *>(glfwGetWindowUserPointer(window));
+		const auto app = static_cast<VulkanEngine *>(glfwGetWindowUserPointer(window));
 		app->framebufferResized = true;
 	}
 
 	void VulkanEngine::keyCallback(GLFWwindow *window, int key, int scancode, int action, int mods) {
-		auto app = reinterpret_cast<VulkanEngine *>(glfwGetWindowUserPointer(window));
+		auto app = static_cast<VulkanEngine *>(glfwGetWindowUserPointer(window));
 		if (app->scene_manager->scene != nullptr && app->scene_manager->scene->camera != nullptr) {
 			app->scene_manager->scene->camera->processGlfwKeyEvent(key, action);
 		}
 	}
 
 	void VulkanEngine::mouseCallback(GLFWwindow *window, double xPos, double yPos) {
-		auto app = reinterpret_cast<VulkanEngine *>(glfwGetWindowUserPointer(window));
+		auto app = static_cast<VulkanEngine *>(glfwGetWindowUserPointer(window));
 		if (app->scene_manager->scene != nullptr && app->scene_manager->scene->camera != nullptr) {
 			app->scene_manager->scene->camera->processGlfwMouseEvent(xPos, yPos);
 		}
@@ -151,11 +150,11 @@ namespace RtEngine {
 		mainDeletionQueue.pushFunction([&]() {
 			runtime_context->texture_repository->destroy();
 			runtime_context->mesh_repository->destroy();
-			runtime_context->engine_resources->destroyLayout();
+			runtime_context->engine_resources->destroyResources();
 		});
 	}
 
-	std::shared_ptr<DescriptorAllocator> VulkanEngine::createDescriptorAllocator() {
+	std::shared_ptr<DescriptorAllocator> VulkanEngine::createDescriptorAllocator() const {
 		std::vector<DescriptorAllocator::PoolSizeRatio> poolRatios = {
 				{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1},
 				{VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1},
@@ -165,7 +164,7 @@ namespace RtEngine {
 		};
 
 		auto descriptorAllocator = std::make_shared<DescriptorAllocator>();
-		descriptorAllocator->init(vulkan_context->device_manager->getDevice(), 8, poolRatios);
+		descriptorAllocator->init(vulkan_context->device_manager->getDevice(), 64, poolRatios);
 
 		return descriptorAllocator;
 	}
@@ -176,7 +175,7 @@ namespace RtEngine {
 
 
 
-	void VulkanEngine::loadScene() {
+	void VulkanEngine::loadScene() const {
 		assert(!vulkan_context->base_options->curr_scene_name.empty());
 		vkDeviceWaitIdle(vulkan_context->device_manager->getDevice());
 		properties_manager->curr_sample_count = 0;
@@ -383,7 +382,7 @@ namespace RtEngine {
 
 		std::vector<VkDescriptorSet> descriptor_sets{};
 		descriptor_sets.push_back(scene_manager->getDescriptorSet(mainDrawContext->currentFrame));
-		descriptor_sets.push_back(scene_manager->getMaterial()->materialDescriptorSet);
+		descriptor_sets.push_back(scene_manager->getMaterial()->getDescriptorSet());
 		descriptor_sets.push_back(runtime_context->engine_resources->getDescriptorSet());
 
 		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, pipeline.getHandle());
@@ -484,7 +483,6 @@ namespace RtEngine {
 			uint8_t *output_image = new uint8_t[pixel_count * 4];
 			auto image_data = static_cast<float *>(data);
 			for (size_t i = 0; i < pixel_count * 4; i++) {
-				float test = image_data[i];
 				// Clamp each channel to the [0, 1] range and then scale to [0, 255]
 				output_image[i] = static_cast<uint8_t>(std::fmin(1.0f, std::fmax(0.0f, image_data[i])) * 255);
 			}

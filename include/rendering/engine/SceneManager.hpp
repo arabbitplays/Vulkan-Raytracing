@@ -26,7 +26,7 @@ namespace RtEngine {
 		SceneManager() = default;
 		SceneManager(const std::shared_ptr<VulkanContext> &vulkanContext,
 					 const std::shared_ptr<RuntimeContext>& runtime_context,
-					 const uint32_t max_frames_in_flight,
+					 uint32_t max_frames_in_flight,
 					 const VkPhysicalDeviceRayTracingPipelinePropertiesKHR& raytracingProperties);
 
 		void createScene(const std::string& scene_path);

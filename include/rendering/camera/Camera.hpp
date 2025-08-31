@@ -24,9 +24,9 @@ namespace RtEngine {
 		glm::mat4 getLastViewProjection();;
 		glm::vec3 getPosition();
 
-		virtual void processGlfwKeyEvent(int key, int action) {}
+		virtual void processGlfwKeyEvent([[maybe_unused]] int key, [[maybe_unused]] int action) {}
+		virtual void processGlfwMouseEvent([[maybe_unused]] double xPos, [[maybe_unused]] double yPos) {}
 
-		virtual void processGlfwMouseEvent(double xPos, double yPos) {}
 		virtual void update(const uint32_t image_width, const uint32_t image_height) {
 			if (image_width != this->image_width || image_height != this->image_height) {
 				initCamera(static_cast<float>(image_width) / static_cast<float>(image_height));

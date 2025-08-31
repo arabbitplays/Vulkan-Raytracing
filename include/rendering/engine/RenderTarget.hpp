@@ -16,11 +16,9 @@ namespace RtEngine
         RenderTarget() = default;
         explicit RenderTarget(const std::shared_ptr<ResourceBuilder>& resource_builder, VkExtent2D image_extent, uint32_t max_frames_in_flight);
 
-        AllocatedImage getCurrentTargetImage() const;
-        AllocatedImage getCurrentRngImage() const;
+        [[nodiscard]] AllocatedImage getCurrentTargetImage() const;
+        [[nodiscard]] AllocatedImage getCurrentRngImage() const;
         void nextImage();
-
-        uint32_t getCurrentSampleCount() const;
 
         void recreate(VkExtent2D image_extent);
 

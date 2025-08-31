@@ -2,6 +2,7 @@
 #define TEXTURE_H
 
 #include <string>
+#include <utility>
 #include <vulkan/vulkan_core.h>
 
 namespace RtEngine {
@@ -21,8 +22,8 @@ namespace RtEngine {
 	class Texture {
 	public:
 		Texture() = default;
-		Texture(std::string name, TextureType type, std::string path, AllocatedImage image) :
-			name(name), type(type), path(path), image(image){};
+		Texture(std::string name, const TextureType type, std::string path, const AllocatedImage &image) :
+			name(std::move(name)), path(std::move(path)), type(type), image(image){};
 		bool operator==(const Texture &other) const { return name == other.name; }
 
 		std::string name;

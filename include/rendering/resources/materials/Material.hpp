@@ -15,42 +15,41 @@ namespace RtEngine {
 	struct MaterialInstance;
 	class Pipeline;
 
-	class Material {
+	class Material : public ILayoutProvider {
 	public:
 		Material() = default;
-		Material(std::string name, std::shared_ptr<VulkanContext> vulkan_context,
-				 std::shared_ptr<RuntimeContext> runtime_context) :
+		Material(const std::string &name, const std::shared_ptr<VulkanContext> &vulkan_context,
+				 const std::shared_ptr<RuntimeContext> &runtime_context) :
 			name(name), vulkan_context(vulkan_context), runtime_context(runtime_context) {
 			std::vector<DescriptorAllocator::PoolSizeRatio> poolRatios = {
 					{VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1},
 					{VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 10},
 			};
-			descriptorAllocator.init(vulkan_context->device_manager->getDevice(), 8, poolRatios);
+			descriptorAllocator.init(vulkan_context->device_manager->getDevice(), 64, poolRatios);
 
 			mainDeletionQueue.pushFunction(
 					[&]() { descriptorAllocator.destroyPools(this->vulkan_context->device_manager->getDevice()); });
 		};
 
-		virtual ~Material(){};
+		virtual ~Material() = default;
 
 		std::shared_ptr<Pipeline> pipeline;
-		VkDescriptorSetLayout materialLayout;
-		VkDescriptorSet materialDescriptorSet;
 
 		virtual void buildPipelines(VkDescriptorSetLayout engineLayout, VkDescriptorSetLayout sceneLayout) = 0;
 		virtual void writeMaterial() = 0;
-		virtual glm::vec4 getEmissionForInstance(uint32_t material_instance_id) { return glm::vec4(0.0f); }
+		virtual glm::vec4 getEmissionForInstance([[maybe_unused]] uint32_t material_instance_id) { return glm::vec4(0.0f); }
 		std::vector<std::shared_ptr<MaterialInstance>> getInstances();
 		std::shared_ptr<PropertiesSection> getProperties();
 		virtual std::vector<std::shared_ptr<Texture>> getTextures() = 0;
 
-		void clearRessources();
+		void destroyResources();
 		virtual void reset();
 
 		std::string name;
 
 	protected:
 		virtual void initProperties() = 0;
+		void destroyLayout() override;
 
 		std::shared_ptr<VulkanContext> vulkan_context;
 		std::shared_ptr<RuntimeContext> runtime_context;
