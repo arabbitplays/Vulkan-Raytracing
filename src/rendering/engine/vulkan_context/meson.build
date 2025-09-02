@@ -3,4 +3,6 @@
 
 src += files(
   'DeviceManager.cpp',
+  'CommandManager.cpp',
+  'Swapchain.cpp',
 )

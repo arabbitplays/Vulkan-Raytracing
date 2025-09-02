@@ -8,7 +8,7 @@
 #include <vector>
 #include <spdlog/spdlog.h>
 
-#include "core/ILayoutProvider.hpp"
+#include "../core/ILayoutProvider.hpp"
 #include "DescriptorSet.hpp"
 
 namespace RtEngine {

@@ -3,7 +3,7 @@
 
 #include <GuiWindow.hpp>
 #include <Node.hpp>
-#include <SceneManager.hpp>
+#include <../engine/scene_management/SceneManager.hpp>
 #include <VulkanContext.hpp>
 #include <memory>
 

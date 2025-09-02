@@ -1,7 +1,7 @@
 #ifndef SCENEREADER_H
 #define SCENEREADER_H
 
-#include <RuntimeContext.hpp>
+#include <../rendering/engine/runtime_context/RuntimeContext.hpp>
 #include <Scene.hpp>
 #include <string>
 #include <yaml-cpp/yaml.h>

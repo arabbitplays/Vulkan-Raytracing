@@ -1,7 +1,7 @@
 #ifndef COMPONENT_HPP
 #define COMPONENT_HPP
 #include <PropertiesManager.hpp>
-#include <RuntimeContext.hpp>
+#include <../../engine/runtime_context/RuntimeContext.hpp>
 #include <IRenderable.hpp>
 
 namespace RtEngine {

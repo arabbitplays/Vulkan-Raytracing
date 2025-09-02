@@ -1,4 +1,4 @@
-#include "SceneManager.hpp"
+#include "../../../../include/rendering/engine/scene_management/SceneManager.hpp"
 
 #include <DescriptorLayoutBuilder.hpp>
 #include <MeshRenderer.hpp>

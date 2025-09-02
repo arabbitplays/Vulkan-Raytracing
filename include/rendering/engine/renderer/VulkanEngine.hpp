@@ -9,11 +9,11 @@
 #define TINYOBJLOADER_IMPLEMENTATION
 #include <GuiManager.hpp>
 #include <GuiWindow.hpp>
-#include <SceneManager.hpp>
+#include <../scene_management/SceneManager.hpp>
 #include "../../util/QuickTimer.hpp"
-#include "DescriptorAllocator.hpp"
+#include "../../../builders/DescriptorAllocator.hpp"
 
-#include <RuntimeContext.hpp>
+#include <../runtime_context/RuntimeContext.hpp>
 #include <VulkanContext.hpp>
 #include "../scene_graph/Node.hpp"
 #include "DeletionQueue.hpp"

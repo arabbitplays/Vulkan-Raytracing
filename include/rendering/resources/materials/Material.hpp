@@ -2,7 +2,7 @@
 #define MATERIAL_HPP
 
 #include <DeletionQueue.hpp>
-#include <DescriptorAllocator.hpp>
+#include <../../../builders/DescriptorAllocator.hpp>
 #include <Pipeline.hpp>
 #include <PropertiesManager.hpp>
 #include <ResourceBuilder.hpp>

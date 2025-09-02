@@ -3,7 +3,7 @@
 
 #include <BaseOptions.hpp>
 #include <CommandManager.hpp>
-#include <DescriptorAllocator.hpp>
+#include <../../../builders/DescriptorAllocator.hpp>
 #include <DeviceManager.hpp>
 #include <MeshAssetBuilder.hpp>
 #include <ResourceBuilder.hpp>

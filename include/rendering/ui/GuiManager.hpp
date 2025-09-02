@@ -1,10 +1,10 @@
 #ifndef GUIMANAGER_HPP
 #define GUIMANAGER_HPP
 
-#include <DescriptorAllocator.hpp>
+#include <../../builders/DescriptorAllocator.hpp>
 #include <GLFW/glfw3.h>
 #include <OptionsWindow.hpp>
-#include <Swapchain.hpp>
+#include <../engine/vulkan_context/Swapchain.hpp>
 #include <VulkanContext.hpp>
 #include <bits/shared_ptr.h>
 #include <imgui.h>

@@ -3,6 +3,7 @@
 
 src += files(
   'MeshAssetBuilder.cpp',
+  'DescriptorAllocator.cpp',
   'AssimpModelLoader.cpp',
   'DescriptorLayoutBuilder.cpp',
   'ModelLoader.cpp',

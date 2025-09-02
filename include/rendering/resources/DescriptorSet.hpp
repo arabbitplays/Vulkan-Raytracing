@@ -8,7 +8,7 @@
 #include <cassert>
 #include <memory>
 
-#include "DescriptorAllocator.hpp"
+#include "../../builders/DescriptorAllocator.hpp"
 #include "DeviceManager.hpp"
 
 namespace RtEngine {
