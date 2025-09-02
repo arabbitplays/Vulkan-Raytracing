@@ -110,10 +110,9 @@ namespace RtEngine {
 		mainDrawContext->target = std::make_shared<RenderTarget>(vulkan_context->resource_builder, vulkan_context->swapchain->extent, mainDrawContext->max_frames_in_flight);
 		mainDeletionQueue.pushFunction([&]() { mainDrawContext->target->destroy(); });
 
-		scene_manager = std::make_shared<SceneManager>(vulkan_context, runtime_context, mainDrawContext->max_frames_in_flight,
-													   DeviceManager::RAYTRACING_PROPERTIES);
+		scene_manager = std::make_shared<SceneManager>(vulkan_context, runtime_context, mainDrawContext->max_frames_in_flight);
 		vulkan_context->layout_manager->addLayout(0, scene_manager);
-		scene_manager->initDefaultResources(DeviceManager::RAYTRACING_PROPERTIES);
+		scene_manager->initDefaultResources();
 		mainDeletionQueue.pushFunction([&]() { scene_manager->destroyResources(); });
 
 		createCommandBuffers();
@@ -148,12 +147,14 @@ namespace RtEngine {
 		runtime_context = std::make_shared<RuntimeContext>();
 		runtime_context->texture_repository = std::make_shared<TextureRepository>(vulkan_context->resource_builder);
 		runtime_context->mesh_repository = std::make_shared<MeshRepository>(vulkan_context);
+		runtime_context->material_repository = std::make_shared<MaterialRepository>();
 		runtime_context->engine_resources = std::make_shared<EngineResources>(vulkan_context);
 		vulkan_context->layout_manager->addLayout(2, runtime_context->engine_resources);
 
 		mainDeletionQueue.pushFunction([&]() {
 			runtime_context->texture_repository->destroy();
 			runtime_context->mesh_repository->destroy();
+			runtime_context->material_repository->destroyMaterials();
 			runtime_context->engine_resources->destroyResources();
 		});
 	}

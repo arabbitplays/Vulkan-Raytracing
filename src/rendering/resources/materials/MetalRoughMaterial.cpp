@@ -115,7 +115,7 @@ namespace RtEngine {
 				}
 			}
 
-			textures.push_back(runtime_context->texture_repository->getTexture(texture_name));
+			textures.push_back(texture_repository->getTexture(texture_name));
 			return textures.size() - 1;
 		};
 

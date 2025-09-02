@@ -26,8 +26,8 @@ namespace RtEngine {
 			int32_t shadows, dispersion, fresnel;
 		};
 
-		PhongMaterial(const std::shared_ptr<VulkanContext> &context, const std::shared_ptr<RuntimeContext> &runtime_context) :
-			Material(PHONG_MATERIAL_NAME, context, runtime_context) {}
+		PhongMaterial(const std::shared_ptr<VulkanContext> &context, const std::shared_ptr<TextureRepository> &texture_repository) :
+			Material(PHONG_MATERIAL_NAME, context, texture_repository) {}
 
 		void buildPipelines() override;
 		void writeMaterial() override;

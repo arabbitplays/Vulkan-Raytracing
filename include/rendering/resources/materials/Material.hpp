@@ -6,10 +6,10 @@
 #include <Pipeline.hpp>
 #include <PropertiesManager.hpp>
 #include <ResourceBuilder.hpp>
-#include <RuntimeContext.hpp>
 #include <bits/shared_ptr.h>
-#include <glm/vec4.hpp>
 #include <vulkan/vulkan_core.h>
+
+#include "TextureRepository.hpp"
 
 namespace RtEngine {
 	struct MaterialInstance;
@@ -19,8 +19,8 @@ namespace RtEngine {
 	public:
 		Material() = default;
 		Material(const std::string &name, const std::shared_ptr<VulkanContext> &vulkan_context,
-				 const std::shared_ptr<RuntimeContext> &runtime_context) :
-			name(name), vulkan_context(vulkan_context), runtime_context(runtime_context) {
+				 const std::shared_ptr<TextureRepository> &texture_repository) :
+			name(name), vulkan_context(vulkan_context), texture_repository(texture_repository) {
 			std::vector<DescriptorAllocator::PoolSizeRatio> poolRatios = {
 					{VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1},
 					{VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 10},
@@ -52,7 +52,7 @@ namespace RtEngine {
 		void destroyLayout() override;
 
 		std::shared_ptr<VulkanContext> vulkan_context;
-		std::shared_ptr<RuntimeContext> runtime_context;
+		std::shared_ptr<TextureRepository> texture_repository;
 		DescriptorAllocator descriptorAllocator;
 		DeletionQueue mainDeletionQueue, resetQueue;
 

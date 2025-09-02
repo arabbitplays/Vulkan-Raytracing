@@ -34,9 +34,9 @@ namespace RtEngine {
 			int32_t normal_mapping = 0, sample_lights = 0, sample_bsdf = 0, russian_roulette = 0;
 		};
 
-		MetalRoughMaterial(const std::shared_ptr<VulkanContext> &context, const std::shared_ptr<RuntimeContext> &runtime_context,
+		MetalRoughMaterial(const std::shared_ptr<VulkanContext> &context, const std::shared_ptr<TextureRepository> &texture_repository,
 						   VkSampler sampler) :
-			Material(METAL_ROUGH_MATERIAL_NAME, context, runtime_context), sampler(sampler) {}
+			Material(METAL_ROUGH_MATERIAL_NAME, context, texture_repository), sampler(sampler) {}
 
 		void buildPipelines() override;
 		void writeMaterial() override;

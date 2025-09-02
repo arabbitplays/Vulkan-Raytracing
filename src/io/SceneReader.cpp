@@ -14,8 +14,7 @@
 
 namespace RtEngine {
 	std::shared_ptr<Scene>
-	SceneReader::readScene(const std::string &file_path,
-						   std::unordered_map<std::string, std::shared_ptr<Material>> materials) {
+	SceneReader::readScene(const std::string &file_path) {
 		QuickTimer quick_timer("Reading scene from file");
 
 		try {
@@ -23,18 +22,19 @@ namespace RtEngine {
 			YAML::Node scene_node = config["scene"];
 
 			auto material_name = scene_node["material_name"].as<std::string>();
-			if (!materials.contains(material_name))
+			std::shared_ptr<Material> material = runtime_context->material_repository->getMaterial(material_name);
+			if (!material)
 				throw std::runtime_error("Material " + material_name + " does not exist");
 			// TODO remove vulkan context from reader?
 			std::shared_ptr<Scene> scene =
-					std::make_shared<Scene>(file_path, *vulkan_context->resource_builder, materials[material_name]);
-			vulkan_context->layout_manager->addLayout(1, materials[material_name]);
+					std::make_shared<Scene>(file_path, *vulkan_context->resource_builder, material);
+			vulkan_context->layout_manager->addLayout(1, material);
 
 			scene->camera = loadCamera(scene_node["camera"]);
 			loadSceneLights(scene_node["lights"], scene);
 
 			for (const auto &mesh_node: scene_node["meshes"]) {
-				std::string mesh_path = mesh_node["path"].as<std::string>();
+				auto mesh_path = mesh_node["path"].as<std::string>();
 				runtime_context->mesh_repository->addMesh(mesh_path);
 			}
 
@@ -44,11 +44,11 @@ namespace RtEngine {
 				runtime_context->texture_repository->addTexture(texture_node["path"].as<std::string>(), type);
 			}
 
-			initializeMaterial(scene_node["materials"], materials[material_name]);
+			initializeMaterial(scene_node["materials"], material);
 
 			std::shared_ptr<Node> scene_graph_node = std::make_shared<Node>();
 			scene_graph_node->name = "root";
-			glm::mat4 identity = glm::mat4(1.0f);
+			auto identity = glm::mat4(1.0f);
 			scene_graph_node->transform->setLocalTransform(identity);
 			scene_graph_node->children = {};
 			for (const auto &yaml_mesh_node: scene_node["nodes"]) {

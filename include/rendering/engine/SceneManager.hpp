@@ -26,10 +26,9 @@ namespace RtEngine {
 		SceneManager() = default;
 		SceneManager(const std::shared_ptr<VulkanContext> &vulkanContext,
 					 const std::shared_ptr<RuntimeContext>& runtime_context,
-					 uint32_t max_frames_in_flight,
-					 const VkPhysicalDeviceRayTracingPipelinePropertiesKHR& raytracingProperties);
+					 uint32_t max_frames_in_flight);
 
-		void initDefaultResources(const VkPhysicalDeviceRayTracingPipelinePropertiesKHR& raytracingProperties);
+		void initDefaultResources();
 
 		void createScene(const std::string& scene_path);
 		void createBlas(const std::vector<std::shared_ptr<MeshAsset>> &meshes);
@@ -70,8 +69,6 @@ namespace RtEngine {
 		VkSampler defaultSamplerLinear;
 		VkSampler defaultSamplerNearest;
 		VkSampler defaultSamplerAnisotropic;
-
-		std::unordered_map<std::string, std::shared_ptr<Material>> defaultMaterials;
 
 		std::shared_ptr<GeometryManager> geometry_manager;
 		std::shared_ptr<InstanceManager> instance_manager;

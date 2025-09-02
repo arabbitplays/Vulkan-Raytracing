@@ -12,8 +12,7 @@ namespace RtEngine {
 
 	SceneManager::SceneManager(const std::shared_ptr<VulkanContext> &vulkanContext,
 				const std::shared_ptr<RuntimeContext> &runtime_context,
-				const uint32_t max_frames_in_flight,
-				const VkPhysicalDeviceRayTracingPipelinePropertiesKHR &raytracingProperties)
+				const uint32_t max_frames_in_flight)
 				: vulkan_context(vulkanContext), runtime_context(runtime_context),
 				max_frames_in_flight(max_frames_in_flight) {
 		geometry_manager = std::make_shared<GeometryManager>(vulkan_context->resource_builder);
@@ -33,13 +32,11 @@ namespace RtEngine {
 
 		if (scene != nullptr) {
 			scene_resource_deletion_queue.flush();
-			for (auto &material: defaultMaterials) {
-				material.second->reset();
-			}
+			runtime_context->material_repository->resetMaterials();
 		}
 
 		SceneReader reader = SceneReader(vulkan_context, runtime_context);
-		scene = reader.readScene(scene_path, defaultMaterials);
+		scene = reader.readScene(scene_path);
 
 		scene_resource_deletion_queue.pushFunction([&]() { scene->clearResources(); });
 
@@ -226,10 +223,10 @@ namespace RtEngine {
 
 	// -----------------------------------------------------------------------------------------------------------------
 
-	void SceneManager::initDefaultResources(const VkPhysicalDeviceRayTracingPipelinePropertiesKHR& raytracingProperties) {
+	void SceneManager::initDefaultResources() {
 		createDefaultTextures();
 		createDefaultSamplers();
-		createDefaultMaterials(raytracingProperties);
+		createDefaultMaterials(DeviceManager::RAYTRACING_PROPERTIES);
 	}
 
 	void SceneManager::createDefaultTextures() {
@@ -303,20 +300,18 @@ namespace RtEngine {
 	}
 
 	void SceneManager::createDefaultMaterials(const VkPhysicalDeviceRayTracingPipelinePropertiesKHR& raytracingProperties) {
-		auto phong_material = std::make_shared<PhongMaterial>(vulkan_context, runtime_context);
+		auto phong_material = std::make_shared<PhongMaterial>(vulkan_context, runtime_context->texture_repository);
 		vulkan_context->layout_manager->addLayout(1, phong_material); // todo weird to add it this way just to build the pipeline right
 		phong_material->buildPipelines();
 		phong_material->pipeline->createShaderBindingTables(raytracingProperties);
-		defaultMaterials["phong"] = phong_material;
-		main_deletion_queue.pushFunction([&]() { defaultMaterials["phong"]->destroyResources(); });
+		runtime_context->material_repository->addMaterial(phong_material);
 
 		auto metal_rough_material =
-				std::make_shared<MetalRoughMaterial>(vulkan_context, runtime_context, defaultSamplerLinear);
+				std::make_shared<MetalRoughMaterial>(vulkan_context, runtime_context->texture_repository, defaultSamplerLinear);
 		vulkan_context->layout_manager->addLayout(1, metal_rough_material);
 		metal_rough_material->buildPipelines();
 		metal_rough_material->pipeline->createShaderBindingTables(raytracingProperties);
-		defaultMaterials["metal_rough"] = metal_rough_material;
-		main_deletion_queue.pushFunction([&]() { defaultMaterials["metal_rough"]->destroyResources(); });
+		runtime_context->material_repository->addMaterial(metal_rough_material);
 	}
 
 	std::shared_ptr<Material> SceneManager::getMaterial() const { return scene->material; }
