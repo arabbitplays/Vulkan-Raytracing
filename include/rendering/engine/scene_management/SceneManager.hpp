@@ -28,8 +28,6 @@ namespace RtEngine {
 					 const std::shared_ptr<RuntimeContext>& runtime_context,
 					 uint32_t max_frames_in_flight);
 
-		void initDefaultResources();
-
 		void createScene(const std::string& scene_path);
 		void createBlas(const std::vector<std::shared_ptr<MeshAsset>> &meshes);
 		void updateScene(const std::shared_ptr<DrawContext> &draw_context);
@@ -49,10 +47,6 @@ namespace RtEngine {
 		std::shared_ptr<DescriptorSet> createDescriptorSet(const VkDescriptorSetLayout &layout) override;
 		void createUniformBuffers();
 
-		void createDefaultTextures();
-		void createDefaultSamplers();
-		void createDefaultMaterials(const VkPhysicalDeviceRayTracingPipelinePropertiesKHR& raytracingProperties);
-
 		void updateSceneDescriptorSets(uint32_t current_frame, const std::shared_ptr<RenderTarget>& render_target) const;
 		void updateTlas(std::vector<RenderObject> objects) const;
 
@@ -60,15 +54,6 @@ namespace RtEngine {
 
 		DeletionQueue main_deletion_queue, scene_resource_deletion_queue;
 		uint32_t max_frames_in_flight;
-
-		AllocatedImage whiteImage;
-		AllocatedImage greyImage;
-		AllocatedImage blackImage;
-		AllocatedImage errorCheckerboardImage;
-
-		VkSampler defaultSamplerLinear;
-		VkSampler defaultSamplerNearest;
-		VkSampler defaultSamplerAnisotropic;
 
 		std::shared_ptr<GeometryManager> geometry_manager;
 		std::shared_ptr<InstanceManager> instance_manager;

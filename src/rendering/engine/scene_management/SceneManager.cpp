@@ -203,7 +203,7 @@ namespace RtEngine {
 			for (uint32_t i = 0; i < 6; i++) {
 				views.push_back(scene->environment_map[i].imageView);
 			}
-			vulkan_context->descriptor_allocator->writeImages(8, views, defaultSamplerLinear,
+			vulkan_context->descriptor_allocator->writeImages(8, views, runtime_context->default_resources->getLinearSampler(),
 															  VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL,
 															  VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
 		}
@@ -222,97 +222,6 @@ namespace RtEngine {
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
-
-	void SceneManager::initDefaultResources() {
-		createDefaultTextures();
-		createDefaultSamplers();
-		createDefaultMaterials(DeviceManager::RAYTRACING_PROPERTIES);
-	}
-
-	void SceneManager::createDefaultTextures() {
-		uint32_t white = glm::packUnorm4x8(glm::vec4(1, 1, 1, 1));
-		whiteImage = vulkan_context->resource_builder->createImage(
-				(void *) &white, VkExtent3D{1, 1, 1}, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL,
-				VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_ASPECT_COLOR_BIT);
-
-		uint32_t grey = glm::packUnorm4x8(glm::vec4(0.66f, 0.66f, 0.66f, 1));
-		greyImage = vulkan_context->resource_builder->createImage(
-				(void *) &grey, VkExtent3D{1, 1, 1}, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL,
-				VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_ASPECT_COLOR_BIT);
-
-		uint32_t black = glm::packUnorm4x8(glm::vec4(0, 0, 0, 0));
-		blackImage = vulkan_context->resource_builder->createImage(
-				(void *) &black, VkExtent3D{1, 1, 1}, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL,
-				VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_ASPECT_COLOR_BIT);
-
-		// checkerboard image
-		const uint32_t magenta = glm::packUnorm4x8(glm::vec4(1, 0, 1, 1));
-		std::array<uint32_t, 16 * 16> pixels{}; // for 16x16 checkerboard texture
-		for (int x = 0; x < 16; x++) {
-			for (int y = 0; y < 16; y++) {
-				pixels[y * 16 + x] = ((x % 2) ^ (y % 2)) ? magenta : black;
-			}
-		}
-		errorCheckerboardImage = vulkan_context->resource_builder->createImage(
-				pixels.data(), VkExtent3D{16, 16, 1}, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL,
-				VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_ASPECT_COLOR_BIT);
-
-		main_deletion_queue.pushFunction([&]() {
-			vulkan_context->resource_builder->destroyImage(whiteImage);
-			vulkan_context->resource_builder->destroyImage(greyImage);
-			vulkan_context->resource_builder->destroyImage(blackImage);
-			vulkan_context->resource_builder->destroyImage(errorCheckerboardImage);
-		});
-	}
-
-	void SceneManager::createDefaultSamplers() {
-		VkDevice device = vulkan_context->device_manager->getDevice();
-
-		VkSamplerCreateInfo samplerInfo = {.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO};
-
-		samplerInfo.magFilter = VK_FILTER_NEAREST;
-		samplerInfo.minFilter = VK_FILTER_NEAREST;
-		if (vkCreateSampler(device, &samplerInfo, nullptr, &defaultSamplerNearest) != VK_SUCCESS) {
-			throw std::runtime_error("failed to create texture sampler!");
-		}
-
-		samplerInfo.magFilter = VK_FILTER_LINEAR;
-		samplerInfo.minFilter = VK_FILTER_LINEAR;
-		if (vkCreateSampler(device, &samplerInfo, nullptr, &defaultSamplerLinear) != VK_SUCCESS) {
-			throw std::runtime_error("failed to create texture sampler!");
-		}
-
-		VkPhysicalDeviceProperties properties{};
-		vkGetPhysicalDeviceProperties(vulkan_context->device_manager->getPhysicalDevice(), &properties);
-		samplerInfo.anisotropyEnable = VK_TRUE;
-		samplerInfo.maxAnisotropy = properties.limits.maxSamplerAnisotropy;
-		samplerInfo.magFilter = VK_FILTER_NEAREST;
-		samplerInfo.minFilter = VK_FILTER_NEAREST;
-		if (vkCreateSampler(device, &samplerInfo, nullptr, &defaultSamplerAnisotropic) != VK_SUCCESS) {
-			throw std::runtime_error("failed to create texture sampler!");
-		}
-
-		main_deletion_queue.pushFunction([&]() {
-			vkDestroySampler(vulkan_context->device_manager->getDevice(), defaultSamplerLinear, nullptr);
-			vkDestroySampler(vulkan_context->device_manager->getDevice(), defaultSamplerNearest, nullptr);
-			vkDestroySampler(vulkan_context->device_manager->getDevice(), defaultSamplerAnisotropic, nullptr);
-		});
-	}
-
-	void SceneManager::createDefaultMaterials(const VkPhysicalDeviceRayTracingPipelinePropertiesKHR& raytracingProperties) {
-		auto phong_material = std::make_shared<PhongMaterial>(vulkan_context, runtime_context->texture_repository);
-		vulkan_context->layout_manager->addLayout(1, phong_material); // todo weird to add it this way just to build the pipeline right
-		phong_material->buildPipelines();
-		phong_material->pipeline->createShaderBindingTables(raytracingProperties);
-		runtime_context->material_repository->addMaterial(phong_material);
-
-		auto metal_rough_material =
-				std::make_shared<MetalRoughMaterial>(vulkan_context, runtime_context->texture_repository, defaultSamplerLinear);
-		vulkan_context->layout_manager->addLayout(1, metal_rough_material);
-		metal_rough_material->buildPipelines();
-		metal_rough_material->pipeline->createShaderBindingTables(raytracingProperties);
-		runtime_context->material_repository->addMaterial(metal_rough_material);
-	}
 
 	std::shared_ptr<Material> SceneManager::getMaterial() const { return scene->material; }
 

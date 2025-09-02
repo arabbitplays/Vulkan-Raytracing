@@ -8,6 +8,7 @@
 #include <MeshRepository.hpp>
 #include <TextureRepository.hpp>
 
+#include "DefaultResources.hpp"
 #include "EngineResources.hpp"
 #include "MaterialRepository.hpp"
 
@@ -20,6 +21,7 @@ namespace RtEngine {
 		std::shared_ptr<MaterialRepository> material_repository;
 		std::shared_ptr<EngineResources> engine_resources;
 
+		std::shared_ptr<DefaultResources> default_resources;
 		std::weak_ptr<Material> curr_material;
 	};
 } // namespace RtEngine

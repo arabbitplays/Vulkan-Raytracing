@@ -112,8 +112,14 @@ namespace RtEngine {
 
 		scene_manager = std::make_shared<SceneManager>(vulkan_context, runtime_context, mainDrawContext->max_frames_in_flight);
 		vulkan_context->layout_manager->addLayout(0, scene_manager);
-		scene_manager->initDefaultResources();
-		mainDeletionQueue.pushFunction([&]() { scene_manager->destroyResources(); });
+
+		// TODO this has a dependency on all layouts existing
+		runtime_context->default_resources = std::make_shared<DefaultResources>(vulkan_context, runtime_context->texture_repository, runtime_context->material_repository);
+
+		mainDeletionQueue.pushFunction([&]() {
+			runtime_context->default_resources->destroy();
+			scene_manager->destroyResources();
+		});
 
 		createCommandBuffers();
 		createSyncObjects();
