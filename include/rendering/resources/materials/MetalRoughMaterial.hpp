@@ -47,7 +47,7 @@ namespace RtEngine {
 		void buildPipelines() override;
 		void writeMaterial() override;
 		glm::vec4 getEmissionForInstance(uint32_t material_instance_id) override;
-		std::vector<std::shared_ptr<MetalRoughResources>> getResources();
+		std::vector<std::shared_ptr<MetalRoughResources>> getResources() const;
 		std::vector<std::shared_ptr<Texture>> getTextures() override;
 
 		std::shared_ptr<MaterialInstance> createInstance(const MetalRoughParameters& parameters, bool unique = false);
@@ -65,7 +65,6 @@ namespace RtEngine {
 
 	private:
 		std::shared_ptr<MaterialResourceManager<MetalRoughResources>> resource_manager;
-		std::vector<std::shared_ptr<MetalRoughResources>> resources_buffer;
 		std::vector<std::shared_ptr<Texture>> albedo_textures, metal_rough_ao_textures, normal_textures;
 
 		MaterialProperties material_properties;

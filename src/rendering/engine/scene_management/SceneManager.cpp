@@ -215,7 +215,7 @@ namespace RtEngine {
 		vulkan_context->descriptor_allocator->writeImage(9, render_target->getCurrentRngImage().imageView, VK_NULL_HANDLE, VK_IMAGE_LAYOUT_GENERAL,
 														 VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
 
-		for (int i = 0; i < max_frames_in_flight; i++) {
+		for (uint32_t i = 0; i < max_frames_in_flight; i++) {
 			vulkan_context->descriptor_allocator->updateSet(device, descriptor_set->getCurrentSet(i));
 		}
 		vulkan_context->descriptor_allocator->clearWrites();

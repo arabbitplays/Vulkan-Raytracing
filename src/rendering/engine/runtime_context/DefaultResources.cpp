@@ -65,7 +65,8 @@ namespace RtEngine {
 	void DefaultResources::createDefaultSamplers() {
 		VkDevice device = vulkan_context->device_manager->getDevice();
 
-		VkSamplerCreateInfo samplerInfo = {.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO};
+		VkSamplerCreateInfo samplerInfo = {};
+    	samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
 
 		samplerInfo.magFilter = VK_FILTER_NEAREST;
 		samplerInfo.minFilter = VK_FILTER_NEAREST;
@@ -97,13 +98,13 @@ namespace RtEngine {
 	}
 
 	void DefaultResources::createDefaultMaterials(const VkPhysicalDeviceRayTracingPipelinePropertiesKHR& raytracingProperties) {
-		auto phong_material = std::make_shared<PhongMaterial>(vulkan_context, texture_repository);
+		const auto phong_material = std::make_shared<PhongMaterial>(vulkan_context, texture_repository);
 		vulkan_context->layout_manager->addLayout(1, phong_material); // todo weird to add it this way just to build the pipeline right
 		phong_material->buildPipelines();
 		phong_material->pipeline->createShaderBindingTables(raytracingProperties);
 		material_repository->addMaterial(phong_material);
 
-		auto metal_rough_material =
+		const auto metal_rough_material =
 				std::make_shared<MetalRoughMaterial>(vulkan_context, texture_repository, defaultSamplerLinear);
 		vulkan_context->layout_manager->addLayout(1, metal_rough_material);
 		metal_rough_material->buildPipelines();

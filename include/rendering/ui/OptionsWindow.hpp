@@ -28,6 +28,7 @@ namespace RtEngine {
 				.normal_mapping = true,
 				.sample_light = false,
 				.sample_brdf = true,
+				.curr_scene = 0
 		};
 
 		std::shared_ptr<PropertiesManager> main_props_manager;

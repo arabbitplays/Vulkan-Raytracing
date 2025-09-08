@@ -78,12 +78,12 @@ namespace RtEngine {
 	}
 
 	glm::vec4 MetalRoughMaterial::getEmissionForInstance(uint32_t material_instance_id) {
-		return resources_buffer[material_instance_id]->emission;
+		return resource_manager->getResources()[material_instance_id]->emission;
 	}
 
 
-	std::vector<std::shared_ptr<MetalRoughMaterial::MetalRoughResources>> MetalRoughMaterial::getResources() {
-		return resources_buffer;
+	std::vector<std::shared_ptr<MetalRoughMaterial::MetalRoughResources>> MetalRoughMaterial::getResources() const {
+		return resource_manager->getResources();
 	}
 
 	std::vector<std::shared_ptr<Texture>> MetalRoughMaterial::getTextures() {
@@ -106,30 +106,29 @@ namespace RtEngine {
 	}
 
 	// is unique = true the method assumes that such an instance doesn't exist yet, so safe time when creating lots of
-	// instances, where it is clear that they are unique (used for loading scenes for example
+	// instances, where it is clear that they are unique (used for loading scenes for example)
 	std::shared_ptr<MaterialInstance> MetalRoughMaterial::createInstance(const MetalRoughParameters& parameters, bool unique) {
 		std::shared_ptr<MaterialInstance> instance = std::make_shared<MaterialInstance>();
 		std::shared_ptr<MetalRoughResources> resources = createMaterialResources(parameters);
 
 		if (!unique) {
-			for (uint32_t i = 0; i < resources_buffer.size(); i++) {
-				if (*resources == *resources_buffer[i]) {
-					return instances[i];
-				}
+			int32_t duplicate_idx = resource_manager->isDuplicate(resources);
+			if (duplicate_idx != -1) {
+				assert(duplicate_idx < static_cast<int32_t>(instances.size()));
+				return instances[duplicate_idx];
 			}
 		}
 
-		instance->material_index = resources_buffer.size();
+		instance->material_index = resource_manager->addResources(resources);;
 		instance->properties = initializeInstanceProperties(resources);
-		resources_buffer.push_back(resources);
-		resource_manager->addResources(resources);
+
 		instances.push_back(instance);
 
 		return instance;
 	}
 
 	void MetalRoughMaterial::reset() {
-		resources_buffer.clear();
+		resource_manager->reset();
 		instances.clear();
 		albedo_textures.clear();
 		metal_rough_ao_textures.clear();

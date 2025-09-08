@@ -33,14 +33,34 @@ namespace RtEngine {
             return material_buffer;
         }
 
-        void addResources(const std::shared_ptr<Resources> &resources) {
+        // returns the index into the material buffer or -1 is not a duplicate
+        int32_t isDuplicate(const std::shared_ptr<Resources> &resources) {
+            for (uint32_t i = 0; i < material_resources.size(); i++) {
+                if (*resources == *material_resources[i]) {
+                    return static_cast<int32_t>(i);
+                }
+            }
+            return -1;
+        }
+
+        // returns the index into the material buffer
+        uint32_t addResources(const std::shared_ptr<Resources> &resources) {
             material_resources.push_back(resources);
+            return material_resources.size() - 1;
+        }
+
+        std::vector<std::shared_ptr<Resources>> getResources() {
+            return material_resources;
         }
 
         void destroyResources() const {
             if (material_buffer != nullptr)
                 vulkan_context->resource_builder->destroyBuffer(*material_buffer);
         }
+
+        void reset() {
+            material_resources.clear();
+        };
 
     private:
         void createMaterialBuffer() {
