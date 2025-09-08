@@ -9,6 +9,7 @@
 #include <bits/shared_ptr.h>
 #include <vulkan/vulkan_core.h>
 
+#include "MaterialResourceManager.hpp"
 #include "TextureRepository.hpp"
 
 namespace RtEngine {
@@ -65,7 +66,7 @@ namespace RtEngine {
 
 	struct MaterialInstance {
 		std::shared_ptr<PropertiesSection> properties;
-		uint32_t material_index;
+		uint32_t material_index; // index into the resources buffer
 	};
 
 } // namespace RtEngine

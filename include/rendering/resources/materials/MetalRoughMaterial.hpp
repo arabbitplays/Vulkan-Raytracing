@@ -16,13 +16,13 @@ namespace RtEngine {
 
 	class MetalRoughMaterial : public Material {
 	public:
-		struct MaterialResources {
+		struct MetalRoughResources : MaterialResources {
 			glm::vec3 albedo;
 			float padding;
 			glm::vec4 properties; // metallic roughness ao eta
 			glm::vec4 emission;
 			glm::ivec4 tex_indices; // albedo, metal_rough_ao, normal
-			bool operator==(const MaterialResources &other) const {
+			bool operator==(const MetalRoughResources &other) const {
 				return glm::all(glm::epsilonEqual(albedo, other.albedo, 0.0001f)) &&
 					   glm::all(glm::epsilonEqual(properties, other.properties, 0.0001f)) &&
 					   glm::all(glm::epsilonEqual(emission, other.emission, 0.0001f)) &&
@@ -36,12 +36,18 @@ namespace RtEngine {
 
 		MetalRoughMaterial(const std::shared_ptr<VulkanContext> &context, const std::shared_ptr<TextureRepository> &texture_repository,
 						   VkSampler sampler) :
-			Material(METAL_ROUGH_MATERIAL_NAME, context, texture_repository), sampler(sampler) {}
+			Material(METAL_ROUGH_MATERIAL_NAME, context, texture_repository), sampler(sampler) {
+
+			resource_manager = std::make_shared<MaterialResourceManager<MetalRoughResources>>(vulkan_context);
+			mainDeletionQueue.pushFunction([&]() {
+				resource_manager->destroyResources();
+			});
+		}
 
 		void buildPipelines() override;
 		void writeMaterial() override;
 		glm::vec4 getEmissionForInstance(uint32_t material_instance_id) override;
-		std::vector<std::shared_ptr<MaterialResources>> getResources();
+		std::vector<std::shared_ptr<MetalRoughResources>> getResources();
 		std::vector<std::shared_ptr<Texture>> getTextures() override;
 
 		std::shared_ptr<MaterialInstance> createInstance(const MetalRoughParameters& parameters, bool unique = false);
@@ -53,14 +59,13 @@ namespace RtEngine {
 		VkDescriptorSetLayout createLayout() override;
 		std::shared_ptr<DescriptorSet> createDescriptorSet(const VkDescriptorSetLayout &layout) override;
 
-		std::shared_ptr<MaterialResources> createMaterialResources(const MetalRoughParameters &parameters);
+		std::shared_ptr<MetalRoughResources> createMaterialResources(const MetalRoughParameters &parameters);
 		static std::shared_ptr<PropertiesSection>
-			initializeInstanceProperties(const std::shared_ptr<MaterialResources> &resources);
+			initializeInstanceProperties(const std::shared_ptr<MetalRoughResources> &resources);
 
 	private:
-		[[nodiscard]] AllocatedBuffer createMaterialBuffer() const;
-
-		std::vector<std::shared_ptr<MaterialResources>> resources_buffer;
+		std::shared_ptr<MaterialResourceManager<MetalRoughResources>> resource_manager;
+		std::vector<std::shared_ptr<MetalRoughResources>> resources_buffer;
 		std::vector<std::shared_ptr<Texture>> albedo_textures, metal_rough_ao_textures, normal_textures;
 
 		MaterialProperties material_properties;

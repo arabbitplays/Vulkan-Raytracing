@@ -15,8 +15,6 @@ namespace RtEngine {
 	void Material::destroyResources() {
 		resetQueue.flush();
 		mainDeletionQueue.flush();
-		if (material_buffer.handle != VK_NULL_HANDLE)
-			vulkan_context->resource_builder->destroyBuffer(material_buffer);
 		destroyLayout();
 	}
 
