@@ -4,5 +4,6 @@
 src += files(
   'Material.cpp',
   'MetalRoughMaterial.cpp',
+  'MetalRoughInstance.cpp',
   'PhongMaterial.cpp',
 )

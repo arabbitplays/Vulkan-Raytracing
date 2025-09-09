@@ -107,9 +107,10 @@ namespace RtEngine {
 
 	// is unique = true the method assumes that such an instance doesn't exist yet, so safe time when creating lots of
 	// instances, where it is clear that they are unique (used for loading scenes for example)
-	std::shared_ptr<MaterialInstance> MetalRoughMaterial::createInstance(const MetalRoughParameters& parameters, bool unique) {
-		std::shared_ptr<MaterialInstance> instance = std::make_shared<MaterialInstance>();
-		std::shared_ptr<MetalRoughResources> resources = createMaterialResources(parameters);
+	std::shared_ptr<MaterialMapper> MetalRoughMaterial::createInstance(const MetalRoughInstance::Parameters& parameters, bool unique) {
+		std::shared_ptr<MaterialMapper> mapper = std::make_shared<MaterialMapper>();
+		std::shared_ptr<MetalRoughInstance> instance = std::make_shared<MetalRoughInstance>(parameters, texture_repository);
+		std::shared_ptr<MetalRoughResources> resources = mapInstanceToResources(instance);
 
 		if (!unique) {
 			int32_t duplicate_idx = resource_manager->isDuplicate(resources);
@@ -119,12 +120,20 @@ namespace RtEngine {
 			}
 		}
 
-		instance->material_index = resource_manager->addResources(resources);;
-		instance->properties = initializeInstanceProperties(resources);
+		mapper->material_index = addInstanceToResources(instance);
+		mapper->properties = initializeInstanceProperties(resources);
 
-		instances.push_back(instance);
+		instances.push_back(mapper);
 
-		return instance;
+		return mapper;
+	}
+
+	// todo return type only not void for legacy reasons
+	uint32_t MetalRoughMaterial::addInstanceToResources(const std::shared_ptr<MetalRoughInstance> &instance) {
+		std::shared_ptr<MetalRoughResources> resources = mapInstanceToResources(instance);
+		uint32_t material_idx = resource_manager->addResources(resources);
+		instance->setMaterialDataIndex(material_idx);
+		return material_idx;
 	}
 
 	void MetalRoughMaterial::reset() {
@@ -160,11 +169,11 @@ namespace RtEngine {
 	}
 
 	std::shared_ptr<MetalRoughMaterial::MetalRoughResources>
-	MetalRoughMaterial::createMaterialResources(const MetalRoughParameters &parameters) {
+	MetalRoughMaterial::mapInstanceToResources(std::shared_ptr<MetalRoughInstance> instance) {
 		auto resources = std::make_shared<MetalRoughResources>();
-		resources->albedo = glm::vec4(parameters.albedo, 0.0f);
-		resources->properties = glm::vec4(parameters.metallic, parameters.roughness, parameters.ao, parameters.eta);
-		resources->emission = glm::vec4(parameters.emission_color, parameters.emission_power);
+		resources->albedo = glm::vec4(instance->albedo, 0.0f);
+		resources->properties = glm::vec4(instance->metallic, instance->roughness, instance->ao, instance->eta);
+		resources->emission = glm::vec4(instance->emission_color, instance->emission_power);
 
 		auto add_texture_if_needed = [&](const std::string &texture_name,
 		                                 std::vector<std::shared_ptr<Texture>> &textures) -> uint32_t {
@@ -174,14 +183,16 @@ namespace RtEngine {
 				}
 			}
 
+			// TODO this is not single responsability
 			textures.push_back(texture_repository->getTexture(texture_name));
 			return textures.size() - 1;
 		};
 
+		// TODO tex -> name -> tex
 		resources->tex_indices =
-				glm::vec4{add_texture_if_needed(parameters.albedo_tex_name, albedo_textures),
-					add_texture_if_needed(parameters.metal_rough_ao_tex_name, metal_rough_ao_textures),
-					add_texture_if_needed(parameters.normal_tex_name, normal_textures), 0};
+				glm::vec4{add_texture_if_needed(instance->albedo_tex->name, albedo_textures),
+					add_texture_if_needed(instance->metal_rough_ao_tex->name, metal_rough_ao_textures),
+					add_texture_if_needed(instance->normal_tex->name, normal_textures), 0};
 
 		return resources;
 	}

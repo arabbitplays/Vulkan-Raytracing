@@ -28,7 +28,7 @@ namespace RtEngine {
 
 		void buildPipelines() override;
 		void writeMaterial() override;
-		std::shared_ptr<MaterialInstance> createInstance(glm::vec3 diffuse, glm::vec3 specular, glm::vec3 ambient,
+		std::shared_ptr<MaterialMapper> createInstance(glm::vec3 diffuse, glm::vec3 specular, glm::vec3 ambient,
 														 glm::vec3 reflection, glm::vec3 transmission, float n,
 														 glm::vec3 eta = glm::vec3(0.0));
 		std::vector<std::shared_ptr<PhongResources>> getResources() const;

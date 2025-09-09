@@ -20,7 +20,7 @@ namespace RtEngine {
 		void initProperties(const YAML::Node &config_node) override;
 
 		std::shared_ptr<MeshAsset> meshAsset;
-		std::shared_ptr<MaterialInstance> meshMaterial;
+		std::shared_ptr<MaterialMapper> meshMaterial;
 	};
 
 } // namespace RtEngine

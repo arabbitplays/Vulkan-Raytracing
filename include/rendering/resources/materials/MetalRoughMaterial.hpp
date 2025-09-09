@@ -2,18 +2,11 @@
 #define METALROUGHMATERIAL_HPP
 
 #include <Material.hpp>
+#include "MetalRoughInstance.hpp"
 
 #define METAL_ROUGH_MATERIAL_NAME "metal_rough"
 
 namespace RtEngine {
-	struct MetalRoughParameters {
-		std::string albedo_tex_name, metal_rough_ao_tex_name, normal_tex_name;
-		glm::vec3 albedo = glm::vec3(0.0f);
-		float metallic, roughness, ao, eta = 1;
-		glm::vec3 emission_color = glm::vec3(1.0);
-		float emission_power = 0;
-	};
-
 	class MetalRoughMaterial : public Material {
 	public:
 		struct MetalRoughResources : MaterialResources {
@@ -50,7 +43,10 @@ namespace RtEngine {
 		std::vector<std::shared_ptr<MetalRoughResources>> getResources() const;
 		std::vector<std::shared_ptr<Texture>> getTextures() override;
 
-		std::shared_ptr<MaterialInstance> createInstance(const MetalRoughParameters& parameters, bool unique = false);
+		std::shared_ptr<MaterialMapper> createInstance(const MetalRoughInstance::Parameters& parameters, bool unique = false);
+
+		uint32_t addInstanceToResources(const std::shared_ptr<MetalRoughInstance> &instance);
+
 		void reset() override;
 
 	protected:
@@ -59,7 +55,8 @@ namespace RtEngine {
 		VkDescriptorSetLayout createLayout() override;
 		std::shared_ptr<DescriptorSet> createDescriptorSet(const VkDescriptorSetLayout &layout) override;
 
-		std::shared_ptr<MetalRoughResources> createMaterialResources(const MetalRoughParameters &parameters);
+		std::shared_ptr<MetalRoughResources> mapInstanceToResources(std::shared_ptr<MetalRoughInstance> instance);
+
 		static std::shared_ptr<PropertiesSection>
 			initializeInstanceProperties(const std::shared_ptr<MetalRoughResources> &resources);
 

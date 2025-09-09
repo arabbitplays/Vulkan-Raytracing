@@ -13,7 +13,7 @@
 #include "TextureRepository.hpp"
 
 namespace RtEngine {
-	struct MaterialInstance;
+	struct MaterialMapper;
 	class Pipeline;
 
 	class Material : public ILayoutProvider {
@@ -39,7 +39,7 @@ namespace RtEngine {
 		virtual void buildPipelines() = 0;
 		virtual void writeMaterial() = 0;
 		virtual glm::vec4 getEmissionForInstance([[maybe_unused]] uint32_t material_instance_id) { return glm::vec4(0.0f); }
-		std::vector<std::shared_ptr<MaterialInstance>> getInstances();
+		std::vector<std::shared_ptr<MaterialMapper>> getInstances();
 		std::shared_ptr<PropertiesSection> getProperties();
 		virtual std::vector<std::shared_ptr<Texture>> getTextures() = 0;
 
@@ -57,14 +57,14 @@ namespace RtEngine {
 		DescriptorAllocator descriptorAllocator;
 		DeletionQueue mainDeletionQueue, resetQueue;
 
-		std::vector<std::shared_ptr<MaterialInstance>> instances;
+		std::vector<std::shared_ptr<MaterialMapper>> instances;
 		std::shared_ptr<PropertiesSection> properties;
 
 		AllocatedBuffer material_buffer; // maps an instance to its respective material via a common index into the
 										 // constants and texture buffers
 	};
 
-	struct MaterialInstance {
+	struct MaterialMapper {
 		std::shared_ptr<PropertiesSection> properties;
 		uint32_t material_index; // index into the resources buffer
 	};

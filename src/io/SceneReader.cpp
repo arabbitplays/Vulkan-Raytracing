@@ -98,7 +98,7 @@ namespace RtEngine {
 			auto metal_rough_material = dynamic_cast<MetalRoughMaterial *>(material.get());
 
 			for (const auto &material_node: material_node) {
-				MetalRoughParameters parameters{};
+				MetalRoughInstance::Parameters parameters{};
 
 				if (material_node["albedo"])
 					parameters.albedo = material_node["albedo"].as<glm::vec3>();

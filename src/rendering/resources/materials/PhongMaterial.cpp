@@ -70,7 +70,7 @@ namespace RtEngine {
 		descriptorAllocator.clearWrites();
 	}
 
-	std::shared_ptr<MaterialInstance> PhongMaterial::createInstance(glm::vec3 diffuse, glm::vec3 specular,
+	std::shared_ptr<MaterialMapper> PhongMaterial::createInstance(glm::vec3 diffuse, glm::vec3 specular,
 																	glm::vec3 ambient, glm::vec3 reflection,
 																	glm::vec3 transmission, float n, glm::vec3 eta) {
 		auto resources = std::make_shared<PhongResources>();
@@ -82,7 +82,7 @@ namespace RtEngine {
 		resources->n = n;
 		resources->eta = glm::vec4(eta, 0.0f);
 
-		std::shared_ptr<MaterialInstance> instance = std::make_shared<MaterialInstance>();
+		std::shared_ptr<MaterialMapper> instance = std::make_shared<MaterialMapper>();
 		instances.push_back(instance);
 		resource_manager->addResources(resources);
 		return instance;
