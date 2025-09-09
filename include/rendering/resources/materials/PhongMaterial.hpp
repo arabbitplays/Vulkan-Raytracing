@@ -7,7 +7,7 @@
 namespace RtEngine {
 	class PhongMaterial : public Material {
 	public:
-		struct PhongMaterialConstants {
+		struct PhongResources : MaterialResources {
 			glm::vec3 diffuse;
 			glm::vec3 specular;
 			glm::vec3 ambient;
@@ -17,24 +17,21 @@ namespace RtEngine {
 			glm::vec4 eta; // only xyz for the eta of each rgb channel
 		};
 
-		struct MaterialResources {
-			std::shared_ptr<PhongMaterialConstants> constants;
-			// add images and samplers here
-		};
-
 		struct MaterialProperties {
 			int32_t shadows, dispersion, fresnel;
 		};
 
 		PhongMaterial(const std::shared_ptr<VulkanContext> &context, const std::shared_ptr<TextureRepository> &texture_repository) :
-			Material(PHONG_MATERIAL_NAME, context, texture_repository) {}
+			Material(PHONG_MATERIAL_NAME, context, texture_repository) {
+			resource_manager = std::make_shared<MaterialResourceManager<PhongResources>>(vulkan_context);
+		}
 
 		void buildPipelines() override;
 		void writeMaterial() override;
 		std::shared_ptr<MaterialInstance> createInstance(glm::vec3 diffuse, glm::vec3 specular, glm::vec3 ambient,
 														 glm::vec3 reflection, glm::vec3 transmission, float n,
 														 glm::vec3 eta = glm::vec3(0.0));
-		std::vector<std::shared_ptr<MaterialResources>> getResources();
+		std::vector<std::shared_ptr<PhongResources>> getResources() const;
 		std::vector<std::shared_ptr<Texture>> getTextures() override;
 		void reset() override;
 
@@ -45,11 +42,8 @@ namespace RtEngine {
 		std::shared_ptr<DescriptorSet> createDescriptorSet(const VkDescriptorSetLayout &layout) override;
 
 	private:
-		[[nodiscard]] AllocatedBuffer createMaterialBuffer() const;
-
+		std::shared_ptr<MaterialResourceManager<PhongResources>> resource_manager;
 		MaterialProperties material_properties{};
-		std::vector<std::shared_ptr<MaterialResources>> resources_buffer;
-		AllocatedBuffer materialBuffer{};
 	};
 
 } // namespace RtEngine

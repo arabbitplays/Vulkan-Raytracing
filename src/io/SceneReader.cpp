@@ -131,11 +131,35 @@ namespace RtEngine {
 			auto phong_material = dynamic_cast<PhongMaterial *>(material.get());
 
 			for (const auto &material_node: material_node) {
-				phong_material->createInstance(
-						material_node["diffuse"].as<glm::vec3>(), material_node["specular"].as<glm::vec3>(),
-						material_node["ambient"].as<glm::vec3>(), material_node["reflection"].as<glm::vec3>(),
-						material_node["transmission"].as<glm::vec3>(), material_node["n"].as<float>(),
-						material_node["eta"].as<glm::vec3>());
+				glm::vec3 diffuse = glm::vec3(1.0);
+				if (material_node["diffuse"])
+					diffuse = material_node["diffuse"].as<glm::vec3>();
+
+				glm::vec3 specular = glm::vec3(1.0);
+				if (material_node["specular"])
+					specular = material_node["specular"].as<glm::vec3>();
+
+				glm::vec3 ambient = glm::vec3(1.0);
+				if (material_node["ambient"])
+					ambient = material_node["ambient"].as<glm::vec3>();
+
+				glm::vec3 reflection = glm::vec3(0);
+				if (material_node["reflection"])
+					reflection = material_node["reflection"].as<glm::vec3>();
+
+				glm::vec3 transmission = glm::vec3(0);
+				if (material_node["transmission"])
+					transmission = material_node["transmission"].as<glm::vec3>();
+
+				float n = 1.0;
+				if (material_node["n"])
+					n = material_node["n"].as<float>();
+
+				glm::vec3 eta = glm::vec3(1.0);
+				if (material_node["eta"])
+					eta = material_node["eta"].as<glm::vec3>();
+
+				phong_material->createInstance(diffuse, specular, ambient, reflection, transmission, n, eta);
 			}
 		}
 	}

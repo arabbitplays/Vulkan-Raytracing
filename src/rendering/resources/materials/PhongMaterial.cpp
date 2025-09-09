@@ -61,7 +61,7 @@ namespace RtEngine {
 	}
 
 	void PhongMaterial::writeMaterial() {
-		materialBuffer = createMaterialBuffer();
+		AllocatedBuffer materialBuffer = *resource_manager->getMaterialBuffer();
 		resetQueue.pushFunction([&]() { vulkan_context->resource_builder->destroyBuffer(materialBuffer); });
 
 		VkDevice device = vulkan_context->device_manager->getDevice();
@@ -73,39 +73,23 @@ namespace RtEngine {
 	std::shared_ptr<MaterialInstance> PhongMaterial::createInstance(glm::vec3 diffuse, glm::vec3 specular,
 																	glm::vec3 ambient, glm::vec3 reflection,
 																	glm::vec3 transmission, float n, glm::vec3 eta) {
-		auto constants = std::make_shared<PhongMaterial::PhongMaterialConstants>();
-		constants->diffuse = diffuse;
-		constants->specular = specular;
-		constants->ambient = ambient;
-		constants->reflection = reflection;
-		constants->transmission = transmission;
-		constants->n = n;
-		constants->eta = glm::vec4(eta, 0.0f);
-
-		auto resources = std::make_shared<PhongMaterial::MaterialResources>();
-		resources->constants = constants;
+		auto resources = std::make_shared<PhongResources>();
+		resources->diffuse = diffuse;
+		resources->specular = specular;
+		resources->ambient = ambient;
+		resources->reflection = reflection;
+		resources->transmission = transmission;
+		resources->n = n;
+		resources->eta = glm::vec4(eta, 0.0f);
 
 		std::shared_ptr<MaterialInstance> instance = std::make_shared<MaterialInstance>();
 		instances.push_back(instance);
-		resources_buffer.push_back(resources);
+		resource_manager->addResources(resources);
 		return instance;
 	}
 
-	AllocatedBuffer PhongMaterial::createMaterialBuffer() const {
-		assert(resources_buffer.size() == instances.size());
-
-		std::vector<PhongMaterialConstants> materialConstants{};
-		for (uint32_t i = 0; i < resources_buffer.size(); i++) {
-			instances[i]->material_index = i;
-			materialConstants.push_back(*resources_buffer[i]->constants);
-		}
-		return vulkan_context->resource_builder->stageMemoryToNewBuffer(
-				materialConstants.data(), materialConstants.size() * sizeof(PhongMaterialConstants),
-				VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
-	}
-
-	std::vector<std::shared_ptr<PhongMaterial::MaterialResources>> PhongMaterial::getResources() {
-		return resources_buffer;
+	std::vector<std::shared_ptr<PhongMaterial::PhongResources>> PhongMaterial::getResources() const {
+		return resource_manager->getResources();
 	}
 
 	void PhongMaterial::initProperties() {
@@ -118,7 +102,7 @@ namespace RtEngine {
 	std::vector<std::shared_ptr<Texture>> PhongMaterial::getTextures() { return {}; }
 
 	void PhongMaterial::reset() {
-		resources_buffer.clear();
+		resource_manager->reset();
 		instances.clear();
 		Material::reset();
 	}

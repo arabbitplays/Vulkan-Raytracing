@@ -5,7 +5,7 @@
 #include <InstanceManager.hpp>
 
 namespace RtEngine {
-	void InstanceManager::createInstanceMappingBuffer(std::vector<RenderObject> &objects) {
+	void InstanceManager::createInstanceMappingBuffer(const std::vector<RenderObject> &objects) {
 		assert(!objects.empty());
 
 		if (instance_mapping_buffer.handle != VK_NULL_HANDLE) {
@@ -13,7 +13,7 @@ namespace RtEngine {
 		}
 
 		std::vector<InstanceData> instance_datas;
-		for (int i = 0; i < objects.size(); i++) {
+		for (uint32_t i = 0; i < objects.size(); i++) {
 			instance_datas.push_back(objects[i].instance_data);
 		}
 
@@ -22,8 +22,8 @@ namespace RtEngine {
 																		   VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
 	}
 
-	void InstanceManager::createEmittingInstancesBuffer(std::vector<RenderObject> &objects,
-														std::shared_ptr<Material> material) {
+	void InstanceManager::createEmittingInstancesBuffer(const std::vector<RenderObject> &objects,
+														const std::shared_ptr<Material> &material) {
 		assert(!objects.empty());
 
 		if (emitting_instances_buffer.handle != VK_NULL_HANDLE) {
@@ -31,7 +31,7 @@ namespace RtEngine {
 		}
 
 		std::vector<EmittingInstanceData> emitting_instances;
-		for (int i = 0; i < objects.size(); i++) {
+		for (uint32_t i = 0; i < objects.size(); i++) {
 			EmittingInstanceData instance_data;
 			instance_data.instance_id = i;
 			instance_data.model_matrix = objects[i].transform;

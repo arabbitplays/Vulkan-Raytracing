@@ -100,17 +100,17 @@ namespace RtEngine {
 			for (auto &resources: phong_material->getResources()) {
 				out << YAML::BeginMap;
 				out << YAML::Key << "diffuse" << YAML::Value
-					<< YAML::convert<glm::vec3>::encode(resources->constants->diffuse);
+					<< YAML::convert<glm::vec3>::encode(resources->diffuse);
 				out << YAML::Key << "specular" << YAML::Value
-					<< YAML::convert<glm::vec3>::encode(resources->constants->specular);
+					<< YAML::convert<glm::vec3>::encode(resources->specular);
 				out << YAML::Key << "ambient" << YAML::Value
-					<< YAML::convert<glm::vec3>::encode(resources->constants->ambient);
+					<< YAML::convert<glm::vec3>::encode(resources->ambient);
 				out << YAML::Key << "reflection" << YAML::Value
-					<< YAML::convert<glm::vec3>::encode(resources->constants->reflection);
+					<< YAML::convert<glm::vec3>::encode(resources->reflection);
 				out << YAML::Key << "transmission" << YAML::Value
-					<< YAML::convert<glm::vec3>::encode(resources->constants->transmission);
-				out << YAML::Key << "n" << YAML::Value << resources->constants->n;
-				out << YAML::Key << "eta" << YAML::Value << YAML::convert<glm::vec3>::encode(resources->constants->eta);
+					<< YAML::convert<glm::vec3>::encode(resources->transmission);
+				out << YAML::Key << "n" << YAML::Value << resources->n;
+				out << YAML::Key << "eta" << YAML::Value << YAML::convert<glm::vec3>::encode(resources->eta);
 				out << YAML::EndMap;
 			}
 			out << YAML::EndSeq;
