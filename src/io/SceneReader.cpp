@@ -40,7 +40,9 @@ namespace RtEngine {
 
 			for (const auto &texture_node: scene_node["textures"]) {
 				// todo handle more types
-				TextureType type = texture_node["is_normal"].as<bool>() ? NORMAL : PARAMETER;
+				TextureType type = PARAMETER;
+				if (texture_node["is_normal"] && texture_node["is_normal"].as<bool>())
+					type = NORMAL;
 				runtime_context->texture_repository->addTexture(texture_node["path"].as<std::string>(), type);
 			}
 

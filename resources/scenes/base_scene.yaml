@@ -8,6 +8,9 @@ scene:
   meshes:
     - path: meshes/plane.obj
     - path: meshes/sphere.obj
+  textures:
+    - path: textures/rusted_iron/rusted_iron_albedo.png
+    - path: textures/rusted_iron/rusted_iron_metal_rough_ao.png
   materials:
     - emission_power: 1
       emission_color: [ 1.0, 0.95, 0.71 ]
@@ -23,9 +26,8 @@ scene:
     - albedo: [ 0, 0, 1 ]
       metallic: 0.1
       roughness: 1
-    - albedo: [ 0.9, 0.9, 0.9 ]
-      metallic: 0.1
-      roughness: 1
+    - albedo_tex: "rusted_iron_albedo"
+      metal_rough_ao_tex: "rusted_iron_metal_rough_ao"
   nodes:
     - name: "Light"
       components:

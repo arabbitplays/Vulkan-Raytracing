@@ -1,6 +1,6 @@
 from PIL import Image
 import numpy as np
-
+import os
 
 def print_image_pixels(image_path):
     # Open the image file
@@ -21,17 +21,17 @@ def print_image_pixels(image_path):
 def combine_rgb_channels(r_path, g_path, b_path, output_path):
     # Open the three images
     img_r = Image.open(r_path).convert('RGB')
-    img_g = Image.open(g_path).convert('RGB')
-    img_b = Image.open(b_path).convert('RGB')
-
-    # Convert images to NumPy arrays
     r_data = np.array(img_r)
-    g_data = np.array(img_g)
-    b_data = np.array(img_b)
 
-    img_resized = img_b.resize((img_b.width // 2, img_b.height // 2), Image.LANCZOS)
-    # Convert back to numpy array
-    #b_data = np.array(img_resized)
+    img_g = Image.open(g_path).convert('RGB')
+    g_data = np.array(img_g)
+
+    if os.path.exists(b_path):
+        img_b = Image.open(b_path).convert('RGB')
+        b_data = np.array(img_b)
+    else:
+        b_data = np.full_like(r_data, 1, dtype=np.uint8)
+
 
     # Ensure all images have the same dimensions
     if r_data.shape != g_data.shape or g_data.shape != b_data.shape:
@@ -53,11 +53,11 @@ def combine_rgb_channels(r_path, g_path, b_path, output_path):
 
     print(f"Combined image saved to {output_path}")
 
-folder_name = "rusty_metal"
-file_name = "rusty-metal"
+folder_name = "rusted_iron"
+file_name = "rusted_iron"
 r_path = 'resources/textures/' + folder_name + '/' + file_name + '_metallic.png'
 g_path = 'resources/textures/' + folder_name + '/' + file_name + '_roughness.png'
 b_path = 'resources/textures/' + folder_name + '/' + file_name + '_ao.png'
 output_path = 'resources/textures/' + folder_name + '/' + file_name + '_metal_rough_ao.png'  # Replace with desired output path
-#combine_rgb_channels(r_path, g_path, b_path, output_path)
-print_image_pixels("tmp/5.png")
+combine_rgb_channels(r_path, g_path, b_path, output_path)
+#print_image_pixels("tmp/5.png")

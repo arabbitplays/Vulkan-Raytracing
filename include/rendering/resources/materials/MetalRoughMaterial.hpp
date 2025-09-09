@@ -62,7 +62,6 @@ namespace RtEngine {
 
 	private:
 		std::shared_ptr<MaterialResourceManager<MetalRoughResources>> resource_manager;
-		std::vector<std::shared_ptr<Texture>> albedo_textures, metal_rough_ao_textures, normal_textures;
 
 		MaterialProperties material_properties;
 		VkSampler sampler;

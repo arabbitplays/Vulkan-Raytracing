@@ -53,24 +53,21 @@ namespace RtEngine {
 	void MetalRoughMaterial::writeMaterial() {
 		descriptorAllocator.writeBuffer(0, resource_manager->getMaterialBuffer()->handle, 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
 
-		auto extract_views = [](const std::vector<std::shared_ptr<Texture>> &textures) {
-			std::vector<VkImageView> imageViews{};
-			for (auto &texture: textures) {
-				imageViews.push_back(texture->image.imageView);
-			}
+		auto extract_views = [this](uint32_t binding) {
+			std::vector<VkImageView> imageViews = resource_manager->getImageViewsForBinding(binding);
 
 			// TODO make this clean so that holes get filled with the default tex
 			while (imageViews.size() < 16) {
-				imageViews.push_back(textures[0]->image.imageView);
+				imageViews.push_back(imageViews[0]);
 			}
 			return imageViews;
 		};
 
-		descriptorAllocator.writeImages(1, extract_views(albedo_textures), sampler, VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL,
+		descriptorAllocator.writeImages(1, extract_views(1), sampler, VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL,
 		                                VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
-		descriptorAllocator.writeImages(2, extract_views(metal_rough_ao_textures), sampler,
+		descriptorAllocator.writeImages(2, extract_views(2), sampler,
 		                                VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
-		descriptorAllocator.writeImages(3, extract_views(normal_textures), sampler, VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL,
+		descriptorAllocator.writeImages(3, extract_views(3), sampler, VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL,
 		                                VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
 		VkDevice device = vulkan_context->device_manager->getDevice();
 		descriptorAllocator.updateSet(device, descriptor_set->getCurrentSet());
@@ -87,22 +84,7 @@ namespace RtEngine {
 	}
 
 	std::vector<std::shared_ptr<Texture>> MetalRoughMaterial::getTextures() {
-		auto append = [](std::vector<std::shared_ptr<Texture>> &dest,
-		                 const std::vector<std::shared_ptr<Texture>> &src) {
-			for (const auto &elem: src) {
-				if (elem->path.empty())
-					continue;
-				dest.push_back(elem);
-			}
-		};
-
-		std::vector<std::shared_ptr<Texture>> result(0);
-
-		append(result, albedo_textures);
-		append(result, metal_rough_ao_textures);
-		append(result, normal_textures);
-
-		return result;
+		return resource_manager->getAllTextures();
 	}
 
 	// is unique = true the method assumes that such an instance doesn't exist yet, so safe time when creating lots of
@@ -139,9 +121,6 @@ namespace RtEngine {
 	void MetalRoughMaterial::reset() {
 		resource_manager->reset();
 		instances.clear();
-		albedo_textures.clear();
-		metal_rough_ao_textures.clear();
-		normal_textures.clear();
 		Material::reset();
 	}
 
@@ -175,24 +154,12 @@ namespace RtEngine {
 		resources->properties = glm::vec4(instance->metallic, instance->roughness, instance->ao, instance->eta);
 		resources->emission = glm::vec4(instance->emission_color, instance->emission_power);
 
-		auto add_texture_if_needed = [&](const std::string &texture_name,
-		                                 std::vector<std::shared_ptr<Texture>> &textures) -> uint32_t {
-			for (uint32_t i = 0; i < textures.size(); i++) {
-				if (textures[i]->name == texture_name) {
-					return i;
-				}
-			}
-
-			// TODO this is not single responsability
-			textures.push_back(texture_repository->getTexture(texture_name));
-			return textures.size() - 1;
-		};
-
-		// TODO tex -> name -> tex
 		resources->tex_indices =
-				glm::vec4{add_texture_if_needed(instance->albedo_tex->name, albedo_textures),
-					add_texture_if_needed(instance->metal_rough_ao_tex->name, metal_rough_ao_textures),
-					add_texture_if_needed(instance->normal_tex->name, normal_textures), 0};
+				glm::vec4{
+					resource_manager->addTexture(1, instance->albedo_tex),
+					resource_manager->addTexture(2, instance->metal_rough_ao_tex),
+					resource_manager->addTexture(3, instance->normal_tex),
+					0};
 
 		return resources;
 	}
