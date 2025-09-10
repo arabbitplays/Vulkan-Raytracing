@@ -1,8 +1,6 @@
 #include "Material.hpp"
 
 namespace RtEngine {
-	std::vector<std::shared_ptr<MaterialMapper>> Material::getInstances() { return instances; }
-
 	std::shared_ptr<PropertiesSection> Material::getProperties() {
 		if (properties == nullptr) {
 			initProperties();

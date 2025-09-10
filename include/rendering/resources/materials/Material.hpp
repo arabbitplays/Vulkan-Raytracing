@@ -9,11 +9,11 @@
 #include <bits/shared_ptr.h>
 #include <vulkan/vulkan_core.h>
 
+#include "MaterialInstance.hpp"
 #include "MaterialResourceManager.hpp"
 #include "TextureRepository.hpp"
 
 namespace RtEngine {
-	struct MaterialMapper;
 	class Pipeline;
 
 	class Material : public ILayoutProvider {
@@ -34,19 +34,23 @@ namespace RtEngine {
 
 		virtual ~Material() = default;
 
-		std::shared_ptr<Pipeline> pipeline;
 
 		virtual void buildPipelines() = 0;
+		virtual void addInstanceToResources(MaterialInstance &inst) = 0;
 		virtual void writeMaterial() = 0;
 		virtual glm::vec4 getEmissionForInstance([[maybe_unused]] uint32_t material_instance_id) { return glm::vec4(0.0f); }
-		std::vector<std::shared_ptr<MaterialMapper>> getInstances();
 		std::shared_ptr<PropertiesSection> getProperties();
 		virtual std::vector<std::shared_ptr<Texture>> getTextures() = 0;
+		std::vector<std::shared_ptr<MaterialInstance>> getInstances() {
+			return instances;
+		}
 
 		void destroyResources();
 		virtual void reset();
 
 		std::string name;
+		std::shared_ptr<Pipeline> pipeline;
+
 
 	protected:
 		virtual void initProperties() = 0;
@@ -57,16 +61,9 @@ namespace RtEngine {
 		DescriptorAllocator descriptorAllocator;
 		DeletionQueue mainDeletionQueue, resetQueue;
 
-		std::vector<std::shared_ptr<MaterialMapper>> instances;
 		std::shared_ptr<PropertiesSection> properties;
 
-		AllocatedBuffer material_buffer; // maps an instance to its respective material via a common index into the
-										 // constants and texture buffers
-	};
-
-	struct MaterialMapper {
-		std::shared_ptr<PropertiesSection> properties;
-		uint32_t material_index; // index into the resources buffer
+		std::vector<std::shared_ptr<MaterialInstance>> instances;
 	};
 
 } // namespace RtEngine

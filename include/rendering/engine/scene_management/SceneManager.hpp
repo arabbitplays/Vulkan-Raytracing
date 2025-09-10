@@ -32,6 +32,8 @@ namespace RtEngine {
 		void createBlas(const std::vector<std::shared_ptr<MeshAsset>> &meshes);
 		void updateScene(const std::shared_ptr<DrawContext> &draw_context);
 
+		void updateMaterial() const;
+
 		void destroyResources();
 
 		std::shared_ptr<Material> getMaterial() const;

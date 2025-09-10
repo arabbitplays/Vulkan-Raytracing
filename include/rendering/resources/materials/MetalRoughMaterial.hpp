@@ -43,9 +43,11 @@ namespace RtEngine {
 		std::vector<std::shared_ptr<MetalRoughResources>> getResources() const;
 		std::vector<std::shared_ptr<Texture>> getTextures() override;
 
-		std::shared_ptr<MaterialMapper> createInstance(const MetalRoughInstance::Parameters& parameters, bool unique = false);
+		std::shared_ptr<MaterialInstance> createInstance(const MetalRoughInstance::Parameters &parameters);
 
-		uint32_t addInstanceToResources(const std::shared_ptr<MetalRoughInstance> &instance);
+		void addInstanceToResources(MaterialInstance &inst) override;
+
+		void addInstanceToResources(MetalRoughInstance &instance);
 
 		void reset() override;
 
@@ -55,7 +57,7 @@ namespace RtEngine {
 		VkDescriptorSetLayout createLayout() override;
 		std::shared_ptr<DescriptorSet> createDescriptorSet(const VkDescriptorSetLayout &layout) override;
 
-		std::shared_ptr<MetalRoughResources> mapInstanceToResources(std::shared_ptr<MetalRoughInstance> instance);
+		std::shared_ptr<MetalRoughResources> mapInstanceToResources(const MetalRoughInstance &instance) const;
 
 		static std::shared_ptr<PropertiesSection>
 			initializeInstanceProperties(const std::shared_ptr<MetalRoughResources> &resources);

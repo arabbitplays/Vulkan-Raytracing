@@ -42,7 +42,7 @@ namespace RtEngine {
 
 		std::vector<std::shared_ptr<MeshAsset>> mesh_assets = SceneUtil::collectMeshAssets(scene->getRootNode());
 		geometry_manager->createGeometryBuffers(mesh_assets);
-		scene->material->writeMaterial();
+		updateMaterial();
 		createBlas(mesh_assets);
 		createUniformBuffers();
 		bufferUpdateFlags = static_cast<uint8_t>(GEOMETRY_UPDATE) | static_cast<uint8_t>(MATERIAL_UPDATE);
@@ -152,7 +152,7 @@ namespace RtEngine {
 
 		if (bufferUpdateFlags != NO_UPDATE) {
 			if (bufferUpdateFlags & MATERIAL_UPDATE) {
-				scene->material->writeMaterial();
+				updateMaterial();
 			}
 		}
 
@@ -165,6 +165,19 @@ namespace RtEngine {
 		updateSceneDescriptorSets(draw_context->currentFrame, draw_context->target);
 
 		bufferUpdateFlags = NO_UPDATE;
+	}
+
+	void SceneManager::updateMaterial() const {
+		std::shared_ptr<Material> material = scene->material;
+
+		material->reset();
+
+		std::vector<std::shared_ptr<MaterialInstance>> instances = SceneUtil::collectMaterialInstances(scene->getRootNode());
+		for (auto& instance : instances) {
+			material->addInstanceToResources(*instance);
+		}
+
+		material->writeMaterial();
 	}
 
 	void SceneManager::updateTlas(std::vector<RenderObject> objects) const

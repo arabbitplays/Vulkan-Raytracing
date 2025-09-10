@@ -57,7 +57,7 @@ namespace RtEngine {
 	}
 
 	std::shared_ptr<DescriptorSet> PhongMaterial::createDescriptorSet(const VkDescriptorSetLayout &layout) {
-		return std::make_shared<DescriptorSet>(vulkan_context->descriptor_allocator, vulkan_context->device_manager, descriptor_layout);
+		return std::make_shared<DescriptorSet>(vulkan_context->descriptor_allocator, vulkan_context->device_manager, layout);
 	}
 
 	void PhongMaterial::writeMaterial() {
@@ -70,7 +70,7 @@ namespace RtEngine {
 		descriptorAllocator.clearWrites();
 	}
 
-	std::shared_ptr<MaterialMapper> PhongMaterial::createInstance(glm::vec3 diffuse, glm::vec3 specular,
+	std::shared_ptr<MaterialInstance> PhongMaterial::createInstance(glm::vec3 diffuse, glm::vec3 specular,
 																	glm::vec3 ambient, glm::vec3 reflection,
 																	glm::vec3 transmission, float n, glm::vec3 eta) {
 		auto resources = std::make_shared<PhongResources>();
@@ -82,10 +82,13 @@ namespace RtEngine {
 		resources->n = n;
 		resources->eta = glm::vec4(eta, 0.0f);
 
-		std::shared_ptr<MaterialMapper> instance = std::make_shared<MaterialMapper>();
-		instances.push_back(instance);
+		// TODO this whole function is trash
 		resource_manager->addResources(resources);
-		return instance;
+		return nullptr;
+	}
+
+	void PhongMaterial::addInstanceToResources(MaterialInstance &inst) {
+		inst.attachTo(*this);
 	}
 
 	std::vector<std::shared_ptr<PhongMaterial::PhongResources>> PhongMaterial::getResources() const {
@@ -103,7 +106,6 @@ namespace RtEngine {
 
 	void PhongMaterial::reset() {
 		resource_manager->reset();
-		instances.clear();
 		Material::reset();
 	}
 } // namespace RtEngine

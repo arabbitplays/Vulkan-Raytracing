@@ -38,16 +38,6 @@ namespace RtEngine {
             return material_buffer;
         }
 
-        // returns the index into the material buffer or -1 is not a duplicate
-        int32_t isDuplicate(const std::shared_ptr<Resources> &resources) {
-            for (uint32_t i = 0; i < material_resources.size(); i++) {
-                if (*resources == *material_resources[i]) {
-                    return static_cast<int32_t>(i);
-                }
-            }
-            return -1;
-        }
-
         // returns the index into the material buffer
         uint32_t addResources(const std::shared_ptr<Resources> &resources) {
             material_resources.push_back(resources);

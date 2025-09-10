@@ -127,7 +127,7 @@ namespace RtEngine {
 					parameters.emission_power = material_node["emission_power"].as<float>();
 				}
 
-				metal_rough_material->createInstance(parameters, true);
+				metal_rough_material->createInstance(parameters);
 			}
 		} else if (typeid(*material) == typeid(PhongMaterial)) {
 			auto phong_material = dynamic_cast<PhongMaterial *>(material.get());

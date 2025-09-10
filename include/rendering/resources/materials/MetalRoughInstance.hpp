@@ -26,6 +26,7 @@ namespace RtEngine {
 
         MetalRoughInstance() = default;
         MetalRoughInstance(const Parameters& parameters, const std::shared_ptr<TextureRepository> &texture_repository);
+        void attachTo(Material &m) override;
 
         glm::vec3 albedo;
         float metallic;

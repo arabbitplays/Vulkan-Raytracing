@@ -1,5 +1,7 @@
 #include "MetalRoughInstance.hpp"
 
+#include "MetalRoughMaterial.hpp"
+
 namespace RtEngine {
     MetalRoughInstance::MetalRoughInstance(const Parameters& parameters, const std::shared_ptr<TextureRepository> &texture_repository) {
         albedo = parameters.albedo;
@@ -16,4 +18,11 @@ namespace RtEngine {
         normal_tex = texture_repository->getTexture(parameters.normal_tex_name);
     }
 
+    void MetalRoughInstance::attachTo(Material &m) {
+        if (auto* mat = dynamic_cast<MetalRoughMaterial*>(&m)) {
+            mat->addInstanceToResources(*this);
+        } else {
+            throw std::runtime_error("Wrong material-instance pair");
+        }
+    }
 }
