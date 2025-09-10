@@ -4,7 +4,6 @@
 #include <ConfigLoader.hpp>
 #include <Properties.hpp>
 #include <cassert>
-#include <glm/vec3.hpp>
 #include <memory>
 #include <string>
 #include <unordered_map>
@@ -17,7 +16,7 @@ namespace RtEngine {
 	constexpr uint32_t MAX_PUSH_CONSTANT_SIZE = 16 * sizeof(uint32_t);
 
 	struct PropertiesSection {
-		PropertiesSection(std::string name) : section_name(name) {}
+		PropertiesSection(const std::string &name) : section_name(name) {}
 
 		void addBool(const std::string &name, int32_t *var) {
 			auto property = std::make_shared<BoolProperty>(name, var);
@@ -54,6 +53,11 @@ namespace RtEngine {
 			*var = selection_options.at(0);
 		}
 
+		void addMaterialProperty(const std::string &name, MaterialInstance *var, uint32_t flags = ALL_PROPERTY_FLAGS) {
+			auto property = std::make_shared<MaterialProperty>(name, var, flags);
+			material_properties.push_back(property);
+		}
+
 		std::string section_name;
 		std::vector<std::shared_ptr<BoolProperty>> bool_properties;
 		std::vector<std::shared_ptr<IntProperty>> int_properties;
@@ -61,6 +65,7 @@ namespace RtEngine {
 		std::vector<std::shared_ptr<StringProperty>> string_properties;
 		std::vector<std::shared_ptr<VectorProperty>> vector_properties;
 		std::vector<std::shared_ptr<SelectionProperty>> selection_properties;
+		std::vector<std::shared_ptr<MaterialProperty>> material_properties;
 	};
 
 	class PropertiesManager {

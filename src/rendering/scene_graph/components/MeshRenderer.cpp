@@ -20,14 +20,12 @@ namespace RtEngine {
 		assert(properties != nullptr);
 
 		auto mesh_renderer_section = std::make_shared<PropertiesSection>(COMPONENT_NAME);
-		// TODO we should not be concerned about how this is persisted
-		//mesh_renderer_section->addInt("material_idx", reinterpret_cast<int32_t *>(&meshMaterial->getMaterialDataIndex()),
-		//							  PERSISTENT_PROPERTY_FLAG);
+		mesh_renderer_section->addMaterialProperty("Material", meshMaterial.get());
 		mesh_renderer_section->addString("mesh", &meshAsset->name, PERSISTENT_PROPERTY_FLAG);
 		properties->addPropertySection(mesh_renderer_section);
 
 		if (meshMaterial) {
-			properties->addPropertySection(meshMaterial->properties, SERIALIZABLE_PROPERTY_FLAG);
+			properties->addPropertySection(meshMaterial->getProperties(), SERIALIZABLE_PROPERTY_FLAG);
 		}
 	}
 

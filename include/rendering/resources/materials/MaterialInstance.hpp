@@ -1,12 +1,12 @@
 #ifndef VULKAN_RAYTRACING_MATERIALINSTANCE_HPP
 #define VULKAN_RAYTRACING_MATERIALINSTANCE_HPP
 
-#include "PropertiesManager.hpp"
+#include "ISerializable.hpp"
 
 namespace RtEngine {
     class Material;
 
-    class MaterialInstance {
+    class MaterialInstance : ISerializable {
     public:
         MaterialInstance() = default;
         virtual ~MaterialInstance() = default;
@@ -24,9 +24,17 @@ namespace RtEngine {
             return material_idx >= 0;
         }
 
-        // TODO capsule this right
+        std::shared_ptr<PropertiesSection> getProperties() override {
+            if (!properties) {
+               initializeProperties();
+            }
+            return properties;
+        }
+
+    protected:
+        virtual void initializeProperties() = 0;
         std::shared_ptr<PropertiesSection> properties;
-    private:
+
         int32_t material_idx = -1;
 
     };

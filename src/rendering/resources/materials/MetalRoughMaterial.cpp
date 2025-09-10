@@ -92,7 +92,6 @@ namespace RtEngine {
 		std::shared_ptr<MetalRoughInstance> instance = std::make_shared<MetalRoughInstance>(parameters, texture_repository);
 		std::shared_ptr<MetalRoughResources> resources = mapInstanceToResources(*instance);
 
-		instance->properties = initializeInstanceProperties(resources);
 		instances.push_back(instance);
 
 		return instance;
@@ -151,17 +150,5 @@ namespace RtEngine {
 					0};
 
 		return resources;
-	}
-
-	std::shared_ptr<PropertiesSection>
-	MetalRoughMaterial::initializeInstanceProperties(const std::shared_ptr<MetalRoughResources> &resources) {
-		auto section = std::make_shared<PropertiesSection>("Metal Rough Material");
-		section->addVector("Albedo", &resources->albedo);
-		section->addFloat("Metal", &resources->properties.x, ALL_PROPERTY_FLAGS, 0, 1);
-		section->addFloat("Roughness", &resources->properties.y, ALL_PROPERTY_FLAGS, 0, 1);
-		section->addFloat("Eta", &resources->properties.w);
-		section->addVector("Emission Color", reinterpret_cast<glm::vec3 *>(&resources->emission));
-		section->addFloat("Emission Power", &resources->emission.w);
-		return section;
 	}
 } // namespace RtEngine

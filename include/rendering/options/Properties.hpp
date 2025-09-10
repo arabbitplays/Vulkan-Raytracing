@@ -7,6 +7,8 @@
 #include <vector>
 
 namespace RtEngine {
+	class MaterialInstance;
+
 #define NONE_PROPERTY_FLAG 0u
 #define SERIALIZABLE_PROPERTY_FLAG 1u
 #define PERSISTENT_PROPERTY_FLAG 2u
@@ -60,6 +62,13 @@ namespace RtEngine {
 			Property<std::string>(name, var, flags), selection_options(selection_options) {}
 		int option_idx = 0;
 		std::vector<std::string> selection_options{};
+	};
+
+	struct MaterialProperty : Property<MaterialInstance> {
+		MaterialProperty(const std::string& name, MaterialInstance* var, const uint32_t flags = ALL_PROPERTY_FLAGS) :
+			Property(name, var, flags) {
+
+		}
 	};
 } // namespace RtEngine
 

@@ -25,4 +25,14 @@ namespace RtEngine {
             throw std::runtime_error("Wrong material-instance pair");
         }
     }
+
+    void MetalRoughInstance::initializeProperties() {
+        properties = std::make_shared<PropertiesSection>("Metal Rough Material");
+        properties->addVector("Albedo", &albedo);
+        properties->addFloat("Metal", &metallic, ALL_PROPERTY_FLAGS, 0, 1);
+        properties->addFloat("Roughness", &roughness, ALL_PROPERTY_FLAGS, 0, 1);
+        properties->addFloat("Eta", &eta);
+        properties->addVector("Emission Color", &emission_color);
+        properties->addFloat("Emission Power", &emission_power);
+    }
 }

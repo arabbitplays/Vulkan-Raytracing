@@ -59,9 +59,6 @@ namespace RtEngine {
 
 		std::shared_ptr<MetalRoughResources> mapInstanceToResources(const MetalRoughInstance &instance) const;
 
-		static std::shared_ptr<PropertiesSection>
-			initializeInstanceProperties(const std::shared_ptr<MetalRoughResources> &resources);
-
 	private:
 		std::shared_ptr<MaterialResourceManager<MetalRoughResources>> resource_manager;
 

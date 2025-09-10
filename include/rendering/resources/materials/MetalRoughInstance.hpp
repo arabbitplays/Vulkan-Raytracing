@@ -14,7 +14,10 @@
 #include "TextureRepository.hpp"
 
 namespace RtEngine {
+    class MetalRoughMaterial;
+
     class MetalRoughInstance : public MaterialInstance {
+        friend MetalRoughMaterial;
     public:
         struct Parameters {
             std::string albedo_tex_name, metal_rough_ao_tex_name, normal_tex_name;
@@ -27,6 +30,9 @@ namespace RtEngine {
         MetalRoughInstance() = default;
         MetalRoughInstance(const Parameters& parameters, const std::shared_ptr<TextureRepository> &texture_repository);
         void attachTo(Material &m) override;
+
+    private:
+        void initializeProperties() override;
 
         glm::vec3 albedo;
         float metallic;
