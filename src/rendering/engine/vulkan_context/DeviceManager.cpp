@@ -11,7 +11,7 @@
 namespace RtEngine {
 	const std::vector<const char *> validationLayers = {
 			"VK_LAYER_KHRONOS_validation",
-		//	"VK_LAYER_PROFILER_unified",
+			//"VK_LAYER_PROFILER_unified",
 	};
 
 	const std::vector<const char *> deviceExtensions = {

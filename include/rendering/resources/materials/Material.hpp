@@ -59,7 +59,7 @@ namespace RtEngine {
 		std::shared_ptr<VulkanContext> vulkan_context;
 		std::shared_ptr<TextureRepository> texture_repository;
 		DescriptorAllocator descriptorAllocator;
-		DeletionQueue mainDeletionQueue, resetQueue;
+		DeletionQueue mainDeletionQueue;
 
 		std::shared_ptr<PropertiesSection> properties;
 

@@ -2,6 +2,8 @@
 #define METALROUGHMATERIAL_HPP
 
 #include <Material.hpp>
+
+#include "DescriptorLayoutBuilder.hpp"
 #include "MetalRoughInstance.hpp"
 
 #define METAL_ROUGH_MATERIAL_NAME "metal_rough"
@@ -55,6 +57,7 @@ namespace RtEngine {
 		void initProperties() override;
 
 		VkDescriptorSetLayout createLayout() override;
+		void defineTextureLayout(DescriptorLayoutBuilder &layout_builder, uint32_t binding_idx);
 		std::shared_ptr<DescriptorSet> createDescriptorSet(const VkDescriptorSetLayout &layout) override;
 
 		std::shared_ptr<MetalRoughResources> mapInstanceToResources(const MetalRoughInstance &instance) const;

@@ -22,21 +22,14 @@ namespace RtEngine {
         struct TextureBinding {
             std::vector<std::shared_ptr<Texture>> textures{};
             std::vector<VkImageView> image_views{};
+            VkSampler sampler;
         };
 
     public:
+        static constexpr uint32_t MAX_TEXTURE_COUNT = 16;
+
         MaterialResourceManager() = default;
         explicit MaterialResourceManager(const std::shared_ptr<VulkanContext> &vulkan_context) : vulkan_context(vulkan_context) { }
-
-        std::shared_ptr<AllocatedBuffer> getMaterialBuffer() {
-            // TODO Optimization recreate only when needed
-            if (material_buffer != nullptr) {
-                vulkan_context->resource_builder->destroyBuffer(*material_buffer);
-            }
-
-            createMaterialBuffer();
-            return material_buffer;
-        }
 
         // returns the index into the material buffer
         uint32_t addResources(const std::shared_ptr<Resources> &resources) {
@@ -44,9 +37,20 @@ namespace RtEngine {
             return material_resources.size() - 1;
         }
 
+        void addTextureBinding(uint32_t binding_idx, VkSampler& sampler) {
+            if (texture_bindings.contains(binding_idx)) {
+                spdlog::warn("Texture binding {} already exists!", binding_idx);
+                return;
+            }
+
+            texture_bindings[binding_idx] = std::make_shared<TextureBinding>();
+            texture_bindings[binding_idx]->sampler = sampler;
+        }
+
         uint32_t addTexture(uint32_t binding_idx, std::shared_ptr<Texture> texture) {
             if (!texture_bindings.contains(binding_idx)) {
-                texture_bindings[binding_idx] = std::make_shared<TextureBinding>();
+                spdlog::error("Texture '{}' binding to non existent binding {}", texture->name, binding_idx);
+                throw std::runtime_error("Binding doesn't exist!");
             }
 
             std::shared_ptr<TextureBinding> binding = texture_bindings[binding_idx];
@@ -56,6 +60,11 @@ namespace RtEngine {
                 }
             }
 
+            if (binding->textures.size() == MAX_TEXTURE_COUNT) {
+                spdlog::error("Texture binding {} is full!", binding_idx);
+                return 0;
+            }
+
             binding->textures.push_back(texture);
             binding->image_views.push_back(texture->image.imageView);
             return binding->textures.size() - 1;
@@ -63,11 +72,6 @@ namespace RtEngine {
 
         std::vector<std::shared_ptr<Resources>> getResources() {
             return material_resources;
-        }
-
-        std::vector<VkImageView> getImageViewsForBinding(uint32_t binding) {
-            assert(texture_bindings.contains(binding));
-            return texture_bindings[binding]->image_views;
         }
 
         std::vector<std::shared_ptr<Texture>> getAllTextures() {
@@ -89,6 +93,26 @@ namespace RtEngine {
             return result;
         }
 
+        void writeResources(DescriptorAllocator& descriptor_allocator, std::shared_ptr<DescriptorSet> descriptor_set) {
+            descriptor_allocator.writeBuffer(0, getMaterialBuffer()->handle, 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+
+            for (auto& [binding_idx, binding] : texture_bindings) {
+                std::vector<VkImageView> imageViews = getImageViewsForBinding(binding);
+
+                // TODO make this clean so that holes get filled with the default tex
+                while (imageViews.size() < MAX_TEXTURE_COUNT) {
+                    imageViews.push_back(imageViews[0]);
+                }
+
+                descriptor_allocator.writeImages(binding_idx, imageViews, binding->sampler, VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL,
+                                            VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+            }
+
+            VkDevice device = vulkan_context->device_manager->getDevice();
+            descriptor_allocator.updateSet(device, descriptor_set->getCurrentSet());
+            descriptor_allocator.clearWrites();
+        }
+
         void destroyResources() const {
             if (material_buffer != nullptr)
                 vulkan_context->resource_builder->destroyBuffer(*material_buffer);
@@ -96,10 +120,19 @@ namespace RtEngine {
 
         void reset() {
             material_resources.clear();
-            texture_bindings.clear();
         };
 
     private:
+        std::shared_ptr<AllocatedBuffer> getMaterialBuffer() {
+            // TODO Optimization recreate only when needed
+            if (material_buffer != nullptr) {
+                vulkan_context->resource_builder->destroyBuffer(*material_buffer);
+            }
+
+            createMaterialBuffer();
+            return material_buffer;
+        }
+
         void createMaterialBuffer() {
             std::vector<Resources> material_data{};
             for (const auto & resources : material_resources) {
@@ -110,6 +143,10 @@ namespace RtEngine {
                     material_data.data(), material_data.size() * sizeof(Resources),
                     VK_BUFFER_USAGE_STORAGE_BUFFER_BIT)
             );
+        }
+
+        std::vector<VkImageView> getImageViewsForBinding(std::shared_ptr<TextureBinding> binding) {
+            return binding->image_views;
         }
 
         std::shared_ptr<VulkanContext> vulkan_context;

@@ -51,27 +51,7 @@ namespace RtEngine {
 	}
 
 	void MetalRoughMaterial::writeMaterial() {
-		descriptorAllocator.writeBuffer(0, resource_manager->getMaterialBuffer()->handle, 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
-
-		auto extract_views = [this](uint32_t binding) {
-			std::vector<VkImageView> imageViews = resource_manager->getImageViewsForBinding(binding);
-
-			// TODO make this clean so that holes get filled with the default tex
-			while (imageViews.size() < 16) {
-				imageViews.push_back(imageViews[0]);
-			}
-			return imageViews;
-		};
-
-		descriptorAllocator.writeImages(1, extract_views(1), sampler, VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL,
-		                                VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
-		descriptorAllocator.writeImages(2, extract_views(2), sampler,
-		                                VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
-		descriptorAllocator.writeImages(3, extract_views(3), sampler, VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL,
-		                                VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
-		VkDevice device = vulkan_context->device_manager->getDevice();
-		descriptorAllocator.updateSet(device, descriptor_set->getCurrentSet());
-		descriptorAllocator.clearWrites();
+		resource_manager->writeResources(descriptorAllocator, descriptor_set);
 	}
 
 	glm::vec4 MetalRoughMaterial::getEmissionForInstance(uint32_t material_instance_id) {
@@ -124,11 +104,17 @@ namespace RtEngine {
 		DescriptorLayoutBuilder layoutBuilder;
 
 		layoutBuilder.addBinding(0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
-		layoutBuilder.addBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 16); // TODO make this dynamic depending on the scene
-		layoutBuilder.addBinding(2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 16);
-		layoutBuilder.addBinding(3, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 16);
+		defineTextureLayout(layoutBuilder, 1);
+		defineTextureLayout(layoutBuilder, 2);
+		defineTextureLayout(layoutBuilder, 3);
 
 		return layoutBuilder.build(vulkan_context->device_manager->getDevice(), VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR);
+	}
+
+	void MetalRoughMaterial::defineTextureLayout(DescriptorLayoutBuilder& layout_builder, uint32_t binding_idx) {
+		// TODO make this dynamic depending on the scene
+		layout_builder.addBinding(binding_idx, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, MaterialResourceManager<MetalRoughResources>::MAX_TEXTURE_COUNT);
+		resource_manager->addTextureBinding(binding_idx, sampler);
 	}
 
 	std::shared_ptr<DescriptorSet> MetalRoughMaterial::createDescriptorSet(const VkDescriptorSetLayout &layout) {

@@ -61,13 +61,7 @@ namespace RtEngine {
 	}
 
 	void PhongMaterial::writeMaterial() {
-		AllocatedBuffer materialBuffer = *resource_manager->getMaterialBuffer();
-		resetQueue.pushFunction([&]() { vulkan_context->resource_builder->destroyBuffer(materialBuffer); });
-
-		VkDevice device = vulkan_context->device_manager->getDevice();
-		descriptorAllocator.writeBuffer(0, materialBuffer.handle, 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
-		descriptorAllocator.updateSet(device, descriptor_set->getCurrentSet());
-		descriptorAllocator.clearWrites();
+		resource_manager->writeResources(descriptorAllocator, descriptor_set);
 	}
 
 	std::shared_ptr<MaterialInstance> PhongMaterial::createInstance(glm::vec3 diffuse, glm::vec3 specular,

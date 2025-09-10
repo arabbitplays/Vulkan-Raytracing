@@ -11,7 +11,6 @@ namespace RtEngine {
 	}
 
 	void Material::destroyResources() {
-		resetQueue.flush();
 		mainDeletionQueue.flush();
 		destroyLayout();
 	}
@@ -20,5 +19,5 @@ namespace RtEngine {
 		vkDestroyDescriptorSetLayout(vulkan_context->device_manager->getDevice(), descriptor_layout, nullptr);
 	}
 
-	void Material::reset() { resetQueue.flush(); }
+	void Material::reset() { }
 } // namespace RtEngine
