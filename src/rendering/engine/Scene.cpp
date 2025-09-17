@@ -5,12 +5,12 @@
 #include <glm/ext/matrix_transform.hpp>
 
 namespace RtEngine {
-	std::shared_ptr<SceneData> Scene::createSceneData() {
+	std::shared_ptr<SceneData> Scene::createSceneData() const {
 		auto sceneData = std::make_shared<SceneData>();
 
 		sceneData->inverse_view = camera->getInverseView();
 		sceneData->inverse_proj = camera->getInverseProjection();
-		sceneData->prev_view_proj = camera->getLastViewProjection();
+		sceneData->last_view_projection = camera->getLastViewProjection();
 		sceneData->view_pos = glm::vec4(camera->getPosition(), 0.0f);
 
 		std::array<glm::vec4, POINT_LIGHT_COUNT> point_light_positions = {};
@@ -31,7 +31,7 @@ namespace RtEngine {
 		return sceneData;
 	}
 
-	void Scene::addNode(std::string name, std::shared_ptr<Node> node) {
+	void Scene::addNode(const std::string& name, std::shared_ptr<Node> node) {
 		assert(!nodes.contains(name));
 		nodes[name] = std::move(node);
 	}

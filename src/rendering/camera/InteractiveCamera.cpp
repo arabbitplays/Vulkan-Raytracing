@@ -8,22 +8,13 @@
 #include <spdlog/spdlog.h>
 
 namespace RtEngine {
-	void InteractiveCamera::update(uint32_t image_width, uint32_t image_height) {
+	void InteractiveCamera::update(const uint32_t image_width, const uint32_t image_height) {
 		glm::mat4 cameraRotation = getRotationMatrix();
 		position += glm::vec3(cameraRotation * glm::vec4(velocity * MOVE_SPEED, 0.f));
-		if (need_view_update) {
-			updateViewMatrices();
-			need_view_update = false;
-		}
-	}
 
-	void InteractiveCamera::updateViewMatrices() {
-		last_view_projection = projection * view;
+		updateViewMatrices();
 
-		glm::mat4 cameraTranslation = glm::translate(glm::mat4(1.0f), position);
-		glm::mat4 cameraRotation = getRotationMatrix();
-		inverse_view = cameraTranslation * cameraRotation;
-		view = glm::inverse(inverse_view);
+		Camera::update(image_width, image_height);
 	}
 
 	void InteractiveCamera::processGlfwKeyEvent(int key, int action) {
@@ -78,8 +69,6 @@ namespace RtEngine {
 				velocity.y = 0;
 			}
 		}
-
-		need_view_update = true;
 	}
 
 	void InteractiveCamera::processGlfwMouseEvent(double xPos, double yPos) {
@@ -87,17 +76,20 @@ namespace RtEngine {
 			return;
 		}
 
+		const auto x_pos = static_cast<float>(xPos);
+		const auto y_pos = static_cast<float>(yPos);
+
 		if (firstMouse) { // Initialize first frame
-			lastX = xPos;
-			lastY = yPos;
+			lastX = x_pos;
+			lastY = y_pos;
 			firstMouse = false;
 		}
 
 		// Calculate mouse offset
-		float xOffset = xPos - lastX;
-		float yOffset = lastY - yPos; // Inverted Y-axis
-		lastX = xPos;
-		lastY = yPos;
+		const float xOffset = x_pos - lastX;
+		const float yOffset = lastY - y_pos; // Inverted Y-axis
+		lastX = x_pos;
+		lastY = y_pos;
 
 		// Adjust yaw and pitch like in SDL
 		yaw += xOffset / 200.f * MOUSE_SPEED;
@@ -106,7 +98,15 @@ namespace RtEngine {
 		constexpr float max = M_PI / 2;
 		pitch = std::clamp(pitch, -max, max);
 
-		need_view_update = true;
+	}
+
+	void InteractiveCamera::updateViewMatrices() {
+		last_view_projection = projection * view;
+
+		glm::mat4 cameraTranslation = glm::translate(glm::mat4(1.0f), position);
+		glm::mat4 cameraRotation = getRotationMatrix();
+		inverse_view = cameraTranslation * cameraRotation;
+		view = glm::inverse(inverse_view);
 	}
 
 	glm::mat4 InteractiveCamera::getRotationMatrix() const {

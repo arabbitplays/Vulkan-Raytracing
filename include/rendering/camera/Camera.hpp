@@ -17,21 +17,19 @@ namespace RtEngine {
 			initCamera(static_cast<float>(image_width) / static_cast<float>(image_height));
 		}
 
-		glm::mat4 getView();
-		glm::mat4 getInverseView();
-		glm::mat4 getProjection();
-		glm::mat4 getInverseProjection();
-		glm::mat4 getLastViewProjection();;
-		glm::vec3 getPosition();
+		[[nodiscard]] glm::mat4 getInverseView() const;
+		[[nodiscard]] glm::mat4 getInverseProjection() const;
+		[[nodiscard]] glm::mat4 getLastViewProjection() const;
+		[[nodiscard]] glm::vec3 getPosition() const;
 
 		virtual void processGlfwKeyEvent([[maybe_unused]] int key, [[maybe_unused]] int action) {}
 		virtual void processGlfwMouseEvent([[maybe_unused]] double xPos, [[maybe_unused]] double yPos) {}
 
-		virtual void update(const uint32_t image_width, const uint32_t image_height) {
-			if (image_width != this->image_width || image_height != this->image_height) {
-				initCamera(static_cast<float>(image_width) / static_cast<float>(image_height));
-				this->image_width = image_width;
-				this->image_height = image_height;
+		virtual void update(const uint32_t new_image_width, const uint32_t new_image_height) {
+			if (new_image_width != image_width || new_image_height != image_height) {
+				updateProjection(static_cast<float>(new_image_width) / static_cast<float>(new_image_height));
+				this->image_width = new_image_width;
+				this->image_height = new_image_height;
 			}
 		};
 
@@ -39,21 +37,29 @@ namespace RtEngine {
 		glm::vec3 position, view_dir;
 
 	protected:
-		void initCamera(float aspect) {
+		void initCamera(const float aspect) {
+			view = glm::lookAt(position, position + view_dir, glm::vec3(0, 1, 0));
+			inverse_view = glm::inverse(view);
+
+			updateProjection(aspect);
+
+			last_view_projection = projection * view;
+
+			position = glm::vec3(inverse_view[3]);
+		}
+
+		void updateProjection(const float aspect) {
 			projection = glm::perspective(glm::radians(fov), aspect, 0.1f, 512.0f);
 			projection[1][1] *= -1; // flip y-axis because glm is for openGL
-			view = glm::lookAt(position, position + view_dir, glm::vec3(0, 1, 0));
-
-			inverse_view = glm::inverse(view);
 			inverse_projection = glm::inverse(projection);
-			last_view_projection = projection * view;
-			position = glm::vec3(inverse_view[3]);
 		}
 
 		glm::mat4 view;
 		glm::mat4 inverse_view;
+
 		glm::mat4 projection;
 		glm::mat4 inverse_projection;
+
 		glm::mat4 last_view_projection;
 
 		uint32_t image_width;

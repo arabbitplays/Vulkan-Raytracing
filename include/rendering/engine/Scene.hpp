@@ -17,7 +17,7 @@ namespace RtEngine {
 	struct SceneData {
 		glm::mat4 inverse_view;
 		glm::mat4 inverse_proj;
-		glm::mat4 prev_view_proj;
+		glm::mat4 last_view_projection;
 		glm::vec4 view_pos;
 		std::array<glm::vec4, POINT_LIGHT_COUNT> pointLightPositions;
 		std::array<glm::vec4, POINT_LIGHT_COUNT> pointLightColors;
@@ -56,10 +56,10 @@ namespace RtEngine {
 
 		virtual ~Scene() = default;
 
-		void addNode(std::string name, std::shared_ptr<Node> node);
+		void addNode(const std::string& name, std::shared_ptr<Node> node);
 		std::shared_ptr<Node> getRootNode();
 
-		std::shared_ptr<SceneData> createSceneData();
+		std::shared_ptr<SceneData> createSceneData() const;
 		void update(uint32_t image_width, uint32_t image_height);
 
 		void clearResources();

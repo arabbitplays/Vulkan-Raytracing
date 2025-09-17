@@ -7,7 +7,7 @@
 
 namespace RtEngine {
 	class InteractiveCamera : public Camera {
-		static constexpr float MOVE_SPEED = 0.2f;
+		static constexpr float MOVE_SPEED = 0.1f;
 		static constexpr float MOUSE_SPEED = 0.5f;
 
 	public:
@@ -22,12 +22,10 @@ namespace RtEngine {
 		void processGlfwKeyEvent(int key, int action) override;
 		void processGlfwMouseEvent(double xPos, double yPos) override;
 
-
 		void update(uint32_t image_width, uint32_t image_height) override;
 
 		glm::vec3 velocity;
 		bool isActive = true;
-		bool need_view_update = true;
 
 		// Mouse state
 		float lastX = 400, lastY = 300;
