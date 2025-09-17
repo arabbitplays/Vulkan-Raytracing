@@ -40,6 +40,12 @@ spdlog = dependency('spdlog')
 assimp = dependency('assimp')
 yaml = dependency('yaml-cpp')
 openmp = dependency('openmp', required: true)
+tracy = declare_dependency(
+    include_directories: include_directories('external/tracy-0.11.1/public'),
+    sources: [
+        'external/tracy-0.11.1/public/TracyClient.cpp',
+    ],
+)
 
 project_root = meson.current_source_dir()
 
@@ -98,8 +104,10 @@ exe = executable(
         vulkan,
         assimp,
         yaml,
-        openmp
+        openmp,
+        tracy
     ],
     include_directories: incdirs,
-    install : true
+    install : true,
+    cpp_args: ['-DTRACY_ENABLE'],
 )

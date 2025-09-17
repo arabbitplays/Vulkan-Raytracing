@@ -6,6 +6,8 @@
 #include <exception>
 #include <filesystem>
 #include <iostream>
+#include <tracy/Tracy.hpp>
+
 using namespace RtEngine;
 
 int main(int argc, char *argv[]) {

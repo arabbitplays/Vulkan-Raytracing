@@ -132,6 +132,6 @@ void main() {
     }
 
     if (payload.depth == 0) {
-        writePrimaryHitData(P, N, gl_HitTEXT);
+        //writePrimaryHitData(P, N, gl_HitTEXT);
     }
 }

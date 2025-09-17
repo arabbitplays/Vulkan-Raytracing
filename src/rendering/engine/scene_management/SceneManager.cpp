@@ -8,6 +8,8 @@
 #include <SceneReader.hpp>
 #include <SceneUtil.hpp>
 
+#include "tracy/Tracy.hpp"
+
 namespace RtEngine {
 
 	SceneManager::SceneManager(const std::shared_ptr<VulkanContext> &vulkanContext,
@@ -127,37 +129,55 @@ namespace RtEngine {
 	// ----------------------------------------------------------------------------------------------------------------
 
 	void SceneManager::updateScene(const std::shared_ptr<DrawContext> &draw_context) {
+		ZoneScopedN("Scene update");
+
 		assert(scene != nullptr);
 
 		// QuickTimer timer{"Scene Update", true};
 		VkDevice device = vulkan_context->device_manager->getDevice();
 
-		scene->update(vulkan_context->swapchain->extent.width, vulkan_context->swapchain->extent.height);
+		{
+			ZoneScopedN("Refresh Transforms");
+			scene->update(vulkan_context->swapchain->extent.width, vulkan_context->swapchain->extent.height);
+		}
 
-		if (!(bufferUpdateFlags & NO_UPDATE))
-			vkDeviceWaitIdle(device);
+		{
+			ZoneScopedN("Wait for device idle");
+			if (bufferUpdateFlags != 0)
+				vkDeviceWaitIdle(device);
+		}
+
 
 		draw_context->objects.clear();
 		scene->nodes["root"]->draw(*draw_context);
 
-		if (bufferUpdateFlags & GEOMETRY_UPDATE) {
-			instance_manager->createInstanceMappingBuffer(draw_context->objects);
-		}
+		{
+			ZoneScopedN("Update geometry buffers");
+			if (bufferUpdateFlags & GEOMETRY_UPDATE) {
+				instance_manager->createInstanceMappingBuffer(draw_context->objects);
+			}
 
-		if (bufferUpdateFlags & GEOMETRY_UPDATE || bufferUpdateFlags & MATERIAL_UPDATE) {
-			instance_manager->createEmittingInstancesBuffer(draw_context->objects, getMaterial());
-			vulkan_context->descriptor_allocator->writeBuffer(7, instance_manager->getEmittingInstancesBuffer().handle,
-												  0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
-		}
-
-		if (bufferUpdateFlags != NO_UPDATE) {
-			if (bufferUpdateFlags & MATERIAL_UPDATE) {
-				updateMaterial();
+			if (bufferUpdateFlags & GEOMETRY_UPDATE || bufferUpdateFlags & MATERIAL_UPDATE) {
+				instance_manager->createEmittingInstancesBuffer(draw_context->objects, getMaterial());
+				vulkan_context->descriptor_allocator->writeBuffer(7, instance_manager->getEmittingInstancesBuffer().handle,
+													  0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
 			}
 		}
 
-		// TODO Only partially update tlas depending on the updated dynamic objects
-		updateTlas(draw_context->objects);
+		{
+			ZoneScopedN("Update material");
+			if (bufferUpdateFlags != NO_UPDATE) {
+				if (bufferUpdateFlags & MATERIAL_UPDATE) {
+					updateMaterial();
+				}
+			}
+		}
+
+		{
+			ZoneScopedN("Update TLAS");
+			// TODO Only partially update tlas depending on the updated dynamic objects
+			updateTlas(draw_context->objects);
+		}
 
 		std::shared_ptr<SceneData> scene_data = scene->createSceneData();
 		memcpy(sceneUniformBuffersMapped[draw_context->currentFrame], scene_data.get(), sizeof(SceneData));

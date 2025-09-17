@@ -6,6 +6,8 @@
 #include <PathUtil.hpp>
 #include <RandomUtil.hpp>
 
+#include "tracy/Tracy.hpp"
+
 namespace RtEngine {
 
 #ifdef NDEBUG
@@ -39,6 +41,7 @@ namespace RtEngine {
 		initWindow();
 		initVulkan();
 		initGui();
+		ZoneScopedN("main loop");
 
 		mainLoop();
 
@@ -246,6 +249,7 @@ namespace RtEngine {
 
 	void VulkanEngine::mainLoop() {
 		while (!glfwWindowShouldClose(window)) {
+
 			glfwPollEvents();
 
 			if (PathUtil::getFile(scene_manager->getSceneInformation().path) != vulkan_context->base_options->curr_scene_name) {
@@ -262,8 +266,10 @@ namespace RtEngine {
 	}
 
 	void VulkanEngine::drawFrame() {
+
 		vkWaitForFences(vulkan_context->device_manager->getDevice(), 1, &inFlightFences[mainDrawContext->currentFrame], VK_TRUE,
 						UINT64_MAX);
+		ZoneScopedN("Draw Frame");
 
 		const int32_t imageIndex = aquireNextSwapchainImage();
 		if (imageIndex < 0)

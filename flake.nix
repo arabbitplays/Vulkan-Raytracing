@@ -23,8 +23,10 @@
         vulkan-loader
         vulkan-tools
         vulkan-validation-layers
+        xorg.xhost
         pkg-config
         doxygen
+        tracy
         python3
         (pkgs.python3.withPackages (python-pkgs: with python-pkgs; [
             numpy
@@ -44,6 +46,7 @@
 
       shellHook = ''
         echo "Entered env"
+        xhost si:localuser:root
       '';
     };
   };
