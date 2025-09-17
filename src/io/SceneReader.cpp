@@ -94,12 +94,12 @@ namespace RtEngine {
 		}
 	}
 
-	void SceneReader::initializeMaterial(const YAML::Node &material_node, std::shared_ptr<Material> &material) {
+	void SceneReader::initializeMaterial(const YAML::Node &material_list_node, std::shared_ptr<Material> &material) {
 		runtime_context->curr_material = material;
 		if (typeid(*material) == typeid(MetalRoughMaterial)) {
 			auto metal_rough_material = dynamic_cast<MetalRoughMaterial *>(material.get());
 
-			for (const auto &material_node: material_node) {
+			for (const auto &material_node: material_list_node) {
 				MetalRoughInstance::Parameters parameters{};
 
 				if (material_node["albedo"])
@@ -132,36 +132,31 @@ namespace RtEngine {
 		} else if (typeid(*material) == typeid(PhongMaterial)) {
 			auto phong_material = dynamic_cast<PhongMaterial *>(material.get());
 
-			for (const auto &material_node: material_node) {
-				glm::vec3 diffuse = glm::vec3(1.0);
+			for (const auto &material_node: material_list_node) {
+				PhongInstance::Parameters parameters{};
+
 				if (material_node["diffuse"])
-					diffuse = material_node["diffuse"].as<glm::vec3>();
+					parameters.diffuse = material_node["diffuse"].as<glm::vec3>();
 
-				glm::vec3 specular = glm::vec3(1.0);
 				if (material_node["specular"])
-					specular = material_node["specular"].as<glm::vec3>();
+					parameters.specular = material_node["specular"].as<glm::vec3>();
 
-				glm::vec3 ambient = glm::vec3(1.0);
 				if (material_node["ambient"])
-					ambient = material_node["ambient"].as<glm::vec3>();
+					parameters.ambient = material_node["ambient"].as<glm::vec3>();
 
-				glm::vec3 reflection = glm::vec3(0);
 				if (material_node["reflection"])
-					reflection = material_node["reflection"].as<glm::vec3>();
+					parameters.reflection = material_node["reflection"].as<glm::vec3>();
 
-				glm::vec3 transmission = glm::vec3(0);
 				if (material_node["transmission"])
-					transmission = material_node["transmission"].as<glm::vec3>();
+					parameters.transmission = material_node["transmission"].as<glm::vec3>();
 
-				float n = 1.0;
 				if (material_node["n"])
-					n = material_node["n"].as<float>();
+					parameters.n = material_node["n"].as<float>();
 
-				glm::vec3 eta = glm::vec3(1.0);
 				if (material_node["eta"])
-					eta = material_node["eta"].as<glm::vec3>();
+					parameters.eta = material_node["eta"].as<glm::vec3>();
 
-				phong_material->createInstance(diffuse, specular, ambient, reflection, transmission, n, eta);
+				phong_material->createInstance(parameters);
 			}
 		}
 	}

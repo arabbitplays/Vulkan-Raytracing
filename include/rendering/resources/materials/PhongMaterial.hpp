@@ -2,6 +2,8 @@
 #define PHONGMATERIAL_HPP
 #include <Material.hpp>
 
+#include "PhongInstance.hpp"
+
 #define PHONG_MATERIAL_NAME "phong"
 
 namespace RtEngine {
@@ -28,16 +30,17 @@ namespace RtEngine {
 
 		void buildPipelines() override;
 		void writeMaterial() override;
-		std::shared_ptr<MaterialInstance> createInstance(glm::vec3 diffuse, glm::vec3 specular, glm::vec3 ambient,
-														 glm::vec3 reflection, glm::vec3 transmission, float n,
-														 glm::vec3 eta = glm::vec3(0.0));
+		std::shared_ptr<MaterialInstance> createInstance(const PhongInstance::Parameters &parameters
+		);
 		void addInstanceToResources(MaterialInstance &inst) override;
-		std::vector<std::shared_ptr<PhongResources>> getResources() const;
+		[[nodiscard]] std::vector<std::shared_ptr<PhongResources>> getResources() const;
 		std::vector<std::shared_ptr<Texture>> getTextures() override;
 		void reset() override;
 
 	protected:
 		void initProperties() override;
+
+		[[nodiscard]] std::shared_ptr<PhongResources> mapInstanceToResources(const PhongInstance &instance) const;
 
 		VkDescriptorSetLayout createLayout() override;
 		std::shared_ptr<DescriptorSet> createDescriptorSet(const VkDescriptorSetLayout &layout) override;

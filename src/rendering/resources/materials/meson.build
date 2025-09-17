@@ -2,6 +2,7 @@
 
 
 src += files(
+  'PhongInstance.cpp',
   'Material.cpp',
   'MetalRoughMaterial.cpp',
   'MetalRoughInstance.cpp',

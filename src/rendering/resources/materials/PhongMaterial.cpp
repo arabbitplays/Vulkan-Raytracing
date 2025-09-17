@@ -7,6 +7,8 @@
 #include <environment_miss.rmiss.spv.h>
 #include <phong_closesthit.rchit.spv.h>
 #include <phong_raygen.rgen.spv.h>
+
+#include "PhongInstance.hpp"
 #include "shadow_miss.rmiss.spv.h"
 
 namespace RtEngine {
@@ -64,21 +66,27 @@ namespace RtEngine {
 		resource_manager->writeResources(descriptorAllocator, descriptor_set);
 	}
 
-	std::shared_ptr<MaterialInstance> PhongMaterial::createInstance(glm::vec3 diffuse, glm::vec3 specular,
-																	glm::vec3 ambient, glm::vec3 reflection,
-																	glm::vec3 transmission, float n, glm::vec3 eta) {
-		auto resources = std::make_shared<PhongResources>();
-		resources->diffuse = diffuse;
-		resources->specular = specular;
-		resources->ambient = ambient;
-		resources->reflection = reflection;
-		resources->transmission = transmission;
-		resources->n = n;
-		resources->eta = glm::vec4(eta, 0.0f);
+	std::shared_ptr<MaterialInstance> PhongMaterial::createInstance(const PhongInstance::Parameters &parameters) {
+		auto instance = std::make_shared<PhongInstance>(parameters);
+		std::shared_ptr<PhongResources> resources = mapInstanceToResources(*instance);
 
-		// TODO this whole function is trash
-		resource_manager->addResources(resources);
-		return nullptr;
+		instances.push_back(instance);
+		return instance;
+	}
+
+	std::shared_ptr<PhongMaterial::PhongResources>
+	PhongMaterial::mapInstanceToResources(const PhongInstance &instance) const {
+		auto resources = std::make_shared<PhongResources>();
+		resources->diffuse = instance.diffuse;
+		resources->specular = instance.specular;
+		resources->ambient = instance.ambient;
+
+		resources->reflection = instance.reflection;
+		resources->transmission = instance.transmission;
+		resources->n = instance.n;
+		resources->eta = glm::vec4(instance.eta, 0);
+
+		return resources;
 	}
 
 	void PhongMaterial::addInstanceToResources(MaterialInstance &inst) {
