@@ -9,7 +9,7 @@
 #include <glm/vec3.hpp>
 #include <glm/vec4.hpp>
 
-#include "MaterialInstance.hpp"
+#include "../../engine/core/materials/MaterialInstance.hpp"
 #include "Texture.hpp"
 #include "TextureRepository.hpp"
 

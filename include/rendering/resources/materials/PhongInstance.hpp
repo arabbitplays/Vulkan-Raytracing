@@ -4,7 +4,7 @@
 
 #ifndef VULKAN_RAYTRACING_PHONGINSTANCE_HPP
 #define VULKAN_RAYTRACING_PHONGINSTANCE_HPP
-#include "MaterialInstance.hpp"
+#include "../../engine/core/materials/MaterialInstance.hpp"
 
 namespace RtEngine {
     class PhongMaterial;

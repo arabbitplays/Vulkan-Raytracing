@@ -6,7 +6,7 @@
 #define INSTANCEMANAGER_HPP
 
 #include <IRenderable.hpp>
-#include <Material.hpp>
+#include <../core/materials/Material.hpp>
 #include <VulkanContext.hpp>
 
 namespace RtEngine {

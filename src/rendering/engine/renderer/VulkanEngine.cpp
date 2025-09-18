@@ -192,10 +192,11 @@ namespace RtEngine {
 	void VulkanEngine::loadScene() const {
 		assert(!vulkan_context->base_options->curr_scene_name.empty());
 		vkDeviceWaitIdle(vulkan_context->device_manager->getDevice());
-		properties_manager->curr_sample_count = 0;
 		std::string path = vulkan_context->base_options->resources_dir + "/scenes/" +
 						   vulkan_context->base_options->curr_scene_name;
 		scene_manager->createScene(path);
+		scene_manager->getMaterial()->resetSamples();
+
 		properties_manager->addPropertySection(scene_manager->scene->material->getProperties());
 
 		SceneWriter writer;
@@ -256,9 +257,6 @@ namespace RtEngine {
 				loadScene();
 			}
 			scene_manager->updateScene(mainDrawContext);
-			properties_manager->emitting_instances_count = static_cast<int32_t>(
-					scene_manager->getSceneInformation().emitting_instances_count); // TODO move this together with the creation of the
-																// instance buffers
 			drawFrame();
 		}
 
@@ -348,7 +346,7 @@ namespace RtEngine {
 	void VulkanEngine::refreshAfterResize() {
 		vkDeviceWaitIdle(vulkan_context->device_manager->getDevice());
 
-		properties_manager->curr_sample_count = 0;
+		scene_manager->getMaterial()->resetSamples();
 		vulkan_context->swapchain->recreate();
 		mainDrawContext->target->recreate(vulkan_context->swapchain->extent);
 		runtime_context->engine_resources->createAndBindResources(); // TODO combine this with the main draw context!?
@@ -404,7 +402,7 @@ namespace RtEngine {
 								static_cast<uint32_t>(descriptor_sets.size()), descriptor_sets.data(), 0, nullptr);
 
 		uint32_t pc_size;
-		void *pc_data = properties_manager->getPushConstants(&pc_size);
+		void *pc_data = scene_manager->getMaterial()->getPushConstants(&pc_size);
 		vkCmdPushConstants(commandBuffer, pipeline.getLayoutHandle(),
 						   VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR | VK_SHADER_STAGE_RAYGEN_BIT_KHR |
 								   VK_SHADER_STAGE_MISS_BIT_KHR,
@@ -414,7 +412,7 @@ namespace RtEngine {
 						&missShaderSbtEntry, &closestHitShaderSbtEntry, &callableShaderSbtEntry,
 						vulkan_context->swapchain->extent.width, vulkan_context->swapchain->extent.height, 1);
 
-		properties_manager->curr_sample_count++;
+		scene_manager->getMaterial()->progressSampleCount();
 	}
 
 	void VulkanEngine::recordCopyToSwapchain(VkCommandBuffer commandBuffer, const uint32_t swapchain_image_index) {
@@ -512,7 +510,6 @@ namespace RtEngine {
 		renderer_properties = std::make_shared<PropertiesSection>(RENDERER_SECTION_NAME);
 
 		renderer_properties->addString(RESOURCES_DIR_OPTION_NAME, &vulkan_context->base_options->resources_dir);
-		renderer_properties->addInt(RECURSION_DEPTH_OPTION_NAME, &vulkan_context->base_options->max_depth, 1, 5);
 
 		initSceneSelectionProperty();
 	}
@@ -541,7 +538,7 @@ namespace RtEngine {
 
 	void VulkanEngine::handleGuiUpdate(uint32_t update_flags) const
 	{
-		properties_manager->curr_sample_count = 0;
+		scene_manager->getMaterial()->resetSamples();
 		scene_manager->bufferUpdateFlags |= update_flags;
 	}
 

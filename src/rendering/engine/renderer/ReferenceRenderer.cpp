@@ -10,7 +10,7 @@ namespace RtEngine {
 
 		while (!glfwWindowShouldClose(window)) {
 			// render one image and then output it if output path is defined
-			if (sample_count == properties_manager->curr_sample_count) {
+			if (static_cast<uint32_t>(sample_count) == scene_manager->getMaterial()->getCurrSampleCount()) {
 				vkDeviceWaitIdle(vulkan_context->device_manager->getDevice());
 				outputRenderingTarget(vulkan_context->base_options->resources_dir + "/references/" +
 									  std::to_string(sample_count) + "_render.png");
@@ -29,7 +29,7 @@ namespace RtEngine {
 		vkWaitForFences(vulkan_context->device_manager->getDevice(), 1, &inFlightFences[mainDrawContext->currentFrame], VK_TRUE,
 						UINT64_MAX);
 
-		uint32_t curr_sample_count = properties_manager->curr_sample_count;
+		uint32_t curr_sample_count = scene_manager->getMaterial()->getCurrSampleCount();
 		present_image = present_sample_count == curr_sample_count;
 
 		int imageIndex = 0;
@@ -42,9 +42,6 @@ namespace RtEngine {
 		vkResetFences(vulkan_context->device_manager->getDevice(), 1, &inFlightFences[mainDrawContext->currentFrame]);
 
 		scene_manager->updateScene(mainDrawContext);
-		properties_manager->emitting_instances_count =
-				scene_manager->getSceneInformation().emitting_instances_count; // TODO move this together with the creation of the instance
-															// buffers
 
 		vkResetCommandBuffer(commandBuffers[mainDrawContext->currentFrame], 0);
 		recordCommandBuffer(commandBuffers[mainDrawContext->currentFrame], imageIndex);

@@ -2,7 +2,7 @@
 #define MESHRENDERER_HPP
 
 #include <Component.hpp>
-#include <Material.hpp>
+#include <../../engine/core/materials/Material.hpp>
 
 namespace RtEngine {
 	class MeshRenderer : public Component {

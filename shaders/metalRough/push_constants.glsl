@@ -4,6 +4,7 @@ layout(push_constant) uniform PushConstants {
     bool sample_light;
     bool sample_bsdf;
     bool russian_roulette;
+  //  bool svgf_denoising;
     uint curr_sample_count;
     uint emitting_instances_count;
     uint samples_per_pixel;

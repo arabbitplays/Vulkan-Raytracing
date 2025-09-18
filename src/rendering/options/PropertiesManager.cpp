@@ -1,7 +1,7 @@
 #include "PropertiesManager.hpp"
 
 #include <BaseOptions.hpp>
-#include <Material.hpp>
+#include <../../../include/rendering/engine/core/materials/Material.hpp>
 #include <ReferenceRenderer.hpp>
 #include <spdlog/spdlog.h>
 
@@ -94,38 +94,6 @@ namespace RtEngine {
 								 selection_prop->name, section->section_name);
 			}
 		}
-	}
-
-	void *PropertiesManager::getPushConstants(uint32_t *size) {
-		updatePushConstants();
-		*size = sizeof(uint32_t) * push_constants.size();
-		assert(*size <= MAX_PUSH_CONSTANT_SIZE);
-		return push_constants.data();
-	}
-
-	int32_t getRecursionDepth(std::vector<std::shared_ptr<IntProperty>> &int_options) {
-		for (auto &int_option: int_options) {
-			if (int_option->name == RECURSION_DEPTH_OPTION_NAME) {
-				return *int_option->var;
-			}
-		}
-
-		return 0;
-	}
-
-	void PropertiesManager::updatePushConstants() {
-		push_constants.clear();
-		assert(property_sections.contains(MATERIAL_SECTION_NAME) && property_sections.contains(RENDERER_SECTION_NAME));
-
-		push_constants.push_back(getRecursionDepth(property_sections[RENDERER_SECTION_NAME]->int_properties));
-		std::shared_ptr<PropertiesSection> material_props = property_sections[MATERIAL_SECTION_NAME];
-		for (auto &bool_option: material_props->bool_properties) {
-			push_constants.push_back(*bool_option->var);
-		}
-
-		push_constants.push_back(curr_sample_count);
-		push_constants.push_back(emitting_instances_count);
-		push_constants.push_back(samples_per_pixel);
 	}
 
 	bool PropertiesManager::serialize() {

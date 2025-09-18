@@ -1,7 +1,7 @@
 #ifndef METALROUGHMATERIAL_HPP
 #define METALROUGHMATERIAL_HPP
 
-#include <Material.hpp>
+#include <../../engine/core/materials/Material.hpp>
 
 #include "DescriptorLayoutBuilder.hpp"
 #include "MetalRoughInstance.hpp"
@@ -11,6 +11,8 @@
 namespace RtEngine {
 	class MetalRoughMaterial : public Material {
 	public:
+
+		// the data that is written to the material buffer
 		struct MetalRoughResources : MaterialResources {
 			glm::vec3 albedo;
 			float padding;
@@ -25,8 +27,13 @@ namespace RtEngine {
 			}
 		};
 
-		struct MaterialProperties {
+
+		struct PushConstants {
+			int32_t recursion_depth = 3;
 			int32_t normal_mapping = 0, sample_lights = 0, sample_bsdf = 0, russian_roulette = 0;
+			uint32_t curr_sample_count = 0;
+			uint32_t emitting_instances_count = 0;
+			int32_t samples_per_pixel = 1;
 		};
 
 		MetalRoughMaterial(const std::shared_ptr<VulkanContext> &context, const std::shared_ptr<TextureRepository> &texture_repository,
@@ -45,10 +52,15 @@ namespace RtEngine {
 		std::vector<std::shared_ptr<MetalRoughResources>> getResources() const;
 		std::vector<std::shared_ptr<Texture>> getTextures() override;
 
+		void* getPushConstants(uint32_t *out_size) override;
+		void resetSamples() override;
+		void setEmittingInstanceCount(const uint32_t count) override;
+		uint32_t getCurrSampleCount() override;
+		void progressSampleCount() override;
+
 		std::shared_ptr<MaterialInstance> createInstance(const MetalRoughInstance::Parameters &parameters);
 
 		void addInstanceToResources(MaterialInstance &inst) override;
-
 		void addInstanceToResources(MetalRoughInstance &instance);
 
 		void reset() override;
@@ -65,7 +77,7 @@ namespace RtEngine {
 	private:
 		std::shared_ptr<MaterialResourceManager<MetalRoughResources>> resource_manager;
 
-		MaterialProperties material_properties;
+		PushConstants push_constants;
 		VkSampler sampler;
 	};
 

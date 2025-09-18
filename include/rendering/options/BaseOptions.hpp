@@ -9,7 +9,6 @@ namespace RtEngine {
 	constexpr std::string CURR_SCENE_OPTION_NAME = "Scene";
 
 	struct BaseOptions {
-		int32_t max_depth = 3;
 		std::string resources_dir;
 		std::string curr_scene_name;
 	};

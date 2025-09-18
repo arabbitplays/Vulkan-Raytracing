@@ -8,7 +8,7 @@
 #include "../common/scene_data.glsl"
 #include "../common/layout.glsl"
 #include "../denoising/svgf_primary_hit.glsl"
-#include "options.glsl"
+#include "push_constants.glsl"
 #include "../common/random.glsl"
 
 layout(binding = 0, set = 0) uniform accelerationStructureEXT topLevelAS;

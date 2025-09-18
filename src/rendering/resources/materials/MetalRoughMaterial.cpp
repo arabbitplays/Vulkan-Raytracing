@@ -18,7 +18,7 @@ namespace RtEngine {
 		std::vector<VkDescriptorSetLayout> descriptorSetLayouts = vulkan_context->layout_manager->getLayouts();
 		pipeline->setDescriptorSetLayouts(descriptorSetLayouts);
 
-		pipeline->addPushConstant(MAX_PUSH_CONSTANT_SIZE, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR |
+		pipeline->addPushConstant(sizeof(PushConstants), VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR |
 		                                                  VK_SHADER_STAGE_RAYGEN_BIT_KHR |
 		                                                  VK_SHADER_STAGE_MISS_BIT_KHR);
 
@@ -67,6 +67,27 @@ namespace RtEngine {
 		return resource_manager->getAllTextures();
 	}
 
+	void * MetalRoughMaterial::getPushConstants(uint32_t *out_size) {
+		*out_size = sizeof(PushConstants);
+		return &push_constants;
+	}
+
+	void MetalRoughMaterial::resetSamples() {
+		push_constants.curr_sample_count = 0;
+	}
+
+	void MetalRoughMaterial::setEmittingInstanceCount(const uint32_t count) {
+		push_constants.emitting_instances_count = count;
+	}
+
+	uint32_t MetalRoughMaterial::getCurrSampleCount() {
+		return push_constants.curr_sample_count;
+	}
+
+	void MetalRoughMaterial::progressSampleCount() {
+		push_constants.curr_sample_count += push_constants.samples_per_pixel;
+	}
+
 	std::shared_ptr<MaterialInstance> MetalRoughMaterial::createInstance(
 		const MetalRoughInstance::Parameters &parameters) {
 		std::shared_ptr<MetalRoughInstance> instance = std::make_shared<MetalRoughInstance>(parameters, texture_repository);
@@ -94,10 +115,12 @@ namespace RtEngine {
 
 	void MetalRoughMaterial::initProperties() {
 		properties = std::make_shared<PropertiesSection>(MATERIAL_SECTION_NAME);
-		properties->addBool("Normal_Mapping", &material_properties.normal_mapping);
-		properties->addBool("Sample_Lights", &material_properties.sample_lights);
-		properties->addBool("Sample_BSDF", &material_properties.sample_bsdf);
-		properties->addBool("Russian_Roulette", &material_properties.russian_roulette);
+		properties->addInt("Recursion_Depth", &push_constants.recursion_depth, ALL_PROPERTY_FLAGS, 1, 5);
+		properties->addBool("Normal_Mapping", &push_constants.normal_mapping);
+		properties->addBool("Sample_Lights", &push_constants.sample_lights);
+		properties->addBool("Sample_BSDF", &push_constants.sample_bsdf);
+		properties->addBool("Russian_Roulette", &push_constants.russian_roulette);
+		properties->addInt("Samples_Per_Pixel", &push_constants.samples_per_pixel);
 	}
 
 	VkDescriptorSetLayout MetalRoughMaterial::createLayout() {

@@ -21,7 +21,7 @@ namespace RtEngine {
 		std::vector<VkDescriptorSetLayout> descriptorSetLayouts = vulkan_context->layout_manager->getLayouts();
 		pipeline->setDescriptorSetLayouts(descriptorSetLayouts);
 
-		pipeline->addPushConstant(MAX_PUSH_CONSTANT_SIZE,
+		pipeline->addPushConstant(sizeof(PushConstants),
 								  VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR | VK_SHADER_STAGE_RAYGEN_BIT_KHR);
 
 		VkShaderModule raygenShaderModule = VulkanUtil::createShaderModule(device, oschd_phong_raygen_rgen_spv_size(),
@@ -99,12 +99,18 @@ namespace RtEngine {
 
 	void PhongMaterial::initProperties() {
 		properties = std::make_shared<PropertiesSection>(MATERIAL_SECTION_NAME);
-		properties->addBool("Shadows", &material_properties.shadows);
-		properties->addBool("Fresnel", &material_properties.fresnel);
-		properties->addBool("Dispersion", &material_properties.dispersion);
+		properties->addInt("Recursion_Depth", &push_constants.recursion_depth, ALL_PROPERTY_FLAGS, 1, 10);
+		properties->addBool("Shadows", &push_constants.shadows);
+		properties->addBool("Fresnel", &push_constants.fresnel);
+		properties->addBool("Dispersion", &push_constants.dispersion);
 	}
 
 	std::vector<std::shared_ptr<Texture>> PhongMaterial::getTextures() { return {}; }
+
+	void * PhongMaterial::getPushConstants(uint32_t *out_size) {
+		*out_size = sizeof(PushConstants);
+		return &push_constants;
+	}
 
 	void PhongMaterial::reset() {
 		resource_manager->reset();

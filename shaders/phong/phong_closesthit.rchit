@@ -9,7 +9,7 @@
 #include "../common/payload.glsl"
 #include "../common/scene_data.glsl"
 #include "../common/layout.glsl"
-#include "options.glsl"
+#include "push_constants.glsl"
 
 hitAttributeEXT vec3 attribs;
 

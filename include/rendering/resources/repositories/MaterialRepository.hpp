@@ -6,7 +6,7 @@
 #define VULKAN_RAYTRACING_MATERIALREPOSITORY_HPP
 #include <future>
 
-#include "Material.hpp"
+#include "../../engine/core/materials/Material.hpp"
 
 namespace RtEngine {
     class MaterialRepository {

@@ -161,6 +161,7 @@ namespace RtEngine {
 				instance_manager->createEmittingInstancesBuffer(draw_context->objects, getMaterial());
 				vulkan_context->descriptor_allocator->writeBuffer(7, instance_manager->getEmittingInstancesBuffer().handle,
 													  0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+				getMaterial()->setEmittingInstanceCount(instance_manager->getEmittingInstancesCount());
 			}
 		}
 

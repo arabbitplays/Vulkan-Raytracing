@@ -13,8 +13,10 @@ namespace RtEngine {
 																			   &ref_height, &ref_channels);
 
 		while (!glfwWindowShouldClose(window)) {
+			const int32_t curr_sample_count = static_cast<int32_t>(scene_manager->getMaterial()->getCurrSampleCount());
+
 			// render one image and then output it if output path is defined
-			if (sample_count == properties_manager->curr_sample_count) {
+			if (sample_count == curr_sample_count) {
 				vkDeviceWaitIdle(vulkan_context->device_manager->getDevice());
 				outputRenderingTarget(std::to_string(sample_count) + "_benchmark.png");
 				break;
@@ -27,14 +29,14 @@ namespace RtEngine {
 			if (calculate_error) {
 				calculate_error = false;
 				float mse = calculateMSEToReference();
-				spdlog::info("Sample count: {}, Error: {:f}", properties_manager->curr_sample_count, mse);
+				spdlog::info("Sample count: {}, Error: {:f}", curr_sample_count, mse);
 			}
 		}
 
 		vkDeviceWaitIdle(vulkan_context->device_manager->getDevice());
 
 		float mse = calculateMSEToReference();
-		spdlog::info("Sample count: {}, Final Error: {:f}", properties_manager->curr_sample_count, mse);
+		spdlog::info("Sample count: {}, Final Error: {:f}", scene_manager->getMaterial()->getCurrSampleCount(), mse);
 		stbi_image_free(reference_image_data);
 	}
 
@@ -42,7 +44,7 @@ namespace RtEngine {
 		vkWaitForFences(vulkan_context->device_manager->getDevice(), 1, &inFlightFences[mainDrawContext->currentFrame], VK_TRUE,
 						UINT64_MAX);
 
-		uint32_t curr_sample_count = properties_manager->curr_sample_count;
+		uint32_t curr_sample_count = scene_manager->getMaterial()->getCurrSampleCount();
 		if (error_calculation_sample_count == curr_sample_count) {
 			present_image = true;
 			calculate_error = true;
@@ -59,9 +61,6 @@ namespace RtEngine {
 		vkResetFences(vulkan_context->device_manager->getDevice(), 1, &inFlightFences[mainDrawContext->currentFrame]);
 
 		scene_manager->updateScene(mainDrawContext);
-		properties_manager->emitting_instances_count =
-				scene_manager->getSceneInformation().emitting_instances_count; // TODO move this together with the creation of the instance
-															// buffers
 
 		vkResetCommandBuffer(commandBuffers[mainDrawContext->currentFrame], 0);
 		recordCommandBuffer(commandBuffers[mainDrawContext->currentFrame], imageIndex);

@@ -1,6 +1,6 @@
 #ifndef PHONGMATERIAL_HPP
 #define PHONGMATERIAL_HPP
-#include <Material.hpp>
+#include <../../engine/core/materials/Material.hpp>
 
 #include "PhongInstance.hpp"
 
@@ -19,8 +19,9 @@ namespace RtEngine {
 			glm::vec4 eta; // only xyz for the eta of each rgb channel
 		};
 
-		struct MaterialProperties {
-			int32_t shadows, dispersion, fresnel;
+		struct PushConstants {
+			int32_t recursion_depth = 3;
+			int32_t shadows = false, dispersion = false, fresnel = false;
 		};
 
 		PhongMaterial(const std::shared_ptr<VulkanContext> &context, const std::shared_ptr<TextureRepository> &texture_repository) :
@@ -35,6 +36,7 @@ namespace RtEngine {
 		void addInstanceToResources(MaterialInstance &inst) override;
 		[[nodiscard]] std::vector<std::shared_ptr<PhongResources>> getResources() const;
 		std::vector<std::shared_ptr<Texture>> getTextures() override;
+		void* getPushConstants(uint32_t *out_size) override;
 		void reset() override;
 
 	protected:
@@ -47,7 +49,7 @@ namespace RtEngine {
 
 	private:
 		std::shared_ptr<MaterialResourceManager<PhongResources>> resource_manager;
-		MaterialProperties material_properties{};
+		PushConstants push_constants{};
 	};
 
 } // namespace RtEngine
