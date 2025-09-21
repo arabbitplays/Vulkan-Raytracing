@@ -44,9 +44,10 @@
         yaml-cpp
       ];
 
+        # to allow root execution for tracy write this in the shell hook: xhost si:localuser:root
+
       shellHook = ''
         echo "Entered env"
-        xhost si:localuser:root
       '';
     };
   };

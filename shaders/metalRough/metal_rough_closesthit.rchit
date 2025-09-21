@@ -131,7 +131,7 @@ void main() {
         }
     }
 
-    if (payload.depth == 0) {
-        //writePrimaryHitData(P, N, gl_HitTEXT);
+    if (options.svgf_denoising && payload.depth == 0) {
+        writePrimaryHitData(P, N, gl_HitTEXT, gl_InstanceCustomIndexEXT);
     }
 }

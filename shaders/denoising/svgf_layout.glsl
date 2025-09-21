@@ -43,6 +43,7 @@ void setSvgfData(uint pixel_idx, SvgfData data) {
     vec4 B = vec4(data.position.yz, data.normal.xy);
     vec4 C = vec4(data.normal.z, data.depth, data.motion);
 
+
     denoising_buffer.data[buffer_idx] = A;
     denoising_buffer.data[buffer_idx + 1] = B;
     denoising_buffer.data[buffer_idx + 2] = C;

@@ -31,6 +31,7 @@ namespace RtEngine {
 		struct PushConstants {
 			int32_t recursion_depth = 3;
 			int32_t normal_mapping = 0, sample_lights = 0, sample_bsdf = 0, russian_roulette = 0;
+			int32_t svgf_denoising = 0;
 			uint32_t curr_sample_count = 0;
 			uint32_t emitting_instances_count = 0;
 			int32_t samples_per_pixel = 1;

@@ -4,6 +4,7 @@ Material:
   Sample_Lights: true
   Sample_BSDF: true
   Russian_Roulette: false
+  Denoising: true
   Samples_Per_Pixel: 1
 Renderer:
   Scene: base_scene.yaml

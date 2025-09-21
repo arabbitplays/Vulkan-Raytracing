@@ -83,9 +83,19 @@ void main() {
     }
     imageStore(render_image, ivec2(gl_LaunchIDEXT.xy), vec4(color, 1.0));
 
-    //temporalFiltering(color);
-    //uint idx = gl_LaunchIDEXT.y * gl_LaunchSizeEXT.x + gl_LaunchIDEXT.x;
-    //SvgfData data = getSvgfData(idx);
-    //SvgfHistData hist_data = getSvgfHistData(idx);
-    //imageStore(render_image, ivec2(gl_LaunchIDEXT.xy), vec4(vec3(data.position), 1));
+    if (options.svgf_denoising) {
+        uint idx = gl_LaunchIDEXT.y * gl_LaunchSizeEXT.x + gl_LaunchIDEXT.x;
+        SvgfData data = getSvgfData(idx);
+        SvgfHistData hist_data = getSvgfHistData(idx);
+
+        calculateMotionVector(data);
+        temporalFiltering(color, data);
+
+        imageStore(render_image, ivec2(gl_LaunchIDEXT.xy), vec4(vec3(data.color ), 1));
+
+        writeHistoryData(data, hist_data);
+        setSvgfData(idx, data);
+        setSvgfHistData(idx, hist_data);
+    }
+
 }

@@ -17,7 +17,7 @@ void main() {
         //payload.light += payload.beta * uniformLe();
     }
 
-    if (payload.depth == 0) {
-        //writePrimaryHitData(vec3(0), vec3(0), -1.0);
+    if (options.svgf_denoising && payload.depth == 0) {
+        writePrimaryHitData(vec3(0), vec3(0), -1.0, -1.0);
     }
 }

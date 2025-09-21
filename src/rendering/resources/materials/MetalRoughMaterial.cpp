@@ -120,6 +120,7 @@ namespace RtEngine {
 		properties->addBool("Sample_Lights", &push_constants.sample_lights);
 		properties->addBool("Sample_BSDF", &push_constants.sample_bsdf);
 		properties->addBool("Russian_Roulette", &push_constants.russian_roulette);
+		properties->addBool("Denoising", &push_constants.svgf_denoising);
 		properties->addInt("Samples_Per_Pixel", &push_constants.samples_per_pixel);
 	}
 

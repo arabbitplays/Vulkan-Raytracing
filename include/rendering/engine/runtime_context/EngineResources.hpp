@@ -15,13 +15,13 @@ namespace RtEngine {
         glm::vec3 normal;
         float depth;
         glm::vec2 motion;
+        glm::vec3 padding;
     };
 
     struct SvgfHistData {
         glm::vec3 color;
         glm::vec3 normal;
         float depth;
-        float padding;
     };
 
     class EngineResources : public ILayoutProvider {
