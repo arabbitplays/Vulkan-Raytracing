@@ -91,7 +91,7 @@ void main() {
         calculateMotionVector(data);
         temporalFiltering(color, data);
 
-        imageStore(render_image, ivec2(gl_LaunchIDEXT.xy), vec4(vec3(data.color ), 1));
+        imageStore(render_image, ivec2(gl_LaunchIDEXT.xy), vec4(vec3(data.color), 1));
 
         writeHistoryData(data, hist_data);
         setSvgfData(idx, data);

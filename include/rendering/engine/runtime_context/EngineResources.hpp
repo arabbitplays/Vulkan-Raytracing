@@ -15,6 +15,7 @@ namespace RtEngine {
         glm::vec3 normal;
         float depth;
         glm::vec2 motion;
+        int32_t instance_id;
         glm::vec3 padding;
     };
 
@@ -22,6 +23,7 @@ namespace RtEngine {
         glm::vec3 color;
         glm::vec3 normal;
         float depth;
+        float instance_id;
     };
 
     class EngineResources : public ILayoutProvider {

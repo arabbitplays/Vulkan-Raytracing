@@ -38,12 +38,12 @@ void main() {
     float gamma = barycentricCoords.z;
 
     vec3 position = alpha * A.position + beta * B.position + gamma * C.position;
-    vec3 normal = normalize(alpha * A.normal + beta * B.normal + gamma * C.normal);
+    vec3 object_normal = normalize(alpha * A.normal + beta * B.normal + gamma * C.normal);
     vec3 color = alpha * A.color + beta * B.color + gamma * C.color;
     vec2 uv = alpha * A.uv + beta * B.uv + gamma * C.uv;
 
     vec3 P = vec3(gl_ObjectToWorldEXT * vec4(position, 1.0)); // transform position to world space
-    vec3 geometric_normal = normalize(vec3(normal * gl_WorldToObjectEXT)); // transform normal to world space
+    vec3 geometric_normal = normalize(vec3(object_normal * gl_WorldToObjectEXT)); // transform normal to world space
 
     vec3 N = geometric_normal;
     vec3 tangent = normalize(alpha * A.tangent + beta * B.tangent + gamma * C.tangent);
@@ -132,6 +132,6 @@ void main() {
     }
 
     if (options.svgf_denoising && payload.depth == 0) {
-        writePrimaryHitData(P, N, gl_HitTEXT, gl_InstanceCustomIndexEXT);
+        writePrimaryHitData(P, object_normal, gl_HitTEXT, gl_InstanceCustomIndexEXT);
     }
 }
