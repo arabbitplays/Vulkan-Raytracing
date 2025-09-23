@@ -22,7 +22,7 @@ namespace RtEngine {
 		pipeline->setDescriptorSetLayouts(descriptorSetLayouts);
 
 		pipeline->addPushConstant(sizeof(PushConstants),
-								  VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR | VK_SHADER_STAGE_RAYGEN_BIT_KHR);
+								  VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR | VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_MISS_BIT_KHR);
 
 		VkShaderModule raygenShaderModule = VulkanUtil::createShaderModule(device, oschd_phong_raygen_rgen_spv_size(),
 																		   oschd_phong_raygen_rgen_spv());
@@ -91,6 +91,12 @@ namespace RtEngine {
 
 	void PhongMaterial::addInstanceToResources(MaterialInstance &inst) {
 		inst.attachTo(*this);
+	}
+
+	void PhongMaterial::addInstanceToResources(PhongInstance &inst) {
+		std::shared_ptr<PhongResources> resources = mapInstanceToResources(inst);
+		uint32_t material_idx = resource_manager->addResources(resources);
+		inst.setMaterialDataIndex(material_idx);
 	}
 
 	std::vector<std::shared_ptr<PhongMaterial::PhongResources>> PhongMaterial::getResources() const {

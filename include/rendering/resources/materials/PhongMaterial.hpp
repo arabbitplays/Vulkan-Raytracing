@@ -34,6 +34,8 @@ namespace RtEngine {
 		std::shared_ptr<MaterialInstance> createInstance(const PhongInstance::Parameters &parameters
 		);
 		void addInstanceToResources(MaterialInstance &inst) override;
+		void addInstanceToResources(PhongInstance &inst);
+
 		[[nodiscard]] std::vector<std::shared_ptr<PhongResources>> getResources() const;
 		std::vector<std::shared_ptr<Texture>> getTextures() override;
 		void* getPushConstants(uint32_t *out_size) override;

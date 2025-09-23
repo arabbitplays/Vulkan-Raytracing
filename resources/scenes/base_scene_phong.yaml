@@ -8,10 +8,11 @@ scene:
   meshes:
     - path: meshes/plane.obj
     - path: meshes/sphere.obj
-  point_lights:
-    - position: [0.0, 3.0, 0.0 ]
-      color: [ 1.0, 1.0, 1.0 ]
-      intensity: 1.0
+  lights:
+    point_lights:
+      - position: [0.0, 2.0, 0.0 ]
+        color: [ 1.0, 1.0, 1.0 ]
+        intensity: 0.01
   materials:
     - diffuse: [ 1.0, 1.0, 1.0 ]
       specular: [ 1.0, 1.0, 1.0 ]
@@ -32,15 +33,6 @@ scene:
       specular: [ 1.0, 1.0, 1.0 ]
       ambient: [ 1.0, 1.0, 1.0 ]
   nodes:
-    - name: "Light"
-      components:
-        - Transform:
-            position: [ 0.0, 2.4, 0.0 ]
-            rotation: [ 90.0, 0.0, 0.0 ]
-            scale: [ 3.0, 3.0, 3.0 ]
-        - MeshRenderer:
-            mesh: plane
-            material_idx: 0
     - name: "Sphere"
       components:
         - Transform:
