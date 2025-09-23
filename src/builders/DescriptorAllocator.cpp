@@ -3,13 +3,17 @@
 #include <stdexcept>
 
 namespace RtEngine {
-	VkDescriptorPool DescriptorAllocator::getPool(VkDevice device) {
+	DescriptorAllocator::DescriptorAllocator(const std::shared_ptr<DeviceManager> &device_manager) : device_manager(device_manager) {
+
+	}
+
+	VkDescriptorPool DescriptorAllocator::getPool() {
 		VkDescriptorPool newPool;
 		if (!readyPools.empty()) {
 			newPool = readyPools.back();
 			readyPools.pop_back();
 		} else {
-			newPool = createPool(device, setsPerPool, ratios);
+			newPool = createPool(device_manager->getDevice(), setsPerPool, ratios);
 
 			setsPerPool = setsPerPool * GROW_RATIO;
 			if (setsPerPool > MAX_SET_COUNT) {
@@ -20,7 +24,7 @@ namespace RtEngine {
 		return newPool;
 	}
 
-	VkDescriptorPool DescriptorAllocator::createPool(const VkDevice device, const uint32_t setCount,
+	VkDescriptorPool DescriptorAllocator::createPool(VkDevice device, const uint32_t setCount,
 													 std::span<DescriptorAllocator::PoolSizeRatio> poolRatios) {
 		std::vector<VkDescriptorPoolSize> poolSizes;
 		for (auto [type, ratio]: poolRatios) {
@@ -41,7 +45,7 @@ namespace RtEngine {
 		return descriptorPool;
 	}
 
-	VkDescriptorPool DescriptorAllocator::createPool(const VkDevice device, const std::vector<VkDescriptorPoolSize>& pool_sizes,
+	VkDescriptorPool DescriptorAllocator::createPool(VkDevice device, const std::vector<VkDescriptorPoolSize>& pool_sizes,
 													 const VkDescriptorPoolCreateFlags flags) {
 		VkDescriptorPool descriptorPool = VK_NULL_HANDLE;
 
@@ -58,45 +62,46 @@ namespace RtEngine {
 		return descriptorPool;
 	}
 
-	void DescriptorAllocator::init(VkDevice device, uint32_t initialSetCount, std::span<PoolSizeRatio> poolRatios) {
+	void DescriptorAllocator::init(uint32_t initialSetCount, std::span<PoolSizeRatio> poolRatios) {
 		ratios.clear();
 
 		for (auto r: poolRatios) {
 			ratios.push_back(r);
 		}
 
-		VkDescriptorPool newPool = createPool(device, initialSetCount, poolRatios);
+		VkDescriptorPool newPool = createPool(device_manager->getDevice(), initialSetCount, poolRatios);
 		setsPerPool = initialSetCount * GROW_RATIO;
 
 		readyPools.push_back(newPool);
 	}
 
-	void DescriptorAllocator::clearPools(VkDevice device) {
+	void DescriptorAllocator::clearPools() {
 		for (auto p: readyPools) {
-			vkResetDescriptorPool(device, p, 0);
+			vkResetDescriptorPool(device_manager->getDevice(), p, 0);
 		}
 
 		for (auto p: fullPools) {
-			vkResetDescriptorPool(device, p, 0);
+			vkResetDescriptorPool(device_manager->getDevice(), p, 0);
 			readyPools.push_back(p);
 		}
 		fullPools.clear();
 	}
 
-	void DescriptorAllocator::destroyPools(VkDevice device) {
+	void DescriptorAllocator::destroyPools() {
 		for (auto p: readyPools) {
-			vkDestroyDescriptorPool(device, p, nullptr);
+			vkDestroyDescriptorPool(device_manager->getDevice(), p, nullptr);
 		}
 		readyPools.clear();
 
 		for (auto p: fullPools) {
-			vkDestroyDescriptorPool(device, p, nullptr);
+			vkDestroyDescriptorPool(device_manager->getDevice(), p, nullptr);
 		}
 		fullPools.clear();
 	}
 
-	VkDescriptorSet DescriptorAllocator::allocate(const VkDevice device, const VkDescriptorSetLayout layout, const void *pNext) {
-		VkDescriptorPool poolToUse = getPool(device);
+	VkDescriptorSet DescriptorAllocator::allocate(const VkDescriptorSetLayout layout, const void *pNext) {
+		VkDevice device = device_manager->getDevice();
+		VkDescriptorPool poolToUse = getPool();
 
 		VkDescriptorSetAllocateInfo allocInfo{};
 		allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
@@ -111,7 +116,7 @@ namespace RtEngine {
 		if (result == VK_ERROR_OUT_OF_POOL_MEMORY || result == VK_ERROR_FRAGMENTED_POOL) {
 			fullPools.push_back(poolToUse);
 
-			poolToUse = getPool(device);
+			poolToUse = getPool();
 			allocInfo.descriptorPool = poolToUse;
 
 			if (vkAllocateDescriptorSets(device, &allocInfo, &descriptorSet) != VK_SUCCESS) {
@@ -203,12 +208,12 @@ namespace RtEngine {
 		writes.push_back(write);
 	}
 
-	void DescriptorAllocator::updateSet(const VkDevice &device, const VkDescriptorSet &set) {
+	void DescriptorAllocator::updateSet(const VkDescriptorSet &set) {
 		for (auto &write: writes) {
 			write.dstSet = set;
 		}
 
-		vkUpdateDescriptorSets(device, static_cast<uint32_t>(writes.size()), writes.data(), 0, VK_NULL_HANDLE);
+		vkUpdateDescriptorSets(device_manager->getDevice(), static_cast<uint32_t>(writes.size()), writes.data(), 0, VK_NULL_HANDLE);
 	}
 
 	void DescriptorAllocator::clearWrites() {

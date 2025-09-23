@@ -53,7 +53,7 @@ namespace RtEngine {
 	}
 
 	void MetalRoughMaterial::writeMaterial() {
-		resource_manager->writeResources(descriptorAllocator, descriptor_set);
+		resource_manager->writeResources(descriptor_allocator, descriptor_set);
 	}
 
 	void MetalRoughMaterial::recordRenderToImage(VkCommandBuffer commandBuffer, const uint32_t current_frame) {
@@ -145,7 +145,7 @@ namespace RtEngine {
 	}
 
 	std::shared_ptr<DescriptorSet> MetalRoughMaterial::createDescriptorSet(const VkDescriptorSetLayout &layout) {
-		return std::make_shared<DescriptorSet>(vulkan_context->descriptor_allocator, vulkan_context->device_manager, layout);
+		return std::make_shared<DescriptorSet>(vulkan_context->descriptor_allocator, layout);
 	}
 
 	std::shared_ptr<MetalRoughMaterial::MetalRoughResources>

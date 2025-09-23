@@ -36,14 +36,16 @@ namespace RtEngine {
 		Material(std::string name, const std::shared_ptr<VulkanContext> &vulkan_context,
 				 const std::shared_ptr<TextureRepository> &texture_repository) :
 			name(std::move(name)), vulkan_context(vulkan_context), texture_repository(texture_repository) {
+
+			descriptor_allocator = std::make_shared<DescriptorAllocator>(vulkan_context->device_manager);
 			std::vector<DescriptorAllocator::PoolSizeRatio> poolRatios = {
 					{VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1},
 					{VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 10},
 			};
-			descriptorAllocator.init(vulkan_context->device_manager->getDevice(), 64, poolRatios);
+			descriptor_allocator->init(64, poolRatios);
 
 			mainDeletionQueue.pushFunction(
-					[&]() { descriptorAllocator.destroyPools(this->vulkan_context->device_manager->getDevice()); });
+					[&]() { descriptor_allocator->destroyPools(); });
 		};
 
 		virtual ~Material() = default;
@@ -138,7 +140,7 @@ namespace RtEngine {
 
 		std::shared_ptr<VulkanContext> vulkan_context;
 		std::shared_ptr<TextureRepository> texture_repository;
-		DescriptorAllocator descriptorAllocator;
+		std::shared_ptr<DescriptorAllocator> descriptor_allocator;
 		DeletionQueue mainDeletionQueue;
 
 		std::shared_ptr<PropertiesSection> properties;

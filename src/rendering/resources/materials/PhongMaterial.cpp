@@ -61,11 +61,11 @@ namespace RtEngine {
 	}
 
 	std::shared_ptr<DescriptorSet> PhongMaterial::createDescriptorSet(const VkDescriptorSetLayout &layout) {
-		return std::make_shared<DescriptorSet>(vulkan_context->descriptor_allocator, vulkan_context->device_manager, layout);
+		return std::make_shared<DescriptorSet>(vulkan_context->descriptor_allocator, layout);
 	}
 
 	void PhongMaterial::writeMaterial() {
-		resource_manager->writeResources(descriptorAllocator, descriptor_set);
+		resource_manager->writeResources(descriptor_allocator, descriptor_set);
 	}
 
 	std::shared_ptr<MaterialInstance> PhongMaterial::createInstance(const PhongInstance::Parameters &parameters) {

@@ -132,7 +132,7 @@ namespace RtEngine {
 		vulkan_context->layout_manager = std::make_shared<LayoutManager>();
 
 		mainDeletionQueue.pushFunction([&]() {
-			vulkan_context->descriptor_allocator->destroyPools(vulkan_context->device_manager->getDevice());
+			vulkan_context->descriptor_allocator->destroyPools();
 			vulkan_context->swapchain->destroy();
 			vulkan_context->command_manager->destroyCommandManager();
 			vulkan_context->device_manager->destroy();
@@ -164,8 +164,8 @@ namespace RtEngine {
 				{VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, 1},
 		};
 
-		auto descriptorAllocator = std::make_shared<DescriptorAllocator>();
-		descriptorAllocator->init(vulkan_context->device_manager->getDevice(), 64, poolRatios);
+		auto descriptorAllocator = std::make_shared<DescriptorAllocator>(vulkan_context->device_manager);
+		descriptorAllocator->init(64, poolRatios);
 
 		return descriptorAllocator;
 	}

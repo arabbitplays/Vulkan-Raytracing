@@ -15,12 +15,11 @@ namespace RtEngine {
     class DescriptorSet {
     public:
         DescriptorSet(const std::shared_ptr<DescriptorAllocator> &allocator,
-                const std::shared_ptr<DeviceManager> &device_manager,
                 const VkDescriptorSetLayout layout,
                 const uint32_t frames_in_flight = 1) {
             sets.resize(frames_in_flight);
             for (uint32_t i = 0; i < frames_in_flight; i++) {
-                sets[i] = allocator->allocate(device_manager->getDevice(), layout);
+                sets[i] = allocator->allocate(layout);
             }
         }
 

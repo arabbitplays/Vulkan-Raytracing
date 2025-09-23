@@ -2,9 +2,12 @@
 #define BASICS_DESCRIPTORALLOCATOR_HPP
 
 #include <list>
+#include <memory>
 #include <span>
 #include <vector>
 #include <vulkan/vulkan.h>
+
+#include "DeviceManager.hpp"
 
 namespace RtEngine {
 	class DescriptorAllocator {
@@ -19,12 +22,14 @@ namespace RtEngine {
 			std::vector<VkDescriptorImageInfo> image_infos;
 		};
 
-		void init(VkDevice device, uint32_t initialSetCount, std::span<PoolSizeRatio> poolRatios);
-		void clearPools(VkDevice device);
-		void destroyPools(VkDevice device);
-		VkDescriptorSet allocate(VkDevice device, VkDescriptorSetLayout layout, const void *pNext = nullptr);
-		static VkDescriptorPool createPool(VkDevice device, const std::vector<VkDescriptorPoolSize>& pool_sizes,
-									VkDescriptorPoolCreateFlags flags);
+		explicit DescriptorAllocator(const std::shared_ptr<DeviceManager> &device_manager);
+
+		void init(uint32_t initialSetCount, std::span<PoolSizeRatio> poolRatios);
+		void clearPools();
+		void destroyPools();
+		VkDescriptorSet allocate(VkDescriptorSetLayout layout, const void *pNext = nullptr);
+		static VkDescriptorPool createPool(VkDevice device,
+		                                   const std::vector<VkDescriptorPoolSize> &pool_sizes, VkDescriptorPoolCreateFlags flags);
 
 		void writeBuffer(uint32_t binding, VkBuffer buffer, VkDeviceSize size, uint32_t offset, VkDescriptorType type);
 		void writeBuffer(uint32_t binding, VkBuffer buffer, uint32_t offset, VkDescriptorType type);
@@ -34,14 +39,16 @@ namespace RtEngine {
 						 VkDescriptorType type);
 		void writeAccelerationStructure(uint32_t binding, const VkAccelerationStructureKHR &accelerationStructure,
 										VkDescriptorType type);
-		void updateSet(const VkDevice &device, const VkDescriptorSet &set);
+		void updateSet(const VkDescriptorSet &set);
 		void clearWrites();
 
 		VkDescriptorPool getGUIDescriptorPool();
 
 	private:
-		VkDescriptorPool getPool(VkDevice device);
+		VkDescriptorPool getPool();
 		static VkDescriptorPool createPool(VkDevice device, uint32_t setCount, std::span<PoolSizeRatio> poolRatios);
+
+		std::shared_ptr<DeviceManager> device_manager;
 
 		std::vector<PoolSizeRatio> ratios;
 		std::vector<VkDescriptorPool> fullPools;

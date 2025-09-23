@@ -105,7 +105,7 @@ namespace RtEngine {
 	}
 
 	std::shared_ptr<DescriptorSet> SceneManager::createDescriptorSet(const VkDescriptorSetLayout &layout) {
-		return std::make_shared<DescriptorSet>(vulkan_context->descriptor_allocator, vulkan_context->device_manager, layout, max_frames_in_flight);
+		return std::make_shared<DescriptorSet>(vulkan_context->descriptor_allocator, layout, max_frames_in_flight);
 	}
 
 	void SceneManager::createUniformBuffers() {
@@ -250,7 +250,7 @@ namespace RtEngine {
 														 VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
 
 		for (uint32_t i = 0; i < max_frames_in_flight; i++) {
-			vulkan_context->descriptor_allocator->updateSet(device, descriptor_set->getCurrentSet(i));
+			vulkan_context->descriptor_allocator->updateSet(descriptor_set->getCurrentSet(i));
 		}
 		vulkan_context->descriptor_allocator->clearWrites();
 	}

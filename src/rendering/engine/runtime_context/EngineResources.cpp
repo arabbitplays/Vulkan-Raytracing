@@ -23,7 +23,7 @@ namespace RtEngine {
     }
 
     std::shared_ptr<DescriptorSet> EngineResources::createDescriptorSet(const VkDescriptorSetLayout &layout) {
-        return std::make_shared<DescriptorSet>(vulkan_context->descriptor_allocator, vulkan_context->device_manager, layout, 1); // TODO 1 may not be right here, but the denoising buffers need to stay consistent so!?!?
+        return std::make_shared<DescriptorSet>(vulkan_context->descriptor_allocator, layout, 1); // TODO 1 may not be right here, but the denoising buffers need to stay consistent so!?!?
     }
 
     void EngineResources::createAndBindResources() {
@@ -57,7 +57,7 @@ namespace RtEngine {
         vulkan_context->descriptor_allocator->writeBuffer(1, denoisingHistBuffer.handle, pixel_count * sizeof(SvgfHistData),
                                                           0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
 
-		vulkan_context->descriptor_allocator->updateSet(device, descriptor_set);
+		vulkan_context->descriptor_allocator->updateSet(descriptor_set);
 		vulkan_context->descriptor_allocator->clearWrites();
     }
 

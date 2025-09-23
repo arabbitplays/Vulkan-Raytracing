@@ -93,8 +93,8 @@ namespace RtEngine {
             return result;
         }
 
-        void writeResources(DescriptorAllocator& descriptor_allocator, std::shared_ptr<DescriptorSet> descriptor_set) {
-            descriptor_allocator.writeBuffer(0, getMaterialBuffer()->handle, 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+        void writeResources(const std::shared_ptr<DescriptorAllocator>& descriptor_allocator, std::shared_ptr<DescriptorSet> descriptor_set) {
+            descriptor_allocator->writeBuffer(0, getMaterialBuffer()->handle, 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
 
             for (auto& [binding_idx, binding] : texture_bindings) {
                 std::vector<VkImageView> imageViews = getImageViewsForBinding(binding);
@@ -104,13 +104,13 @@ namespace RtEngine {
                     imageViews.push_back(imageViews[0]);
                 }
 
-                descriptor_allocator.writeImages(binding_idx, imageViews, binding->sampler, VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL,
+                descriptor_allocator->writeImages(binding_idx, imageViews, binding->sampler, VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL,
                                             VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
             }
 
             VkDevice device = vulkan_context->device_manager->getDevice();
-            descriptor_allocator.updateSet(device, descriptor_set->getCurrentSet());
-            descriptor_allocator.clearWrites();
+            descriptor_allocator->updateSet(descriptor_set->getCurrentSet());
+            descriptor_allocator->clearWrites();
         }
 
         void destroyResources() const {
