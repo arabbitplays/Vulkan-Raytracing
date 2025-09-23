@@ -13,7 +13,7 @@
 
 namespace RtEngine {
 	void PhongMaterial::buildPipelines(const VkPhysicalDeviceRayTracingPipelinePropertiesKHR& raytracingProperties) {
-		graphics_pipeline = std::make_shared<Pipeline>(vulkan_context);
+		graphics_pipeline = std::make_shared<RaytracingPipeline>(vulkan_context);
 		VkDevice device = vulkan_context->device_manager->getDevice();
 
 		initLayout();

@@ -9,8 +9,19 @@
 #include <shadow_miss.rmiss.spv.h>
 
 namespace RtEngine {
+	MetalRoughMaterial::MetalRoughMaterial(const std::shared_ptr<VulkanContext> &context, const std::shared_ptr<TextureRepository> &texture_repository,
+						   VkSampler sampler) :
+			Material(METAL_ROUGH_MATERIAL_NAME, context, texture_repository), sampler(sampler) {
+
+		resource_manager = std::make_shared<MaterialResourceManager<MetalRoughResources>>(vulkan_context);
+		denoiser = std::make_shared<SvgfDenoiser>(context);
+		mainDeletionQueue.pushFunction([&]() {
+			resource_manager->destroyResources();
+		});
+	}
+
 	void MetalRoughMaterial::buildPipelines(const VkPhysicalDeviceRayTracingPipelinePropertiesKHR& raytracingProperties) {
-		graphics_pipeline = std::make_shared<Pipeline>(vulkan_context);
+		graphics_pipeline = std::make_shared<RaytracingPipeline>(vulkan_context);
 		VkDevice device = vulkan_context->device_manager->getDevice();
 
 		initLayout();
@@ -50,6 +61,10 @@ namespace RtEngine {
 		vkDestroyShaderModule(device, closestHitShaderModule, nullptr);
 
 		graphics_pipeline->createShaderBindingTables(raytracingProperties);
+
+		std::vector<VkDescriptorSetLayout> denoiser_layouts{};
+		denoiser_layouts.push_back(descriptorSetLayouts[2]); // TODO fix the layout problem
+		denoiser->createComputePipeline(denoiser_layouts);
 	}
 
 	void MetalRoughMaterial::writeMaterial() {

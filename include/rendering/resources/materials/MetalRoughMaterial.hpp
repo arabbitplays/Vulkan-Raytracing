@@ -5,6 +5,7 @@
 
 #include "DescriptorLayoutBuilder.hpp"
 #include "MetalRoughInstance.hpp"
+#include "SvgfDenoiser.hpp"
 
 #define METAL_ROUGH_MATERIAL_NAME "metal_rough"
 
@@ -38,14 +39,7 @@ namespace RtEngine {
 		};
 
 		MetalRoughMaterial(const std::shared_ptr<VulkanContext> &context, const std::shared_ptr<TextureRepository> &texture_repository,
-						   VkSampler sampler) :
-			Material(METAL_ROUGH_MATERIAL_NAME, context, texture_repository), sampler(sampler) {
-
-			resource_manager = std::make_shared<MaterialResourceManager<MetalRoughResources>>(vulkan_context);
-			mainDeletionQueue.pushFunction([&]() {
-				resource_manager->destroyResources();
-			});
-		}
+						   VkSampler sampler);
 
 		void buildPipelines(const VkPhysicalDeviceRayTracingPipelinePropertiesKHR& raytracingProperties) override;
 		void writeMaterial() override;
@@ -77,6 +71,8 @@ namespace RtEngine {
 
 	private:
 		std::shared_ptr<MaterialResourceManager<MetalRoughResources>> resource_manager;
+
+		std::shared_ptr<SvgfDenoiser> denoiser;
 
 		PushConstants push_constants;
 		VkSampler sampler;

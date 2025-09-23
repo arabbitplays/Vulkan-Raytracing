@@ -1,4 +1,4 @@
-#ifndef PHONGMATERIAL_HPP
+#ifndef PHONGMATERIAL_HPPPipeline
 #define PHONGMATERIAL_HPP
 #include <../../engine/core/materials/Material.hpp>
 

@@ -4,17 +4,23 @@
 
 #ifndef VULKAN_RAYTRACING_SVGFDENOISER_HPP
 #define VULKAN_RAYTRACING_SVGFDENOISER_HPP
+#include <memory>
 
+#include "ComputePipeline.hpp"
 
-class SvgfDenoiser {
-public:
-    SvgfDenoiser() = default;
+namespace RtEngine {
+    class SvgfDenoiser {
+    public:
+        explicit SvgfDenoiser(const std::shared_ptr<VulkanContext> &context);
 
-    void createComputePipeline();
-    void recordCommands();
-private:
+        void createComputePipeline(std::vector<VkDescriptorSetLayout> layouts);
+        void recordCommands();
+    private:
+        std::shared_ptr<VulkanContext> context;
+        std::shared_ptr<ComputePipeline> compute_pipeline;
+    };
+}
 
-};
 
 
 #endif //VULKAN_RAYTRACING_SVGFDENOISER_HPP

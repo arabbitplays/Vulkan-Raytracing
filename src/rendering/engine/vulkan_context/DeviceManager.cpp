@@ -7,6 +7,7 @@
 #include <VulkanUtil.hpp>
 #include <cstring>
 #include <set>
+#include <spdlog/spdlog.h>
 
 namespace RtEngine {
 	const std::vector<const char *> validationLayers = {
@@ -221,6 +222,9 @@ namespace RtEngine {
 		physicalDeviceProperties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
 		physicalDeviceProperties.pNext = &RAYTRACING_PROPERTIES;
 		vkGetPhysicalDeviceProperties2(physicalDevice, &physicalDeviceProperties);
+
+		uint32_t apiVersion = deviceProperties.apiVersion;
+		spdlog::info("Vulkan API Version: {}.{}.{}", VK_VERSION_MAJOR(apiVersion), VK_VERSION_MINOR(apiVersion), VK_VERSION_PATCH(apiVersion));
 	}
 
 	bool DeviceManager::isDeviceSuitable(VkPhysicalDevice device) {

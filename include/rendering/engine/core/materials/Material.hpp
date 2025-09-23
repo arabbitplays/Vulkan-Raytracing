@@ -2,8 +2,6 @@
 #define MATERIAL_HPP
 
 #include <DeletionQueue.hpp>
-#include <../../../builders/DescriptorAllocator.hpp>
-#include <Pipeline.hpp>
 #include <PropertiesManager.hpp>
 #include <ResourceBuilder.hpp>
 #include <utility>
@@ -12,6 +10,7 @@
 
 #include "MaterialInstance.hpp"
 #include "MaterialResourceManager.hpp"
+#include "RaytracingPipeline.hpp"
 #include "TextureRepository.hpp"
 
 namespace RtEngine {
@@ -136,7 +135,7 @@ namespace RtEngine {
 			vkDestroyDescriptorSetLayout(vulkan_context->device_manager->getDevice(), descriptor_layout, nullptr);
 		}
 
-		std::shared_ptr<Pipeline> graphics_pipeline;
+		std::shared_ptr<RaytracingPipeline> graphics_pipeline;
 
 		std::shared_ptr<VulkanContext> vulkan_context;
 		std::shared_ptr<TextureRepository> texture_repository;

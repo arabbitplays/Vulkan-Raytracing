@@ -8,37 +8,29 @@
 namespace RtEngine {
 	class Pipeline {
 	public:
-		Pipeline() { clear(); }
-		Pipeline(std::shared_ptr<VulkanContext> context) : context(context) { clear(); }
+		explicit Pipeline(const std::shared_ptr<VulkanContext> &context) : context(context) { }
+		virtual ~Pipeline() = default;
 
-		void build();
-		void createShaderBindingTables(VkPhysicalDeviceRayTracingPipelinePropertiesKHR raytracingProperties);
-
-		void addShaderStage(VkShaderModule shaderModule, VkShaderStageFlagBits shaderStage,
-							VkRayTracingShaderGroupTypeKHR shaderGroup);
+		virtual void build() = 0;
+		void addShaderStage(VkShaderModule shaderModule, VkShaderStageFlagBits shaderStage);
 		void setDescriptorSetLayouts(std::vector<VkDescriptorSetLayout> &descriptorSetLayouts);
 		void addPushConstant(uint32_t size, VkShaderStageFlags shaderStage);
-		void clear();
 		void destroy();
 
 		VkPipeline getHandle() const;
 		VkPipelineLayout getLayoutHandle() const;
-		uint32_t getGroupCount() const;
 
-		AllocatedBuffer raygenShaderBindingTable;
-		AllocatedBuffer missShaderBindingTable;
-		AllocatedBuffer hitShaderBindingTable;
+	protected:
+		void createPipelineLayout();
 
-	private:
 		std::shared_ptr<VulkanContext> context;
 		DeletionQueue deletionQueue;
 
 		VkPipeline handle = VK_NULL_HANDLE;
 		VkPipelineLayout layout = VK_NULL_HANDLE;
 
-		VkPipelineLayoutCreateInfo pipelineLayoutInfo;
+		VkPipelineLayoutCreateInfo pipelineLayoutInfo {.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO};
 		std::vector<VkPushConstantRange> pushConstants{};
-		std::vector<VkRayTracingShaderGroupCreateInfoKHR> shader_groups{};
 		std::vector<VkPipelineShaderStageCreateInfo> shader_stages{};
 	};
 
