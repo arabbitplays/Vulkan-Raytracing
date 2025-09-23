@@ -47,8 +47,9 @@ namespace RtEngine {
 			});
 		}
 
-		void buildPipelines() override;
+		void buildPipelines(const VkPhysicalDeviceRayTracingPipelinePropertiesKHR& raytracingProperties) override;
 		void writeMaterial() override;
+		void recordRenderToImage(VkCommandBuffer commandBuffer, const uint32_t current_frame) override;
 		glm::vec4 getEmissionForInstance(uint32_t material_instance_id) override;
 		std::vector<std::shared_ptr<MetalRoughResources>> getResources() const;
 		std::vector<std::shared_ptr<Texture>> getTextures() override;
@@ -57,7 +58,6 @@ namespace RtEngine {
 		void resetSamples() override;
 		void setEmittingInstanceCount(const uint32_t count) override;
 		uint32_t getCurrSampleCount() override;
-		void progressSampleCount() override;
 
 		std::shared_ptr<MaterialInstance> createInstance(const MetalRoughInstance::Parameters &parameters);
 

@@ -29,7 +29,7 @@ namespace RtEngine {
 			resource_manager = std::make_shared<MaterialResourceManager<PhongResources>>(vulkan_context);
 		}
 
-		void buildPipelines() override;
+		void buildPipelines(const VkPhysicalDeviceRayTracingPipelinePropertiesKHR& raytracingProperties) override;
 		void writeMaterial() override;
 		std::shared_ptr<MaterialInstance> createInstance(const PhongInstance::Parameters &parameters
 		);

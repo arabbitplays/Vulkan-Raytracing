@@ -9,16 +9,16 @@
 #include <shadow_miss.rmiss.spv.h>
 
 namespace RtEngine {
-	void MetalRoughMaterial::buildPipelines() {
-		pipeline = std::make_shared<Pipeline>(vulkan_context);
+	void MetalRoughMaterial::buildPipelines(const VkPhysicalDeviceRayTracingPipelinePropertiesKHR& raytracingProperties) {
+		graphics_pipeline = std::make_shared<Pipeline>(vulkan_context);
 		VkDevice device = vulkan_context->device_manager->getDevice();
 
 		initLayout();
 
 		std::vector<VkDescriptorSetLayout> descriptorSetLayouts = vulkan_context->layout_manager->getLayouts();
-		pipeline->setDescriptorSetLayouts(descriptorSetLayouts);
+		graphics_pipeline->setDescriptorSetLayouts(descriptorSetLayouts);
 
-		pipeline->addPushConstant(sizeof(PushConstants), VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR |
+		graphics_pipeline->addPushConstant(sizeof(PushConstants), VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR |
 		                                                  VK_SHADER_STAGE_RAYGEN_BIT_KHR |
 		                                                  VK_SHADER_STAGE_MISS_BIT_KHR);
 
@@ -31,27 +31,34 @@ namespace RtEngine {
 		VkShaderModule closestHitShaderModule = VulkanUtil::createShaderModule(
 			device, oschd_metal_rough_closesthit_rchit_spv_size(), oschd_metal_rough_closesthit_rchit_spv());
 
-		pipeline->addShaderStage(raygenShaderModule, VK_SHADER_STAGE_RAYGEN_BIT_KHR,
+		graphics_pipeline->addShaderStage(raygenShaderModule, VK_SHADER_STAGE_RAYGEN_BIT_KHR,
 		                         VK_RAY_TRACING_SHADER_GROUP_TYPE_GENERAL_KHR);
-		pipeline->addShaderStage(missShaderModule, VK_SHADER_STAGE_MISS_BIT_KHR,
+		graphics_pipeline->addShaderStage(missShaderModule, VK_SHADER_STAGE_MISS_BIT_KHR,
 		                         VK_RAY_TRACING_SHADER_GROUP_TYPE_GENERAL_KHR);
-		pipeline->addShaderStage(shadowMissShaderModule, VK_SHADER_STAGE_MISS_BIT_KHR,
+		graphics_pipeline->addShaderStage(shadowMissShaderModule, VK_SHADER_STAGE_MISS_BIT_KHR,
 		                         VK_RAY_TRACING_SHADER_GROUP_TYPE_GENERAL_KHR);
-		pipeline->addShaderStage(closestHitShaderModule, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR,
+		graphics_pipeline->addShaderStage(closestHitShaderModule, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR,
 		                         VK_RAY_TRACING_SHADER_GROUP_TYPE_TRIANGLES_HIT_GROUP_KHR);
 
-		pipeline->build();
+		graphics_pipeline->build();
 
-		mainDeletionQueue.pushFunction([&]() { pipeline->destroy(); });
+		mainDeletionQueue.pushFunction([&]() { graphics_pipeline->destroy(); });
 
 		vkDestroyShaderModule(device, raygenShaderModule, nullptr);
 		vkDestroyShaderModule(device, missShaderModule, nullptr);
 		vkDestroyShaderModule(device, shadowMissShaderModule, nullptr);
 		vkDestroyShaderModule(device, closestHitShaderModule, nullptr);
+
+		graphics_pipeline->createShaderBindingTables(raytracingProperties);
 	}
 
 	void MetalRoughMaterial::writeMaterial() {
 		resource_manager->writeResources(descriptorAllocator, descriptor_set);
+	}
+
+	void MetalRoughMaterial::recordRenderToImage(VkCommandBuffer commandBuffer, const uint32_t current_frame) {
+		Material::recordRenderToImage(commandBuffer, current_frame);
+		push_constants.curr_sample_count += push_constants.samples_per_pixel;
 	}
 
 	glm::vec4 MetalRoughMaterial::getEmissionForInstance(uint32_t material_instance_id) {
@@ -82,10 +89,6 @@ namespace RtEngine {
 
 	uint32_t MetalRoughMaterial::getCurrSampleCount() {
 		return push_constants.curr_sample_count;
-	}
-
-	void MetalRoughMaterial::progressSampleCount() {
-		push_constants.curr_sample_count += push_constants.samples_per_pixel;
 	}
 
 	std::shared_ptr<MaterialInstance> MetalRoughMaterial::createInstance(

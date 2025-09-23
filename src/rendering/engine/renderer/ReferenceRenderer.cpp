@@ -75,7 +75,7 @@ namespace RtEngine {
 
 	void ReferenceRenderer::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex) {
 		recordBeginCommandBuffer(commandBuffer);
-		recordRenderToImage(commandBuffer);
+		scene_manager->getMaterial()->recordRenderToImage(commandBuffer, mainDrawContext->currentFrame);
 		if (present_image)
 			recordCopyToSwapchain(commandBuffer, imageIndex);
 		recordEndCommandBuffer(commandBuffer);

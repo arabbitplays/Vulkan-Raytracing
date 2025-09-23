@@ -85,9 +85,8 @@ namespace RtEngine {
 		void outputRenderingTarget(const std::string &output_path);
 		uint8_t *fixImageFormatForStorage(void *image_data, size_t pixel_count, VkFormat originalFormat);
 
-		virtual void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
+		virtual void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t swapchain_image_index);
 		static void recordBeginCommandBuffer(VkCommandBuffer commandBuffer);
-		void recordRenderToImage(VkCommandBuffer commandBuffer) const;
 		void recordCopyToSwapchain(VkCommandBuffer commandBuffer, uint32_t swapchain_image_index);
 		void recordEndCommandBuffer(VkCommandBuffer commandBuffer);
 

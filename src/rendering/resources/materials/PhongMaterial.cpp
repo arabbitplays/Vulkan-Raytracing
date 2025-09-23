@@ -12,16 +12,16 @@
 #include "shadow_miss.rmiss.spv.h"
 
 namespace RtEngine {
-	void PhongMaterial::buildPipelines() {
-		pipeline = std::make_shared<Pipeline>(vulkan_context);
+	void PhongMaterial::buildPipelines(const VkPhysicalDeviceRayTracingPipelinePropertiesKHR& raytracingProperties) {
+		graphics_pipeline = std::make_shared<Pipeline>(vulkan_context);
 		VkDevice device = vulkan_context->device_manager->getDevice();
 
 		initLayout();
 
 		std::vector<VkDescriptorSetLayout> descriptorSetLayouts = vulkan_context->layout_manager->getLayouts();
-		pipeline->setDescriptorSetLayouts(descriptorSetLayouts);
+		graphics_pipeline->setDescriptorSetLayouts(descriptorSetLayouts);
 
-		pipeline->addPushConstant(sizeof(PushConstants),
+		graphics_pipeline->addPushConstant(sizeof(PushConstants),
 								  VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR | VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_MISS_BIT_KHR);
 
 		VkShaderModule raygenShaderModule = VulkanUtil::createShaderModule(device, oschd_phong_raygen_rgen_spv_size(),
@@ -33,23 +33,25 @@ namespace RtEngine {
 		VkShaderModule closestHitShaderModule = VulkanUtil::createShaderModule(
 				device, oschd_phong_closesthit_rchit_spv_size(), oschd_phong_closesthit_rchit_spv());
 
-		pipeline->addShaderStage(raygenShaderModule, VK_SHADER_STAGE_RAYGEN_BIT_KHR,
+		graphics_pipeline->addShaderStage(raygenShaderModule, VK_SHADER_STAGE_RAYGEN_BIT_KHR,
 								 VK_RAY_TRACING_SHADER_GROUP_TYPE_GENERAL_KHR);
-		pipeline->addShaderStage(missShaderModule, VK_SHADER_STAGE_MISS_BIT_KHR,
+		graphics_pipeline->addShaderStage(missShaderModule, VK_SHADER_STAGE_MISS_BIT_KHR,
 								 VK_RAY_TRACING_SHADER_GROUP_TYPE_GENERAL_KHR);
-		pipeline->addShaderStage(shadowMissShaderModule, VK_SHADER_STAGE_MISS_BIT_KHR,
+		graphics_pipeline->addShaderStage(shadowMissShaderModule, VK_SHADER_STAGE_MISS_BIT_KHR,
 								 VK_RAY_TRACING_SHADER_GROUP_TYPE_GENERAL_KHR);
-		pipeline->addShaderStage(closestHitShaderModule, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR,
+		graphics_pipeline->addShaderStage(closestHitShaderModule, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR,
 								 VK_RAY_TRACING_SHADER_GROUP_TYPE_TRIANGLES_HIT_GROUP_KHR);
 
-		pipeline->build();
+		graphics_pipeline->build();
 
-		mainDeletionQueue.pushFunction([&]() { pipeline->destroy(); });
+		mainDeletionQueue.pushFunction([&]() { graphics_pipeline->destroy(); });
 
 		vkDestroyShaderModule(device, raygenShaderModule, nullptr);
 		vkDestroyShaderModule(device, missShaderModule, nullptr);
 		vkDestroyShaderModule(device, shadowMissShaderModule, nullptr);
 		vkDestroyShaderModule(device, closestHitShaderModule, nullptr);
+
+		graphics_pipeline->createShaderBindingTables(raytracingProperties);
 	}
 
 	VkDescriptorSetLayout PhongMaterial::createLayout() {

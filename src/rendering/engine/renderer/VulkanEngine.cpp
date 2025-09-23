@@ -16,19 +16,6 @@ namespace RtEngine {
 	const bool enableValidationLayers = true;
 #endif
 
-	void CmdTraceRaysKHR(VkDevice device, VkCommandBuffer commandBuffer,
-						 const VkStridedDeviceAddressRegionKHR *pRaygenShaderBindingTable,
-						 const VkStridedDeviceAddressRegionKHR *pMissShaderBindingTable,
-						 const VkStridedDeviceAddressRegionKHR *pHitShaderBindingTable,
-						 const VkStridedDeviceAddressRegionKHR *pCallableShaderBindingTable, uint32_t width,
-						 uint32_t height, uint32_t depth) {
-		auto func = (PFN_vkCmdTraceRaysKHR) vkGetDeviceProcAddr(device, "vkCmdTraceRaysKHR");
-		if (func != nullptr) {
-			return func(commandBuffer, pRaygenShaderBindingTable, pMissShaderBindingTable, pHitShaderBindingTable,
-						pCallableShaderBindingTable, width, height, depth);
-		}
-	}
-
 	constexpr uint32_t WIDTH = 6144;
 	constexpr uint32_t HEIGHT = 3320;
 
@@ -354,11 +341,11 @@ namespace RtEngine {
 		scene_manager->updateScene(mainDrawContext);
 	}
 
-	void VulkanEngine::recordCommandBuffer(VkCommandBuffer commandBuffer, const uint32_t imageIndex) {
+	void VulkanEngine::recordCommandBuffer(VkCommandBuffer commandBuffer, const uint32_t swapchain_image_index) {
 		recordBeginCommandBuffer(commandBuffer);
-		recordRenderToImage(commandBuffer);
-		recordCopyToSwapchain(commandBuffer, imageIndex);
-		guiManager->recordGuiCommands(commandBuffer, imageIndex);
+		scene_manager->getMaterial()->recordRenderToImage(commandBuffer, mainDrawContext->currentFrame);
+		recordCopyToSwapchain(commandBuffer, swapchain_image_index);
+		guiManager->recordGuiCommands(commandBuffer, swapchain_image_index);
 		recordEndCommandBuffer(commandBuffer);
 	}
 
@@ -369,50 +356,6 @@ namespace RtEngine {
 		if (vkBeginCommandBuffer(commandBuffer, &beginInfo) != VK_SUCCESS) {
 			throw std::runtime_error("failed to begin record command buffer!");
 		}
-	}
-
-	void VulkanEngine::recordRenderToImage(VkCommandBuffer commandBuffer) const {
-		Pipeline pipeline = *scene_manager->getMaterial()->pipeline;
-
-		const uint32_t handleSizeAligned =
-				VulkanUtil::alignedSize(DeviceManager::RAYTRACING_PROPERTIES.shaderGroupHandleSize,
-										DeviceManager::RAYTRACING_PROPERTIES.shaderGroupHandleAlignment);
-
-		VkStridedDeviceAddressRegionKHR raygenShaderSbtEntry{};
-		raygenShaderSbtEntry.deviceAddress = pipeline.raygenShaderBindingTable.deviceAddress;
-		raygenShaderSbtEntry.stride = handleSizeAligned;
-		raygenShaderSbtEntry.size = handleSizeAligned;
-
-		VkStridedDeviceAddressRegionKHR missShaderSbtEntry{};
-		missShaderSbtEntry.deviceAddress = pipeline.missShaderBindingTable.deviceAddress;
-		missShaderSbtEntry.stride = handleSizeAligned;
-		missShaderSbtEntry.size = handleSizeAligned;
-
-		VkStridedDeviceAddressRegionKHR closestHitShaderSbtEntry{};
-		closestHitShaderSbtEntry.deviceAddress = pipeline.hitShaderBindingTable.deviceAddress;
-		closestHitShaderSbtEntry.stride = handleSizeAligned;
-		closestHitShaderSbtEntry.size = handleSizeAligned;
-
-		VkStridedDeviceAddressRegionKHR callableShaderSbtEntry{};
-
-		const std::vector<VkDescriptorSet> descriptor_sets = vulkan_context->layout_manager->getDescriptorSets(mainDrawContext->currentFrame);
-
-		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, pipeline.getHandle());
-		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, pipeline.getLayoutHandle(), 0,
-								static_cast<uint32_t>(descriptor_sets.size()), descriptor_sets.data(), 0, nullptr);
-
-		uint32_t pc_size;
-		void *pc_data = scene_manager->getMaterial()->getPushConstants(&pc_size);
-		vkCmdPushConstants(commandBuffer, pipeline.getLayoutHandle(),
-						   VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR | VK_SHADER_STAGE_RAYGEN_BIT_KHR |
-								   VK_SHADER_STAGE_MISS_BIT_KHR,
-						   0, pc_size, pc_data);
-
-		CmdTraceRaysKHR(vulkan_context->device_manager->getDevice(), commandBuffer, &raygenShaderSbtEntry,
-						&missShaderSbtEntry, &closestHitShaderSbtEntry, &callableShaderSbtEntry,
-						vulkan_context->swapchain->extent.width, vulkan_context->swapchain->extent.height, 1);
-
-		scene_manager->getMaterial()->progressSampleCount();
 	}
 
 	void VulkanEngine::recordCopyToSwapchain(VkCommandBuffer commandBuffer, const uint32_t swapchain_image_index) {

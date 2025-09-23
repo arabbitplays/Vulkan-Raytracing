@@ -72,10 +72,6 @@ namespace RtEngine {
 	}
 
 	void InteractiveCamera::processGlfwMouseEvent(double xPos, double yPos) {
-		if (!isActive) {
-			return;
-		}
-
 		const auto x_pos = static_cast<float>(xPos);
 		const auto y_pos = static_cast<float>(yPos);
 
@@ -90,6 +86,10 @@ namespace RtEngine {
 		const float yOffset = lastY - y_pos; // Inverted Y-axis
 		lastX = x_pos;
 		lastY = y_pos;
+
+		if (!isActive) {
+			return;
+		}
 
 		// Adjust yaw and pitch like in SDL
 		yaw += xOffset / 200.f * MOUSE_SPEED;

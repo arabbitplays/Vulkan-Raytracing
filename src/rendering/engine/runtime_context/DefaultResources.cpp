@@ -100,15 +100,13 @@ namespace RtEngine {
 	void DefaultResources::createDefaultMaterials(const VkPhysicalDeviceRayTracingPipelinePropertiesKHR& raytracingProperties) {
 		const auto phong_material = std::make_shared<PhongMaterial>(vulkan_context, texture_repository);
 		vulkan_context->layout_manager->addLayout(1, phong_material); // todo weird to add it this way just to build the pipeline right
-		phong_material->buildPipelines();
-		phong_material->pipeline->createShaderBindingTables(raytracingProperties);
+		phong_material->buildPipelines(raytracingProperties);
 		material_repository->addMaterial(phong_material);
 
 		const auto metal_rough_material =
 				std::make_shared<MetalRoughMaterial>(vulkan_context, texture_repository, defaultSamplerLinear);
 		vulkan_context->layout_manager->addLayout(1, metal_rough_material);
-		metal_rough_material->buildPipelines();
-		metal_rough_material->pipeline->createShaderBindingTables(raytracingProperties);
+		metal_rough_material->buildPipelines(raytracingProperties);
 		material_repository->addMaterial(metal_rough_material);
 	}
 } // RtEngine
