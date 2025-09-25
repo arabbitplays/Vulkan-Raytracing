@@ -5,7 +5,7 @@
 
 #include "../common/payload.glsl"
 #include "../common/scene_data.glsl"
-#include "../denoising/svgf_primary_hit.glsl"
+#include "../denoising/g_buffer.glsl"
 #include "push_constants.glsl"
 
 layout(set = 0, binding = 7) uniform sampler2D textures[6];
@@ -18,6 +18,7 @@ void main() {
     }
 
     if (options.svgf_denoising && payload.depth == 0) {
-        writePrimaryHitData(vec3(0), vec3(0), -1.0, -1);
+        uint idx = gl_LaunchIDEXT.y * gl_LaunchSizeEXT.x + gl_LaunchIDEXT.x;
+        writePrimaryHitData(idx, vec3(0), vec3(0), -1.0, -1);
     }
 }

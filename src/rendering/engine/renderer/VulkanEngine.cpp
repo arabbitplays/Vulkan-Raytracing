@@ -144,14 +144,11 @@ namespace RtEngine {
 		runtime_context->texture_repository = std::make_shared<TextureRepository>(vulkan_context->resource_builder);
 		runtime_context->mesh_repository = std::make_shared<MeshRepository>(vulkan_context);
 		runtime_context->material_repository = std::make_shared<MaterialRepository>();
-		runtime_context->engine_resources = std::make_shared<EngineResources>(vulkan_context);
-		vulkan_context->layout_manager->addLayout(2, runtime_context->engine_resources);
 
 		mainDeletionQueue.pushFunction([&]() {
 			runtime_context->texture_repository->destroy();
 			runtime_context->mesh_repository->destroy();
 			runtime_context->material_repository->destroyMaterials();
-			runtime_context->engine_resources->destroyResources();
 		});
 	}
 
@@ -336,7 +333,6 @@ namespace RtEngine {
 		scene_manager->getMaterial()->resetSamples();
 		vulkan_context->swapchain->recreate();
 		mainDrawContext->target->recreate(vulkan_context->swapchain->extent);
-		runtime_context->engine_resources->createAndBindResources(); // TODO combine this with the main draw context!?
 		guiManager->updateWindows();
 		scene_manager->updateScene(mainDrawContext);
 	}

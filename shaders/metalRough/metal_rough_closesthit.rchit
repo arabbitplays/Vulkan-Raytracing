@@ -7,7 +7,7 @@
 #include "../common/payload.glsl"
 #include "../common/scene_data.glsl"
 #include "../common/layout.glsl"
-#include "../denoising/svgf_primary_hit.glsl"
+#include "../denoising/g_buffer.glsl"
 #include "push_constants.glsl"
 #include "../common/random.glsl"
 
@@ -132,6 +132,7 @@ void main() {
     }
 
     if (options.svgf_denoising && payload.depth == 0) {
-        writePrimaryHitData(P, object_normal, gl_HitTEXT, gl_InstanceCustomIndexEXT);
+        uint idx = gl_LaunchIDEXT.y * gl_LaunchSizeEXT.x + gl_LaunchIDEXT.x;
+        writePrimaryHitData(idx, P, object_normal, gl_HitTEXT, gl_InstanceCustomIndexEXT);
     }
 }

@@ -4,6 +4,7 @@
 #include <../../engine/core/materials/Material.hpp>
 
 #include "DescriptorLayoutBuilder.hpp"
+#include "GBuffer.hpp"
 #include "MetalRoughInstance.hpp"
 #include "SvgfDenoiser.hpp"
 
@@ -42,6 +43,7 @@ namespace RtEngine {
 						   VkSampler sampler);
 
 		void buildPipelines(const VkPhysicalDeviceRayTracingPipelinePropertiesKHR& raytracingProperties) override;
+		void update() override;
 		void writeMaterial() override;
 		void recordRenderToImage(VkCommandBuffer commandBuffer, const uint32_t current_frame) override;
 		glm::vec4 getEmissionForInstance(uint32_t material_instance_id) override;
@@ -72,6 +74,7 @@ namespace RtEngine {
 	private:
 		std::shared_ptr<MaterialResourceManager<MetalRoughResources>> resource_manager;
 
+		std::shared_ptr<GBuffer> g_buffer;
 		std::shared_ptr<SvgfDenoiser> denoiser;
 
 		PushConstants push_constants;

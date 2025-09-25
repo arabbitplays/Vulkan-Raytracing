@@ -14,8 +14,11 @@ namespace RtEngine {
 			Material(METAL_ROUGH_MATERIAL_NAME, context, texture_repository), sampler(sampler) {
 
 		resource_manager = std::make_shared<MaterialResourceManager<MetalRoughResources>>(vulkan_context);
+		g_buffer = std::make_shared<GBuffer>(context->resource_builder);
+		g_buffer->create(context->swapchain->getPixelCount());
 		denoiser = std::make_shared<SvgfDenoiser>(context);
 		mainDeletionQueue.pushFunction([&]() {
+			g_buffer->destroy();
 			resource_manager->destroyResources();
 		});
 	}
@@ -63,13 +66,23 @@ namespace RtEngine {
 		graphics_pipeline->createShaderBindingTables(raytracingProperties);
 
 		std::vector<VkDescriptorSetLayout> denoiser_layouts{};
-		denoiser_layouts.push_back(descriptorSetLayouts[2]); // TODO fix the layout problem
+		denoiser_layouts.push_back(descriptorSetLayouts[1]); // TODO fix the layout problem
 		denoiser->createComputePipeline(denoiser_layouts);
 		mainDeletionQueue.pushFunction([&]() { denoiser->destroyResources(); });
 	}
 
+	void MetalRoughMaterial::update() {
+		if (vulkan_context->swapchain->getPixelCount() != g_buffer->getCurrPixelCount()) {
+			g_buffer->create(vulkan_context->swapchain->getPixelCount());
+			writeMaterial();
+		}
+	}
+
 	void MetalRoughMaterial::writeMaterial() {
+		descriptor_allocator->writeBuffer(4, g_buffer->getBuffer().handle, g_buffer->getBufferSize(), 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+		descriptor_allocator->writeBuffer(5, g_buffer->getHistBuffer().handle, g_buffer->getHistBufferSize(), 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
 		resource_manager->writeResources(descriptor_allocator, descriptor_set);
+
 	}
 
 	void MetalRoughMaterial::recordRenderToImage(VkCommandBuffer commandBuffer, const uint32_t current_frame) {
@@ -146,12 +159,15 @@ namespace RtEngine {
 	VkDescriptorSetLayout MetalRoughMaterial::createLayout() {
 		DescriptorLayoutBuilder layoutBuilder;
 
-		layoutBuilder.addBinding(0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+		layoutBuilder.addBinding(0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER); // material data
 		defineTextureLayout(layoutBuilder, 1);
 		defineTextureLayout(layoutBuilder, 2);
 		defineTextureLayout(layoutBuilder, 3);
+		layoutBuilder.addBinding(4, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER); // g-buffer
+		layoutBuilder.addBinding(5, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER); // hist g-buffer
 
-		return layoutBuilder.build(vulkan_context->device_manager->getDevice(), VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR);
+		// TODO raygen normally not needed to record g buffer, but denoiser needs it atm
+		return layoutBuilder.build(vulkan_context->device_manager->getDevice(), VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR | VK_SHADER_STAGE_MISS_BIT_KHR | VK_SHADER_STAGE_RAYGEN_BIT_KHR);
 	}
 
 	void MetalRoughMaterial::defineTextureLayout(DescriptorLayoutBuilder& layout_builder, uint32_t binding_idx) {

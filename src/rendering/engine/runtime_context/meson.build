@@ -2,6 +2,5 @@
 
 
 src += files(
-  'EngineResources.cpp',
   'DefaultResources.cpp',
 )

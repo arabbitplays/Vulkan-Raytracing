@@ -85,8 +85,8 @@ void main() {
 
     if (options.svgf_denoising) {
         uint idx = gl_LaunchIDEXT.y * gl_LaunchSizeEXT.x + gl_LaunchIDEXT.x;
-        SvgfData data = getSvgfData(idx);
-        SvgfHistData hist_data = getSvgfHistData(idx);
+        GBufferData data = getGBufferData(idx);
+        GBufferHistData hist_data = getGBufferHistData(idx);
 
         calculateMotionVector(data);
         temporalFiltering(color, data);
@@ -94,8 +94,8 @@ void main() {
         imageStore(render_image, ivec2(gl_LaunchIDEXT.xy), vec4(vec3(data.color), 1));
 
         writeHistoryData(data, hist_data);
-        setSvgfData(idx, data);
-        setSvgfHistData(idx, hist_data);
+        setGBufferData(idx, data);
+        setGBufferHistData(idx, hist_data);
     }
 
 }

@@ -44,7 +44,7 @@ namespace RtEngine {
 
 		std::vector<std::shared_ptr<MeshAsset>> mesh_assets = SceneUtil::collectMeshAssets(scene->getRootNode());
 		geometry_manager->createGeometryBuffers(mesh_assets);
-		updateMaterial();
+		updateMaterialData();
 		createBlas(mesh_assets);
 		createUniformBuffers();
 		bufferUpdateFlags = static_cast<uint8_t>(GEOMETRY_UPDATE) | static_cast<uint8_t>(MATERIAL_UPDATE);
@@ -167,9 +167,10 @@ namespace RtEngine {
 
 		{
 			ZoneScopedN("Update material");
+			getMaterial()->update();
 			if (bufferUpdateFlags != NO_UPDATE) {
 				if (bufferUpdateFlags & MATERIAL_UPDATE) {
-					updateMaterial();
+					updateMaterialData();
 				}
 			}
 		}
@@ -188,7 +189,7 @@ namespace RtEngine {
 		bufferUpdateFlags = NO_UPDATE;
 	}
 
-	void SceneManager::updateMaterial() const {
+	void SceneManager::updateMaterialData() const {
 		std::shared_ptr<Material> material = scene->material;
 
 		material->reset();

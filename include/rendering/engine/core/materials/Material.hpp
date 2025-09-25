@@ -55,6 +55,8 @@ namespace RtEngine {
 
 		virtual void writeMaterial() = 0;
 
+		virtual void update() { }
+
 		virtual void recordRenderToImage(VkCommandBuffer commandBuffer, const uint32_t current_frame) {
 			const uint32_t handleSizeAligned =
 					VulkanUtil::alignedSize(DeviceManager::RAYTRACING_PROPERTIES.shaderGroupHandleSize,

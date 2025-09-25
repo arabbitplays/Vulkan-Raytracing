@@ -1,4 +1,4 @@
-#include "../denoising/svgf_layout.glsl"
+#include "../denoising/g_buffer.glsl"
 
 #define NORMAL_TEST_THRESHOLD 0.99
 #define ABS_DEPTH_TEST_THRESHOLD 1e-4
@@ -6,20 +6,20 @@
 
 #define COLOR_ACUMULATION_FACTOR 0.2
 
-void writeHistoryData(SvgfData data, inout SvgfHistData hist_data) {
+void writeHistoryData(GBufferData data, inout GBufferHistData hist_data) {
     hist_data.color = data.color;
     hist_data.normal = data.normal;
     hist_data.depth = data.depth;
     hist_data.instance_id = data.instance_id;
 }
 
-bool isSameSurface(SvgfData data, SvgfHistData hist_data) {
+bool isSameSurface(GBufferData data, GBufferHistData hist_data) {
     return dot(data.normal, hist_data.normal) > NORMAL_TEST_THRESHOLD
         && abs(data.depth - hist_data.depth) < min(ABS_DEPTH_TEST_THRESHOLD, REL_DEPTH_TEST_THRESHOLD * data.depth)
         && data.instance_id == hist_data.instance_id;
 }
 
-void calculateMotionVector(inout SvgfData data) {
+void calculateMotionVector(inout GBufferData data) {
     vec4 prevClip = sceneData.last_view_proj * vec4(data.position, 1.0);
     if (prevClip.w <= 0.0) {
         data.motion = vec2(10000, 10000);
@@ -31,7 +31,7 @@ void calculateMotionVector(inout SvgfData data) {
     data.motion = prev_screen_coord - vec2(gl_LaunchIDEXT.xy);
 }
 
-vec3 getHistColorAt(SvgfData data, ivec2 screen_coord, inout bool is_valid) {
+vec3 getHistColorAt(GBufferData data, ivec2 screen_coord, inout bool is_valid) {
     ivec2 screen_size = ivec2(gl_LaunchSizeEXT);
     if (screen_coord.x < 0 || screen_coord.x >= screen_size.x || screen_coord.y < 0 || screen_coord.y >= screen_size.y) {
         is_valid = false;
@@ -39,7 +39,7 @@ vec3 getHistColorAt(SvgfData data, ivec2 screen_coord, inout bool is_valid) {
     }
 
     uint idx = screen_coord.y * screen_size.x + screen_coord.x;
-    SvgfHistData hist_data = getSvgfHistData(idx);
+    GBufferHistData hist_data = getGBufferHistData(idx);
 
     if (isSameSurface(data, hist_data)) {
         is_valid = true;
@@ -50,7 +50,7 @@ vec3 getHistColorAt(SvgfData data, ivec2 screen_coord, inout bool is_valid) {
     }
 }
 
-vec3 taaBilinear(SvgfData data, vec2 hist_screen_coord, inout bool is_valid) {
+vec3 taaBilinear(GBufferData data, vec2 hist_screen_coord, inout bool is_valid) {
     ivec2 tab_screen_coord = ivec2(floor(hist_screen_coord));
     vec2 norm_coords = fract(hist_screen_coord);
 
@@ -98,12 +98,12 @@ vec3 taaBilinear(SvgfData data, vec2 hist_screen_coord, inout bool is_valid) {
     return sum;
 }
 
-vec3 taaNearestNeighbor(SvgfData data, vec2 hist_screen_coord, inout bool is_valid) {
+vec3 taaNearestNeighbor(GBufferData data, vec2 hist_screen_coord, inout bool is_valid) {
     ivec2 nearest_neighbor_screen_coord = ivec2(floor(hist_screen_coord + 0.5));
     return getHistColorAt(data, nearest_neighbor_screen_coord, is_valid);
 }
 
-void temporalFiltering(vec3 color, inout SvgfData data) {
+void temporalFiltering(vec3 color, inout GBufferData data) {
     vec2 prev_screen_coord = vec2(gl_LaunchIDEXT.xy) + data.motion;
     bool valid_hist = false;
     vec3 hist_color = taaBilinear(data, prev_screen_coord, valid_hist);
