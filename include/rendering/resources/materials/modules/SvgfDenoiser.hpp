@@ -15,6 +15,9 @@ namespace RtEngine {
 
         void createComputePipeline(std::vector<VkDescriptorSetLayout> layouts);
         void recordCommands();
+
+        void destroyResources();
+
     private:
         std::shared_ptr<VulkanContext> context;
         std::shared_ptr<ComputePipeline> compute_pipeline;

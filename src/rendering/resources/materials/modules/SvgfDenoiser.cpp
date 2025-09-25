@@ -24,4 +24,7 @@ namespace RtEngine {
 
     }
 
+    void SvgfDenoiser::destroyResources() {
+        compute_pipeline->destroy();
+    }
 }

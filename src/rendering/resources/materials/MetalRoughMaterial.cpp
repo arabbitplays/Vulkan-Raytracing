@@ -65,6 +65,7 @@ namespace RtEngine {
 		std::vector<VkDescriptorSetLayout> denoiser_layouts{};
 		denoiser_layouts.push_back(descriptorSetLayouts[2]); // TODO fix the layout problem
 		denoiser->createComputePipeline(denoiser_layouts);
+		mainDeletionQueue.pushFunction([&]() { denoiser->destroyResources(); });
 	}
 
 	void MetalRoughMaterial::writeMaterial() {
