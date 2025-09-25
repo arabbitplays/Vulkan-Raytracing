@@ -8,6 +8,7 @@
 #include "push_constants.glsl"
 #include "../common/random.glsl"
 #include "../common/constants.glsl"
+#include "material_layout.glsl"
 #include "../denoising/svgf_denoising.glsl"
 
 #define STORE_RNG true

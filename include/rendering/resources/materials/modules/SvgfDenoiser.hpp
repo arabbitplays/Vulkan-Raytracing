@@ -7,19 +7,27 @@
 #include <memory>
 
 #include "ComputePipeline.hpp"
+#include "GBuffer.hpp"
 
 namespace RtEngine {
-    class SvgfDenoiser {
+    class SvgfDenoiser : public ILayoutProvider {
     public:
         explicit SvgfDenoiser(const std::shared_ptr<VulkanContext> &context);
 
-        void createComputePipeline(std::vector<VkDescriptorSetLayout> layouts);
-        void recordCommands();
+        void createComputePipeline();
+        void writeResources(const AllocatedImage &target_image, const std::shared_ptr<GBuffer> &g_buffer) const;
+        void recordCommands(VkCommandBuffer command_buffer);
+
+        void destroyLayout() override;
 
         void destroyResources();
 
     private:
+        VkDescriptorSetLayout createLayout() override;
+        std::shared_ptr<DescriptorSet> createDescriptorSet(const VkDescriptorSetLayout &layout) override;
+
         std::shared_ptr<VulkanContext> context;
+        DeletionQueue deletion_queue;
         std::shared_ptr<ComputePipeline> compute_pipeline;
     };
 }

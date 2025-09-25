@@ -33,6 +33,7 @@ namespace RtEngine {
 		}
 
 		static QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device, VkSurfaceKHR surface) {
+			// TODO here is not explicit that the queue family needs also compute
 			QueueFamilyIndices indices;
 
 			uint32_t queueFamilyCount = 0;

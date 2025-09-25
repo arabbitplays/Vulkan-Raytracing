@@ -1,22 +1,8 @@
+#ifndef THROWBRIDGE_REITZ_DISTRIBUTION_GLSL
+#define THROWBRIDGE_REITZ_DISTRIBUTION_GLSL
+
 #include "../common/constants.glsl"
-
-struct Material {
-    vec3 albedo;
-    float padding;
-    float metallic;
-    float roughness;
-    float ao;
-    float eta;
-    vec3 emission_color;
-    float emission_power;
-    int albedo_tex_idx;
-    int metal_rough_ao_tex_idx;
-    int normal_tex_idx;
-};
-
-layout(binding = 0, set = 1) readonly buffer MaterialBuffer {
-    Material[] data;
-} material_buffer;
+#include "material_layout.glsl"
 
 Material getMaterial(uint material_id) {
     return material_buffer.data[material_id];
@@ -81,3 +67,5 @@ vec3 fresnelSchlick(float cosTheta, vec3 albedo, float metallic) {
 bool effectivelySmooth(float alpha_x, float alpha_y) {
     return max(alpha_x, alpha_y) < 1E-3;
 }
+
+#endif // THROWBRIDGE_REITZ_DISTRIBUTION_GLSL

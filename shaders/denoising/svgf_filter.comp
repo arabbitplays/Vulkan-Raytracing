@@ -1,5 +1,19 @@
 #version 460
 
-void main() {
+layout(local_size_x = 16, local_size_y = 16, local_size_z = 1) in;
 
+layout(binding = 0, set = 0, rgba8) uniform image2D render_image;
+layout(binding = 1, set = 0) buffer GBuffer {
+    vec4[] data;
+} g_buffer;
+
+layout(binding = 2, set = 0) buffer HistGBuffer {
+    vec4[] data;
+} hist_g_buffer;
+
+void main() {
+    uvec2 pixel = gl_GlobalInvocationID.xy;
+    if (pixel.x > 100 || pixel.y > 100)
+            return;
+    imageStore(render_image, ivec2(pixel), vec4(vec3(1, 0, 1), 1));
 }

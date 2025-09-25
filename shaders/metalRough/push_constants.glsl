@@ -1,3 +1,6 @@
+#ifndef PUSH_CONSTANTS_GLSL
+#define PUSH_CONSTANTS_GLSL
+
 layout(push_constant) uniform PushConstants {
     int recursion_depth;
     bool normal_mapping;
@@ -9,3 +12,5 @@ layout(push_constant) uniform PushConstants {
     uint emitting_instances_count;
     uint samples_per_pixel;
 } options;
+
+#endif // PUSH_CONSTANTS_GLSL

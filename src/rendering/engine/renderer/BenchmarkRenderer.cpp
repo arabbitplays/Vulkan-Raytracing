@@ -78,11 +78,11 @@ namespace RtEngine {
 	}
 
 	void BenchmarkRenderer::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex) {
-		recordBeginCommandBuffer(commandBuffer);
-		scene_manager->getMaterial()->recordRenderToImage(commandBuffer, mainDrawContext->currentFrame);
+		CommandBufferUtil::recordBeginCommandBuffer(commandBuffer);
+		scene_manager->getMaterial()->recordRenderToImage(commandBuffer, mainDrawContext);
 		if (present_image)
 			recordCopyToSwapchain(commandBuffer, imageIndex);
-		recordEndCommandBuffer(commandBuffer);
+		CommandBufferUtil::recordEndCommandBuffer(commandBuffer);
 	}
 
 	float BenchmarkRenderer::calculateMSEToReference() {

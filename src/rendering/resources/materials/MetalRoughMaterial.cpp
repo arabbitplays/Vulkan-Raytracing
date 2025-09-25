@@ -67,7 +67,7 @@ namespace RtEngine {
 
 		std::vector<VkDescriptorSetLayout> denoiser_layouts{};
 		denoiser_layouts.push_back(descriptorSetLayouts[1]); // TODO fix the layout problem
-		denoiser->createComputePipeline(denoiser_layouts);
+		denoiser->createComputePipeline();
 		mainDeletionQueue.pushFunction([&]() { denoiser->destroyResources(); });
 	}
 
@@ -85,8 +85,12 @@ namespace RtEngine {
 
 	}
 
-	void MetalRoughMaterial::recordRenderToImage(VkCommandBuffer commandBuffer, const uint32_t current_frame) {
-		Material::recordRenderToImage(commandBuffer, current_frame);
+	void MetalRoughMaterial::recordRenderToImage(VkCommandBuffer command_buffer, const std::shared_ptr<DrawContext> &draw_context) {
+		Material::recordRenderToImage(command_buffer, draw_context);
+
+		denoiser->writeResources(draw_context->target->getCurrentTargetImage(), g_buffer);
+		denoiser->recordCommands(command_buffer);
+
 		push_constants.curr_sample_count += push_constants.samples_per_pixel;
 	}
 

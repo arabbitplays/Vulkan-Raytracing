@@ -8,6 +8,7 @@
 #include <bits/shared_ptr.h>
 #include <vulkan/vulkan_core.h>
 
+#include "IRenderable.hpp"
 #include "MaterialInstance.hpp"
 #include "MaterialResourceManager.hpp"
 #include "RaytracingPipeline.hpp"
@@ -57,7 +58,7 @@ namespace RtEngine {
 
 		virtual void update() { }
 
-		virtual void recordRenderToImage(VkCommandBuffer commandBuffer, const uint32_t current_frame) {
+		virtual void recordRenderToImage(VkCommandBuffer commandBuffer, const std::shared_ptr<DrawContext> &draw_context) {
 			const uint32_t handleSizeAligned =
 					VulkanUtil::alignedSize(DeviceManager::RAYTRACING_PROPERTIES.shaderGroupHandleSize,
 											DeviceManager::RAYTRACING_PROPERTIES.shaderGroupHandleAlignment);
@@ -79,7 +80,7 @@ namespace RtEngine {
 
 			VkStridedDeviceAddressRegionKHR callableShaderSbtEntry{};
 
-			const std::vector<VkDescriptorSet> descriptor_sets = vulkan_context->layout_manager->getDescriptorSets(current_frame);
+			const std::vector<VkDescriptorSet> descriptor_sets = vulkan_context->layout_manager->getDescriptorSets(draw_context->currentFrame);
 
 			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, graphics_pipeline->getHandle());
 			vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, graphics_pipeline->getLayoutHandle(), 0,

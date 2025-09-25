@@ -233,14 +233,21 @@ namespace RtEngine {
 		vkGetPhysicalDeviceProperties(device, &deviceProperties);
 		vkGetPhysicalDeviceFeatures(device, &deviceFeatures);
 
-		VkPhysicalDeviceRayTracingPipelineFeaturesKHR raytracingPipelineFeatures{
-				VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_FEATURES_KHR};
-		VkPhysicalDeviceAccelerationStructureFeaturesKHR accelerationStructureFeatures{
-				VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_FEATURES_KHR};
+		VkPhysicalDeviceVulkan13Features vulkan13_features{};
+		vulkan13_features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES;
+
+		VkPhysicalDeviceRayTracingPipelineFeaturesKHR raytracingPipelineFeatures{};
+		raytracingPipelineFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_FEATURES_KHR;
+		raytracingPipelineFeatures.pNext = &vulkan13_features;
+
+		VkPhysicalDeviceAccelerationStructureFeaturesKHR accelerationStructureFeatures{};
+		accelerationStructureFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_FEATURES_KHR;
 		raytracingPipelineFeatures.pNext = &accelerationStructureFeatures;
-		VkPhysicalDeviceFeatures2 deviceFeatures2;
+
+		VkPhysicalDeviceFeatures2 deviceFeatures2{};
 		deviceFeatures2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
 		deviceFeatures2.pNext = &raytracingPipelineFeatures;
+
 		vkGetPhysicalDeviceFeatures2(device, &deviceFeatures2);
 
 		// implement device checks here
@@ -297,9 +304,14 @@ namespace RtEngine {
 		deviceFeatures.shaderInt64 = VK_TRUE;
 		deviceFeatures.shaderFloat64 = VK_TRUE;
 
+		VkPhysicalDeviceVulkan13Features vulkan13_features{};
+		vulkan13_features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES;
+		vulkan13_features.synchronization2 = VK_TRUE;
+
 		VkPhysicalDeviceAccelerationStructureFeaturesKHR accelerationStructureFeatures{};
 		accelerationStructureFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_FEATURES_KHR;
 		accelerationStructureFeatures.accelerationStructure = VK_TRUE;
+		accelerationStructureFeatures.pNext = &vulkan13_features;
 
 		VkPhysicalDeviceRayTracingPipelineFeaturesKHR rayTracingPipelineFeatures{};
 		rayTracingPipelineFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_FEATURES_KHR;

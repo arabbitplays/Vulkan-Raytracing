@@ -7,15 +7,12 @@
 #include "../common/payload.glsl"
 #include "../common/scene_data.glsl"
 #include "../common/layout.glsl"
-#include "../denoising/g_buffer.glsl"
+#include "material_layout.glsl"
+#include "g_buffer.glsl"
 #include "push_constants.glsl"
 #include "../common/random.glsl"
 
 layout(binding = 0, set = 0) uniform accelerationStructureEXT topLevelAS;
-
-layout(binding = 1, set = 1) uniform sampler2D albedo_textures[16];
-layout(binding = 2, set = 1) uniform sampler2D metal_rough_ao_textures[16];
-layout(binding = 3, set = 1) uniform sampler2D normal_textures[16];
 
 
 hitAttributeEXT vec3 attribs;

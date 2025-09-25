@@ -1,5 +1,7 @@
 #include "ReferenceRenderer.hpp"
 
+#include "CommandBufferUtil.hpp"
+
 namespace RtEngine {
 	constexpr std::string SAMPLE_COUNT_OPTION_NAME = "Sample_Count";
 
@@ -74,11 +76,11 @@ namespace RtEngine {
 	}
 
 	void ReferenceRenderer::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex) {
-		recordBeginCommandBuffer(commandBuffer);
-		scene_manager->getMaterial()->recordRenderToImage(commandBuffer, mainDrawContext->currentFrame);
+		CommandBufferUtil::recordBeginCommandBuffer(commandBuffer);
+		scene_manager->getMaterial()->recordRenderToImage(commandBuffer, mainDrawContext);
 		if (present_image)
 			recordCopyToSwapchain(commandBuffer, imageIndex);
-		recordEndCommandBuffer(commandBuffer);
+		CommandBufferUtil::recordEndCommandBuffer(commandBuffer);
 	}
 
 	void ReferenceRenderer::initProperties() {

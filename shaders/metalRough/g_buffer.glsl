@@ -14,14 +14,6 @@ struct GBufferHistData {
     int instance_id;
 };
 
-layout(binding = 4, set = 1) buffer GBuffer {
-    vec4[] data;
-} g_buffer;
-
-layout(binding = 5, set = 1) buffer HistGBuffer {
-    vec4[] data;
-} hist_g_buffer;
-
 GBufferData getGBufferData(uint pixel_idx) {
     GBufferData data;
     uint buffer_idx = 4 * pixel_idx;

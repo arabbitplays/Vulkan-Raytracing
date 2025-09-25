@@ -17,6 +17,8 @@
 #include <VulkanContext.hpp>
 #include "../scene_graph/Node.hpp"
 #include "DeletionQueue.hpp"
+#include "CommandBufferUtil.hpp"
+
 
 namespace RtEngine {
 
@@ -86,9 +88,7 @@ namespace RtEngine {
 		uint8_t *fixImageFormatForStorage(void *image_data, size_t pixel_count, VkFormat originalFormat);
 
 		virtual void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t swapchain_image_index);
-		static void recordBeginCommandBuffer(VkCommandBuffer commandBuffer);
 		void recordCopyToSwapchain(VkCommandBuffer commandBuffer, uint32_t swapchain_image_index);
-		void recordEndCommandBuffer(VkCommandBuffer commandBuffer);
 
 		void loadScene() const;
 		virtual void initProperties();

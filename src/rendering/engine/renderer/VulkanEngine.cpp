@@ -338,20 +338,11 @@ namespace RtEngine {
 	}
 
 	void VulkanEngine::recordCommandBuffer(VkCommandBuffer commandBuffer, const uint32_t swapchain_image_index) {
-		recordBeginCommandBuffer(commandBuffer);
-		scene_manager->getMaterial()->recordRenderToImage(commandBuffer, mainDrawContext->currentFrame);
+		CommandBufferUtil::recordBeginCommandBuffer(commandBuffer);
+		scene_manager->getMaterial()->recordRenderToImage(commandBuffer, mainDrawContext);
 		recordCopyToSwapchain(commandBuffer, swapchain_image_index);
 		guiManager->recordGuiCommands(commandBuffer, swapchain_image_index);
-		recordEndCommandBuffer(commandBuffer);
-	}
-
-	void VulkanEngine::recordBeginCommandBuffer(VkCommandBuffer commandBuffer) {
-		VkCommandBufferBeginInfo beginInfo{};
-		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-
-		if (vkBeginCommandBuffer(commandBuffer, &beginInfo) != VK_SUCCESS) {
-			throw std::runtime_error("failed to begin record command buffer!");
-		}
+		CommandBufferUtil::recordEndCommandBuffer(commandBuffer);
 	}
 
 	void VulkanEngine::recordCopyToSwapchain(VkCommandBuffer commandBuffer, const uint32_t swapchain_image_index) {
@@ -393,12 +384,6 @@ namespace RtEngine {
 												VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, VK_ACCESS_TRANSFER_READ_BIT,
 												VK_ACCESS_NONE, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
 												VK_IMAGE_LAYOUT_GENERAL);
-	}
-
-	void VulkanEngine::recordEndCommandBuffer(VkCommandBuffer commandBuffer) {
-		if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS) {
-			throw std::runtime_error("failed to record command buffer!");
-		}
 	}
 
 	void VulkanEngine::cleanup() {

@@ -45,7 +45,7 @@ namespace RtEngine {
 		void buildPipelines(const VkPhysicalDeviceRayTracingPipelinePropertiesKHR& raytracingProperties) override;
 		void update() override;
 		void writeMaterial() override;
-		void recordRenderToImage(VkCommandBuffer commandBuffer, const uint32_t current_frame) override;
+		void recordRenderToImage(VkCommandBuffer command_buffer, const std::shared_ptr<DrawContext> &draw_context) override;
 		glm::vec4 getEmissionForInstance(uint32_t material_instance_id) override;
 		std::vector<std::shared_ptr<MetalRoughResources>> getResources() const;
 		std::vector<std::shared_ptr<Texture>> getTextures() override;

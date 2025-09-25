@@ -1,4 +1,4 @@
-#include "../denoising/g_buffer.glsl"
+#include "../metalRough/g_buffer.glsl"
 
 #define NORMAL_TEST_THRESHOLD 0.99
 #define ABS_DEPTH_TEST_THRESHOLD 1e-4
