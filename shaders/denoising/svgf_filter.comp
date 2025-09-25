@@ -1,4 +1,5 @@
 #version 460
+#extension GL_GOOGLE_include_directive : enable
 
 layout(local_size_x = 16, local_size_y = 16, local_size_z = 1) in;
 
@@ -11,9 +12,26 @@ layout(binding = 2, set = 0) buffer HistGBuffer {
     vec4[] data;
 } hist_g_buffer;
 
+#include "../metalRough/g_buffer.glsl"
+#include "temporal_antialiasing.glsl"
+
 void main() {
-    uvec2 pixel = gl_GlobalInvocationID.xy;
-    if (pixel.x > 100 || pixel.y > 100)
+    ivec2 pixel = ivec2(gl_GlobalInvocationID.xy);
+    ivec2 image_size = imageSize(render_image);
+
+    if (pixel.x > image_size.x || pixel.y > image_size.y)
             return;
-    imageStore(render_image, ivec2(pixel), vec4(vec3(1, 0, 1), 1));
+
+    uint pixel_idx = pixel.y * image_size.x + pixel.x;
+    GBufferData data = getGBufferData(pixel_idx);
+    GBufferHistData hist_data = getGBufferHistData(pixel_idx);
+
+    vec3 color = imageLoad(render_image, pixel.xy).xyz;
+    temporalFiltering(color, data);
+
+    imageStore(render_image, pixel.xy, vec4(vec3(data.color), 1));
+
+    writeHistoryData(data, hist_data);
+    setGBufferData(pixel_idx, data);
+    setGBufferHistData(pixel_idx, hist_data);
 }

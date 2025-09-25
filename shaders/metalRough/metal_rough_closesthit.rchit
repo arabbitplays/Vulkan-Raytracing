@@ -8,7 +8,7 @@
 #include "../common/scene_data.glsl"
 #include "../common/layout.glsl"
 #include "material_layout.glsl"
-#include "g_buffer.glsl"
+#include "write_g_buffer.glsl"
 #include "push_constants.glsl"
 #include "../common/random.glsl"
 
@@ -130,6 +130,6 @@ void main() {
 
     if (options.svgf_denoising && payload.depth == 0) {
         uint idx = gl_LaunchIDEXT.y * gl_LaunchSizeEXT.x + gl_LaunchIDEXT.x;
-        writePrimaryHitData(idx, P, object_normal, gl_HitTEXT, gl_InstanceCustomIndexEXT);
+        writePrimaryHitData(idx, P, N, gl_HitTEXT, gl_InstanceCustomIndexEXT);
     }
 }

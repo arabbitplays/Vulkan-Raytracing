@@ -1,3 +1,6 @@
+#ifndef G_BUFFER_GLSL
+#define G_BUFFER_GLSL
+
 struct GBufferData {
     vec3 color;
     vec3 position;
@@ -70,11 +73,4 @@ void setGBufferHistData(uint pixel_idx, GBufferHistData data) {
     hist_g_buffer.data[buffer_idx + 1] = B;
 }
 
-void writePrimaryHitData(uint idx, vec3 P, vec3 N, float depth, int instance_id) {
-    GBufferData data = getGBufferData(idx);
-    data.position = P;
-    data.normal = N;
-    data.depth = depth;
-    data.instance_id = instance_id;
-    setGBufferData(idx, data);
-}
+#endif // G_BUFFER_GLSL

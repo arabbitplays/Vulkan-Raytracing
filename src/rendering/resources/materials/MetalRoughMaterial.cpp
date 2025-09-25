@@ -65,8 +65,6 @@ namespace RtEngine {
 
 		graphics_pipeline->createShaderBindingTables(raytracingProperties);
 
-		std::vector<VkDescriptorSetLayout> denoiser_layouts{};
-		denoiser_layouts.push_back(descriptorSetLayouts[1]); // TODO fix the layout problem
 		denoiser->createComputePipeline();
 		mainDeletionQueue.pushFunction([&]() { denoiser->destroyResources(); });
 	}
@@ -170,8 +168,7 @@ namespace RtEngine {
 		layoutBuilder.addBinding(4, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER); // g-buffer
 		layoutBuilder.addBinding(5, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER); // hist g-buffer
 
-		// TODO raygen normally not needed to record g buffer, but denoiser needs it atm
-		return layoutBuilder.build(vulkan_context->device_manager->getDevice(), VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR | VK_SHADER_STAGE_MISS_BIT_KHR | VK_SHADER_STAGE_RAYGEN_BIT_KHR);
+		return layoutBuilder.build(vulkan_context->device_manager->getDevice(), VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR | VK_SHADER_STAGE_MISS_BIT_KHR);
 	}
 
 	void MetalRoughMaterial::defineTextureLayout(DescriptorLayoutBuilder& layout_builder, uint32_t binding_idx) {

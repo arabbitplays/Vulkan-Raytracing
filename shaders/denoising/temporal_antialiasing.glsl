@@ -1,3 +1,6 @@
+#ifndef TEMPORAL_ANTIALIASING_GLSL
+#define TEMPORAL_ANTIALIASING_GLSL
+
 #include "../metalRough/g_buffer.glsl"
 
 #define NORMAL_TEST_THRESHOLD 0.99
@@ -15,24 +18,12 @@ void writeHistoryData(GBufferData data, inout GBufferHistData hist_data) {
 
 bool isSameSurface(GBufferData data, GBufferHistData hist_data) {
     return dot(data.normal, hist_data.normal) > NORMAL_TEST_THRESHOLD
-        && abs(data.depth - hist_data.depth) < min(ABS_DEPTH_TEST_THRESHOLD, REL_DEPTH_TEST_THRESHOLD * data.depth)
-        && data.instance_id == hist_data.instance_id;
-}
-
-void calculateMotionVector(inout GBufferData data) {
-    vec4 prevClip = sceneData.last_view_proj * vec4(data.position, 1.0);
-    if (prevClip.w <= 0.0) {
-        data.motion = vec2(10000, 10000);
-    }
-    vec3 prevNDC = prevClip.xyz / prevClip.w;
-    vec2 prev_uv = prevNDC.xy * 0.5 + 0.5;
-    vec2 prev_screen_coord = prev_uv * vec2(gl_LaunchSizeEXT.xy);
-
-    data.motion = prev_screen_coord - vec2(gl_LaunchIDEXT.xy);
+    && abs(data.depth - hist_data.depth) < min(ABS_DEPTH_TEST_THRESHOLD, REL_DEPTH_TEST_THRESHOLD * data.depth)
+    && data.instance_id == hist_data.instance_id;
 }
 
 vec3 getHistColorAt(GBufferData data, ivec2 screen_coord, inout bool is_valid) {
-    ivec2 screen_size = ivec2(gl_LaunchSizeEXT);
+    ivec2 screen_size = imageSize(render_image);
     if (screen_coord.x < 0 || screen_coord.x >= screen_size.x || screen_coord.y < 0 || screen_coord.y >= screen_size.y) {
         is_valid = false;
         return vec3(0);
@@ -55,10 +46,10 @@ vec3 taaBilinear(GBufferData data, vec2 hist_screen_coord, inout bool is_valid) 
     vec2 norm_coords = fract(hist_screen_coord);
 
     float weights[4] = float[4](
-        (1 - norm_coords.x) * (1 - norm_coords.y),
-        norm_coords.x * (1 - norm_coords.y),
-        (1 - norm_coords.x) * norm_coords.y,
-        norm_coords.x * norm_coords.y
+    (1 - norm_coords.x) * (1 - norm_coords.y),
+    norm_coords.x * (1 - norm_coords.y),
+    (1 - norm_coords.x) * norm_coords.y,
+    norm_coords.x * norm_coords.y
     );
     float renormalization_weight = 0;
 
@@ -104,7 +95,7 @@ vec3 taaNearestNeighbor(GBufferData data, vec2 hist_screen_coord, inout bool is_
 }
 
 void temporalFiltering(vec3 color, inout GBufferData data) {
-    vec2 prev_screen_coord = vec2(gl_LaunchIDEXT.xy) + data.motion;
+    vec2 prev_screen_coord = vec2(gl_GlobalInvocationID.xy) + data.motion;
     bool valid_hist = false;
     vec3 hist_color = taaBilinear(data, prev_screen_coord, valid_hist);
 
@@ -115,3 +106,5 @@ void temporalFiltering(vec3 color, inout GBufferData data) {
         //data.color = vec3(1, 0, 0);
     }
 }
+
+#endif // TEMPORAL_ANTIALIASING_GLSL

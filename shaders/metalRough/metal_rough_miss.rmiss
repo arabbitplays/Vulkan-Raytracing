@@ -6,7 +6,7 @@
 #include "../common/payload.glsl"
 #include "../common/scene_data.glsl"
 #include "material_layout.glsl"
-#include "g_buffer.glsl"
+#include "write_g_buffer.glsl"
 #include "push_constants.glsl"
 
 layout(set = 0, binding = 7) uniform sampler2D textures[6];

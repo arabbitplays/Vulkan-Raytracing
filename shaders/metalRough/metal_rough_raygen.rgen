@@ -9,7 +9,6 @@
 #include "../common/random.glsl"
 #include "../common/constants.glsl"
 #include "material_layout.glsl"
-#include "../denoising/svgf_denoising.glsl"
 
 #define STORE_RNG true
 
@@ -83,20 +82,4 @@ void main() {
         imageStore(rng_tex, ivec2(gl_LaunchIDEXT.xy), payload.rng_state);
     }
     imageStore(render_image, ivec2(gl_LaunchIDEXT.xy), vec4(color, 1.0));
-
-    if (options.svgf_denoising) {
-        uint idx = gl_LaunchIDEXT.y * gl_LaunchSizeEXT.x + gl_LaunchIDEXT.x;
-        GBufferData data = getGBufferData(idx);
-        GBufferHistData hist_data = getGBufferHistData(idx);
-
-        calculateMotionVector(data);
-        temporalFiltering(color, data);
-
-        imageStore(render_image, ivec2(gl_LaunchIDEXT.xy), vec4(vec3(data.color), 1));
-
-        writeHistoryData(data, hist_data);
-        setGBufferData(idx, data);
-        setGBufferHistData(idx, hist_data);
-    }
-
 }
