@@ -1,3 +1,6 @@
+#ifndef RANDOM_GLSL
+#define RANDOM_GLSL
+
 #include "math.glsl"
 
 layout(binding = 9, set = 0, rgba32ui) uniform uimage2D rng_tex;
@@ -66,3 +69,5 @@ vec2 sampleUniformDiskPolar(inout uvec4 rngState) {
 
     return vec2(r * cos(theta), r * sin(theta));
 }
+
+#endif // RANDOM_GLSL

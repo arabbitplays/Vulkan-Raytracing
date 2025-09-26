@@ -20,7 +20,8 @@ void writePrimaryHitData(uint idx, vec3 P, vec3 N, float depth, int instance_id)
     GBufferData data = getGBufferData(idx);
     data.position = P;
     data.normal = N;
-    data.depth = depth;
+    vec3 cam_origin = (sceneData.inv_view * vec4(0,0,0,1)).xyz;
+    data.depth = length(P - cam_origin);
     data.instance_id = instance_id;
     data.motion = calculateMotionVector(data.position);
     setGBufferData(idx, data);

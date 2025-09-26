@@ -9,6 +9,7 @@
 #include "../common/random.glsl"
 #include "../common/constants.glsl"
 #include "material_layout.glsl"
+#include "../common/primary_rays.glsl"
 
 #define STORE_RNG true
 
@@ -27,21 +28,12 @@ void initPayload(vec3 origin, vec3 direction) {
     payload.specular_bounce = false;
 }
 
-vec2 getPixelCenterOffset() {
-    return vec2(0);
-    return vec2(stepAndOutputRNGFloat(payload.rng_state), stepAndOutputRNGFloat(payload.rng_state));
-}
-
 void main() {
     payload.rng_state = imageLoad(rng_tex, ivec2(gl_LaunchIDEXT.xy));
 
-    const vec2 pixelCenter = vec2(gl_LaunchIDEXT.xy) + getPixelCenterOffset();
-    const vec2 inUV = pixelCenter / vec2(gl_LaunchSizeEXT.xy);
-    vec2 d = inUV * 2.0 - 1.0;
-
-    vec3 origin = (sceneData.inv_view * vec4(0,0,0,1)).xyz;
-    vec4 target = sceneData.inv_proj * vec4(d.x, d.y, 1, 1);
-    vec3 direction = (sceneData.inv_view * vec4(normalize(target.xyz), 0)).xyz;
+    vec3 origin = vec3(0);
+    vec3 direction = vec3(0);
+    generatePrimaryRay(ivec2(gl_LaunchIDEXT.xy), ivec2(gl_LaunchSizeEXT.xy), origin, direction, payload.rng_state);
 
     float focus_dist = 10;
     float lens_radius = 0;
@@ -60,7 +52,7 @@ void main() {
 
     initPayload(origin, direction);
 
-    vec3 color = vec3(0);
+    dvec3 color = vec3(0);
     for (int i = 0; i < options.samples_per_pixel; i++) {
         while (payload.depth < options.recursion_depth && payload.next_direction != vec3(0.0)) {
             float tmin = EPSILON;

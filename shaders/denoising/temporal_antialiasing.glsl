@@ -3,9 +3,9 @@
 
 #include "../metalRough/g_buffer.glsl"
 
-#define NORMAL_TEST_THRESHOLD 0.99
-#define ABS_DEPTH_TEST_THRESHOLD 1e-4
-#define REL_DEPTH_TEST_THRESHOLD 1e-6
+#define NORMAL_TEST_THRESHOLD 0.98
+#define ABS_DEPTH_TEST_THRESHOLD 1e-3
+#define REL_DEPTH_TEST_THRESHOLD 1e-2
 
 #define COLOR_ACUMULATION_FACTOR 0.2
 
@@ -18,8 +18,8 @@ void writeHistoryData(GBufferData data, inout GBufferHistData hist_data) {
 
 bool isSameSurface(GBufferData data, GBufferHistData hist_data) {
     return dot(data.normal, hist_data.normal) > NORMAL_TEST_THRESHOLD
-    && abs(data.depth - hist_data.depth) < min(ABS_DEPTH_TEST_THRESHOLD, REL_DEPTH_TEST_THRESHOLD * data.depth)
-    && data.instance_id == hist_data.instance_id;
+    // && abs(data.depth - hist_data.depth) < min(ABS_DEPTH_TEST_THRESHOLD, REL_DEPTH_TEST_THRESHOLD * data.depth);
+        && data.instance_id == hist_data.instance_id;
 }
 
 vec3 getHistColorAt(GBufferData data, ivec2 screen_coord, inout bool is_valid) {
@@ -46,10 +46,10 @@ vec3 taaBilinear(GBufferData data, vec2 hist_screen_coord, inout bool is_valid) 
     vec2 norm_coords = fract(hist_screen_coord);
 
     float weights[4] = float[4](
-    (1 - norm_coords.x) * (1 - norm_coords.y),
-    norm_coords.x * (1 - norm_coords.y),
-    (1 - norm_coords.x) * norm_coords.y,
-    norm_coords.x * norm_coords.y
+        (1 - norm_coords.x) * (1 - norm_coords.y),
+        norm_coords.x * (1 - norm_coords.y),
+        (1 - norm_coords.x) * norm_coords.y,
+        norm_coords.x * norm_coords.y
     );
     float renormalization_weight = 0;
 
