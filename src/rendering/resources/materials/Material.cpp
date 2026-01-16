@@ -19,5 +19,9 @@ namespace RtEngine {
 			vulkan_context->resource_builder->destroyBuffer(material_buffer);
 	}
 
-	void Material::reset() { resetQueue.flush(); }
+	void Material::reset() {
+		resetQueue.flush();
+		if (material_buffer.handle != VK_NULL_HANDLE)
+			vulkan_context->resource_builder->destroyBuffer(material_buffer);
+	}
 } // namespace RtEngine

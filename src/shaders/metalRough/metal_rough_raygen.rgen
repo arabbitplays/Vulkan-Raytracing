@@ -9,7 +9,7 @@
 #include "../common/random.glsl"
 #include "../common/constants.glsl"
 
-#define STORE_RNG false
+#define STORE_RNG true
 
 layout(binding = 0, set = 0) uniform accelerationStructureEXT topLevelAS;
 layout(binding = 1, set = 0, rgba8) uniform image2D image;

@@ -31,7 +31,7 @@ namespace RtEngine {
 					[&]() { descriptorAllocator.destroyPools(this->vulkan_context->device_manager->getDevice()); });
 		};
 
-		virtual ~Material(){};
+		virtual ~Material() {};
 
 		std::shared_ptr<Pipeline> pipeline;
 		VkDescriptorSetLayout materialLayout;

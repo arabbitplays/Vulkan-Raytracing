@@ -28,7 +28,7 @@ namespace RtEngine {
 		pipeline->setDescriptorSetLayouts(descriptorSetLayouts);
 
 		pipeline->addPushConstant(MAX_PUSH_CONSTANT_SIZE,
-								  VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR | VK_SHADER_STAGE_RAYGEN_BIT_KHR);
+								  VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR | VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_MISS_BIT_KHR);
 
 		VkShaderModule raygenShaderModule = VulkanUtil::createShaderModule(device, oschd_phong_raygen_rgen_spv_size(),
 																		   oschd_phong_raygen_rgen_spv());
@@ -59,12 +59,14 @@ namespace RtEngine {
 	}
 
 	void PhongMaterial::writeMaterial() {
-		materialBuffer = createMaterialBuffer();
-		resetQueue.pushFunction([&]() { vulkan_context->resource_builder->destroyBuffer(materialBuffer); });
+		if (material_buffer.handle != VK_NULL_HANDLE) {
+			vulkan_context->resource_builder->destroyBuffer(material_buffer);
+		}
+		material_buffer = createMaterialBuffer();
 
 		VkDevice device = vulkan_context->device_manager->getDevice();
 		materialDescriptorSet = descriptorAllocator.allocate(device, materialLayout);
-		descriptorAllocator.writeBuffer(0, materialBuffer.handle, 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+		descriptorAllocator.writeBuffer(0, material_buffer.handle, 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
 		descriptorAllocator.updateSet(device, materialDescriptorSet);
 		descriptorAllocator.clearWrites();
 	}

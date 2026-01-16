@@ -1,0 +1,457 @@
+scene:
+  material_name: phong
+  camera:
+    interactive: true
+    fov: 45.0
+    view_dir: [0.0, 0.0, -1.0]
+    position: [0.0, 0.0, 10.0]
+  meshes:
+    - path: meshes/plane.obj
+    - path: meshes/sphere.obj
+  lights:
+    point_lights:
+      - position: [0.0, 2.0, 0.0 ]
+        color: [ 1.0, 1.0, 1.0 ]
+        intensity: 0.5
+  materials:
+    - diffuse: [ 1.0, 1.0, 1.0 ]
+      specular: [ 0.0, 0.0, 0.0 ]
+      ambient: [ 0.0, 0.0, 0.0 ]
+      reflection: [ 0.0, 0.0, 0.0 ]
+      transmission: [ 0.0, 0.0, 0.0 ]
+      eta: [ 0.0, 0.0, 0.0 ]
+      n: 1
+    - diffuse: [ 0.9, 0.9, 0.9 ]
+      specular: [ 0.9, 0.9, 0.9 ]
+      ambient: [ 0.0, 0.0, 0.0 ]
+      reflection: [ 0.0, 0.0, 0.0 ]
+      transmission: [ 0.0, 0.0, 0.0 ]
+      eta: [ 0.0, 0.0, 0.0 ]
+      n: 3
+    - diffuse: [ 1, 0, 0 ]
+      specular: [ 1.0, 0.0, 0.0 ]
+      ambient: [ 0.0, 0.0, 0.0 ]
+      reflection: [ 0.0, 0.0, 0.0 ]
+      transmission: [ 0.0, 0.0, 0.0 ]
+      eta: [ 0.0, 0.0, 0.0 ]
+      n: 3
+    - diffuse: [ 0, 1, 0 ]
+      specular: [ 0.0, 1.0, 0.0 ]
+      ambient: [ 0.0, 0.0, 0.0 ]
+      reflection: [ 0.0, 0.0, 0.0 ]
+      transmission: [ 0.0, 0.0, 0.0 ]
+      eta: [ 0.0, 0.0, 0.0 ]
+      n: 3
+    - diffuse: [ 0, 0, 1 ]
+      specular: [ 0.0, 0.0, 0.0 ]
+      ambient: [ 0.0, 0.0, 0.0 ]
+      reflection: [ 0.0, 0.0, 0.0 ]
+      transmission: [ 0.0, 0.0, 0.0 ]
+      eta: [ 0.0, 0.0, 0.0 ]
+      n: 1
+    - diffuse: [ 0.9, 0.9, 0.9 ]
+      specular: [ 0.0, 0.0, 0.0 ]
+      ambient: [ 0.0, 0.0, 0.0 ]
+      reflection: [ 0.0, 0.0, 0.0 ]
+      transmission: [ 0.0, 0.0, 0.0 ]
+      eta: [ 0.0, 0.0, 0.0 ]
+      n: 1
+    - diffuse: [ 0.0, 0.0, 0.0 ]
+      specular: [ 0.0, 0.0, 0.0 ]
+      ambient: [ 0.0, 0.0, 0.0 ]
+      reflection: [ 1.0, 1.0, 1.0 ]
+      transmission: [ 0.0, 0.0, 0.0 ]
+      eta: [ 0.0, 0.0, 0.0 ]
+      n: 1
+    - diffuse: [ 0.0, 0.0, 0.0 ]
+      specular: [ 0.0, 0.0, 0.0 ]
+      ambient: [ 0.0, 0.0, 0.0 ]
+      reflection: [ 0.0, 0.0, 0.0 ]
+      transmission: [ 1.0, 1.0, 1.0 ]
+      eta: [1.05, 1.06, 1.07]
+      n: 1
+    - diffuse: [ 0.0, 0.6, 0.6 ]
+      specular: [ 0.0, 0.6, 0.6 ]
+      ambient: [ 0.0, 0.0, 0.0 ]
+      reflection: [ 0.0, 0.0, 0.0 ]
+      transmission: [ 0.0, 0.0, 0.0 ]
+      eta: [ 0.0, 0.0, 0.0 ]
+      n: 1
+    - diffuse: [ 0.0, 0.6, 0.6 ]
+      specular: [ 0.0, 0.6, 0.6 ]
+      ambient: [ 0.0, 0.0, 0.0 ]
+      reflection: [ 0.0, 0.0, 0.0 ]
+      transmission: [ 0.0, 0.0, 0.0 ]
+      eta: [ 0.0, 0.0, 0.0 ]
+      n: 3
+    - diffuse: [ 0.0, 0.6, 0.6 ]
+      specular: [ 0.0, 0.6, 0.6 ]
+      ambient: [ 0.0, 0.0, 0.0 ]
+      reflection: [ 0.0, 0.0, 0.0 ]
+      transmission: [ 0.0, 0.0, 0.0 ]
+      eta: [ 0.0, 0.0, 0.0 ]
+      n: 5
+    - diffuse: [ 0.0, 0.6, 0.6 ]
+      specular: [ 0.0, 0.6, 0.6 ]
+      ambient: [ 0.0, 0.0, 0.0 ]
+      reflection: [ 0.0, 0.0, 0.0 ]
+      transmission: [ 0.0, 0.0, 0.0 ]
+      eta: [ 0.0, 0.0, 0.0 ]
+      n: 10
+    - diffuse: [ 0.0, 0.6, 0.6 ]
+      specular: [ 0.0, 0.6, 0.6 ]
+      ambient: [ 0.0, 0.0, 0.0 ]
+      reflection: [ 0.0, 0.0, 0.0 ]
+      transmission: [ 0.0, 0.0, 0.0 ]
+      eta: [ 0.0, 0.0, 0.0 ]
+      n: 15
+  nodes:
+    - name: "ReflectSphere1"
+      components:
+        - Transform:
+            position: [ -1.5 , -1.5, -1.5 ]
+            rotation: [ 0.0, 0.0, 0.0 ]
+            scale: [ 0.6, 0.6, 0.6 ]
+        - MeshRenderer:
+            mesh: sphere
+            material_idx: 6
+    - name: "ReflectSphere2"
+      components:
+        - Transform:
+            position: [ 1.5 , 1.5, -1.5 ]
+            rotation: [ 0.0, 0.0, 0.0 ]
+            scale: [ 0.6, 0.6, 0.6 ]
+        - MeshRenderer:
+            mesh: sphere
+            material_idx: 6
+    - name: "TransmissionSphere1"
+      components:
+        - Transform:
+            position: [ 1.5 , -1.5, -1.5 ]
+            rotation: [ 0.0, 0.0, 0.0 ]
+            scale: [ 0.6, 0.6, 0.6 ]
+        - MeshRenderer:
+            mesh: sphere
+            material_idx: 7
+    - name: "TransmissionSphere2"
+      components:
+        - Transform:
+            position: [ -1.5 , 1.5, -1.5 ]
+            rotation: [ 0.0, 0.0, 0.0 ]
+            scale: [ 0.6, 0.6, 0.6 ]
+        - MeshRenderer:
+            mesh: sphere
+            material_idx: 7
+    - name: "Sphere1"
+      components:
+        - Transform:
+            position: [ -1.8 , -2.1, 0.8 ]
+            rotation: [ 0.0, 0.0, 0.0 ]
+            scale: [ 0.3, 0.3, 0.3 ]
+        - MeshRenderer:
+            mesh: sphere
+            material_idx: 8
+    - name: "Sphere2"
+      components:
+        - Transform:
+            position: [ -0.9 , -2.1, 0.8 ]
+            rotation: [ 0.0, 0.0, 0.0 ]
+            scale: [ 0.3, 0.3, 0.3 ]
+        - MeshRenderer:
+            mesh: sphere
+            material_idx: 9
+    - name: "Sphere3"
+      components:
+        - Transform:
+            position: [ 0.0 , -2.1, 0.8 ]
+            rotation: [ 0.0, 0.0, 0.0 ]
+            scale: [ 0.3, 0.3, 0.3 ]
+        - MeshRenderer:
+            mesh: sphere
+            material_idx: 10
+    - name: "Sphere4"
+      components:
+        - Transform:
+            position: [ 0.9 , -2.1, 0.8 ]
+            rotation: [ 0.0, 0.0, 0.0 ]
+            scale: [ 0.3, 0.3, 0.3 ]
+        - MeshRenderer:
+            mesh: sphere
+            material_idx: 11
+    - name: "Sphere5"
+      components:
+        - Transform:
+            position: [ 1.8 , -2.1, 0.8 ]
+            rotation: [ 0.0, 0.0, 0.0 ]
+            scale: [ 0.3, 0.3, 0.3 ]
+        - MeshRenderer:
+            mesh: sphere
+            material_idx: 12
+    - name: "Room"
+      components:
+        - Transform:
+            position: [ 0.0, 0.0, 0.0 ]
+            rotation: [ 0, 0.0, 0.0 ]
+            scale: [ 1.0, 1.0, 1.0 ]
+      children:
+        - name: "Floor"
+          components:
+            - Transform:
+                position: [ 0.0, -2.5, 0.0 ]
+                rotation: [ -90.0, 0.0, 0.0 ]
+                scale: [ 5.0, 5.0, 5.0 ]
+            - MeshRenderer:
+                mesh: plane
+                material_idx: 1
+        - name: "Ceil"
+          components:
+            - Transform:
+                position: [ 0.0, 2.5, 0.0 ]
+                rotation: [ 90.0, 0.0, 0.0 ]
+                scale: [ 5.0, 5.0, 5.0 ]
+            - MeshRenderer:
+                mesh: plane
+                material_idx: 1
+        - name: "Left"
+          components:
+            - Transform:
+                position: [ -2.5, 0.0, 0.0 ]
+                rotation: [ 0.0, 90.0, 0.0 ]
+                scale: [ 5.0, 5.0, 5.0 ]
+            - MeshRenderer:
+                mesh: plane
+                material_idx: 2
+        - name: "Right"
+          components:
+            - Transform:
+                position: [ 2.5, 0.0, 0.0 ]
+                rotation: [ 0.0, -90.0, 0.0 ]
+                scale: [ 5.0, 5.0, 5.0 ]
+            - MeshRenderer:
+                mesh: plane
+                material_idx: 3
+        - name: "Back11"
+          components:
+            - Transform:
+                position: [ -2.0, -2.0, -2.5 ]
+                rotation: [ 0.0, 0.0, 0.0 ]
+                scale: [ 1.0, 1.0, 1.0 ]
+            - MeshRenderer:
+                mesh: plane
+                material_idx: 4
+        - name: "Back12"
+          components:
+            - Transform:
+                position: [ -2.0, -1.0, -2.5 ]
+                rotation: [ 0.0, 0.0, 0.0 ]
+                scale: [ 1.0, 1.0, 1.0 ]
+            - MeshRenderer:
+                mesh: plane
+                material_idx: 1
+        - name: "Back13"
+          components:
+            - Transform:
+                position: [ -2.0, 0.0, -2.5 ]
+                rotation: [ 0.0, 0.0, 0.0 ]
+                scale: [ 1.0, 1.0, 1.0 ]
+            - MeshRenderer:
+                mesh: plane
+                material_idx: 4
+        - name: "Back14"
+          components:
+            - Transform:
+                position: [ -2.0, 1.0, -2.5 ]
+                rotation: [ 0.0, 0.0, 0.0 ]
+                scale: [ 1.0, 1.0, 1.0 ]
+            - MeshRenderer:
+                mesh: plane
+                material_idx: 1
+        - name: "Back15"
+          components:
+            - Transform:
+                position: [ -2.0, 2.0, -2.5 ]
+                rotation: [ 0.0, 0.0, 0.0 ]
+                scale: [ 1.0, 1.0, 1.0 ]
+            - MeshRenderer:
+                mesh: plane
+                material_idx: 4
+        - name: "Back21"
+          components:
+            - Transform:
+                position: [ -1.0, -2.0, -2.5 ]
+                rotation: [ 0.0, 0.0, 0.0 ]
+                scale: [ 1.0, 1.0, 1.0 ]
+            - MeshRenderer:
+                mesh: plane
+                material_idx: 1
+        - name: "Back22"
+          components:
+            - Transform:
+                position: [ -1.0, -1.0, -2.5 ]
+                rotation: [ 0.0, 0.0, 0.0 ]
+                scale: [ 1.0, 1.0, 1.0 ]
+            - MeshRenderer:
+                mesh: plane
+                material_idx: 4
+        - name: "Back23"
+          components:
+            - Transform:
+                position: [ -1.0, 0.0, -2.5 ]
+                rotation: [ 0.0, 0.0, 0.0 ]
+                scale: [ 1.0, 1.0, 1.0 ]
+            - MeshRenderer:
+                mesh: plane
+                material_idx: 1
+        - name: "Back24"
+          components:
+            - Transform:
+                position: [ -1.0, 1.0, -2.5 ]
+                rotation: [ 0.0, 0.0, 0.0 ]
+                scale: [ 1.0, 1.0, 1.0 ]
+            - MeshRenderer:
+                mesh: plane
+                material_idx: 4
+        - name: "Back25"
+          components:
+            - Transform:
+                position: [ -1.0, 2.0, -2.5 ]
+                rotation: [ 0.0, 0.0, 0.0 ]
+                scale: [ 1.0, 1.0, 1.0 ]
+            - MeshRenderer:
+                mesh: plane
+                material_idx: 1
+        - name: "Back31"
+          components:
+            - Transform:
+                position: [ 0, -2.0, -2.5 ]
+                rotation: [ 0.0, 0.0, 0.0 ]
+                scale: [ 1.0, 1.0, 1.0 ]
+            - MeshRenderer:
+                mesh: plane
+                material_idx: 4
+        - name: "Back32"
+          components:
+            - Transform:
+                position: [ 0, -1.0, -2.5 ]
+                rotation: [ 0.0, 0.0, 0.0 ]
+                scale: [ 1.0, 1.0, 1.0 ]
+            - MeshRenderer:
+                mesh: plane
+                material_idx: 1
+        - name: "Back33"
+          components:
+            - Transform:
+                position: [ 0, 0.0, -2.5 ]
+                rotation: [ 0.0, 0.0, 0.0 ]
+                scale: [ 1.0, 1.0, 1.0 ]
+            - MeshRenderer:
+                mesh: plane
+                material_idx: 4
+        - name: "Back34"
+          components:
+            - Transform:
+                position: [ 0, 1.0, -2.5 ]
+                rotation: [ 0.0, 0.0, 0.0 ]
+                scale: [ 1.0, 1.0, 1.0 ]
+            - MeshRenderer:
+                mesh: plane
+                material_idx: 1
+        - name: "Back35"
+          components:
+            - Transform:
+                position: [ 0, 2.0, -2.5 ]
+                rotation: [ 0.0, 0.0, 0.0 ]
+                scale: [ 1.0, 1.0, 1.0 ]
+            - MeshRenderer:
+                mesh: plane
+                material_idx: 4
+        - name: "Back41"
+          components:
+            - Transform:
+                position: [ 1.0, -2.0, -2.5 ]
+                rotation: [ 0.0, 0.0, 0.0 ]
+                scale: [ 1.0, 1.0, 1.0 ]
+            - MeshRenderer:
+                mesh: plane
+                material_idx: 1
+        - name: "Back42"
+          components:
+            - Transform:
+                position: [ 1.0, -1.0, -2.5 ]
+                rotation: [ 0.0, 0.0, 0.0 ]
+                scale: [ 1.0, 1.0, 1.0 ]
+            - MeshRenderer:
+                mesh: plane
+                material_idx: 4
+        - name: "Back43"
+          components:
+            - Transform:
+                position: [ 1.0, 0.0, -2.5 ]
+                rotation: [ 0.0, 0.0, 0.0 ]
+                scale: [ 1.0, 1.0, 1.0 ]
+            - MeshRenderer:
+                mesh: plane
+                material_idx: 1
+        - name: "Back44"
+          components:
+            - Transform:
+                position: [ 1.0, 1.0, -2.5 ]
+                rotation: [ 0.0, 0.0, 0.0 ]
+                scale: [ 1.0, 1.0, 1.0 ]
+            - MeshRenderer:
+                mesh: plane
+                material_idx: 4
+        - name: "Back45"
+          components:
+            - Transform:
+                position: [ 1.0, 2.0, -2.5 ]
+                rotation: [ 0.0, 0.0, 0.0 ]
+                scale: [ 1.0, 1.0, 1.0 ]
+            - MeshRenderer:
+                mesh: plane
+                material_idx: 1
+        - name: "Back51"
+          components:
+            - Transform:
+                position: [ 2.0, -2.0, -2.5 ]
+                rotation: [ 0.0, 0.0, 0.0 ]
+                scale: [ 1.0, 1.0, 1.0 ]
+            - MeshRenderer:
+                mesh: plane
+                material_idx: 4
+        - name: "Back52"
+          components:
+            - Transform:
+                position: [ 2.0, -1.0, -2.5 ]
+                rotation: [ 0.0, 0.0, 0.0 ]
+                scale: [ 1.0, 1.0, 1.0 ]
+            - MeshRenderer:
+                mesh: plane
+                material_idx: 1
+        - name: "Back53"
+          components:
+            - Transform:
+                position: [ 2.0, 0.0, -2.5 ]
+                rotation: [ 0.0, 0.0, 0.0 ]
+                scale: [ 1.0, 1.0, 1.0 ]
+            - MeshRenderer:
+                mesh: plane
+                material_idx: 4
+        - name: "Back54"
+          components:
+            - Transform:
+                position: [ 2.0, 1.0, -2.5 ]
+                rotation: [ 0.0, 0.0, 0.0 ]
+                scale: [ 1.0, 1.0, 1.0 ]
+            - MeshRenderer:
+                mesh: plane
+                material_idx: 1
+        - name: "Back55"
+          components:
+            - Transform:
+                position: [ 2.0, 2.0, -2.5 ]
+                rotation: [ 0.0, 0.0, 0.0 ]
+                scale: [ 1.0, 1.0, 1.0 ]
+            - MeshRenderer:
+                mesh: plane
+                material_idx: 4

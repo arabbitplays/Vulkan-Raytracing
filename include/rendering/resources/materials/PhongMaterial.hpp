@@ -47,7 +47,6 @@ namespace RtEngine {
 
 		MaterialProperties material_properties;
 		std::vector<std::shared_ptr<MaterialResources>> resources_buffer;
-		AllocatedBuffer materialBuffer;
 	};
 
 } // namespace RtEngine
