@@ -12,8 +12,9 @@ namespace RtEngine {
 
 		glm::mat4 nodeMatrix = shared_node->transform->getWorldTransform();
 
-		ctx.objects.push_back(RenderObject{InstanceData{meshAsset->geometry_id, meshMaterial->material_index},
-										   meshAsset->accelerationStructure, nodeMatrix, meshAsset->triangle_count});
+		float power = meshMaterial->material_index == 0 ? 1 : 0; // TODO remove this by getting it from the material instance
+		ctx.objects.push_back(RenderObject{InstanceMappingData{meshAsset->geometry_id, meshMaterial->material_index},
+										   meshAsset->accelerationStructure, nodeMatrix, meshAsset->triangle_count, power});
 	}
 
 	void MeshRenderer::definePropertySections() {

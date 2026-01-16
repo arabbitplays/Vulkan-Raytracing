@@ -157,10 +157,6 @@ namespace RtEngine {
 		return instance;
 	}
 
-	glm::vec4 MetalRoughMaterial::getEmissionForInstance(uint32_t material_instance_id) {
-		return resources_buffer[material_instance_id]->emission;
-	}
-
 	std::vector<std::shared_ptr<MetalRoughMaterial::MaterialResources>> MetalRoughMaterial::getResources() {
 		return resources_buffer;
 	}

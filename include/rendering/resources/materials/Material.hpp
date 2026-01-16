@@ -11,8 +11,9 @@
 #include <glm/vec4.hpp>
 #include <vulkan/vulkan_core.h>
 
+#include "MaterialInstance.hpp"
+
 namespace RtEngine {
-	struct MaterialInstance;
 	class Pipeline;
 
 	class Material {
@@ -39,7 +40,6 @@ namespace RtEngine {
 
 		virtual void buildPipelines(VkDescriptorSetLayout sceneLayout) = 0;
 		virtual void writeMaterial() = 0;
-		virtual glm::vec4 getEmissionForInstance(uint32_t material_instance_id) { return glm::vec4(0.0f); }
 		std::vector<std::shared_ptr<MaterialInstance>> getInstances();
 		std::shared_ptr<PropertiesSection> getProperties();
 		virtual std::vector<std::shared_ptr<Texture>> getTextures() = 0;
@@ -62,11 +62,6 @@ namespace RtEngine {
 
 		AllocatedBuffer material_buffer; // maps an instance to its respective material via a common index into the
 										 // constants and texture buffers
-	};
-
-	struct MaterialInstance {
-		std::shared_ptr<PropertiesSection> properties;
-		uint32_t material_index;
 	};
 
 } // namespace RtEngine

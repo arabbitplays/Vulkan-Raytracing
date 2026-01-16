@@ -136,7 +136,7 @@ namespace RtEngine {
 		}
 
 		if (bufferUpdateFlags & GEOMETRY_UPDATE || bufferUpdateFlags & MATERIAL_UPDATE) {
-			instance_manager->createEmittingInstancesBuffer(draw_context->objects, getMaterial());
+			instance_manager->createEmittingInstancesBuffer(draw_context->objects);
 			vulkan_context->descriptor_allocator->writeBuffer(7, instance_manager->getEmittingInstancesBuffer().handle,
 												  0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
 		}

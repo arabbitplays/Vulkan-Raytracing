@@ -12,18 +12,17 @@ namespace RtEngine {
 			resource_builder->destroyBuffer(instance_mapping_buffer);
 		}
 
-		std::vector<InstanceData> instance_datas;
+		std::vector<InstanceMappingData> instance_datas;
 		for (int i = 0; i < objects.size(); i++) {
 			instance_datas.push_back(objects[i].instance_data);
 		}
 
 		instance_mapping_buffer = resource_builder->stageMemoryToNewBuffer(instance_datas.data(),
-																		   instance_datas.size() * sizeof(InstanceData),
+																		   instance_datas.size() * sizeof(InstanceMappingData),
 																		   VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
 	}
 
-	void InstanceManager::createEmittingInstancesBuffer(std::vector<RenderObject> &objects,
-														std::shared_ptr<Material> material) {
+	void InstanceManager::createEmittingInstancesBuffer(const std::vector<RenderObject> &objects) {
 		assert(!objects.empty());
 
 		if (emitting_instances_buffer.handle != VK_NULL_HANDLE) {
@@ -35,7 +34,7 @@ namespace RtEngine {
 			EmittingInstanceData instance_data;
 			instance_data.instance_id = i;
 			instance_data.model_matrix = objects[i].transform;
-			float power = material->getEmissionForInstance(objects[i].instance_data.material_index).w;
+			float power = objects[i].emitting_power;
 			instance_data.primitive_count = objects[i].primitive_count;
 			if (power > 0.0f || (i == objects.size() - 1 && emitting_instances.empty())) {
 				emitting_instances.push_back(instance_data);

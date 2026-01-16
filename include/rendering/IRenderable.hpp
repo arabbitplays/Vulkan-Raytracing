@@ -5,7 +5,7 @@
 #define BASICS_IRENDERABLE_HPP
 
 namespace RtEngine {
-	struct InstanceData {
+	struct InstanceMappingData {
 		uint32_t geometry_id;
 		uint32_t material_index;
 	};
@@ -18,10 +18,11 @@ namespace RtEngine {
 	};
 
 	struct RenderObject {
-		InstanceData instance_data;
+		InstanceMappingData instance_data;
 		std::shared_ptr<AccelerationStructure> acceleration_structure;
 		glm::mat4 transform;
 		uint32_t primitive_count;
+		float emitting_power;
 	};
 
 	struct DrawContext {

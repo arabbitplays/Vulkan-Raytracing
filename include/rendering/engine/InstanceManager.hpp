@@ -16,7 +16,7 @@ namespace RtEngine {
 		InstanceManager(std::shared_ptr<ResourceBuilder> resource_builder) : resource_builder(resource_builder) {}
 
 		void createInstanceMappingBuffer(std::vector<RenderObject> &objects);
-		void createEmittingInstancesBuffer(std::vector<RenderObject> &objects, std::shared_ptr<Material> material);
+		void createEmittingInstancesBuffer(const std::vector<RenderObject> &objects);
 
 		AllocatedBuffer getInstanceBuffer() const;
 		AllocatedBuffer getEmittingInstancesBuffer() const;

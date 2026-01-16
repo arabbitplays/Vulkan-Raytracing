@@ -42,7 +42,6 @@ namespace RtEngine {
 
 		void buildPipelines(VkDescriptorSetLayout sceneLayout) override;
 		void writeMaterial() override;
-		glm::vec4 getEmissionForInstance(uint32_t material_instance_id) override;
 		std::vector<std::shared_ptr<MaterialResources>> getResources();
 		std::vector<std::shared_ptr<Texture>> getTextures() override;
 
