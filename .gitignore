@@ -31,4 +31,5 @@
 *.out
 *.app
 
-flake.lock
+# Clion
+.idea/
