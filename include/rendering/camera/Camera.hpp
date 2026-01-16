@@ -15,19 +15,19 @@ namespace RtEngine {
 			initCamera(static_cast<float>(image_width) / static_cast<float>(image_height));
 		}
 
-		virtual glm::mat4 getView();
-		virtual glm::mat4 getInverseView();
-		glm::mat4 getProjection();
-		glm::mat4 getInverseProjection();
-		glm::vec3 getPosition();
+		[[nodiscard]] glm::mat4 getView() const;
+		[[nodiscard]] glm::mat4 getInverseView() const;
+		[[nodiscard]] glm::mat4 getProjection() const;
+		[[nodiscard]] glm::mat4 getInverseProjection() const;
+		[[nodiscard]] glm::vec3 getPosition() const;
 
 		virtual void processGlfwKeyEvent(int key, int action) {};
 		virtual void processGlfwMouseEvent(double xPos, double yPos) {};
-		virtual void update(uint32_t image_width, uint32_t image_height) {
-			if (image_width != this->image_width || image_height != this->image_height) {
-				initCamera(static_cast<float>(image_width) / static_cast<float>(image_height));
-				this->image_width = image_width;
-				this->image_height = image_height;
+		virtual void update(const uint32_t new_image_width, const uint32_t new_image_height) {
+			if (new_image_width != this->image_width || new_image_height != this->image_height) {
+				updateProjection(static_cast<float>(new_image_width) / static_cast<float>(new_image_height));
+				this->image_width = new_image_width;
+				this->image_height = new_image_height;
 			}
 		};
 
@@ -36,13 +36,16 @@ namespace RtEngine {
 
 	protected:
 		void initCamera(float aspect) {
-			glm::mat4 proj = glm::perspective(glm::radians(fov), aspect, 0.1f, 512.0f);
-			proj[1][1] *= -1; // flip y-axis because glm is for openGL
-			glm::mat4 view = glm::lookAt(position, position + view_dir, glm::vec3(0, 1, 0));
-
+			view = glm::lookAt(position, position + view_dir, glm::vec3(0, 1, 0));
 			inverse_view = glm::inverse(view);
-			inverse_projection = glm::inverse(proj);
+			updateProjection(aspect);
 			position = glm::vec3(inverse_view[3]);
+		}
+
+		void updateProjection(float aspect) {
+			projection = glm::perspective(glm::radians(fov), aspect, 0.1f, 512.0f);
+			projection[1][1] *= -1; // flip y-axis because glm is for openGL
+			inverse_projection = glm::inverse(projection);
 		}
 
 		glm::mat4 view;

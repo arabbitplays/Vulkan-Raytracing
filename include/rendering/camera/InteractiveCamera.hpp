@@ -8,6 +8,9 @@
 namespace RtEngine {
 	class InteractiveCamera : public Camera {
 	public:
+		static constexpr float MOVE_SPEED = 0.2f;
+		static constexpr float ANGULAR_MOVE_SPEED = 1 / 200.0f;
+
 		InteractiveCamera() = default;
 		InteractiveCamera(uint32_t image_width, uint32_t image_height, float fov, glm::vec3 position,
 						  glm::vec3 view_dir) : Camera(image_width, image_height, fov, position, view_dir) {
@@ -16,12 +19,10 @@ namespace RtEngine {
 			yaw = 0.0f;
 		}
 
-		glm::mat4 getView() override;
-		glm::mat4 getInverseView() override;
-
 		void processGlfwKeyEvent(int key, int action) override;
 		void processGlfwMouseEvent(double xPos, double yPos) override;
 		void update(uint32_t image_width, uint32_t image_height) override;
+		void updateViewMatrices();
 
 		glm::vec3 velocity;
 		bool isActive = true;

@@ -10,7 +10,8 @@
 namespace RtEngine {
 	void InteractiveCamera::update(uint32_t image_width, uint32_t image_height) {
 		glm::mat4 cameraRotation = getRotationMatrix();
-		position += glm::vec3(cameraRotation * glm::vec4(velocity * 0.5f, 0.f));
+		position += glm::vec3(cameraRotation * glm::vec4(velocity * MOVE_SPEED, 0.f));
+		updateViewMatrices();
 	}
 
 	void InteractiveCamera::processGlfwKeyEvent(int key, int action) {
@@ -85,22 +86,18 @@ namespace RtEngine {
 		lastY = yPos;
 
 		// Adjust yaw and pitch like in SDL
-		yaw += xOffset / 200.f;
-		pitch += yOffset / 200.f;
+		yaw += xOffset * ANGULAR_MOVE_SPEED;
+		pitch += yOffset * ANGULAR_MOVE_SPEED;
 
 		constexpr float max = M_PI / 2;
 		pitch = std::clamp(pitch, -max, max);
 	}
 
-	glm::mat4 InteractiveCamera::getView() {
-		// the view matrix is the opposite of the camera transform calculated in getInverseView()
-		return glm::inverse(getInverseView());
-	}
-
-	glm::mat4 InteractiveCamera::getInverseView() {
+	void InteractiveCamera::updateViewMatrices() {
 		glm::mat4 cameraTranslation = glm::translate(glm::mat4(1.0f), position);
 		glm::mat4 cameraRotation = getRotationMatrix();
-		return cameraTranslation * cameraRotation;
+		inverse_view = cameraTranslation * cameraRotation;
+		view = glm::inverse(getInverseView());
 	}
 
 	glm::mat4 InteractiveCamera::getRotationMatrix() const {
