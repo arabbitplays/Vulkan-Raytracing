@@ -27,7 +27,15 @@ namespace RtEngine {
     }
 
     void PhongInstance::initializeProperties() {
-        // TODO implement
+        properties = std::make_shared<PropertiesSection>("Phong Material");
+        properties->addVector("Diffuse", &diffuse);
+        properties->addVector("Specular", &specular);
+        properties->addVector("Ambient", &ambient);
+
+        properties->addVector("Reflection", &reflection);
+        properties->addVector("Transmission", &transmission);
+        properties->addFloat("N", &n);
+        properties->addVector("Eta", &eta);
     }
 
 } // RtEngine

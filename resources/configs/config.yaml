@@ -4,7 +4,10 @@ Material:
   Sample_Lights: true
   Sample_BSDF: true
   Russian_Roulette: false
-  Denoising: true
+  Denoising: false
   Samples_Per_Pixel: 3
+  Shadows: true
+  Dispersion: true
+  Fresnel: true
 Renderer:
-  Scene: base_scene.yaml
+  Scene: cornell_phong.yaml

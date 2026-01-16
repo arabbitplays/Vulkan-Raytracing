@@ -21,18 +21,20 @@ namespace RtEngine {
 
 		struct PushConstants {
 			int32_t recursion_depth = 3;
-			int32_t shadows = false, dispersion = false, fresnel = false;
+			int32_t shadows = false, fresnel = false, dispersion = false;
 		};
 
 		PhongMaterial(const std::shared_ptr<VulkanContext> &context, const std::shared_ptr<TextureRepository> &texture_repository) :
 			Material(PHONG_MATERIAL_NAME, context, texture_repository) {
 			resource_manager = std::make_shared<MaterialResourceManager<PhongResources>>(vulkan_context);
+			mainDeletionQueue.pushFunction([this]() {
+				resource_manager->destroyResources();
+			});
 		}
 
 		void buildPipelines(const VkPhysicalDeviceRayTracingPipelinePropertiesKHR& raytracingProperties) override;
 		void writeMaterial() override;
-		std::shared_ptr<MaterialInstance> createInstance(const PhongInstance::Parameters &parameters
-		);
+		std::shared_ptr<MaterialInstance> createInstance(const PhongInstance::Parameters &parameters);
 		void addInstanceToResources(MaterialInstance &inst) override;
 		void addInstanceToResources(PhongInstance &inst);
 

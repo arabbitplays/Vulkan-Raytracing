@@ -86,8 +86,9 @@ namespace RtEngine {
 	void MetalRoughMaterial::recordRenderToImage(VkCommandBuffer command_buffer, const std::shared_ptr<DrawContext> &draw_context) {
 		Material::recordRenderToImage(command_buffer, draw_context);
 
-		denoiser->writeResources(draw_context->target->getCurrentTargetImage(), g_buffer);
-		denoiser->recordCommands(command_buffer);
+		// TODO finish Denoiser
+		//denoiser->writeResources(draw_context->target->getCurrentTargetImage(), g_buffer);
+		//denoiser->recordCommands(command_buffer);
 
 		push_constants.curr_sample_count += push_constants.samples_per_pixel;
 	}

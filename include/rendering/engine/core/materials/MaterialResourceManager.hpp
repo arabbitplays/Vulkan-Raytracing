@@ -11,7 +11,7 @@
 
 namespace RtEngine {
     struct MaterialResources {
-
+        // intentionally empty
     };
 
     template <typename T>
