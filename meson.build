@@ -77,8 +77,11 @@ shader_generator = generator(
     depends: shader_generator_deps
 )
 
+run_command(py, 'scripts/generate_meson_files.py', 'src', check: true)
+
 src = []
 subdir('src')
+subdir('shaders')
 
 exe = executable(
     'renderer',
