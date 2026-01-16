@@ -27,7 +27,10 @@ void initPayload() {
 }
 
 void main() {
-    payload.rng_state = imageLoad(rng_tex, ivec2(gl_LaunchIDEXT.xy));
+    ivec2 pixel_coord = ivec2(gl_LaunchIDEXT.xy);
+    ivec2 screen_size = ivec2(gl_LaunchSizeEXT.xy);
+
+    payload.rng_state = imageLoad(rng_tex, pixel_coord);
 
     float focus_dist = 10;
     float lens_radius = 0;
@@ -48,7 +51,7 @@ void main() {
     dvec3 color = vec3(0);
     for (int i = 0; i < options.samples_per_pixel; i++) {
         initPayload();
-        generatePrimaryRay(ivec2(gl_LaunchIDEXT.xy), ivec2(gl_LaunchSizeEXT.xy), payload.next_origin, payload.next_direction, payload.rng_state);
+        generatePrimaryRay(pixel_coord, screen_size, payload.next_origin, payload.next_direction, payload.rng_state);
 
         while (payload.depth < options.recursion_depth && payload.next_direction != vec3(0.0)) {
             float tmin = EPSILON;
@@ -63,12 +66,12 @@ void main() {
 
     uint32_t number_of_shader_calls = options.curr_sample_count / options.samples_per_pixel;
     if (options.curr_sample_count != 0) {
-        vec3 prev_color = imageLoad(render_image, ivec2(gl_LaunchIDEXT.xy)).xyz;
+        vec3 prev_color = imageLoad(render_image, pixel_coord).xyz;
         color = (number_of_shader_calls * prev_color + color) / (number_of_shader_calls + 1);
     }
 
     if (STORE_RNG) {
-        imageStore(rng_tex, ivec2(gl_LaunchIDEXT.xy), payload.rng_state);
+        imageStore(rng_tex, pixel_coord, payload.rng_state);
     }
-    imageStore(render_image, ivec2(gl_LaunchIDEXT.xy), vec4(color, 1.0));
+    imageStore(render_image, pixel_coord, vec4(color, 1.0));
 }
