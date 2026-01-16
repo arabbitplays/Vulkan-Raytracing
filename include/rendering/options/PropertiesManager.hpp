@@ -1,101 +1,91 @@
-//
-// Created by oschdi on 2/28/25.
-//
-
 #ifndef PROPERTIESMANAGER_HPP
 #define PROPERTIESMANAGER_HPP
 
-#include <cassert>
 #include <ConfigLoader.hpp>
+#include <Properties.hpp>
+#include <cassert>
+#include <glm/vec3.hpp>
 #include <memory>
 #include <string>
 #include <unordered_map>
 #include <vector>
 
-constexpr std::string MATERIAL_SECTION_NAME = "Material";
-constexpr std::string RENDERER_SECTION_NAME = "Renderer";
+namespace RtEngine {
+	constexpr std::string MATERIAL_SECTION_NAME = "Material";
+	constexpr std::string RENDERER_SECTION_NAME = "Renderer";
 
-constexpr uint32_t MAX_PUSH_CONSTANT_SIZE = 16 * sizeof(uint32_t);
+	constexpr uint32_t MAX_PUSH_CONSTANT_SIZE = 16 * sizeof(uint32_t);
 
-struct BoolProperty {
-    std::string name;
-    int32_t* var;
-    bool imgui_option;
-};
+	struct PropertiesSection {
+		PropertiesSection(std::string name) : section_name(name) {}
 
-struct IntProperty
-{
-    std::string name;
-    int32_t* var;
-    int32_t min, max;
-};
+		void addBool(const std::string &name, int32_t *var) {
+			auto property = std::make_shared<BoolProperty>(name, var);
+			bool_properties.push_back(property);
+		}
 
-struct StringProperty
-{
-    std::string name;
-    std::string* var;
-};
+		void addInt(const std::string &name, int32_t *var, uint32_t flags = ALL_PROPERTY_FLAGS, int32_t min = 0,
+					int32_t max = -1) {
+			auto property = std::make_shared<IntProperty>(name, var, flags, min, max);
+			int_properties.push_back(property);
+		}
 
-struct SelectionProperty
-{
-    std::string name;
-    std::string* var;
-    int option_idx;
-    std::vector<std::string> selection_options;
-};
+		void addFloat(const std::string &name, float *var, uint32_t flags = ALL_PROPERTY_FLAGS, float min = 0,
+					  float max = -1) {
+			auto property = std::make_shared<FloatProperty>(name, var, flags, min, max);
+			float_properties.push_back(property);
+		}
 
-struct Properties {
-public:
-    Properties(std::string name) : section_name(name) {}
+		void addString(const std::string &name, std::string *var, uint32_t flags = ALL_PROPERTY_FLAGS) {
+			auto property = std::make_shared<StringProperty>(name, var, flags);
+			string_properties.push_back(property);
+		}
 
-    void addBool(const std::string& name, int32_t* var) {
-        bool_properties.push_back(std::make_shared<BoolProperty>(name, var, *var > 0 ? true : false));
-    }
+		void addVector(const std::string &name, glm::vec3 *var, uint32_t flags = ALL_PROPERTY_FLAGS) {
+			auto property = std::make_shared<VectorProperty>(name, var, flags);
+			vector_properties.push_back(property);
+		}
 
-    void addInt(const std::string& name, int32_t* var, int32_t min = 0, int32_t max = -1)
-    {
-        int_properties.push_back(std::make_shared<IntProperty>(name, var, min, max));
-    }
+		void addSelection(const std::string &name, std::string *var, std::vector<std::string> selection_options,
+						  uint32_t flags = ALL_PROPERTY_FLAGS) {
+			assert(!selection_options.empty());
+			auto property = std::make_shared<SelectionProperty>(name, var, selection_options, flags);
+			selection_properties.push_back(property);
+			*var = selection_options.at(0);
+		}
 
-    void addString(const std::string& name, std::string* var)
-    {
-        string_properties.push_back(std::make_shared<StringProperty>(name, var));
-    }
+		std::string section_name;
+		std::vector<std::shared_ptr<BoolProperty>> bool_properties;
+		std::vector<std::shared_ptr<IntProperty>> int_properties;
+		std::vector<std::shared_ptr<FloatProperty>> float_properties;
+		std::vector<std::shared_ptr<StringProperty>> string_properties;
+		std::vector<std::shared_ptr<VectorProperty>> vector_properties;
+		std::vector<std::shared_ptr<SelectionProperty>> selection_properties;
+	};
 
-    void addSelection(const std::string& name, std::string* var, std::vector<std::string> selection_options)
-    {
-        assert(!selection_options.empty());
-        selection_properties.push_back(std::make_shared<SelectionProperty>(name, var, 0, selection_options));
-        *var = selection_options.at(0);
-    }
+	class PropertiesManager {
+	public:
+		PropertiesManager() = default;
+		PropertiesManager(const std::string &config_file_path);
+		PropertiesManager(const YAML::Node &config);
 
-    void addString(const char* str);
+		void addPropertySection(const std::shared_ptr<PropertiesSection> &properties,
+								uint32_t flags = ALL_PROPERTY_FLAGS);
+		void *getPushConstants(uint32_t *size);
+		std::vector<std::shared_ptr<PropertiesSection>> getSections(uint32_t filter_flags = NONE_PROPERTY_FLAG);
+		bool serialize();
 
-    std::string section_name;
-    std::vector<std::shared_ptr<BoolProperty>> bool_properties;
-    std::vector<std::shared_ptr<IntProperty>> int_properties;
-    std::vector<std::shared_ptr<StringProperty>> string_properties;
-    std::vector<std::shared_ptr<SelectionProperty>> selection_properties;
-};
+		std::unordered_map<std::string, std::shared_ptr<PropertiesSection>> property_sections;
+		std::unordered_map<std::string, uint32_t> section_flags;
+		int32_t curr_sample_count, emitting_instances_count, samples_per_pixel = 10;
 
-class PropertiesManager {
-public:
-    PropertiesManager(const std::string& config_file_path);
+	private:
+		void initSectionWithConfig(const std::shared_ptr<PropertiesSection> &properties);
+		void updatePushConstants();
 
-    void addPropertySection(const std::shared_ptr<Properties>& properties);
-    void* getPushConstants(uint32_t* size);
+		std::shared_ptr<ConfigLoader> config;
+		std::vector<int32_t> push_constants;
+	};
 
-    std::unordered_map<std::string, std::shared_ptr<Properties>> properties;
-    int32_t curr_sample_count, emitting_instances_count;
-
-private:
-    void initSectionWithConfig(const std::shared_ptr<Properties>& properties);
-    void updatePushConstants();
-
-    std::shared_ptr<ConfigLoader> config;
-    std::vector<int32_t> push_constants;
-};
-
-
-
-#endif //PROPERTIESMANAGER_HPP
+} // namespace RtEngine
+#endif // PROPERTIESMANAGER_HPP

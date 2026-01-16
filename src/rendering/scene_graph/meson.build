@@ -1,4 +1,5 @@
+subdir('components')
+
 src += files(
-    'MeshNode.cpp',
     'Node.cpp',
 )

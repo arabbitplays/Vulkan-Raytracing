@@ -2,30 +2,24 @@
 
 struct Material {
     vec3 albedo;
+    float padding;
     float metallic;
     float roughness;
     float ao;
-    vec3 eta;
+    float eta;
     vec3 emission_color;
     float emission_power;
+    int albedo_tex_idx;
+    int metal_rough_ao_tex_idx;
+    int normal_tex_idx;
 };
 
+layout(binding = 0, set = 1) readonly buffer MaterialBuffer {
+    Material[] data;
+} material_buffer;
+
 Material getMaterial(uint material_id) {
-    uint base_index = 3 * material_id;
-    vec4 A = material_buffer.data[base_index];
-    vec4 B = material_buffer.data[base_index + 1];
-    vec4 C = material_buffer.data[base_index + 2];
-
-    Material m;
-    m.albedo = A.xyz;
-    m.metallic = B.x;
-    m.roughness = B.y;
-    m.ao = B.z;
-    m.eta = vec3(B.w); // TODO Fix this
-    m.emission_color = C.xyz;
-    m.emission_power = C.w;
-
-    return m;
+    return material_buffer.data[material_id];
 }
 
 // Throwbridge Reitz Distribution

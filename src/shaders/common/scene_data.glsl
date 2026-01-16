@@ -6,5 +6,5 @@ layout(binding = 2, set = 0) uniform SceneData {
     vec3 pointLightColors[4];
     vec4 ambientColor;
     vec4 sunlightDirection; // w for power
-    vec3 sunlightColor;
+    vec4 sunlightColor;
 } sceneData;

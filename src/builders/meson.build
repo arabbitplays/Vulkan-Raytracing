@@ -5,5 +5,5 @@ src += files(
     'ModelLoader.cpp',
     'RasterizerPipelineBuilder.cpp',
     'RenderPassBuilder.cpp',
-    'RessourceBuilder.cpp',
+    'ResourceBuilder.cpp',
 )

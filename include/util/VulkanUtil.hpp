@@ -1,82 +1,88 @@
-//
-// Created by oster on 09.09.2024.
-//
-
-#include <string>
-#include <vector>
-#include <fstream>
-#include <vulkan/vulkan_core.h>
-
 #ifndef BASICS_VULKANUTIL_HPP
 #define BASICS_VULKANUTIL_HPP
 
-#endif //BASICS_VULKANUTIL_HPP
+#include <fstream>
+#include <optional>
+#include <string>
+#include <vector>
+#include <vulkan/vulkan_core.h>
 
-class VulkanUtil {
-    VulkanUtil() = delete;
+namespace RtEngine {
+	struct QueueFamilyIndices {
+		std::optional<uint32_t> graphicsFamily;
+		std::optional<uint32_t> presentFamily;
 
-public:
-    static VkShaderModule createShaderModule(VkDevice device, const std::size_t spv_size,
-             const uint32_t spv[]) {
-        VkShaderModuleCreateInfo createInfo{};
-        createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-        createInfo.codeSize = spv_size;
-        createInfo.pCode = spv;
+		bool isComplete() const { return graphicsFamily.has_value() && presentFamily.has_value(); }
+	};
 
-        VkShaderModule shaderModule;
-        if (vkCreateShaderModule(device, &createInfo, nullptr, &shaderModule) != VK_SUCCESS) {
-            throw std::runtime_error("failed to create shader module!");
-        }
-        return shaderModule;
-    }
+	class VulkanUtil {
+		VulkanUtil() = delete;
 
-    static QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device, VkSurfaceKHR surface) {
-        QueueFamilyIndices indices;
+	public:
+		static VkShaderModule createShaderModule(VkDevice device, const std::size_t spv_size, const uint32_t spv[]) {
+			VkShaderModuleCreateInfo createInfo{};
+			createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+			createInfo.codeSize = spv_size;
+			createInfo.pCode = spv;
 
-        uint32_t queueFamilyCount = 0;
-        vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, nullptr);
-        std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyCount);
-        vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, queueFamilies.data());
+			VkShaderModule shaderModule;
+			if (vkCreateShaderModule(device, &createInfo, nullptr, &shaderModule) != VK_SUCCESS) {
+				throw std::runtime_error("failed to create shader module!");
+			}
+			return shaderModule;
+		}
 
-        int i = 0;
-        for(const auto& queueFamily : queueFamilies) {
-            if (queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT) {
-                indices.graphicsFamily = i;
-            }
+		static QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device, VkSurfaceKHR surface) {
+			QueueFamilyIndices indices;
 
-            VkBool32 presentSupport = false;
-            vkGetPhysicalDeviceSurfaceSupportKHR(device, i, surface, &presentSupport);
-            if (presentSupport) {
-                indices.presentFamily = i;
-            }
+			uint32_t queueFamilyCount = 0;
+			vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, nullptr);
+			std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyCount);
+			vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, queueFamilies.data());
 
-            if (indices.isComplete()) {
-                break;
-            }
+			int i = 0;
+			for (const auto &queueFamily: queueFamilies) {
+				if (queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT) {
+					indices.graphicsFamily = i;
+				}
 
-            i++;
-        }
-        return indices;
-    }
+				VkBool32 presentSupport = false;
+				vkGetPhysicalDeviceSurfaceSupportKHR(device, i, surface, &presentSupport);
+				if (presentSupport) {
+					indices.presentFamily = i;
+				}
 
-    static inline uint32_t alignedSize(uint32_t value, uint32_t alignment) {
-        return (value + (alignment - 1)) & ~(alignment - 1);
-    }
-private:
-    static std::vector<char> readFile(const std::string& filename) {
-        std::ifstream file(filename, std::ios::ate | std::ios::binary);
+				if (indices.isComplete()) {
+					break;
+				}
 
-        if (!file.is_open()) {
-            throw std::runtime_error("failed to open file " + filename);
-        }
+				i++;
+			}
+			return indices;
+		}
 
-        size_t fileSize = (size_t) file.tellg();
-        std::vector<char> buffer(fileSize);
+		static inline uint32_t alignedSize(uint32_t value, uint32_t alignment) {
+			return (value + (alignment - 1)) & ~(alignment - 1);
+		}
 
-        file.seekg(0);
-        file.read(buffer.data(), fileSize);
+	private:
+		static std::vector<char> readFile(const std::string &filename) {
+			std::ifstream file(filename, std::ios::ate | std::ios::binary);
 
-        file.close();
-        return buffer;
-    }
-};
+			if (!file.is_open()) {
+				throw std::runtime_error("failed to open file " + filename);
+			}
+
+			size_t fileSize = (size_t) file.tellg();
+			std::vector<char> buffer(fileSize);
+
+			file.seekg(0);
+			file.read(buffer.data(), fileSize);
+
+			file.close();
+			return buffer;
+		}
+	};
+} // namespace RtEngine
+
+#endif // BASICS_VULKANUTIL_HPP

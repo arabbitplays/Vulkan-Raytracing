@@ -22,6 +22,7 @@
         vulkan-headers
         vulkan-loader
         vulkan-tools
+        vulkan-validation-layers
         pkg-config
         doxygen
         python3
@@ -31,7 +32,7 @@
         glfw
         glm
         spdlog
-        imgui
+        # imgui # no backend vulkan implementation in the nixpkgs version, let it build over meson
         stb
         assimp
         yaml-cpp

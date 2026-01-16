@@ -12,9 +12,9 @@
 
 layout(binding = 0, set = 0) uniform accelerationStructureEXT topLevelAS;
 
-layout(binding = 1, set = 1) uniform sampler2D albedo_textures[64];
-layout(binding = 2, set = 1) uniform sampler2D metal_rough_ao_textures[64];
-layout(binding = 3, set = 1) uniform sampler2D normal_textures[64];
+layout(binding = 1, set = 1) uniform sampler2D albedo_textures[16];
+layout(binding = 2, set = 1) uniform sampler2D metal_rough_ao_textures[16];
+layout(binding = 3, set = 1) uniform sampler2D normal_textures[16];
 
 
 hitAttributeEXT vec3 attribs;
@@ -51,18 +51,18 @@ void main() {
     mat3 transpose_tbn = transpose(TBN);
 
     if (options.normal_mapping) {
-        vec3 texNormal = texture(normal_textures[triangle.material_idx], uv).xyz;
+        vec3 texNormal = texture(normal_textures[material.normal_tex_idx], uv).xyz;
         texNormal = texNormal * 2.0 - 1.0;
         N = normalize(TBN * texNormal);
     }
 
     vec3 V = -normalize(gl_WorldRayDirectionEXT);
 
-    vec3 albedo = texture(albedo_textures[triangle.material_idx], uv).xyz + material.albedo;
-    float metallic = texture(metal_rough_ao_textures[triangle.material_idx], uv).x + material.metallic;
-    float roughness = texture(metal_rough_ao_textures[triangle.material_idx], uv).y + material.roughness;
-    float ao = texture(metal_rough_ao_textures[triangle.material_idx], uv).z + material.ao;
-    float eta = material.eta.x; // TODO eta
+    vec3 albedo = texture(albedo_textures[material.albedo_tex_idx], uv).xyz + material.albedo;
+    float metallic = texture(metal_rough_ao_textures[material.metal_rough_ao_tex_idx], uv).x + material.metallic;
+    float roughness = texture(metal_rough_ao_textures[material.metal_rough_ao_tex_idx], uv).y + material.roughness;
+    float ao = texture(metal_rough_ao_textures[material.metal_rough_ao_tex_idx], uv).z + material.ao;
+    float eta = material.eta;
 
     // no direct light sampling or handle light that goes directly to the camera
     if (!options.sample_light || payload.specular_bounce || (payload.depth == 0 && material.emission_power > 0)) {
@@ -128,5 +128,4 @@ void main() {
             }
         }
     }
-
 }

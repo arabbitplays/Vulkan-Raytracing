@@ -1,39 +1,27 @@
-//
-// Created by oster on 07.09.2024.
-//
-
 #ifndef BASICS_COMMANDMANAGER_HPP
 #define BASICS_COMMANDMANAGER_HPP
 
-
-#include <vulkan/vulkan_core.h>
+#include <DeviceManager.hpp>
+#include <VulkanUtil.hpp>
+#include <memory>
 #include <optional>
+#include <vulkan/vulkan_core.h>
 
-struct QueueFamilyIndices {
-    std::optional<uint32_t> graphicsFamily;
-    std::optional<uint32_t> presentFamily;
+namespace RtEngine {
+	class CommandManager {
+	public:
+		VkCommandPool commandPool{};
 
-    bool isComplete() const {
-        return graphicsFamily.has_value() && presentFamily.has_value();
-    }
-};
+		CommandManager();
+		CommandManager(std::shared_ptr<DeviceManager> deviceManager);
+		void createCommandPool();
+		VkCommandBuffer beginSingleTimeCommands();
+		void endSingleTimeCommand(VkCommandBuffer commandBuffer);
+		void destroyCommandManager();
 
-class CommandManager {
-public:
-    VkCommandPool commandPool{};
+	private:
+		std::shared_ptr<DeviceManager> deviceManager;
+	};
 
-    CommandManager();
-    CommandManager(VkDevice device, QueueFamilyIndices queueFamilyIndices);
-    void createCommandPool();
-    VkCommandBuffer beginSingleTimeCommands();
-    void endSingleTimeCommand(VkCommandBuffer commandBuffer);
-    void destroyCommandManager();
-
-private:
-    VkDevice device;
-    VkQueue graphicsQueue{};
-    QueueFamilyIndices queueFamilyIndices;
-};
-
-
-#endif //BASICS_COMMANDMANAGER_HPP
+} // namespace RtEngine
+#endif // BASICS_COMMANDMANAGER_HPP

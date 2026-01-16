@@ -9,10 +9,22 @@
 #include "../common/random.glsl"
 #include "../common/constants.glsl"
 
+#define STORE_RNG true
+
 layout(binding = 0, set = 0) uniform accelerationStructureEXT topLevelAS;
 layout(binding = 1, set = 0, rgba8) uniform image2D image;
 
 layout(location = 0) rayPayloadEXT Payload payload;
+
+void initPayload(vec3 origin, vec3 direction) {
+    payload.next_origin = origin;
+    payload.next_direction = direction;
+    payload.light = vec3(0.0);
+    payload.depth = 0;
+    payload.beta = vec3(1.0);
+    payload.eta_scale = 1;
+    payload.specular_bounce = false;
+}
 
 void main() {
     payload.rng_state = imageLoad(rng_tex, ivec2(gl_LaunchIDEXT.xy));
@@ -21,26 +33,48 @@ void main() {
     const vec2 inUV = pixelCenter / vec2(gl_LaunchSizeEXT.xy);
     vec2 d = inUV * 2.0 - 1.0;
 
-    payload.next_origin = (sceneData.inv_view * vec4(0,0,0,1)).xyz;
+    vec3 origin = (sceneData.inv_view * vec4(0,0,0,1)).xyz;
     vec4 target = sceneData.inv_proj * vec4(d.x, d.y, 1, 1);
-    payload.next_direction = (sceneData.inv_view * vec4(normalize(target.xyz), 0)).xyz;
-    payload.light = vec3(0.0);
-    payload.depth = 0;
-    payload.beta = vec3(1.0);
-    payload.eta_scale = 1;
-    payload.specular_bounce = false;
+    vec3 direction = (sceneData.inv_view * vec4(normalize(target.xyz), 0)).xyz;
 
-    while (payload.depth < options.recursion_depth && payload.next_direction != vec3(0.0)) {
-        float tmin = EPSILON;
-        float tmax = 10000.0;
+    float focus_dist = 10;
+    float lens_radius = 0;
 
-        traceRayEXT(topLevelAS, gl_RayFlagsOpaqueEXT, 0xff, 0, 0, 0, payload.next_origin, tmin, payload.next_direction, tmax, 0);
-        payload.depth++;
+    if (lens_radius != 0) {
+        vec3 convergence_point = origin + focus_dist * direction;
+
+        vec2 rd = lens_radius * sampleUniformDiskPolar(payload.rng_state);
+        vec3 right = normalize((sceneData.inv_view * vec4(1,0,0,0)).xyz);
+        vec3 up    = normalize((sceneData.inv_view * vec4(0,1,0,0)).xyz);
+        vec3 offset = rd.x * right + rd.y * up;
+
+        origin += offset;
+        direction = normalize(convergence_point - origin);
     }
 
-    vec3 prev_color = imageLoad(image, ivec2(gl_LaunchIDEXT.xy)).xyz;
-    vec3 color = (options.curr_sample_count * prev_color + payload.light) / (options.curr_sample_count + 1);
+    initPayload(origin, direction);
 
-    imageStore(rng_tex, ivec2(gl_LaunchIDEXT.xy), payload.rng_state);
+    vec3 color = vec3(0);
+    for (int i = 0; i < options.samples_per_pixel; i++) {
+        while (payload.depth < options.recursion_depth && payload.next_direction != vec3(0.0)) {
+            float tmin = EPSILON;
+            float tmax = 10000.0;
+
+            traceRayEXT(topLevelAS, gl_RayFlagsOpaqueEXT, 0xff, 0, 0, 0, payload.next_origin, tmin, payload.next_direction, tmax, 0);
+            payload.depth++;
+        }
+        color += payload.light;
+    }
+    color /= options.samples_per_pixel;
+
+    if (options.curr_sample_count != 0) {
+        vec3 prev_color = imageLoad(image, ivec2(gl_LaunchIDEXT.xy)).xyz;
+        color = (options.curr_sample_count * prev_color + color) / (options.curr_sample_count + 1);
+    }
+
+    if (STORE_RNG) {
+        imageStore(rng_tex, ivec2(gl_LaunchIDEXT.xy), payload.rng_state);
+    }
     imageStore(image, ivec2(gl_LaunchIDEXT.xy), vec4(color, 1.0));
+
 }

@@ -1,24 +1,38 @@
-//
-// Created by oschdi on 12/29/24.
-//
-
 #ifndef GUIWINDOW_HPP
 #define GUIWINDOW_HPP
+#include <deque>
+#include <functional>
+#include <PropertiesManager.hpp>
+#include <memory>
+
+namespace RtEngine {
+	class GuiWindow {
+	public:
+		GuiWindow() = default;
+
+		virtual ~GuiWindow() = default;
+
+		virtual void createFrame() = 0;
+
+		void addCallback(const std::function<void(uint32_t)>& callback)
+		{
+			update_callbacks.push_back(callback);
+		}
 
 
 
-class GuiWindow {
-public:
-    GuiWindow() = default;
+	protected:
+		void notifyUpdate(uint32_t flags)
+		{
+			for (auto it = update_callbacks.rbegin(); it != update_callbacks.rend(); it++) {
+				(*it)(flags);
+			}
+		}
 
-    virtual ~GuiWindow() = default;
+		bool show_window = true;
 
-    virtual void createFrame() = 0;
+		std::deque<std::function<void(uint32_t)>> update_callbacks;
+	};
 
-protected:
-    bool show_window = true;
-};
-
-
-
-#endif //GUIWINDOW_HPP
+} // namespace RtEngine
+#endif // GUIWINDOW_HPP

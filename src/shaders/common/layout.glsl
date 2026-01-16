@@ -29,9 +29,6 @@ struct EmittingInstance {
 layout(binding = 7, set = 0) buffer EmittingInstanceBuffer {
     EmittingInstance instances[];
 } emitting_instance_buffer;
-layout(binding = 0, set = 1) readonly buffer MaterialBuffer {
-    vec4[] data;
-} material_buffer;
 
 Vertex getVertex(uint vertexOffset, uint index)
 {

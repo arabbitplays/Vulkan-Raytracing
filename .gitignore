@@ -33,6 +33,3 @@
 
 # Clion
 .idea/
-
-# Nix
-*.lock

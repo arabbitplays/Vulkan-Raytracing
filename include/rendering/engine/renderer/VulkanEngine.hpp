@@ -1,168 +1,104 @@
-//
-// Created by oster on 09.09.2024.
-//
-
 #ifndef BASICS_VULKANENGINE_HPP
 #define BASICS_VULKANENGINE_HPP
 
-#include <iostream>
-#define GLFW_INCLUDE_VULKAN
-#include <GLFW/glfw3.h>
 #include <vector>
-#include <optional>
-#include <fstream>
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEFAULT_ALIGNED_GENTYPES
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-#include <array>
 #include <chrono>
-#include <stb_image.h>
 #define TINYOBJLOADER_IMPLEMENTATION
 #include <AccelerationStructure.hpp>
 #include <GuiManager.hpp>
 #include <GuiWindow.hpp>
-#include <imgui_impl_vulkan.h>
-#include <PhongMaterial.hpp>
-#include <Scene.hpp>
+#include <RenderTarget.hpp>
 #include <SceneManager.hpp>
-#include <Swapchain.hpp>
-#include <unordered_map>
-#include "../Vertex.hpp"
-#include "DescriptorAllocator.hpp"
-#include "CommandManager.hpp"
-#include "../../builders/MeshAssetBuilder.hpp"
 #include "../../util/QuickTimer.hpp"
-#include "../../util/VulkanUtil.hpp"
-#include "../IRenderable.hpp"
-#include <BaseOptions.hpp>
+#include "DescriptorAllocator.hpp"
+
+#include <RuntimeContext.hpp>
+#include <VulkanContext.hpp>
 #include "../scene_graph/Node.hpp"
 #include "DeletionQueue.hpp"
-#include <VulkanContext.hpp>
 
+namespace RtEngine {
 
-class VulkanEngine {
-public:
-    static constexpr int MAX_FRAMES_IN_FLIGHT = 1;
+	class VulkanEngine {
+	public:
+		VulkanEngine() = default;
+		virtual ~VulkanEngine() = default;
+		void run(const std::string &config_file, const std::string &resources_dir);
 
-    VkDevice device;
-    std::shared_ptr<CommandManager> pCommandManager;
-    CommandManager commandManager;
-    std::shared_ptr<RessourceBuilder> pRessourceBuilder;
-    RessourceBuilder ressourceBuilder;
-    std::shared_ptr<MeshAssetBuilder> mesh_builder;
-    std::shared_ptr<DescriptorAllocator> descriptorAllocator;
+	protected:
+		GLFWwindow *window;
+		std::shared_ptr<GuiManager> guiManager;
 
-    void run(const std::string& config_file, const std::string& resources_dir);
-protected:
+		DeletionQueue mainDeletionQueue;
 
-    GLFWwindow* window;
-    std::shared_ptr<GuiManager> guiManager;
-    VkInstance instance;
-    VkSurfaceKHR surface;
-    VkDebugUtilsMessengerEXT debugMessenger;
-    DeletionQueue mainDeletionQueue;
+		std::shared_ptr<VulkanContext> vulkan_context;
+		std::shared_ptr<RuntimeContext> runtime_context;
 
-    std::shared_ptr<VulkanContext> context;
+		std::vector<VkCommandBuffer> commandBuffers;
 
-    VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
-    VkQueue graphicsQueue, presentQueue;
+		std::shared_ptr<DrawContext> mainDrawContext;
+		std::shared_ptr<PropertiesManager> properties_manager;
+		std::shared_ptr<PropertiesSection> renderer_properties;
 
-    std::shared_ptr<Swapchain> swapchain;
+		std::shared_ptr<SceneManager> scene_manager;
 
-    std::vector<VkCommandBuffer> commandBuffers;
+		std::vector<VkSemaphore> imageAvailableSemaphores;
+		std::vector<VkSemaphore> renderFinishedSemaphores;
+		std::vector<VkFence> inFlightFences;
 
-    DrawContext mainDrawContext;
-    std::shared_ptr<PropertiesManager> properties_manager;
-    std::shared_ptr<Properties> renderer_properties;
-    std::shared_ptr<BaseOptions> base_options;
+		bool framebufferResized = false;
 
-    VkPhysicalDeviceRayTracingPipelinePropertiesKHR raytracingProperties{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_PROPERTIES_KHR};
+		uint32_t max_frames_in_flight = 1;
 
-    std::vector<AllocatedImage> render_targets;
-    AllocatedImage rng_tex;
+		void initWindow();
+		void initVulkan();
+		void createVulkanContext();
+		void createRuntimeContext();
+		void initGui();
+		virtual void mainLoop();
+		void cleanup();
 
-    std::shared_ptr<SceneManager> scene_manager;
+		static void framebufferResizeCallback(GLFWwindow *window, int width, int height);
+		static void keyCallback(GLFWwindow *window, int key, int scancode, int action, int mods);
+		static void mouseCallback(GLFWwindow *window, double xPos, double yPos);
 
-    std::vector<VkSemaphore> imageAvailableSemaphores;
-    std::vector<VkSemaphore> renderFinishedSemaphores;
-    std::vector<VkFence> inFlightFences;
+		void createImageViews();
 
-    uint32_t currentFrame = 0;
-    bool framebufferResized = false;
+		void createGuiFrameBuffers();
 
-    void initWindow();
-    void initVulkan();
-    void initGui();
-    virtual void mainLoop();
-    void cleanup();
+		static bool hasStencilComponent(VkFormat format);
 
-    static void framebufferResizeCallback(GLFWwindow *window, int width, int height);
-    static void keyCallback(GLFWwindow *window, int key, int scancode, int action, int mods);
-    static void mouseCallback(GLFWwindow *window, double xPos, double yPos);
+		std::shared_ptr<DescriptorAllocator> createDescriptorAllocator();
+		void createCommandBuffers();
+		void createSyncObjects();
 
-    void createInstance();
-    bool checkValidationLayerSupport();
-    std::vector<const char *> getRequiredExtensions();
-    void setupDebugMessenger();
-    void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT &createInfo);
-    void createSurface();
-    void pickPhysicalDevice();
-    bool isDeviceSuitable(VkPhysicalDevice device);
-    bool checkDeviceExtensionSupport(VkPhysicalDevice device);
+		void pollSdlEvents();
 
-    void createLogicalDevice();
-    void createImageViews();
+		virtual void drawFrame();
+		int32_t aquireNextSwapchainImage();
+		void submitCommandBuffer(std::vector<VkSemaphore> wait_semaphore, std::vector<VkSemaphore> signal_semaphore);
+		void presentSwapchainImage(const std::vector<VkSemaphore>& wait_semaphore, uint32_t image_index);
 
-    void createGuiFrameBuffers();
+		void refreshAfterResize();
 
-    void createCommandManager();
-    void createRessourceBuilder();
+		void outputRenderingTarget(const std::string &output_path);
+		uint8_t *fixImageFormatForStorage(void *image_data, size_t pixel_count, VkFormat originalFormat);
 
-    bool hasStencilComponent(VkFormat format);
-    void createSwapchain();
+		virtual void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
+		void recordBeginCommandBuffer(VkCommandBuffer commandBuffer);
+		void recordRenderToImage(VkCommandBuffer commandBuffer);
+		void recordCopyToSwapchain(VkCommandBuffer commandBuffer, uint32_t swapchain_image_index);
+		void recordEndCommandBuffer(VkCommandBuffer commandBuffer);
 
-    void createDescriptorAllocator();
-    void createCommandBuffers();
-    void createSyncObjects();
+		void loadScene();
+		virtual void initProperties();
+		void initSceneSelectionProperty() const;
 
-    void pollSdlEvents();
+		void handleGuiUpdate(uint32_t update_flags) const;
+	};
 
-    virtual void drawFrame();
-    int aquireNextSwapchainImage();
-    void submitCommandBuffer(std::vector<VkSemaphore> wait_semaphore, std::vector<VkSemaphore> signal_semaphore);
-    void presentSwapchainImage(std::vector<VkSemaphore> wait_semaphore, uint32_t image_index);
-
-    void refreshAfterResize();
-
-    void createRenderingTargets();
-    virtual AllocatedImage getRenderTarget();
-    void cleanupRenderingTargets();
-
-    void outputRenderingTarget(const std::string& output_path);
-    uint8_t* fixImageFormatForStorage(void* image_data, size_t pixel_count, VkFormat originalFormat);
-
-    virtual void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
-    void recordBeginCommandBuffer(VkCommandBuffer commandBuffer);
-    void recordRenderToImage(VkCommandBuffer commandBuffer);
-    void recordCopyToSwapchain(VkCommandBuffer commandBuffer, uint32_t swapchain_image_index);
-    void recordEndCommandBuffer(VkCommandBuffer commandBuffer);
-
-    static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
-            VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
-            VkDebugUtilsMessageTypeFlagsEXT messageType,
-            const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
-            void* pUserData) {
-
-        std::cerr << "validation layer: " << pCallbackData->pMessage << std::endl;
-
-        return VK_FALSE;
-    }
-
-    void loadScene();
-    virtual void initProperties();
-};
-
-#endif //BASICS_VULKANENGINE_HPP
-
+} // namespace RtEngine
+#endif // BASICS_VULKANENGINE_HPP
