@@ -1,7 +1,7 @@
 #include <RasterizerPipelineBuilder.hpp>
 #include <string>
 
-#include "../rendering/Vertex.hpp"
+#include "Vertex.hpp"
 
 namespace RtEngine {
 	void RasterizerPipelineBuilder::buildPipeline(const VkDevice &device, const VkRenderPass &render_pass, VkPipeline *pipeline,

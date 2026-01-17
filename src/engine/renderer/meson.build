@@ -2,7 +2,6 @@
 
 subdir('scene_management')
 subdir('context')
-subdir('renderer')
 
 src += files(
   'CommandManager.cpp',

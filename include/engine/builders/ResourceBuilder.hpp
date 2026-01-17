@@ -6,7 +6,7 @@
 #include <stb_image.h>
 #include <string>
 #include <vulkan/vulkan_core.h>
-#include "../rendering/engine/CommandManager.hpp"
+#include "CommandManager.hpp"
 
 namespace RtEngine {
 	struct AllocatedBuffer {
