@@ -12,8 +12,8 @@ namespace RtEngine {
 		static constexpr float ANGULAR_MOVE_SPEED = 1 / 200.0f;
 
 		InteractiveCamera() = default;
-		InteractiveCamera(uint32_t image_width, uint32_t image_height, float fov, glm::vec3 position,
-						  glm::vec3 view_dir) : Camera(image_width, image_height, fov, position, view_dir) {
+		InteractiveCamera(float fov, glm::vec3 position,
+						  glm::vec3 view_dir) : Camera(fov, position, view_dir) {
 			velocity = glm::vec3(0.0f);
 			pitch = 0.0f;
 			yaw = 0.0f;

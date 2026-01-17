@@ -58,13 +58,10 @@ namespace RtEngine {
 
 	std::shared_ptr<Camera> SceneReader::loadCamera(const YAML::Node &camera_node) const {
 		if (camera_node["interactive"].as<bool>()) {
-			return std::make_shared<InteractiveCamera>(
-					vulkan_context->swapchain->extent.width, vulkan_context->swapchain->extent.height,
-					camera_node["fov"].as<float>(), camera_node["position"].as<glm::vec3>(),
+			return std::make_shared<InteractiveCamera>(camera_node["fov"].as<float>(), camera_node["position"].as<glm::vec3>(),
 					camera_node["view_dir"].as<glm::vec3>());
 		} else {
-			return std::make_shared<Camera>(vulkan_context->swapchain->extent.width,
-											vulkan_context->swapchain->extent.height, camera_node["fov"].as<float>(),
+			return std::make_shared<Camera>(camera_node["fov"].as<float>(),
 											camera_node["position"].as<glm::vec3>(),
 											camera_node["view_dir"].as<glm::vec3>());
 		}

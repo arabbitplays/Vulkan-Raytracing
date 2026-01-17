@@ -56,7 +56,11 @@ namespace RtEngine {
 
 		void createNewTlas();
 
-		void updateStaticGeometry(const std::shared_ptr<Scene> &scene);
+		void updateGeometryResources(const std::shared_ptr<Scene> &scene);
+
+		void updateStaticGeometry(std::vector<RenderObject> render_objects, uint32_t update_flags);
+
+		void updateDynamicGeometry(std::vector<RenderObject> render_objects, uint32_t update_flags);
 
 		void createBlas(std::vector<std::shared_ptr<MeshAsset>> &meshes);
 		void updateScene(const std::shared_ptr<DrawContext> &draw_context);

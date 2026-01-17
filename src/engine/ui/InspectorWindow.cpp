@@ -31,7 +31,7 @@ namespace RtEngine {
 		}
 
 		if (refresh) {
-			notifyUpdate(SceneManager::MATERIAL_UPDATE);
+			notifyUpdate(SceneManager::MATERIAL_UPDATE | SceneManager::GEOMETRY_UPDATE);
 		}
 	}
 

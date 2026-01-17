@@ -25,7 +25,7 @@ namespace RtEngine {
 		});
 
 		setupNewScene(scene);
-		updateStaticGeometry(scene);
+		updateGeometryResources(scene);
 		updateMaterial(scene);
 
 		bufferUpdateFlags = static_cast<uint8_t>(GEOMETRY_UPDATE) | static_cast<uint8_t>(MATERIAL_UPDATE);
@@ -112,35 +112,52 @@ namespace RtEngine {
 		draw_context->clear();
 
 		scene->nodes["root"]->draw(*draw_context);
-
-		if (bufferUpdateFlags & GEOMETRY_UPDATE) {
-			instance_manager->createInstanceMappingBuffer(draw_context->getRenderObjects());
-		}
-
-		if (bufferUpdateFlags & GEOMETRY_UPDATE || bufferUpdateFlags & MATERIAL_UPDATE) {
-			instance_manager->createEmittingInstancesBuffer(draw_context->getRenderObjects());
-			vulkan_context->descriptor_allocator->writeBuffer(7, instance_manager->getEmittingInstancesBuffer().handle,
-												  0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
-		}
-
 		if (bufferUpdateFlags != NO_UPDATE) {
 			if (bufferUpdateFlags & MATERIAL_UPDATE) {
+				// !!!! This clear the descriptor set writes
 				material_manager->updateMaterialResources(scene);
 			}
 		}
 
-		// TODO Only partially update tlas depending on the updated dynamic objects
-		updateTlas(draw_context->getRenderObjects());
+		updateStaticGeometry(draw_context->getRenderObjects(), bufferUpdateFlags);
 		updateSceneData(draw_context);
+
+
+		// TODO Only partially update tlas depending on the updated dynamic objects
+
 		updateSceneDescriptorSets(draw_context);
 
 		bufferUpdateFlags = NO_UPDATE;
 	}
 
-	void SceneManager::updateStaticGeometry(const std::shared_ptr<Scene> &scene) {
+	void SceneManager::updateGeometryResources(const std::shared_ptr<Scene> &scene) {
 		std::vector<std::shared_ptr<MeshAsset>> mesh_assets = SceneUtil::collectMeshAssets(scene->getRootNode());
 		geometry_manager->createGeometryBuffers(mesh_assets);
 		geometry_manager->writeGeometryBuffers();
+	}
+
+	// TODO split into dynamic and static
+	void SceneManager::updateStaticGeometry(std::vector<RenderObject> render_objects, uint32_t update_flags) {
+		if (bufferUpdateFlags & GEOMETRY_UPDATE) {
+			instance_manager->createInstanceMappingBuffer(render_objects);
+			updateTlas(render_objects);
+		}
+
+		if (bufferUpdateFlags & GEOMETRY_UPDATE || bufferUpdateFlags & MATERIAL_UPDATE) {
+			instance_manager->createEmittingInstancesBuffer(render_objects);
+			vulkan_context->descriptor_allocator->writeBuffer(7, instance_manager->getEmittingInstancesBuffer().handle,
+												  0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+		}
+
+		/*if (update_flags & GEOMETRY_UPDATE) {
+			vulkan_context->descriptor_allocator->writeAccelerationStructure(
+					0, top_level_acceleration_structure->getHandle(), VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR);
+		}*/
+	}
+
+	void SceneManager::updateDynamicGeometry(std::vector<RenderObject> render_objects, uint32_t update_flags) {
+		// TODO This still update all objects in the TLAS
+
 	}
 
 	void SceneManager::updateTlas(std::vector<RenderObject> objects) const
@@ -175,6 +192,7 @@ namespace RtEngine {
 
 		VkAccelerationStructureKHR tlas_handle = top_level_acceleration_structure->getHandle();
 		if (bufferUpdateFlags & GEOMETRY_UPDATE) {
+			//TODO move those two to updateStaticGeometry
 			vulkan_context->descriptor_allocator->writeAccelerationStructure(
 					0, tlas_handle, VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR);
 

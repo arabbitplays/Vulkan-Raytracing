@@ -8,7 +8,8 @@ namespace RtEngine {
     public:
         VulkanRenderer(std::shared_ptr<VulkanContext> vulkan_context);
 
-
+        void update();
+        void setNewScene(std::shared_ptr<Scene> scene);
     private:
 
         std::shared_ptr<VulkanContext> vulkan_context;

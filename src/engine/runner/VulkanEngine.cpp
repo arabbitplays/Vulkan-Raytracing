@@ -174,7 +174,7 @@ namespace RtEngine {
 
 	void VulkanEngine::loadScene() {
 		assert(!vulkan_context->base_options->curr_scene_name.empty());
-		vkDeviceWaitIdle(vulkan_context->device_manager->getDevice());
+		vkDeviceWaitIdle(vulkan_context->device_manager->getDevice()); // TODO is this needed?
 		mainDrawContext->target->resetAccumulatedFrames();
 		std::string path = vulkan_context->base_options->resources_dir + "/scenes/" +
 						   vulkan_context->base_options->curr_scene_name;

@@ -10,8 +10,8 @@ namespace RtEngine {
 	class Camera {
 	public:
 		Camera() = default;
-		Camera(uint32_t image_width, uint32_t image_height, float fov, glm::vec3 position, glm::vec3 view_dir) :
-			position(position), view_dir(view_dir), fov(fov), image_width(image_width), image_height(image_height) {
+		Camera(float fov, glm::vec3 position, glm::vec3 view_dir) :
+			position(position), view_dir(view_dir), fov(fov), image_width(1), image_height(1) {
 			initCamera(static_cast<float>(image_width) / static_cast<float>(image_height));
 		}
 
