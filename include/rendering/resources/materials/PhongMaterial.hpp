@@ -8,20 +8,7 @@
 namespace RtEngine {
 	class PhongMaterial : public Material {
 	public:
-		struct PhongMaterialConstants {
-			glm::vec3 diffuse;
-			glm::vec3 specular;
-			glm::vec3 ambient;
-			glm::vec3 reflection;
-			glm::vec3 transmission;
-			float n;
-			glm::vec4 eta; // only xyz for the eta of each rgb channel
-		};
 
-		struct MaterialResources {
-			std::shared_ptr<PhongMaterialConstants> constants;
-			// add images and samplers here
-		};
 
 		struct MaterialProperties {
 			int32_t shadows, dispersion, fresnel;
@@ -32,10 +19,8 @@ namespace RtEngine {
 
 		void buildPipelines(VkDescriptorSetLayout sceneLayout) override;
 		void writeMaterial() override;
-		std::shared_ptr<MaterialInstance> createInstance(glm::vec3 diffuse, glm::vec3 specular, glm::vec3 ambient,
-														 glm::vec3 reflection, glm::vec3 transmission, float n,
-														 glm::vec3 eta = glm::vec3(0.0));
-		std::vector<std::shared_ptr<MaterialResources>> getResources();
+		std::shared_ptr<MaterialInstance> loadInstance(const YAML::Node &yaml_node);
+
 		std::vector<std::shared_ptr<Texture>> getTextures() override;
 		void reset() override;
 
@@ -46,7 +31,6 @@ namespace RtEngine {
 		AllocatedBuffer createMaterialBuffer();
 
 		MaterialProperties material_properties;
-		std::vector<std::shared_ptr<MaterialResources>> resources_buffer;
 	};
 
 } // namespace RtEngine

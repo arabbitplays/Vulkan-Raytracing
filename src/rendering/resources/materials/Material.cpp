@@ -12,16 +12,20 @@ namespace RtEngine {
 		return properties;
 	}
 
-	void Material::clearRessources() {
+	void Material::clearResources() {
 		resetQueue.flush();
 		mainDeletionQueue.flush();
-		if (material_buffer.handle != VK_NULL_HANDLE)
+		if (material_buffer.handle != VK_NULL_HANDLE) {
 			vulkan_context->resource_builder->destroyBuffer(material_buffer);
+			material_buffer.handle = VK_NULL_HANDLE;
+		}
 	}
 
 	void Material::reset() {
 		resetQueue.flush();
-		if (material_buffer.handle != VK_NULL_HANDLE)
+		if (material_buffer.handle != VK_NULL_HANDLE) {
 			vulkan_context->resource_builder->destroyBuffer(material_buffer);
+			material_buffer.handle = VK_NULL_HANDLE;
+		}
 	}
 } // namespace RtEngine

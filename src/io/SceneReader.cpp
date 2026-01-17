@@ -97,44 +97,13 @@ namespace RtEngine {
 			auto metal_rough_material = dynamic_cast<MetalRoughMaterial *>(material.get());
 
 			for (const auto &material_node: material_node) {
-				MetalRoughParameters parameters{};
-
-				if (material_node["albedo"])
-					parameters.albedo = material_node["albedo"].as<glm::vec3>();
-				if (material_node["albedo_tex"])
-					parameters.albedo_tex_name = material_node["albedo_tex"].as<std::string>();
-
-				if (material_node["metallic"])
-					parameters.metallic = material_node["metallic"].as<float>();
-				if (material_node["roughness"])
-					parameters.roughness = material_node["roughness"].as<float>();
-				if (material_node["ao"])
-					parameters.ao = material_node["ao"].as<float>();
-				if (material_node["metal_rough_ao_tex"])
-					parameters.metal_rough_ao_tex_name = material_node["metal_rough_ao_tex"].as<std::string>();
-
-				if (material_node["eta"])
-					parameters.eta = material_node["eta"].as<float>();
-
-				if (material_node["normal_tex"])
-					parameters.normal_tex_name = material_node["normal_tex"].as<std::string>();
-
-				if (material_node["emission_power"]) {
-					parameters.emission_color = material_node["emission_color"].as<glm::vec3>();
-					parameters.emission_power = material_node["emission_power"].as<float>();
-				}
-
-				metal_rough_material->createInstance(parameters, true);
+				metal_rough_material->loadInstance(material_node);
 			}
 		} else if (typeid(*material) == typeid(PhongMaterial)) {
 			auto phong_material = dynamic_cast<PhongMaterial *>(material.get());
 
 			for (const auto &material_node: material_node) {
-				phong_material->createInstance(
-						material_node["diffuse"].as<glm::vec3>(), material_node["specular"].as<glm::vec3>(),
-						material_node["ambient"].as<glm::vec3>(), material_node["reflection"].as<glm::vec3>(),
-						material_node["transmission"].as<glm::vec3>(), material_node["n"].as<float>(),
-						material_node["eta"].as<glm::vec3>());
+				phong_material->loadInstance(material_node);
 			}
 		}
 	}

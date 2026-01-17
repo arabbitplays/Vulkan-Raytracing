@@ -74,7 +74,8 @@ namespace RtEngine {
 			auto metal_rough_material = dynamic_cast<MetalRoughMaterial *>(material.get());
 
 			out << YAML::Key << "materials" << YAML::Value << YAML::BeginSeq;
-			for (auto &resources: metal_rough_material->getResources()) {
+			// TODO let this be done by the material instance
+			/*for (auto &resources: metal_rough_material->getResources()) {
 				out << YAML::BeginMap;
 
 				out << YAML::Key << "albedo" << YAML::Value << YAML::convert<glm::vec3>::encode(resources->albedo);
@@ -91,13 +92,14 @@ namespace RtEngine {
 				}
 
 				out << YAML::EndMap;
-			}
+			}*/
 			out << YAML::EndSeq;
 		} else if (typeid(*material) == typeid(PhongMaterial)) {
 			auto phong_material = dynamic_cast<PhongMaterial *>(material.get());
 
 			out << YAML::Key << "materials" << YAML::Value << YAML::BeginSeq;
-			for (auto &resources: phong_material->getResources()) {
+			// TODO let this be done by the material instance
+			/*for (auto &resources: phong_material->getResources()) {
 				out << YAML::BeginMap;
 				out << YAML::Key << "diffuse" << YAML::Value
 					<< YAML::convert<glm::vec3>::encode(resources->constants->diffuse);
@@ -112,7 +114,7 @@ namespace RtEngine {
 				out << YAML::Key << "n" << YAML::Value << resources->constants->n;
 				out << YAML::Key << "eta" << YAML::Value << YAML::convert<glm::vec3>::encode(resources->constants->eta);
 				out << YAML::EndMap;
-			}
+			}*/
 			out << YAML::EndSeq;
 		} else {
 			if (material != nullptr) {

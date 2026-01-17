@@ -12,22 +12,22 @@ namespace RtEngine {
 
 		glm::mat4 nodeMatrix = shared_node->transform->getWorldTransform();
 
-		float power = meshMaterial->material_index == 0 ? 1 : 0; // TODO remove this by getting it from the material instance
-		ctx.objects.push_back(RenderObject{InstanceMappingData{meshAsset->geometry_id, meshMaterial->material_index},
-										   meshAsset->accelerationStructure, nodeMatrix, meshAsset->triangle_count, power});
+		ctx.objects.push_back(RenderObject{InstanceMappingData{meshAsset->geometry_id, meshMaterial->getMaterialIndex()},
+										   meshAsset->accelerationStructure, nodeMatrix, meshAsset->triangle_count, meshMaterial->getEmissionPower()});
 	}
 
 	void MeshRenderer::definePropertySections() {
 		assert(properties != nullptr);
 
-		auto mesh_renderer_section = std::make_shared<PropertiesSection>(COMPONENT_NAME);
+		// TODO bring this back
+		/*auto mesh_renderer_section = std::make_shared<PropertiesSection>(COMPONENT_NAME);
 		mesh_renderer_section->addInt("material_idx", reinterpret_cast<int32_t *>(&meshMaterial->material_index),
 									  PERSISTENT_PROPERTY_FLAG);
 		mesh_renderer_section->addString("mesh", &meshAsset->name, PERSISTENT_PROPERTY_FLAG);
-		properties->addPropertySection(mesh_renderer_section);
+		properties->addPropertySection(mesh_renderer_section);*/
 
 		if (meshMaterial) {
-			properties->addPropertySection(meshMaterial->properties, SERIALIZABLE_PROPERTY_FLAG);
+			properties->addPropertySection(meshMaterial->getProperties(), SERIALIZABLE_PROPERTY_FLAG);
 		}
 	}
 

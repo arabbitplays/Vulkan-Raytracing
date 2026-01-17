@@ -44,7 +44,7 @@ namespace RtEngine {
 		std::shared_ptr<PropertiesSection> getProperties();
 		virtual std::vector<std::shared_ptr<Texture>> getTextures() = 0;
 
-		void clearRessources();
+		void clearResources();
 		virtual void reset();
 
 		std::string name;

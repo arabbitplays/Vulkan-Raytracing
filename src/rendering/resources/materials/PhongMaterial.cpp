@@ -9,6 +9,7 @@
 #include <phong_closesthit.rchit.spv.h>
 #include <phong_raygen.rgen.spv.h>
 #include "miss.rmiss.spv.h"
+#include "PhongInstance.hpp"
 #include "shadow_miss.rmiss.spv.h"
 
 namespace RtEngine {
@@ -71,42 +72,36 @@ namespace RtEngine {
 		descriptorAllocator.clearWrites();
 	}
 
-	std::shared_ptr<MaterialInstance> PhongMaterial::createInstance(glm::vec3 diffuse, glm::vec3 specular,
-																	glm::vec3 ambient, glm::vec3 reflection,
-																	glm::vec3 transmission, float n, glm::vec3 eta) {
-		auto constants = std::make_shared<PhongMaterial::PhongMaterialConstants>();
-		constants->diffuse = diffuse;
-		constants->specular = specular;
-		constants->ambient = ambient;
-		constants->reflection = reflection;
-		constants->transmission = transmission;
-		constants->n = n;
-		constants->eta = glm::vec4(eta, 0.0f);
-
-		auto resources = std::make_shared<PhongMaterial::MaterialResources>();
-		resources->constants = constants;
-
-		std::shared_ptr<MaterialInstance> instance = std::make_shared<MaterialInstance>();
+	std::shared_ptr<MaterialInstance> PhongMaterial::loadInstance(const YAML::Node& yaml_node) {
+		std::shared_ptr<MaterialInstance> instance = std::make_shared<PhongInstance>();
+		instance->loadResources(yaml_node);
 		instances.push_back(instance);
-		resources_buffer.push_back(resources);
 		return instance;
 	}
 
 	AllocatedBuffer PhongMaterial::createMaterialBuffer() {
-		assert(resources_buffer.size() == instances.size());
-
-		std::vector<PhongMaterialConstants> materialConstants{};
-		for (uint32_t i = 0; i < resources_buffer.size(); i++) {
-			instances[i]->material_index = i;
-			materialConstants.push_back(*resources_buffer[i]->constants);
+		std::vector<void*> resource_ptrs(instances.size());
+		std::vector<size_t> sizes(instances.size());
+		size_t total_size = 0;
+		for (uint32_t i = 0; i < instances.size(); i++) {
+			resource_ptrs[i] = instances[i]->getResources(&sizes[i]);
+			instances[i]->setMaterialIndex(i);
+			total_size += sizes[i];
 		}
-		return vulkan_context->resource_builder->stageMemoryToNewBuffer(
-				materialConstants.data(), materialConstants.size() * sizeof(PhongMaterialConstants),
-				VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
-	}
 
-	std::vector<std::shared_ptr<PhongMaterial::MaterialResources>> PhongMaterial::getResources() {
-		return resources_buffer;
+		const auto material_data = static_cast<std::byte*>(std::malloc(total_size));
+		std::byte* dst = material_data;
+		for (uint32_t i = 0; i < resource_ptrs.size(); i++) {
+			std::memcpy(dst, resource_ptrs[i], sizes[i]);
+			dst += sizes[i];
+		}
+
+		AllocatedBuffer material_buffer = vulkan_context->resource_builder->stageMemoryToNewBuffer(
+				material_data, total_size,
+				VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
+
+		free(material_data);
+		return material_buffer;
 	}
 
 	void PhongMaterial::initProperties() {
@@ -119,7 +114,6 @@ namespace RtEngine {
 	std::vector<std::shared_ptr<Texture>> PhongMaterial::getTextures() { return {}; }
 
 	void PhongMaterial::reset() {
-		resources_buffer.clear();
 		instances.clear();
 		Material::reset();
 	}

@@ -8,6 +8,8 @@
 #include <metal_rough_raygen.rgen.spv.h>
 #include <shadow_miss.rmiss.spv.h>
 
+#include "MetalRoughInstance.hpp"
+
 namespace RtEngine {
 	void MetalRoughMaterial::buildPipelines(VkDescriptorSetLayout sceneLayout) {
 		DescriptorLayoutBuilder layoutBuilder;
@@ -71,6 +73,13 @@ namespace RtEngine {
 
 		descriptorAllocator.writeBuffer(0, material_buffer.handle, 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
 
+		// TODO not needed if they are already buld corretly
+		if (albedo_textures.empty()) {
+			albedo_textures.push_back(runtime_context->texture_repository->getTexture("", TextureType::PARAMETER));
+			metal_rough_ao_textures.push_back(runtime_context->texture_repository->getTexture("", TextureType::PARAMETER));
+			normal_textures.push_back(runtime_context->texture_repository->getTexture("", TextureType::NORMAL));
+		}
+
 		auto extract_views = [](std::vector<std::shared_ptr<Texture>> textures) {
 			std::vector<VkImageView> imageViews{};
 			for (auto &texture: textures) {
@@ -95,70 +104,11 @@ namespace RtEngine {
 		descriptorAllocator.clearWrites();
 	}
 
-	std::shared_ptr<MetalRoughMaterial::MaterialResources>
-	MetalRoughMaterial::createMaterialResources(const MetalRoughParameters &parameters) {
-		auto resources = std::make_shared<MaterialResources>();
-		resources->albedo = glm::vec4(parameters.albedo, 0.0f);
-		resources->properties = glm::vec4(parameters.metallic, parameters.roughness, parameters.ao, parameters.eta);
-		resources->emission = glm::vec4(parameters.emission_color, parameters.emission_power);
-
-		auto add_texture_if_needed = [&](const std::string &texture_name,
-										 std::vector<std::shared_ptr<Texture>> &textures,
-										 bool is_normal_map = false) -> uint32_t {
-			for (uint32_t i = 0; i < textures.size(); i++) {
-				if (textures[i]->name == texture_name) {
-					return i;
-				}
-			}
-
-			textures.push_back(runtime_context->texture_repository->getTexture(texture_name));
-			return textures.size() - 1;
-		};
-
-		resources->tex_indices =
-				glm::vec4{add_texture_if_needed(parameters.albedo_tex_name, albedo_textures),
-						  add_texture_if_needed(parameters.metal_rough_ao_tex_name, metal_rough_ao_textures),
-						  add_texture_if_needed(parameters.normal_tex_name, normal_textures, true), 0};
-
-		return resources;
-	}
-
-	std::shared_ptr<PropertiesSection>
-	MetalRoughMaterial::initializeInstanceProperties(const std::shared_ptr<MaterialResources> &resources) {
-		auto section = std::make_shared<PropertiesSection>("Metal Rough Material");
-		section->addVector("Albedo", &resources->albedo);
-		section->addFloat("Metal", &resources->properties.x, ALL_PROPERTY_FLAGS, 0, 1);
-		section->addFloat("Roughness", &resources->properties.y, ALL_PROPERTY_FLAGS, 0, 1);
-		section->addFloat("Eta", &resources->properties.w);
-		section->addVector("Emission Color", reinterpret_cast<glm::vec3 *>(&resources->emission));
-		section->addFloat("Emission Power", &resources->emission.w);
-		return section;
-	}
-
-	// is unique = true the method assumes that such an instance doesn't exist yet, so safe time when creating lots of
-	// instances, where it is clear that they are unique (used for loading scenes for example
-	std::shared_ptr<MaterialInstance> MetalRoughMaterial::createInstance(MetalRoughParameters parameters, bool unique) {
-		std::shared_ptr<MaterialInstance> instance = std::make_shared<MaterialInstance>();
-		std::shared_ptr<MaterialResources> resources = createMaterialResources(parameters);
-
-		if (!unique) {
-			for (uint32_t i = 0; i < resources_buffer.size(); i++) {
-				if (*resources == *resources_buffer[i]) {
-					return instances[i];
-				}
-			}
-		}
-
-		instance->material_index = resources_buffer.size();
-		instance->properties = initializeInstanceProperties(resources);
-		resources_buffer.push_back(resources);
+	std::shared_ptr<MaterialInstance> MetalRoughMaterial::loadInstance(const YAML::Node& yaml_node) {
+		std::shared_ptr<MaterialInstance> instance = std::make_shared<MetalRoughInstance>();
+		instance->loadResources(yaml_node);
 		instances.push_back(instance);
-
 		return instance;
-	}
-
-	std::vector<std::shared_ptr<MetalRoughMaterial::MaterialResources>> MetalRoughMaterial::getResources() {
-		return resources_buffer;
 	}
 
 	void MetalRoughMaterial::initProperties() {
@@ -170,15 +120,28 @@ namespace RtEngine {
 	}
 
 	AllocatedBuffer MetalRoughMaterial::createMaterialBuffer() {
-		assert(resources_buffer.size() == instances.size());
-
-		std::vector<MaterialResources> material_data{};
-		for (uint32_t i = 0; i < resources_buffer.size(); i++) {
-			material_data.push_back(*resources_buffer[i]);
+		std::vector<void*> resource_ptrs(instances.size());
+		std::vector<size_t> sizes(instances.size());
+		size_t total_size = 0;
+		for (uint32_t i = 0; i < instances.size(); i++) {
+			resource_ptrs[i] = instances[i]->getResources(&sizes[i]);
+			instances[i]->setMaterialIndex(i);
+			total_size += sizes[i];
 		}
-		return vulkan_context->resource_builder->stageMemoryToNewBuffer(
-				material_data.data(), material_data.size() * sizeof(MaterialResources),
+
+		const auto material_data = static_cast<std::byte*>(std::malloc(total_size));
+		std::byte* dst = material_data;
+		for (uint32_t i = 0; i < resource_ptrs.size(); i++) {
+			std::memcpy(dst, resource_ptrs[i], sizes[i]);
+			dst += sizes[i];
+		}
+
+		AllocatedBuffer material_buffer = vulkan_context->resource_builder->stageMemoryToNewBuffer(
+				material_data, total_size,
 				VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
+
+		free(material_data);
+		return material_buffer;
 	}
 
 	std::vector<std::shared_ptr<Texture>> MetalRoughMaterial::getTextures() {
@@ -201,7 +164,6 @@ namespace RtEngine {
 	}
 
 	void MetalRoughMaterial::reset() {
-		resources_buffer.clear();
 		instances.clear();
 		albedo_textures.clear();
 		metal_rough_ao_textures.clear();
