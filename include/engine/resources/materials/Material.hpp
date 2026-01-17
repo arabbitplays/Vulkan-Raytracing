@@ -28,6 +28,8 @@ namespace RtEngine {
 			};
 			descriptorAllocator.init(vulkan_context->device_manager->getDevice(), 8, poolRatios);
 
+			material_textures = std::make_shared<MaterialTextures<>>(runtime_context->texture_repository);
+
 			mainDeletionQueue.pushFunction(
 					[&]() { descriptorAllocator.destroyPools(this->vulkan_context->device_manager->getDevice()); });
 		};
@@ -68,6 +70,7 @@ namespace RtEngine {
 
 		AllocatedBuffer material_buffer; // maps an instance to its respective material via a common index into the
 										 // constants and texture buffers
+		std::shared_ptr<MaterialTextures<>> material_textures;
 	};
 
 } // namespace RtEngine

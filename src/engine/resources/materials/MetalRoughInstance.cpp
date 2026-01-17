@@ -11,15 +11,15 @@ namespace RtEngine {
         properties->addFloat("Emission Power", &emission_power);
     }
 
-    void *MetalRoughInstance::getResources(size_t *size) {
+    void *MetalRoughInstance::getResources(size_t *size, const std::shared_ptr<MaterialTextures<>> &material_textures) {
         resources->albedo = glm::vec4(albedo, 0.0f);
         resources->properties = glm::vec4(metallic, roughness, ao, eta);
         resources->emission = glm::vec4(emission_color, emission_power);
 
         resources->tex_indices =
-                glm::vec4{tex_repo->getTextureIndex(albedo_tex->name),
-                          tex_repo->getTextureIndex(metal_rough_ao_tex->name),
-                          tex_repo->getTextureIndex(normal_tex->name), 0};
+                glm::vec4{material_textures->addTexture(albedo_tex),
+                          material_textures->addTexture(metal_rough_ao_tex),
+                          material_textures->addTexture(normal_tex), 0};
 
         *size = sizeof(MetalRoughResources);
         return resources.get();

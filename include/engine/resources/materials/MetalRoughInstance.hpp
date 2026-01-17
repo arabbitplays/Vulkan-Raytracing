@@ -3,16 +3,17 @@
 #include <glm/gtc/epsilon.hpp>
 
 #include "MaterialInstance.hpp"
+#include "MaterialTextures.hpp"
 #include "TextureRepository.hpp"
 
 namespace RtEngine {
     class MetalRoughInstance final : public MaterialInstance {
     public:
-        explicit MetalRoughInstance(const std::string& name, const std::shared_ptr<TextureRepository<>>& tex_repo) : MaterialInstance(name), tex_repo(tex_repo) {
+        explicit MetalRoughInstance(const std::string& name, const std::shared_ptr<TextureRepository>& tex_repo) : MaterialInstance(name), tex_repo(tex_repo) {
             resources = std::make_shared<MetalRoughResources>();
         }
 
-        void *getResources(size_t *size) override;
+        void *getResources(size_t *size, const std::shared_ptr<MaterialTextures<>>& tex_repo) override;
         void loadResources(YAML::Node yaml_node) override;
         YAML::Node writeResourcesToYaml() override;
 
@@ -35,7 +36,7 @@ namespace RtEngine {
             }
         };
 
-        std::shared_ptr<TextureRepository<>> tex_repo;
+        std::shared_ptr<TextureRepository> tex_repo;
 
         std::shared_ptr<Texture> albedo_tex;
         std::shared_ptr<Texture> metal_rough_ao_tex;

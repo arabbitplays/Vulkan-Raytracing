@@ -1,5 +1,6 @@
 #ifndef VULKAN_RAYTRACING_MATERIALINSTANCE_HPP
 #define VULKAN_RAYTRACING_MATERIALINSTANCE_HPP
+#include "MaterialTextures.hpp"
 #include "PropertiesManager.hpp"
 
 namespace RtEngine {
@@ -9,7 +10,7 @@ namespace RtEngine {
         explicit MaterialInstance(const std::string& name) : name(name) {}
         virtual ~MaterialInstance() = default;
 
-        virtual void* getResources(size_t* size) = 0;
+        virtual void* getResources(size_t* size, const std::shared_ptr<MaterialTextures<>>& tex_repo) = 0;
         virtual void loadResources(YAML::Node yaml_node) = 0;
         virtual YAML::Node writeResourcesToYaml() = 0;
 

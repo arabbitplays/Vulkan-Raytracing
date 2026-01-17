@@ -7,7 +7,7 @@ namespace RtEngine {
         properties = std::make_shared<PropertiesSection>("Phong Material");
     }
 
-    void *PhongInstance::getResources(size_t *size) {
+    void *PhongInstance::getResources(size_t *size, const std::shared_ptr<MaterialTextures<>>& material_textures) {
         resources->diffuse = diffuse;
         resources->specular = specular;
         resources->ambient = ambient;

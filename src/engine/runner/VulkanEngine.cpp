@@ -145,9 +145,11 @@ namespace RtEngine {
 	void VulkanEngine::createRuntimeContext() {
 		runtime_context = std::make_shared<RuntimeContext>();
 		runtime_context->mesh_repository = std::make_shared<MeshRepository>(vulkan_context);
+		runtime_context->texture_repository = std::make_shared<TextureRepository>(vulkan_context->resource_builder);
 
 		mainDeletionQueue.pushFunction([&]() {
 			runtime_context->mesh_repository->destroy();
+			runtime_context->texture_repository->destroy();
 		});
 	}
 
@@ -169,8 +171,6 @@ namespace RtEngine {
 	bool VulkanEngine::hasStencilComponent(const VkFormat format) {
 		return format == VK_FORMAT_D32_SFLOAT_S8_UINT || format == VK_FORMAT_D24_UNORM_S8_UINT;
 	}
-
-
 
 	void VulkanEngine::loadScene() {
 		assert(!vulkan_context->base_options->curr_scene_name.empty());

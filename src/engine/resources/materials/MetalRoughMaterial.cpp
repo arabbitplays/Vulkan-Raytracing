@@ -71,8 +71,7 @@ namespace RtEngine {
 
 		descriptorAllocator.writeBuffer(0, material_buffer.handle, 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
 
-
-		descriptorAllocator.writeImages(1, material_texture_repo->getOrderedImageViews(), sampler, VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL,
+		descriptorAllocator.writeImages(1, material_textures->getOrderedImageViews(), sampler, VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL,
 										VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
 		VkDevice device = vulkan_context->device_manager->getDevice();
 		descriptorAllocator.updateSet(device, materialDescriptorSet);
@@ -80,7 +79,7 @@ namespace RtEngine {
 	}
 
 	std::shared_ptr<MaterialInstance> MetalRoughMaterial::loadInstance(const YAML::Node& yaml_node) {
-		std::shared_ptr<MaterialInstance> instance = std::make_shared<MetalRoughInstance>("", material_texture_repo);
+		std::shared_ptr<MaterialInstance> instance = std::make_shared<MetalRoughInstance>("", runtime_context->texture_repository);
 		instance->loadResources(yaml_node);
 		if (instances.contains(instance->name)) {
 			SPDLOG_WARN("Material instance with name {} already exists!", instance->name);
@@ -103,7 +102,6 @@ namespace RtEngine {
 
 	void MetalRoughMaterial::reset() {
 		instances.clear();
-		material_texture_repo->clear();
 		Material::reset();
 	}
 } // namespace RtEngine

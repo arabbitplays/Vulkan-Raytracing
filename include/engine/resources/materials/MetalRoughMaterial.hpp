@@ -2,7 +2,7 @@
 #define METALROUGHMATERIAL_HPP
 
 #include <Material.hpp>
-#include <TextureRepository.hpp>
+#include <MaterialTextures.hpp>
 #include <glm/vec3.hpp>
 
 #define METAL_ROUGH_MATERIAL_NAME "metal_rough"
@@ -22,12 +22,7 @@ namespace RtEngine {
 
 		MetalRoughMaterial(std::shared_ptr<VulkanContext> context, std::shared_ptr<RuntimeContext> runtime_context,
 						   VkSampler sampler) :
-			Material(METAL_ROUGH_MATERIAL_NAME, context, runtime_context), sampler(sampler) {
-			material_texture_repo = std::make_shared<TextureRepository<>>(vulkan_context->resource_builder);
-			mainDeletionQueue.pushFunction([this] () {
-				material_texture_repo->destroy();
-			});
-		}
+			Material(METAL_ROUGH_MATERIAL_NAME, context, runtime_context), sampler(sampler) {}
 
 		void buildPipelines(VkDescriptorSetLayout sceneLayout) override;
 		void writeMaterial() override;
@@ -40,7 +35,6 @@ namespace RtEngine {
 		void initProperties() override;
 
 	private:
-		std::shared_ptr<TextureRepository<>> material_texture_repo;
 
 		MaterialProperties material_properties;
 		VkSampler sampler;

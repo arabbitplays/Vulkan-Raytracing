@@ -13,7 +13,7 @@ namespace RtEngine {
             resources = std::make_shared<PhongResources>();
         }
 
-        void *getResources(size_t *size) override;
+        void *getResources(size_t *size, const std::shared_ptr<MaterialTextures<>> &material_textures) override;
         void loadResources(YAML::Node yaml_node) override;
         YAML::Node writeResourcesToYaml() override;
 

@@ -7,7 +7,7 @@ namespace RtEngine {
 		size_t total_size = 0;
 		std::vector<std::shared_ptr<MaterialInstance>> instance_list = getInstances();
 		for (uint32_t i = 0; i < instance_list.size(); i++) {
-			resource_ptrs[i] = instance_list[i]->getResources(&sizes[i]);
+			resource_ptrs[i] = instance_list[i]->getResources(&sizes[i], material_textures);
 			instance_list[i]->setMaterialIndex(i);
 			total_size += sizes[i];
 		}
@@ -57,6 +57,8 @@ namespace RtEngine {
 			vulkan_context->resource_builder->destroyBuffer(material_buffer);
 			material_buffer.handle = VK_NULL_HANDLE;
 		}
+
+		material_textures->clear();
 	}
 
 	void Material::reset() {
@@ -65,5 +67,7 @@ namespace RtEngine {
 			vulkan_context->resource_builder->destroyBuffer(material_buffer);
 			material_buffer.handle = VK_NULL_HANDLE;
 		}
+
+		material_textures->clear();
 	}
 } // namespace RtEngine
