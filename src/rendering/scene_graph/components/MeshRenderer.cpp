@@ -12,14 +12,13 @@ namespace RtEngine {
 
 		glm::mat4 nodeMatrix = shared_node->transform->getWorldTransform();
 
-		ctx.objects.push_back(RenderObject{InstanceMappingData{meshAsset->geometry_id, meshMaterial->getMaterialIndex()},
+		ctx.addRenderObject(RenderObject{InstanceMappingData{meshAsset->geometry_id, meshMaterial->getMaterialIndex()},
 										   meshAsset->accelerationStructure, nodeMatrix, meshAsset->triangle_count, meshMaterial->getEmissionPower()});
 	}
 
 	void MeshRenderer::definePropertySections() {
 		assert(properties != nullptr);
 
-		// TODO bring this back
 		auto mesh_renderer_section = std::make_shared<PropertiesSection>(COMPONENT_NAME);
 		mesh_renderer_section->addString("material_name", &meshMaterial->name,
 									  PERSISTENT_PROPERTY_FLAG);

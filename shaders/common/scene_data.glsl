@@ -7,4 +7,6 @@ layout(binding = 2, set = 0) uniform SceneData {
     vec4 ambientColor;
     vec4 sunlightDirection; // w for power
     vec4 sunlightColor;
+    uint emitter_count;
+
 } sceneData;

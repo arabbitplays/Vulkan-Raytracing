@@ -70,7 +70,8 @@ void main() {
     }
 
     if (options.sample_light) {
-        LightSample light_sample = sampleEmittingPrimitive(P);
+        uint emitter_count = max(1, sceneData.emitter_count);
+        LightSample light_sample = sampleEmittingPrimitive(P, emitter_count);
         vec3 L = light_sample.P - P;
         float distance_to_light = length(L);
         L = normalize(L);

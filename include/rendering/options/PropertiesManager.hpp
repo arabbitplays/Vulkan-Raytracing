@@ -77,7 +77,7 @@ namespace RtEngine {
 
 		std::unordered_map<std::string, std::shared_ptr<PropertiesSection>> property_sections;
 		std::unordered_map<std::string, uint32_t> section_flags;
-		int32_t curr_sample_count, emitting_instances_count, samples_per_pixel = 10;
+		int32_t curr_sample_count, samples_per_pixel = 10;
 
 	private:
 		void initSectionWithConfig(const std::shared_ptr<PropertiesSection> &properties);

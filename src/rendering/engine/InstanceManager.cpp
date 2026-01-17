@@ -14,7 +14,7 @@ namespace RtEngine {
 
 		std::vector<InstanceMappingData> instance_datas;
 		for (int i = 0; i < objects.size(); i++) {
-			instance_datas.push_back(objects[i].instance_data);
+			instance_datas.push_back(objects[i].instance_mapping_data);
 		}
 
 		instance_mapping_buffer = resource_builder->stageMemoryToNewBuffer(instance_datas.data(),
@@ -41,7 +41,6 @@ namespace RtEngine {
 			}
 		}
 
-		emitting_instances_count = emitting_instances.size();
 		emitting_instances_buffer = resource_builder->stageMemoryToNewBuffer(
 				emitting_instances.data(), emitting_instances.size() * sizeof(EmittingInstanceData),
 				VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
@@ -55,15 +54,6 @@ namespace RtEngine {
 	AllocatedBuffer InstanceManager::getEmittingInstancesBuffer() const {
 		assert(emitting_instances_buffer.handle != VK_NULL_HANDLE);
 		return emitting_instances_buffer;
-	}
-
-	uint32_t InstanceManager::getEmittingInstancesCount() const {
-		if (emitting_instances_buffer.handle != VK_NULL_HANDLE)
-		{
-			return emitting_instances_count;
-		}
-
-		return 0;
 	}
 
 	void InstanceManager::destroy() {

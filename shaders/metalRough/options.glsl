@@ -5,6 +5,5 @@ layout(push_constant) uniform PushConstants {
     bool sample_bsdf;
     bool russian_roulette;
     uint curr_sample_count;
-    uint emitting_instances_count;
     uint samples_per_pixel;
 } options;

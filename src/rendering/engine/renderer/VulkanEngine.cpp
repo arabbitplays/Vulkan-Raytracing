@@ -238,9 +238,6 @@ namespace RtEngine {
 				loadScene();
 			}
 			scene_manager->updateScene(mainDrawContext);
-			properties_manager->emitting_instances_count = static_cast<int32_t>(
-					scene_manager->getSceneInformation().emitting_instances_count); // TODO move this together with the creation of the
-																// instance buffers
 			drawFrame();
 		}
 

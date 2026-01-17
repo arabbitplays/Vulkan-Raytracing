@@ -42,9 +42,6 @@ namespace RtEngine {
 		vkResetFences(vulkan_context->device_manager->getDevice(), 1, &inFlightFences[mainDrawContext->currentFrame]);
 
 		scene_manager->updateScene(mainDrawContext);
-		properties_manager->emitting_instances_count =
-				scene_manager->getSceneInformation().emitting_instances_count; // TODO move this together with the creation of the instance
-															// buffers
 
 		vkResetCommandBuffer(commandBuffers[mainDrawContext->currentFrame], 0);
 		recordCommandBuffer(commandBuffers[mainDrawContext->currentFrame], imageIndex);

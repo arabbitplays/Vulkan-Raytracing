@@ -23,6 +23,7 @@ namespace RtEngine {
 		glm::vec4 ambientColor;
 		glm::vec4 sunlightDirection; // w for sun power
 		glm::vec4 sunlightColor;
+		uint32_t emitting_object_count;
 	};
 
 	struct PointLight {
@@ -58,7 +59,7 @@ namespace RtEngine {
 		void addNode(std::string name, std::shared_ptr<Node> node);
 		std::shared_ptr<Node> getRootNode();
 
-		std::shared_ptr<SceneData> createSceneData();
+		std::shared_ptr<SceneData> createSceneData(uint32_t emitting_object_count);
 		void update(uint32_t image_width, uint32_t image_height);
 
 		void clearResources();

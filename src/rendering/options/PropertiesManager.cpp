@@ -124,7 +124,6 @@ namespace RtEngine {
 		}
 
 		push_constants.push_back(curr_sample_count);
-		push_constants.push_back(emitting_instances_count);
 		push_constants.push_back(samples_per_pixel);
 	}
 

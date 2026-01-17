@@ -128,15 +128,16 @@ namespace RtEngine {
 		if (!(bufferUpdateFlags & NO_UPDATE))
 			vkDeviceWaitIdle(device);
 
-		draw_context->objects.clear();
+		draw_context->clear();
+
 		scene->nodes["root"]->draw(*draw_context);
 
 		if (bufferUpdateFlags & GEOMETRY_UPDATE) {
-			instance_manager->createInstanceMappingBuffer(draw_context->objects);
+			instance_manager->createInstanceMappingBuffer(draw_context->getRenderObjects());
 		}
 
 		if (bufferUpdateFlags & GEOMETRY_UPDATE || bufferUpdateFlags & MATERIAL_UPDATE) {
-			instance_manager->createEmittingInstancesBuffer(draw_context->objects);
+			instance_manager->createEmittingInstancesBuffer(draw_context->getRenderObjects());
 			vulkan_context->descriptor_allocator->writeBuffer(7, instance_manager->getEmittingInstancesBuffer().handle,
 												  0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
 		}
@@ -148,9 +149,9 @@ namespace RtEngine {
 		}
 
 		// TODO Only partially update tlas depending on the updated dynamic objects
-		updateTlas(draw_context->objects);
+		updateTlas(draw_context->getRenderObjects());
 
-		std::shared_ptr<SceneData> scene_data = scene->createSceneData();
+		std::shared_ptr<SceneData> scene_data = scene->createSceneData(draw_context->getEmittingObjectCount());
 		memcpy(sceneUniformBuffersMapped[draw_context->currentFrame], scene_data.get(), sizeof(SceneData));
 
 		updateSceneDescriptorSets(draw_context->currentFrame, draw_context->target);
@@ -315,7 +316,6 @@ namespace RtEngine {
 	{
 		SceneInfo scene_info {
 			.path = scene != nullptr ? scene->path : "",
-			.emitting_instances_count = instance_manager->getEmittingInstancesCount()
 		};
 		return scene_info;
 	}

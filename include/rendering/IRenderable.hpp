@@ -18,7 +18,7 @@ namespace RtEngine {
 	};
 
 	struct RenderObject {
-		InstanceMappingData instance_data;
+		InstanceMappingData instance_mapping_data;
 		std::shared_ptr<AccelerationStructure> acceleration_structure;
 		glm::mat4 transform;
 		uint32_t primitive_count;
@@ -29,13 +29,36 @@ namespace RtEngine {
 		uint32_t currentFrame = 0;
 		uint32_t max_frames_in_flight = 1;
 		std::shared_ptr<RenderTarget> target;
-		std::vector<RenderObject> objects;
 
 		void nextFrame()
 		{
 			currentFrame = (currentFrame + 1) % max_frames_in_flight;
 			target->nextImage();
 		}
+
+		void clear() {
+			emitting_object_count = 0;
+			objects.clear();
+		}
+
+		void addRenderObject(const RenderObject& render_obj) {
+			objects.push_back(render_obj);
+			if (render_obj.emitting_power > 0.0f) {
+				emitting_object_count++;
+			}
+		}
+
+		std::vector<RenderObject>& getRenderObjects() {
+			return objects;
+		}
+
+		uint32_t getEmittingObjectCount() const {
+			return emitting_object_count;
+		}
+
+	private:
+		std::vector<RenderObject> objects;
+		uint32_t emitting_object_count = 0;
 	};
 
 	class IRenderable {

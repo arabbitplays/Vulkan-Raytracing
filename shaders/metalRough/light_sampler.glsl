@@ -4,10 +4,10 @@ struct LightSample {
     float pdf;
 };
 
-LightSample sampleEmittingPrimitive(vec3 P) {
+LightSample sampleEmittingPrimitive(vec3 P, uint emitter_count) {
     float u = stepAndOutputRNGFloat(payload.rng_state);
-    uint emitting_instance_idx = min(uint(u * options.emitting_instances_count), options.emitting_instances_count - 1);
-    float pmf_light = 1.0 / options.emitting_instances_count;
+    uint emitting_instance_idx = min(uint(u * emitter_count), uint(emitter_count - 1u));
+    float pmf_light = 1.0 / emitter_count;
 
     EmittingInstance emitting_instance = emitting_instance_buffer.instances[emitting_instance_idx];
 

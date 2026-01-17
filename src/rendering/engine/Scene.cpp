@@ -5,7 +5,7 @@
 #include <glm/ext/matrix_transform.hpp>
 
 namespace RtEngine {
-	std::shared_ptr<SceneData> Scene::createSceneData() {
+	std::shared_ptr<SceneData> Scene::createSceneData(uint32_t emitting_object_count) {
 		auto sceneData = std::make_shared<SceneData>();
 
 		sceneData->inverse_view = camera->getInverseView();
@@ -26,6 +26,8 @@ namespace RtEngine {
 		sceneData->sunlightColor = glm::vec4{1, 0, 0, 1.0f};
 
 		sceneData->ambientColor = glm::vec4(0.05f);
+
+		sceneData->emitting_object_count = emitting_object_count;
 
 		return sceneData;
 	}
