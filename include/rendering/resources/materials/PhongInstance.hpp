@@ -9,7 +9,7 @@
 namespace RtEngine {
     class PhongInstance final : public MaterialInstance {
     public:
-        PhongInstance() : MaterialInstance() {
+        explicit PhongInstance(const std::string& name) : MaterialInstance(name) {
             resources = std::make_shared<PhongResources>();
         }
 

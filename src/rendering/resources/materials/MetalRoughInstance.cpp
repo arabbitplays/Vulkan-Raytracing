@@ -26,7 +26,7 @@ namespace RtEngine {
     }
 
     void MetalRoughInstance::loadResources(YAML::Node yaml_node) {
-
+        name = yaml_node["name"].as<std::string>();
         if (yaml_node["albedo_tex"]) {
             albedo_tex = tex_repo->addTexture(yaml_node["albedo_tex"].as<std::string>(), PARAMETER);
             albedo = glm::vec3(0.0f);
@@ -70,6 +70,8 @@ namespace RtEngine {
         std::string default_normal_tex_name = tex_repo->getDefaultTex(NORMAL)->name;
 
         YAML::Node out(YAML::NodeType::Map);
+        out["name"] = name;
+
         if (albedo_tex->name == default_tex_name) {
             if (albedo != glm::vec3(0.0f)) {
                 out["albedo"] = YAML::convert<glm::vec3>::encode(albedo);

@@ -73,9 +73,14 @@ namespace RtEngine {
 	}
 
 	std::shared_ptr<MaterialInstance> PhongMaterial::loadInstance(const YAML::Node& yaml_node) {
-		std::shared_ptr<MaterialInstance> instance = std::make_shared<PhongInstance>();
+		std::shared_ptr<MaterialInstance> instance = std::make_shared<PhongInstance>("");
 		instance->loadResources(yaml_node);
-		instances.push_back(instance);
+		if (instances.contains(instance->name)) {
+			SPDLOG_WARN("Material instance with name {} already existst!", instance->name);
+			return instances[instance->name];
+		}
+
+		instances[instance->name] = instance;
 		return instance;
 	}
 
@@ -83,9 +88,10 @@ namespace RtEngine {
 		std::vector<void*> resource_ptrs(instances.size());
 		std::vector<size_t> sizes(instances.size());
 		size_t total_size = 0;
-		for (uint32_t i = 0; i < instances.size(); i++) {
-			resource_ptrs[i] = instances[i]->getResources(&sizes[i]);
-			instances[i]->setMaterialIndex(i);
+		std::vector<std::shared_ptr<MaterialInstance>> instance_list = getInstances();
+		for (uint32_t i = 0; i < instance_list.size(); i++) {
+			resource_ptrs[i] = instance_list[i]->getResources(&sizes[i]);
+			instance_list[i]->setMaterialIndex(i);
 			total_size += sizes[i];
 		}
 

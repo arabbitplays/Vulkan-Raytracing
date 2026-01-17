@@ -6,6 +6,7 @@ namespace RtEngine {
     class MaterialInstance {
     public:
         MaterialInstance() = default;
+        explicit MaterialInstance(const std::string& name) : name(name) {}
         virtual ~MaterialInstance() = default;
 
         virtual void* getResources(size_t* size) = 0;
@@ -28,6 +29,7 @@ namespace RtEngine {
             return properties;
         }
 
+        std::string name = "";
     protected:
         virtual void initializeInstanceProperties() = 0;
 

@@ -8,7 +8,7 @@
 namespace RtEngine {
     class MetalRoughInstance final : public MaterialInstance {
     public:
-        explicit MetalRoughInstance(const std::shared_ptr<TextureRepository<>>& tex_repo) : MaterialInstance(), tex_repo(tex_repo) {
+        explicit MetalRoughInstance(const std::string& name, const std::shared_ptr<TextureRepository<>>& tex_repo) : MaterialInstance(name), tex_repo(tex_repo) {
             resources = std::make_shared<MetalRoughResources>();
         }
 

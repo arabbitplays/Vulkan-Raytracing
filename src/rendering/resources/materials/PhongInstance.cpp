@@ -21,6 +21,7 @@ namespace RtEngine {
     }
 
     void PhongInstance::loadResources(YAML::Node yaml_node) {
+        name = yaml_node["name"].as<std::string>();
         if (yaml_node["diffuse"])
             diffuse = yaml_node["diffuse"].as<glm::vec3>();
         if (yaml_node["specular"])
@@ -43,6 +44,7 @@ namespace RtEngine {
 
     YAML::Node PhongInstance::writeResourcesToYaml() {
         YAML::Node out(YAML::NodeType::Map);
+        out["name"] = name;
 
         if (diffuse != glm::vec3(0.0f)) {
             out["diffuse"] = YAML::convert<glm::vec3>::encode(diffuse);

@@ -41,6 +41,9 @@ namespace RtEngine {
 		virtual void buildPipelines(VkDescriptorSetLayout sceneLayout) = 0;
 		virtual void writeMaterial() = 0;
 		std::vector<std::shared_ptr<MaterialInstance>> getInstances();
+
+		std::shared_ptr<MaterialInstance> getInstanceByName(const std::string &name);
+
 		std::shared_ptr<PropertiesSection> getProperties();
 
 		void clearResources();
@@ -56,7 +59,7 @@ namespace RtEngine {
 		DescriptorAllocator descriptorAllocator;
 		DeletionQueue mainDeletionQueue, resetQueue;
 
-		std::vector<std::shared_ptr<MaterialInstance>> instances;
+		std::unordered_map<std::string, std::shared_ptr<MaterialInstance>> instances;
 		std::shared_ptr<PropertiesSection> properties;
 
 		AllocatedBuffer material_buffer; // maps an instance to its respective material via a common index into the
