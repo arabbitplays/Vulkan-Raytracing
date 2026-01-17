@@ -32,9 +32,7 @@ namespace RtEngine {
 		void buildPipelines(VkDescriptorSetLayout sceneLayout) override;
 		void writeMaterial() override;
 
-		std::shared_ptr<MaterialInstance> createInstance(MetalRoughParameters parameters, bool unique = false);
-
-		std::shared_ptr<MaterialInstance> loadInstance(const YAML::Node &yaml_node);
+		std::shared_ptr<MaterialInstance> loadInstance(const YAML::Node &yaml_node) override;
 
 		void reset() override;
 
@@ -42,8 +40,6 @@ namespace RtEngine {
 		void initProperties() override;
 
 	private:
-		AllocatedBuffer createMaterialBuffer();
-
 		std::shared_ptr<TextureRepository<>> material_texture_repo;
 
 		MaterialProperties material_properties;

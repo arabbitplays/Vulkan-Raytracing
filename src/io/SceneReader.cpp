@@ -85,20 +85,10 @@ namespace RtEngine {
 		}
 	}
 
-	void SceneReader::initializeMaterial(const YAML::Node &material_node, std::shared_ptr<Material> &material) {
+	void SceneReader::initializeMaterial(const YAML::Node &material_nodes, std::shared_ptr<Material> &material) {
 		runtime_context->curr_material = material;
-		if (typeid(*material) == typeid(MetalRoughMaterial)) {
-			auto metal_rough_material = dynamic_cast<MetalRoughMaterial *>(material.get());
-
-			for (const auto &material_node: material_node) {
-				metal_rough_material->loadInstance(material_node);
-			}
-		} else if (typeid(*material) == typeid(PhongMaterial)) {
-			auto phong_material = dynamic_cast<PhongMaterial *>(material.get());
-
-			for (const auto &material_node: material_node) {
-				phong_material->loadInstance(material_node);
-			}
+		for (const auto &material_node: material_nodes) {
+			material->loadInstance(material_node);
 		}
 	}
 

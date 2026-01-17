@@ -40,6 +40,10 @@ namespace RtEngine {
 
 		virtual void buildPipelines(VkDescriptorSetLayout sceneLayout) = 0;
 		virtual void writeMaterial() = 0;
+
+		virtual std::shared_ptr<MaterialInstance> loadInstance(const YAML::Node &yaml_node) = 0;
+		AllocatedBuffer createMaterialBuffer();
+
 		std::vector<std::shared_ptr<MaterialInstance>> getInstances();
 
 		std::shared_ptr<MaterialInstance> getInstanceByName(const std::string &name);

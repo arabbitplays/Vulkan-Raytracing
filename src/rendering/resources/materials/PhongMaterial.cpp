@@ -84,32 +84,6 @@ namespace RtEngine {
 		return instance;
 	}
 
-	AllocatedBuffer PhongMaterial::createMaterialBuffer() {
-		std::vector<void*> resource_ptrs(instances.size());
-		std::vector<size_t> sizes(instances.size());
-		size_t total_size = 0;
-		std::vector<std::shared_ptr<MaterialInstance>> instance_list = getInstances();
-		for (uint32_t i = 0; i < instance_list.size(); i++) {
-			resource_ptrs[i] = instance_list[i]->getResources(&sizes[i]);
-			instance_list[i]->setMaterialIndex(i);
-			total_size += sizes[i];
-		}
-
-		const auto material_data = static_cast<std::byte*>(std::malloc(total_size));
-		std::byte* dst = material_data;
-		for (uint32_t i = 0; i < resource_ptrs.size(); i++) {
-			std::memcpy(dst, resource_ptrs[i], sizes[i]);
-			dst += sizes[i];
-		}
-
-		AllocatedBuffer material_buffer = vulkan_context->resource_builder->stageMemoryToNewBuffer(
-				material_data, total_size,
-				VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
-
-		free(material_data);
-		return material_buffer;
-	}
-
 	void PhongMaterial::initProperties() {
 		properties = std::make_shared<PropertiesSection>(MATERIAL_SECTION_NAME);
 		properties->addBool("Shadows", &material_properties.shadows);

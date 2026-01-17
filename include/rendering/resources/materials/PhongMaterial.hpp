@@ -19,7 +19,7 @@ namespace RtEngine {
 
 		void buildPipelines(VkDescriptorSetLayout sceneLayout) override;
 		void writeMaterial() override;
-		std::shared_ptr<MaterialInstance> loadInstance(const YAML::Node &yaml_node);
+		std::shared_ptr<MaterialInstance> loadInstance(const YAML::Node &yaml_node) override;
 
 		void reset() override;
 
@@ -27,7 +27,6 @@ namespace RtEngine {
 		void initProperties() override;
 
 	private:
-		AllocatedBuffer createMaterialBuffer();
 
 		MaterialProperties material_properties;
 	};
