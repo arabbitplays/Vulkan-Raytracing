@@ -6,6 +6,7 @@
 #define SCENEUTIL_HPP
 
 #include <Node.hpp>
+#include <MeshRenderer.hpp>
 
 namespace RtEngine {
 	class SceneUtil {

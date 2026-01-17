@@ -25,10 +25,8 @@ namespace RtEngine {
 
 		scene_resource_deletion_queue.pushFunction([&]() { scene->clearResources(); });
 
-		std::vector<std::shared_ptr<MeshAsset>> mesh_assets = SceneUtil::collectMeshAssets(scene->getRootNode());
-		geometry_manager->createGeometryBuffers(mesh_assets);
-		scene->material->writeMaterial();
-		createBlas(mesh_assets);
+		renderer->updateStaticGeometry(scene);
+
 		createUniformBuffers();
 		bufferUpdateFlags = static_cast<uint8_t>(GEOMETRY_UPDATE) | static_cast<uint8_t>(MATERIAL_UPDATE);
 
@@ -39,31 +37,6 @@ namespace RtEngine {
 		scene_resource_deletion_queue.pushFunction([&]()
 		{
 			top_level_acceleration_structure->destroy();
-		});
-	}
-
-	void SceneManager::createBlas(std::vector<std::shared_ptr<MeshAsset>> &meshes) {
-		QuickTimer timer{"BLAS Build", true};
-		VkDevice device = vulkan_context->device_manager->getDevice();
-
-		uint32_t object_id = 0;
-		for (auto &meshAsset: meshes) {
-			meshAsset->accelerationStructure = std::make_shared<AccelerationStructure>(
-					device, *vulkan_context->resource_builder, *vulkan_context->command_manager,
-					VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_KHR);
-
-			meshAsset->accelerationStructure->addTriangleGeometry(
-					geometry_manager->getVertexBuffer(), geometry_manager->getIndexBuffer(),
-					meshAsset->vertex_count - 1, meshAsset->triangle_count, sizeof(Vertex),
-					meshAsset->instance_data.vertex_offset, meshAsset->instance_data.triangle_offset);
-			meshAsset->accelerationStructure->build();
-			meshAsset->geometry_id = object_id++;
-		}
-
-		scene_resource_deletion_queue.pushFunction([&]() {
-			for (auto &meshAsset: SceneUtil::collectMeshAssets(scene->getRootNode())) {
-				meshAsset->accelerationStructure->destroy();
-			}
 		});
 	}
 
@@ -181,16 +154,9 @@ namespace RtEngine {
 		if (bufferUpdateFlags & GEOMETRY_UPDATE) {
 			vulkan_context->descriptor_allocator->writeAccelerationStructure(
 					0, tlas_handle, VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR);
-			vulkan_context->descriptor_allocator->writeBuffer(3, geometry_manager->getVertexBuffer().handle, 0,
-															  VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
-			vulkan_context->descriptor_allocator->writeBuffer(4, geometry_manager->getIndexBuffer().handle, 0,
-															  VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
-			vulkan_context->descriptor_allocator->writeBuffer(5, geometry_manager->getGeometryMappingBuffer().handle, 0,
-															  VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+
 			vulkan_context->descriptor_allocator->writeBuffer(6, instance_manager->getInstanceBuffer().handle, 0,
 															  VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
-
-
 			std::vector<VkImageView> views{};
 			for (uint32_t i = 0; i < 6; i++) {
 				views.push_back(scene->environment_map[i].imageView);

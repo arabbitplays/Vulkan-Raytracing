@@ -9,6 +9,7 @@ src += files(
   'Swapchain.cpp',
   'Scene.cpp',
   'InstanceManager.cpp',
+  'VulkanRenderer.cpp',
   'RenderTarget.cpp',
   'SceneManager.cpp',
   'GeometryManager.cpp',
