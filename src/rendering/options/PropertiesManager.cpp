@@ -96,8 +96,8 @@ namespace RtEngine {
 		}
 	}
 
-	void *PropertiesManager::getPushConstants(uint32_t *size) {
-		updatePushConstants();
+	void *PropertiesManager::getPushConstants(uint32_t *size, std::shared_ptr<RenderTarget> render_target) {
+		updatePushConstants(render_target);
 		*size = sizeof(uint32_t) * push_constants.size();
 		assert(*size <= MAX_PUSH_CONSTANT_SIZE);
 		return push_constants.data();
@@ -113,7 +113,7 @@ namespace RtEngine {
 		return 0;
 	}
 
-	void PropertiesManager::updatePushConstants() {
+	void PropertiesManager::updatePushConstants(std::shared_ptr<RenderTarget> render_target) {
 		push_constants.clear();
 		assert(property_sections.contains(MATERIAL_SECTION_NAME) && property_sections.contains(RENDERER_SECTION_NAME));
 
@@ -123,8 +123,8 @@ namespace RtEngine {
 			push_constants.push_back(*bool_option->var);
 		}
 
-		push_constants.push_back(curr_sample_count);
-		push_constants.push_back(samples_per_pixel);
+		push_constants.push_back(render_target->getAccumulatedFrameCount());
+		push_constants.push_back(render_target->getSamplesPerFrame());
 	}
 
 	bool PropertiesManager::serialize() {

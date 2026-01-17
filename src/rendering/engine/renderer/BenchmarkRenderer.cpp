@@ -12,9 +12,11 @@ namespace RtEngine {
 		reference_image_data = vulkan_context->resource_builder->loadImageData(reference_image_path, &ref_width,
 																			   &ref_height, &ref_channels);
 
+		uint32_t curr_sample_count = mainDrawContext->target->getTotalSampleCount();
+
 		while (!glfwWindowShouldClose(window)) {
 			// render one image and then output it if output path is defined
-			if (sample_count == properties_manager->curr_sample_count) {
+			if (sample_count == curr_sample_count) {
 				vkDeviceWaitIdle(vulkan_context->device_manager->getDevice());
 				outputRenderingTarget(std::to_string(sample_count) + "_benchmark.png");
 				break;
@@ -27,14 +29,14 @@ namespace RtEngine {
 			if (calculate_error) {
 				calculate_error = false;
 				float mse = calculateMSEToReference();
-				spdlog::info("Sample count: {}, Error: {:f}", properties_manager->curr_sample_count, mse);
+				spdlog::info("Sample count: {}, Error: {:f}", curr_sample_count, mse);
 			}
 		}
 
 		vkDeviceWaitIdle(vulkan_context->device_manager->getDevice());
 
 		float mse = calculateMSEToReference();
-		spdlog::info("Sample count: {}, Final Error: {:f}", properties_manager->curr_sample_count, mse);
+		spdlog::info("Sample count: {}, Final Error: {:f}", curr_sample_count, mse);
 		stbi_image_free(reference_image_data);
 	}
 
@@ -42,7 +44,7 @@ namespace RtEngine {
 		vkWaitForFences(vulkan_context->device_manager->getDevice(), 1, &inFlightFences[mainDrawContext->currentFrame], VK_TRUE,
 						UINT64_MAX);
 
-		uint32_t curr_sample_count = properties_manager->curr_sample_count;
+		uint32_t curr_sample_count = mainDrawContext->target->getTotalSampleCount();
 		if (error_calculation_sample_count == curr_sample_count) {
 			present_image = true;
 			calculate_error = true;

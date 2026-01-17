@@ -10,7 +10,7 @@
 
 namespace RtEngine {
 	void RealtimeRenderer::mainLoop() {
-		properties_manager->samples_per_pixel = SAMPLES_PER_PIXEL;
+		mainDrawContext->target->setSamplesPerFrame(SAMPLES_PER_PIXEL);
 		while (!glfwWindowShouldClose(window)) {
 			glfwPollEvents();
 
@@ -19,7 +19,7 @@ namespace RtEngine {
 			}
 			scene_manager->updateScene(mainDrawContext);
 
-			properties_manager->curr_sample_count = 0;
+			mainDrawContext->target->resetAccumulatedFrames();
 			drawFrame();
 		}
 

@@ -10,7 +10,7 @@ namespace RtEngine {
 
 		while (!glfwWindowShouldClose(window)) {
 			// render one image and then output it if output path is defined
-			if (sample_count == properties_manager->curr_sample_count) {
+			if (sample_count == mainDrawContext->target->getTotalSampleCount()) {
 				vkDeviceWaitIdle(vulkan_context->device_manager->getDevice());
 				outputRenderingTarget(vulkan_context->base_options->resources_dir + "/references/" +
 									  std::to_string(sample_count) + "_render.png");
@@ -29,7 +29,7 @@ namespace RtEngine {
 		vkWaitForFences(vulkan_context->device_manager->getDevice(), 1, &inFlightFences[mainDrawContext->currentFrame], VK_TRUE,
 						UINT64_MAX);
 
-		uint32_t curr_sample_count = properties_manager->curr_sample_count;
+		uint32_t curr_sample_count = mainDrawContext->target->getTotalSampleCount();
 		present_image = present_sample_count == curr_sample_count;
 
 		int imageIndex = 0;

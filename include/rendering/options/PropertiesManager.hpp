@@ -10,6 +10,8 @@
 #include <unordered_map>
 #include <vector>
 
+#include "RenderTarget.hpp"
+
 namespace RtEngine {
 	constexpr std::string MATERIAL_SECTION_NAME = "Material";
 	constexpr std::string RENDERER_SECTION_NAME = "Renderer";
@@ -71,17 +73,16 @@ namespace RtEngine {
 
 		void addPropertySection(const std::shared_ptr<PropertiesSection> &properties,
 								uint32_t flags = ALL_PROPERTY_FLAGS);
-		void *getPushConstants(uint32_t *size);
+		void *getPushConstants(uint32_t *size, std::shared_ptr<RenderTarget> render_target);
 		std::vector<std::shared_ptr<PropertiesSection>> getSections(uint32_t filter_flags = NONE_PROPERTY_FLAG);
 		bool serialize();
 
 		std::unordered_map<std::string, std::shared_ptr<PropertiesSection>> property_sections;
 		std::unordered_map<std::string, uint32_t> section_flags;
-		int32_t curr_sample_count, samples_per_pixel = 10;
 
 	private:
 		void initSectionWithConfig(const std::shared_ptr<PropertiesSection> &properties);
-		void updatePushConstants();
+		void updatePushConstants(std::shared_ptr<RenderTarget> render_target);
 
 		std::shared_ptr<ConfigLoader> config;
 		std::vector<int32_t> push_constants;

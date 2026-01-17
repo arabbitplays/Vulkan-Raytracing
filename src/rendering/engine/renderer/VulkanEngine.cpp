@@ -175,7 +175,7 @@ namespace RtEngine {
 	void VulkanEngine::loadScene() {
 		assert(!vulkan_context->base_options->curr_scene_name.empty());
 		vkDeviceWaitIdle(vulkan_context->device_manager->getDevice());
-		properties_manager->curr_sample_count = 0;
+		mainDrawContext->target->resetAccumulatedFrames();
 		std::string path = vulkan_context->base_options->resources_dir + "/scenes/" +
 						   vulkan_context->base_options->curr_scene_name;
 		scene_manager->createScene(path);
@@ -325,7 +325,7 @@ namespace RtEngine {
 	void VulkanEngine::refreshAfterResize() {
 		vkDeviceWaitIdle(vulkan_context->device_manager->getDevice());
 
-		properties_manager->curr_sample_count = 0;
+		mainDrawContext->target->resetAccumulatedFrames();
 		vulkan_context->swapchain->recreate();
 		mainDrawContext->target->recreate(vulkan_context->swapchain->extent);
 		guiManager->updateWindows();
@@ -382,7 +382,7 @@ namespace RtEngine {
 								static_cast<uint32_t>(descriptor_sets.size()), descriptor_sets.data(), 0, nullptr);
 
 		uint32_t pc_size;
-		void *pc_data = properties_manager->getPushConstants(&pc_size);
+		void *pc_data = properties_manager->getPushConstants(&pc_size, mainDrawContext->target);
 		vkCmdPushConstants(commandBuffer, pipeline.getLayoutHandle(),
 						   VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR | VK_SHADER_STAGE_RAYGEN_BIT_KHR |
 								   VK_SHADER_STAGE_MISS_BIT_KHR,
@@ -391,8 +391,6 @@ namespace RtEngine {
 		CmdTraceRaysKHR(vulkan_context->device_manager->getDevice(), commandBuffer, &raygenShaderSbtEntry,
 						&missShaderSbtEntry, &closestHitShaderSbtEntry, &callableShaderSbtEntry,
 						vulkan_context->swapchain->extent.width, vulkan_context->swapchain->extent.height, 1);
-
-		properties_manager->curr_sample_count++;
 	}
 
 	void VulkanEngine::recordCopyToSwapchain(VkCommandBuffer commandBuffer, const uint32_t swapchain_image_index) {
@@ -520,7 +518,7 @@ namespace RtEngine {
 
 	void VulkanEngine::handleGuiUpdate(uint32_t update_flags) const
 	{
-		properties_manager->curr_sample_count = 0;
+		mainDrawContext->target->resetAccumulatedFrames();
 		scene_manager->bufferUpdateFlags |= update_flags;
 	}
 

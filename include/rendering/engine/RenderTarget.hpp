@@ -20,7 +20,14 @@ namespace RtEngine
         AllocatedImage getCurrentRngImage() const;
         void nextImage();
 
-        uint32_t getCurrentSampleCount() const;
+        uint32_t getAccumulatedFrameCount() const;
+        void resetAccumulatedFrames();
+        void incrementAccumulatedFrameCount();
+
+        uint32_t getTotalSampleCount() const;
+
+        uint32_t getSamplesPerFrame() const;
+        void setSamplesPerFrame(uint32_t new_samples_per_frame);
 
         void recreate(VkExtent2D image_extent);
 
@@ -36,6 +43,9 @@ namespace RtEngine
         uint32_t current_image = 0;
         std::vector<AllocatedImage> render_targets;
         std::vector<AllocatedImage> rng_textures;
+
+        uint32_t accumulated_frame_count = 0;
+        uint32_t samples_per_frame = 10;
     };
 }
 

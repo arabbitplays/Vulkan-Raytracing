@@ -65,10 +65,6 @@ namespace RtEngine {
 		static void keyCallback(GLFWwindow *window, int key, int scancode, int action, int mods);
 		static void mouseCallback(GLFWwindow *window, double xPos, double yPos);
 
-		void createImageViews();
-
-		void createGuiFrameBuffers();
-
 		static bool hasStencilComponent(VkFormat format);
 
 		std::shared_ptr<DescriptorAllocator> createDescriptorAllocator();

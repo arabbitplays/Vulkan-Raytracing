@@ -34,6 +34,7 @@ namespace RtEngine {
 		{
 			currentFrame = (currentFrame + 1) % max_frames_in_flight;
 			target->nextImage();
+			target->incrementAccumulatedFrameCount();
 		}
 
 		void clear() {

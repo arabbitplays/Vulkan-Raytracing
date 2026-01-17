@@ -67,6 +67,30 @@ namespace RtEngine
         current_image = (current_image + 1) % render_targets.size();
     }
 
+    uint32_t RenderTarget::getAccumulatedFrameCount() const {
+        return accumulated_frame_count;
+    }
+
+    void RenderTarget::resetAccumulatedFrames() {
+        accumulated_frame_count = 0;
+    }
+
+    void RenderTarget::incrementAccumulatedFrameCount() {
+        accumulated_frame_count++;
+    }
+
+    uint32_t RenderTarget::getTotalSampleCount() const {
+        return accumulated_frame_count * samples_per_frame;
+    }
+
+    uint32_t RenderTarget::getSamplesPerFrame() const {
+        return samples_per_frame;
+    }
+
+    void RenderTarget::setSamplesPerFrame(uint32_t new_samples_per_frame) {
+        samples_per_frame = new_samples_per_frame;
+        resetAccumulatedFrames();
+    }
 
     void RenderTarget::destroy()
     {
