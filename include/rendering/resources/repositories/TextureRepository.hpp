@@ -18,17 +18,6 @@ namespace RtEngine {
 			initDefaultTextures();
 		}
 
-		std::vector<std::shared_ptr<Texture>> getNonDefaultTextures() {
-			std::vector<std::shared_ptr<Texture>> result{};
-			for (uint32_t i = 0; i < next_tex_idx; i++) {
-				std::shared_ptr<Texture> tex = ordered_textures[i];
-				if (tex->name != default_tex->name && tex->name != default_normal_tex->name) {
-					result.push_back(tex);
-				}
-			}
-			return result;
-		}
-
 		std::vector<VkImageView> getOrderedImageViews() {
 			std::vector<VkImageView> image_views(MAX_TEXTURE_COUNT);
 			for (uint32_t i = 0; i < next_tex_idx; i++) {
@@ -41,11 +30,11 @@ namespace RtEngine {
 			return image_views;
 		}
 
-		int32_t getTextureIndex(const std::string &name) {
+		uint32_t getTextureIndex(const std::string &name) {
 			if (texture_name_cache.contains(name)) {
 				return texture_name_cache[name];
 			}
-			return -1;
+			return 0;
 		}
 
 		std::shared_ptr<Texture> addTexture(std::string path, TextureType type) {

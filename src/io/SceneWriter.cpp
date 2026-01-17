@@ -40,17 +40,6 @@ namespace RtEngine {
 		}
 		out << YAML::EndSeq;
 
-		std::vector<std::shared_ptr<Texture>> textures = scene->material->getTextures();
-		out << YAML::Key << "textures" << YAML::Value << YAML::BeginSeq;
-		for (const auto &texture: textures) {
-			out << YAML::BeginMap;
-			out << YAML::Key << "path" << YAML::Value << texture->path;
-			out << YAML::Key << "type" << YAML::Value << texture->type;
-
-			out << YAML::EndMap;
-		}
-		out << YAML::EndSeq;
-
 		writeMaterial(out, scene->material);
 
 		out << YAML::Key << "nodes" << YAML::Value << YAML::BeginSeq;
@@ -62,66 +51,20 @@ namespace RtEngine {
 		out << YAML::EndMap;
 		out << YAML::EndMap;
 
-		std::ofstream fout(filename);
+		std::string path = filename + ".yaml";
+		std::ofstream fout(path);
 		fout << out.c_str();
 		fout.close();
 
-		spdlog::info("Scene successfully written to {}", filename);
+		spdlog::info("Scene successfully written to {}", path);
 	}
 
 	void SceneWriter::writeMaterial(YAML::Emitter &out, const std::shared_ptr<Material> &material) {
-		if (typeid(*material) == typeid(MetalRoughMaterial)) {
-			auto metal_rough_material = dynamic_cast<MetalRoughMaterial *>(material.get());
-
-			out << YAML::Key << "materials" << YAML::Value << YAML::BeginSeq;
-			// TODO let this be done by the material instance
-			/*for (auto &resources: metal_rough_material->getResources()) {
-				out << YAML::BeginMap;
-
-				out << YAML::Key << "albedo" << YAML::Value << YAML::convert<glm::vec3>::encode(resources->albedo);
-				out << YAML::Key << "metallic" << YAML::Value << resources->properties.x;
-				out << YAML::Key << "roughness" << YAML::Value << resources->properties.y;
-				out << YAML::Key << "ao" << YAML::Value << resources->properties.z;
-
-				// TODO write texture names (myb use properties to handle serialization of materials)
-
-				if (resources->emission.w != 0) {
-					out << YAML::Key << "emission_color" << YAML::Value
-						<< YAML::convert<glm::vec3>::encode(resources->emission);
-					out << YAML::Key << "emission_power" << YAML::Value << resources->emission.w;
-				}
-
-				out << YAML::EndMap;
-			}*/
-			out << YAML::EndSeq;
-		} else if (typeid(*material) == typeid(PhongMaterial)) {
-			auto phong_material = dynamic_cast<PhongMaterial *>(material.get());
-
-			out << YAML::Key << "materials" << YAML::Value << YAML::BeginSeq;
-			// TODO let this be done by the material instance
-			/*for (auto &resources: phong_material->getResources()) {
-				out << YAML::BeginMap;
-				out << YAML::Key << "diffuse" << YAML::Value
-					<< YAML::convert<glm::vec3>::encode(resources->constants->diffuse);
-				out << YAML::Key << "specular" << YAML::Value
-					<< YAML::convert<glm::vec3>::encode(resources->constants->specular);
-				out << YAML::Key << "ambient" << YAML::Value
-					<< YAML::convert<glm::vec3>::encode(resources->constants->ambient);
-				out << YAML::Key << "reflection" << YAML::Value
-					<< YAML::convert<glm::vec3>::encode(resources->constants->reflection);
-				out << YAML::Key << "transmission" << YAML::Value
-					<< YAML::convert<glm::vec3>::encode(resources->constants->transmission);
-				out << YAML::Key << "n" << YAML::Value << resources->constants->n;
-				out << YAML::Key << "eta" << YAML::Value << YAML::convert<glm::vec3>::encode(resources->constants->eta);
-				out << YAML::EndMap;
-			}*/
-			out << YAML::EndSeq;
-		} else {
-			if (material != nullptr) {
-				std::string material_name = typeid(*material).name();
-				spdlog::error("Writing " + material_name + " not suported");
-			}
+		out << YAML::Key << "materials" << YAML::Value << YAML::BeginSeq;
+		for (auto &instance: material->getInstances()) {
+			out << instance->writeResourcesToYaml();
 		}
+		out << YAML::EndSeq;
 	}
 
 	void SceneWriter::writeSceneLights(YAML::Emitter &out, const std::shared_ptr<Scene> &scene) {

@@ -31,7 +31,6 @@ namespace RtEngine {
 
 		void buildPipelines(VkDescriptorSetLayout sceneLayout) override;
 		void writeMaterial() override;
-		std::vector<std::shared_ptr<Texture>> getTextures() override;
 
 		std::shared_ptr<MaterialInstance> createInstance(MetalRoughParameters parameters, bool unique = false);
 

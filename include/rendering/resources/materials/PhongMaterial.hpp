@@ -21,7 +21,6 @@ namespace RtEngine {
 		void writeMaterial() override;
 		std::shared_ptr<MaterialInstance> loadInstance(const YAML::Node &yaml_node);
 
-		std::vector<std::shared_ptr<Texture>> getTextures() override;
 		void reset() override;
 
 	protected:

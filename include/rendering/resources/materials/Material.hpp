@@ -42,7 +42,6 @@ namespace RtEngine {
 		virtual void writeMaterial() = 0;
 		std::vector<std::shared_ptr<MaterialInstance>> getInstances();
 		std::shared_ptr<PropertiesSection> getProperties();
-		virtual std::vector<std::shared_ptr<Texture>> getTextures() = 0;
 
 		void clearResources();
 		virtual void reset();

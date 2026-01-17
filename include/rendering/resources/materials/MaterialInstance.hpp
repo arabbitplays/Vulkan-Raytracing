@@ -10,6 +10,7 @@ namespace RtEngine {
 
         virtual void* getResources(size_t* size) = 0;
         virtual void loadResources(YAML::Node yaml_node) = 0;
+        virtual YAML::Node writeResourcesToYaml() = 0;
 
         void setMaterialIndex(const uint32_t new_index) {
             material_index = new_index;

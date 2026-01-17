@@ -14,6 +14,7 @@ namespace RtEngine {
 
         void *getResources(size_t *size) override;
         void loadResources(YAML::Node yaml_node) override;
+        YAML::Node writeResourcesToYaml() override;
 
         float getEmissionPower() override;
 

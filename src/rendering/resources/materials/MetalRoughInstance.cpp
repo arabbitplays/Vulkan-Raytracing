@@ -65,6 +65,43 @@ namespace RtEngine {
         }
     }
 
+    YAML::Node MetalRoughInstance::writeResourcesToYaml() {
+        std::string default_tex_name = tex_repo->getDefaultTex(PARAMETER)->name;
+        std::string default_normal_tex_name = tex_repo->getDefaultTex(NORMAL)->name;
+
+        YAML::Node out(YAML::NodeType::Map);
+        if (albedo_tex->name == default_tex_name) {
+            if (albedo != glm::vec3(0.0f)) {
+                out["albedo"] = YAML::convert<glm::vec3>::encode(albedo);
+            }
+        } else {
+            out["albedo_tex"] = albedo_tex->path;
+        }
+
+        if (metal_rough_ao_tex->name == default_tex_name) {
+            if (albedo != glm::vec3(0.0f)) {
+                out["metallic"] = metallic;
+                out["roughness"] = roughness;
+                out["ao"] = ao;
+            }
+        } else {
+            out["metal_rough_ao_tex"] = metal_rough_ao_tex->path;
+        }
+
+        out["eta"] = eta;
+
+        if (normal_tex->name != default_normal_tex_name) {
+            out["normal_tex"] = normal_tex->path;
+        }
+
+        if (emission_power != 0.0f) {
+            out["emission_color"] = YAML::convert<glm::vec3>::encode(emission_color);
+            out["emission_power"] = emission_power;
+        }
+
+        return out;
+    }
+
     float MetalRoughInstance::getEmissionPower() {
         return emission_power;
     }

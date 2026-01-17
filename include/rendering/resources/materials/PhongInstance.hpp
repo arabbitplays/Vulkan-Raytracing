@@ -15,6 +15,7 @@ namespace RtEngine {
 
         void *getResources(size_t *size) override;
         void loadResources(YAML::Node yaml_node) override;
+        YAML::Node writeResourcesToYaml() override;
 
     protected:
         void initializeInstanceProperties() override;
@@ -29,8 +30,8 @@ namespace RtEngine {
             glm::vec4 eta; // only xyz for the eta of each rgb channel
         };
 
-        glm::vec3 diffuse = glm::vec3(1.0f);
-        glm::vec3 specular = glm::vec3(1.0f);
+        glm::vec3 diffuse = glm::vec3(0.0f);
+        glm::vec3 specular = glm::vec3(0.0f);
         glm::vec3 ambient = glm::vec3(0.0f);
         glm::vec3 reflection = glm::vec3(0.0f);
         glm::vec3 transmission = glm::vec3(0.0f);

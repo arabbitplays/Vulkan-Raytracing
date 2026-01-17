@@ -119,10 +119,6 @@ namespace RtEngine {
 		return material_buffer;
 	}
 
-	std::vector<std::shared_ptr<Texture>> MetalRoughMaterial::getTextures() {
-		return material_texture_repo->getNonDefaultTextures();
-	}
-
 	void MetalRoughMaterial::reset() {
 		instances.clear();
 		material_texture_repo->clear();

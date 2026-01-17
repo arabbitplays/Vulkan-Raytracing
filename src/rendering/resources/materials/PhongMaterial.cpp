@@ -111,8 +111,6 @@ namespace RtEngine {
 		properties->addBool("Dispersion", &material_properties.dispersion);
 	}
 
-	std::vector<std::shared_ptr<Texture>> PhongMaterial::getTextures() { return {}; }
-
 	void PhongMaterial::reset() {
 		instances.clear();
 		Material::reset();
