@@ -73,7 +73,7 @@ namespace RtEngine {
         }
 
         std::shared_ptr<Texture> getDefaultTex(const TextureType type) {
-            return type == PARAMETER ? default_tex : default_normal_tex;
+            return type == PARAMETER || type == ENVIRONMENT ? default_tex : default_normal_tex;
         }
 
         void destroy() {

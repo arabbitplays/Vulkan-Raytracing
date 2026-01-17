@@ -11,6 +11,8 @@
 #include <glm/vec3.hpp>
 #include <utility>
 
+#include "EnvironmentMap.hpp"
+
 #define POINT_LIGHT_COUNT 4
 
 namespace RtEngine {
@@ -49,9 +51,8 @@ namespace RtEngine {
 	class Scene
 	{
 	public:
-		Scene(std::string  path, ResourceBuilder resource_builder, const std::shared_ptr<Material>& material) :
-			path(std::move(path)), resource_builder(std::move(resource_builder)), material(material) {
-			Scene::initScene();
+		Scene(std::string path, const std::shared_ptr<Material>& material) :
+			path(std::move(path)), material(material) {
 		}
 
 		virtual ~Scene() = default;
@@ -62,39 +63,17 @@ namespace RtEngine {
 		std::shared_ptr<SceneData> createSceneData(uint32_t emitting_object_count);
 		void update(uint32_t image_width, uint32_t image_height);
 
-		void clearResources();
-
 		std::string path;
 
 		std::shared_ptr<Camera> camera;
 
 		std::unordered_map<std::string, std::shared_ptr<Node>> nodes;
-		std::array<AllocatedImage, 6> environment_map{};
+		std::shared_ptr<EnvironmentMap> environment_map;
 
 		DirectionalLight sun;
 		std::array<PointLight, POINT_LIGHT_COUNT> pointLights{};
 
-		ResourceBuilder resource_builder;
-		DeletionQueue deletion_queue{};
-
 		std::shared_ptr<Material> material;
-
-	protected:
-		void initScene() {
-			std::string folder = "textures/cube_map/";
-			environment_map[0] = resource_builder.loadTextureImage(folder + "posx.jpg").image;
-			environment_map[1] = resource_builder.loadTextureImage(folder + "negx.jpg").image;
-			environment_map[2] = resource_builder.loadTextureImage(folder + "posy.jpg").image;
-			environment_map[3] = resource_builder.loadTextureImage(folder + "negy.jpg").image;
-			environment_map[4] = resource_builder.loadTextureImage(folder + "posz.jpg").image;
-			environment_map[5] = resource_builder.loadTextureImage(folder + "negz.jpg").image;
-
-			deletion_queue.pushFunction([&]() {
-				for (auto image: environment_map) {
-					resource_builder.destroyImage(image);
-				}
-			});
-		};
 	};
 
 } // namespace RtEngine

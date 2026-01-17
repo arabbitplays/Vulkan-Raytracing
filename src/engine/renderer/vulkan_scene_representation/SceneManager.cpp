@@ -17,12 +17,8 @@ namespace RtEngine {
 			scene_resource_deletion_queue.flush();
 		}
 
-		SceneReader reader = SceneReader(vulkan_context, runtime_context);
+		SceneReader reader = SceneReader(runtime_context);
 		scene = reader.readScene(scene_path, defaultMaterials);
-
-		scene_resource_deletion_queue.pushFunction([this] () {
-			scene->clearResources();
-		});
 
 		setupNewScene(scene);
 		updateGeometryResources(scene);
@@ -37,6 +33,7 @@ namespace RtEngine {
 
 	void SceneManager::createNewTlas() {
 		assert(top_level_acceleration_structure == nullptr);
+
 		VkDevice device = vulkan_context->device_manager->getDevice();
 		top_level_acceleration_structure = std::make_shared<AccelerationStructure>(
 			device, *vulkan_context->resource_builder, *vulkan_context->command_manager,
@@ -185,6 +182,8 @@ namespace RtEngine {
 
 		vulkan_context->descriptor_allocator->writeBuffer(2, sceneUniformBuffers[draw_context->currentFrame].handle, sizeof(SceneData),
 														  0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+
+		scene->environment_map->writeToDescriptor(vulkan_context->descriptor_allocator, defaultSamplerLinear);
 	}
 
 	void SceneManager::updateSceneDescriptorSets(const std::shared_ptr<DrawContext> &draw_context) {
@@ -198,13 +197,6 @@ namespace RtEngine {
 
 			vulkan_context->descriptor_allocator->writeBuffer(6, instance_manager->getInstanceBuffer().handle, 0,
 															  VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
-			std::vector<VkImageView> views{};
-			for (uint32_t i = 0; i < 6; i++) {
-				views.push_back(scene->environment_map[i].imageView);
-			}
-			vulkan_context->descriptor_allocator->writeImages(8, views, defaultSamplerLinear,
-															  VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL,
-															  VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
 		}
 
 		vulkan_context->descriptor_allocator->writeImage(1, draw_context->target->getCurrentTargetImage().imageView, VK_NULL_HANDLE,

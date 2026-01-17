@@ -211,6 +211,10 @@ namespace RtEngine {
 			format = VK_FORMAT_R8G8B8A8_UNORM;
 		} else if (type == PARAMETER) {
 			format = VK_FORMAT_R8G8B8A8_SRGB;
+		} else if (type == ENVIRONMENT) {
+			format = VK_FORMAT_R8G8B8A8_SRGB;
+		} else {
+			SPDLOG_ERROR("Texture type not supported!");
 		}
 
 		AllocatedImage textureImage =

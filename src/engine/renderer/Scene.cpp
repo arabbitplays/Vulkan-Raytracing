@@ -48,6 +48,4 @@ namespace RtEngine {
 			node.second->update();
 		}
 	}
-
-	void Scene::clearResources() { deletion_queue.flush(); }
 } // namespace RtEngine

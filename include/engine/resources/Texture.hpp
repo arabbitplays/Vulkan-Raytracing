@@ -16,6 +16,7 @@ namespace RtEngine {
 	enum TextureType {
 		NORMAL,
 		PARAMETER,
+		ENVIRONMENT,
 	};
 
 	class Texture {

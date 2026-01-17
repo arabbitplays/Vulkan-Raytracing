@@ -27,10 +27,15 @@ namespace RtEngine {
 				throw std::runtime_error("Material " + material_name + " does not exist");
 			// TODO remove vulkan context from reader?
 			std::shared_ptr<Scene> scene =
-					std::make_shared<Scene>(file_path, *vulkan_context->resource_builder, materials[material_name]);
+					std::make_shared<Scene>(file_path, materials[material_name]);
+			scene->environment_map = std::make_shared<EnvironmentMap>(runtime_context->texture_repository);
 
 			scene->camera = loadCamera(scene_node["camera"]);
 			loadSceneLights(scene_node["lights"], scene);
+
+			if (scene_node["environment_map"]) {
+				scene->environment_map->loadFromYaml(scene_node["environment_map"]);
+			}
 
 			for (const auto &mesh_node: scene_node["meshes"]) {
 				std::string mesh_path = mesh_node["path"].as<std::string>();

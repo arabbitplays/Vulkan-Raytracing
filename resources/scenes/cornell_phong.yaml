@@ -22,6 +22,14 @@ scene:
           - 1
           - 1
         intensity: 0.5
+  environment_map:
+    textures:
+      - textures/cube_map/posx.jpg
+      - textures/cube_map/negx.jpg
+      - textures/cube_map/posy.jpg
+      - textures/cube_map/negy.jpg
+      - textures/cube_map/posz.jpg
+      - textures/cube_map/negz.jpg
   meshes:
     - path: meshes/plane.obj
     - path: meshes/sphere.obj

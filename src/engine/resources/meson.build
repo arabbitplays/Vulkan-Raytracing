@@ -6,4 +6,5 @@ src += files(
   'Pipeline.cpp',
   'AccelerationStructure.cpp',
   'Texture.cpp',
+  'EnvironmentMap.cpp',
 )
