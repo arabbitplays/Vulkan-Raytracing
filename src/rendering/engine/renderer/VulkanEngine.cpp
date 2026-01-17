@@ -144,11 +144,9 @@ namespace RtEngine {
 
 	void VulkanEngine::createRuntimeContext() {
 		runtime_context = std::make_shared<RuntimeContext>();
-		runtime_context->texture_repository = std::make_shared<TextureRepository<>>(vulkan_context->resource_builder);
 		runtime_context->mesh_repository = std::make_shared<MeshRepository>(vulkan_context);
 
 		mainDeletionQueue.pushFunction([&]() {
-			runtime_context->texture_repository->destroy();
 			runtime_context->mesh_repository->destroy();
 		});
 	}

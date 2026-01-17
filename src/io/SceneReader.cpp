@@ -37,12 +37,6 @@ namespace RtEngine {
 				runtime_context->mesh_repository->addMesh(mesh_path);
 			}
 
-			for (const auto &texture_node: scene_node["textures"]) {
-				// todo handle more types
-				TextureType type = texture_node["is_normal"].as<bool>() ? NORMAL : PARAMETER;
-				runtime_context->texture_repository->addTexture(texture_node["path"].as<std::string>(), type);
-			}
-
 			initializeMaterial(scene_node["materials"], materials[material_name]);
 
 			std::shared_ptr<Node> scene_graph_node = std::make_shared<Node>();
