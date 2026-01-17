@@ -27,9 +27,6 @@ namespace RtEngine {
 					{VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 10},
 			};
 			descriptorAllocator.init(vulkan_context->device_manager->getDevice(), 8, poolRatios);
-
-			material_textures = std::make_shared<MaterialTextures<>>(runtime_context->texture_repository);
-
 			mainDeletionQueue.pushFunction(
 					[&]() { descriptorAllocator.destroyPools(this->vulkan_context->device_manager->getDevice()); });
 		};
@@ -41,7 +38,7 @@ namespace RtEngine {
 		VkDescriptorSet materialDescriptorSet;
 
 		virtual void buildPipelines(VkDescriptorSetLayout sceneLayout) = 0;
-		virtual void writeMaterial() = 0;
+		virtual void writeMaterial(AllocatedBuffer material_buffer, std::shared_ptr<MaterialTextures<>> material_textures) = 0;
 
 		virtual std::shared_ptr<MaterialInstance> loadInstance(const YAML::Node &yaml_node) = 0;
 		AllocatedBuffer createMaterialBuffer();
@@ -63,14 +60,10 @@ namespace RtEngine {
 		std::shared_ptr<VulkanContext> vulkan_context;
 		std::shared_ptr<RuntimeContext> runtime_context;
 		DescriptorAllocator descriptorAllocator;
-		DeletionQueue mainDeletionQueue, resetQueue;
+		DeletionQueue mainDeletionQueue;
 
 		std::unordered_map<std::string, std::shared_ptr<MaterialInstance>> instances;
 		std::shared_ptr<PropertiesSection> properties;
-
-		AllocatedBuffer material_buffer; // maps an instance to its respective material via a common index into the
-										 // constants and texture buffers
-		std::shared_ptr<MaterialTextures<>> material_textures;
 	};
 
 } // namespace RtEngine

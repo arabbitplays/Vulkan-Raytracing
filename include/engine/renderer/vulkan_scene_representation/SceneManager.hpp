@@ -8,6 +8,7 @@
 #include <vector>
 #include <vulkan/vulkan_core.h>
 
+#include "MaterialManager.hpp"
 #include "../VulkanRenderer.hpp"
 
 namespace RtEngine {
@@ -35,10 +36,12 @@ namespace RtEngine {
 
 			instance_manager = std::make_shared<InstanceManager>(vulkan_context->resource_builder);
 			geometry_manager = std::make_shared<GeometryManager>(vulkan_context);
+			material_manager = std::make_shared<MaterialManager>(vulkan_context->resource_builder, runtime_context->texture_repository);
 
 			main_deletion_queue.pushFunction([&]() {
 				geometry_manager->destroy();
 				instance_manager->destroy();
+				material_manager->destroy();
 			});
 
 			createSceneLayout();
@@ -81,6 +84,8 @@ namespace RtEngine {
 		void updateSceneDescriptorSets(uint32_t current_frame, const std::shared_ptr<RenderTarget>& render_target);
 		void updateTlas(std::vector<RenderObject> objects) const;
 
+		void updateMaterial(const std::shared_ptr<Scene> &scene) const;
+
 		DeletionQueue main_deletion_queue, scene_resource_deletion_queue;
 		uint32_t max_frames_in_flight;
 
@@ -97,6 +102,7 @@ namespace RtEngine {
 
 		std::shared_ptr<GeometryManager> geometry_manager;
 		std::shared_ptr<InstanceManager> instance_manager;
+		std::shared_ptr<MaterialManager> material_manager;
 
 		std::shared_ptr<AccelerationStructure> top_level_acceleration_structure;
 

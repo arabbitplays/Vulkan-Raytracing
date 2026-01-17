@@ -6,16 +6,24 @@
 #define VULKAN_RAYTRACING_MATERIALMANAGER_HPP
 #include "MaterialInstance.hpp"
 #include "MaterialTextures.hpp"
+#include "Scene.hpp"
 
 namespace RtEngine {
     class MaterialManager {
     public:
-        MaterialManager() = default;
+        MaterialManager(std::shared_ptr<ResourceBuilder> resource_builder, std::shared_ptr<TextureRepository> tex_repo);
+
+        void updateMaterialResources(std::shared_ptr<Scene> scene);
+
+        AllocatedBuffer createMaterialBuffer(const std::vector<std::shared_ptr<MaterialInstance>> &instances) const;
+
+        void destroy();
 
     private:
-        std::unordered_map<std::string, MaterialInstance> material_instances;
+        std::shared_ptr<ResourceBuilder> resource_builder;
 
-        std::shared_ptr<MaterialTextures<>> tex_repo;
+        AllocatedBuffer material_buffer;
+        std::shared_ptr<MaterialTextures<>> material_textures;
     };
 } // RtEngine
 

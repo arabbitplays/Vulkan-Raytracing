@@ -18,7 +18,7 @@ namespace RtEngine {
 			Material(PHONG_MATERIAL_NAME, context, runtime_context) {}
 
 		void buildPipelines(VkDescriptorSetLayout sceneLayout) override;
-		void writeMaterial() override;
+		void writeMaterial(AllocatedBuffer material_buffer, std::shared_ptr<MaterialTextures<>> material_textures) override;
 		std::shared_ptr<MaterialInstance> loadInstance(const YAML::Node &yaml_node) override;
 
 		void reset() override;

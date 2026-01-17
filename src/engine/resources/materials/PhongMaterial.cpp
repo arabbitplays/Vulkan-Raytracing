@@ -59,12 +59,7 @@ namespace RtEngine {
 		vkDestroyShaderModule(device, closestHitShaderModule, nullptr);
 	}
 
-	void PhongMaterial::writeMaterial() {
-		if (material_buffer.handle != VK_NULL_HANDLE) {
-			vulkan_context->resource_builder->destroyBuffer(material_buffer);
-		}
-		material_buffer = createMaterialBuffer();
-
+	void PhongMaterial::writeMaterial(AllocatedBuffer material_buffer, std::shared_ptr<MaterialTextures<>> material_textures) {
 		VkDevice device = vulkan_context->device_manager->getDevice();
 		materialDescriptorSet = descriptorAllocator.allocate(device, materialLayout);
 		descriptorAllocator.writeBuffer(0, material_buffer.handle, 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);

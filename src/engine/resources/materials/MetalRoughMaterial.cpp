@@ -59,15 +59,9 @@ namespace RtEngine {
 		vkDestroyShaderModule(device, closestHitShaderModule, nullptr);
 	}
 
-	void MetalRoughMaterial::writeMaterial() {
-		if (material_buffer.handle != VK_NULL_HANDLE) {
-			vulkan_context->resource_builder->destroyBuffer(material_buffer);
-		}
-
-		material_buffer = createMaterialBuffer();
-
+	void MetalRoughMaterial::writeMaterial(AllocatedBuffer material_buffer, std::shared_ptr<MaterialTextures<>> material_textures) {
 		materialDescriptorSet =
-				descriptorAllocator.allocate(vulkan_context->device_manager->getDevice(), materialLayout);
+				descriptorAllocator.allocate(vulkan_context->device_manager->getDevice(), materialLayout); // TODO this doesnt have to be here!?
 
 		descriptorAllocator.writeBuffer(0, material_buffer.handle, 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
 

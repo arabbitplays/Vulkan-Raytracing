@@ -30,15 +30,12 @@ namespace RtEngine {
 
 		setupNewScene(scene);
 		updateStaticGeometry(scene);
+		updateMaterial(scene);
 
 		bufferUpdateFlags = static_cast<uint8_t>(GEOMETRY_UPDATE) | static_cast<uint8_t>(MATERIAL_UPDATE);
-
-
 	}
 
 	void SceneManager::setupNewScene(const std::shared_ptr<Scene> &scene) {
-
-
 		createUniformBuffers();
 		createNewTlas();
 	}
@@ -133,7 +130,7 @@ namespace RtEngine {
 
 		if (bufferUpdateFlags != NO_UPDATE) {
 			if (bufferUpdateFlags & MATERIAL_UPDATE) {
-				scene->material->writeMaterial();
+				material_manager->updateMaterialResources(scene);
 			}
 		}
 
@@ -152,9 +149,6 @@ namespace RtEngine {
 		std::vector<std::shared_ptr<MeshAsset>> mesh_assets = SceneUtil::collectMeshAssets(scene->getRootNode());
 		geometry_manager->createGeometryBuffers(mesh_assets);
 		geometry_manager->writeGeometryBuffers();
-
-		// remove this here
-		scene->material->writeMaterial();
 	}
 
 	void SceneManager::updateTlas(std::vector<RenderObject> objects) const
@@ -170,6 +164,10 @@ namespace RtEngine {
 			top_level_acceleration_structure->update_instance_geometry(0);
 		}
 		top_level_acceleration_structure->build();
+	}
+
+	void SceneManager::updateMaterial(const std::shared_ptr<Scene> &scene) const {
+		material_manager->updateMaterialResources(scene);
 	}
 
 	void SceneManager::updateSceneDescriptorSets(uint32_t current_frame, const std::shared_ptr<RenderTarget>& render_target) {
