@@ -13,6 +13,7 @@ incdirs = [
     include_directories('include/engine/camera'),
     include_directories('include/engine/renderer'),
     include_directories('include/engine/renderer/context'),
+    include_directories('include/engine/renderer/vulkan_scene_representation'),
     include_directories('include/engine/repositories'),
     include_directories('include/engine/resources'),
     include_directories('include/engine/resources/materials'),

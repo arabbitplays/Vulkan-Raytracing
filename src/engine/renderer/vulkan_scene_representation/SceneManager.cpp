@@ -1,4 +1,4 @@
-#include "SceneManager.hpp"
+#include "../../../../include/engine/renderer/vulkan_scene_representation/SceneManager.hpp"
 
 #include <DescriptorLayoutBuilder.hpp>
 #include <MeshRenderer.hpp>
@@ -15,21 +15,36 @@ namespace RtEngine {
 
 		if (scene != nullptr) {
 			scene_resource_deletion_queue.flush();
-			for (auto &material: defaultMaterials) {
-				material.second->reset();
-			}
+		}
+
+		for (auto &material: defaultMaterials) {
+			material.second->reset();
 		}
 
 		SceneReader reader = SceneReader(vulkan_context, runtime_context);
 		scene = reader.readScene(scene_path, defaultMaterials);
 
-		scene_resource_deletion_queue.pushFunction([&]() { scene->clearResources(); });
+		scene_resource_deletion_queue.pushFunction([this] () {
+			scene->clearResources();
+		});
 
-		renderer->updateStaticGeometry(scene);
+		setupNewScene(scene);
+		updateStaticGeometry(scene);
 
-		createUniformBuffers();
 		bufferUpdateFlags = static_cast<uint8_t>(GEOMETRY_UPDATE) | static_cast<uint8_t>(MATERIAL_UPDATE);
 
+
+	}
+
+	void SceneManager::setupNewScene(const std::shared_ptr<Scene> &scene) {
+
+
+		createUniformBuffers();
+		createNewTlas();
+	}
+
+	void SceneManager::createNewTlas() {
+		assert(top_level_acceleration_structure == nullptr);
 		VkDevice device = vulkan_context->device_manager->getDevice();
 		top_level_acceleration_structure = std::make_shared<AccelerationStructure>(
 			device, *vulkan_context->resource_builder, *vulkan_context->command_manager,
@@ -37,6 +52,7 @@ namespace RtEngine {
 		scene_resource_deletion_queue.pushFunction([&]()
 		{
 			top_level_acceleration_structure->destroy();
+			top_level_acceleration_structure = nullptr;
 		});
 	}
 
@@ -130,6 +146,15 @@ namespace RtEngine {
 		updateSceneDescriptorSets(draw_context->currentFrame, draw_context->target);
 
 		bufferUpdateFlags = NO_UPDATE;
+	}
+
+	void SceneManager::updateStaticGeometry(const std::shared_ptr<Scene> &scene) {
+		std::vector<std::shared_ptr<MeshAsset>> mesh_assets = SceneUtil::collectMeshAssets(scene->getRootNode());
+		geometry_manager->createGeometryBuffers(mesh_assets);
+		geometry_manager->writeGeometryBuffers();
+
+		// remove this here
+		scene->material->writeMaterial();
 	}
 
 	void SceneManager::updateTlas(std::vector<RenderObject> objects) const

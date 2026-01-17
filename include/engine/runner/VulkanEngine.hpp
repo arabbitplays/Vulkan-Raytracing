@@ -11,7 +11,7 @@
 #include <GuiManager.hpp>
 #include <GuiWindow.hpp>
 #include <RenderTarget.hpp>
-#include <SceneManager.hpp>
+#include <../renderer/vulkan_scene_representation/SceneManager.hpp>
 #include "../../util/QuickTimer.hpp"
 #include "DescriptorAllocator.hpp"
 

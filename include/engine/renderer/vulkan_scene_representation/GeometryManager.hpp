@@ -1,7 +1,7 @@
 #ifndef GEOMETRYMANAGER_HPP
 #define GEOMETRYMANAGER_HPP
 
-#include <Scene.hpp>
+#include <../Scene.hpp>
 #include <VulkanContext.hpp>
 
 namespace RtEngine {
@@ -13,10 +13,7 @@ namespace RtEngine {
 			vulkan_context(vulkan_context) {}
 
 		void createGeometryBuffers(std::vector<std::shared_ptr<MeshAsset>> &mesh_assets);
-
-		AllocatedBuffer getVertexBuffer() const;
-		AllocatedBuffer getIndexBuffer() const;
-		AllocatedBuffer getGeometryMappingBuffer() const;
+		void writeGeometryBuffers() const;
 
 		void destroy();
 

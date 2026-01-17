@@ -8,7 +8,7 @@
 #include <vector>
 #include <vulkan/vulkan_core.h>
 
-#include "VulkanRenderer.hpp"
+#include "../VulkanRenderer.hpp"
 
 namespace RtEngine {
 	class SceneManager {
@@ -34,10 +34,10 @@ namespace RtEngine {
 			max_frames_in_flight(max_frames_in_flight) {
 
 			instance_manager = std::make_shared<InstanceManager>(vulkan_context->resource_builder);
-			renderer = std::make_shared<VulkanRenderer>(vulkan_context);
+			geometry_manager = std::make_shared<GeometryManager>(vulkan_context);
 
 			main_deletion_queue.pushFunction([&]() {
-				renderer->clearGeometry();
+				geometry_manager->destroy();
 				instance_manager->destroy();
 			});
 
@@ -47,6 +47,13 @@ namespace RtEngine {
 		}
 
 		void createScene(const std::string& scene_path);
+
+		void setupNewScene(const std::shared_ptr<Scene>& scene);
+
+		void createNewTlas();
+
+		void updateStaticGeometry(const std::shared_ptr<Scene> &scene);
+
 		void createBlas(std::vector<std::shared_ptr<MeshAsset>> &meshes);
 		void updateScene(const std::shared_ptr<DrawContext> &draw_context);
 
@@ -88,7 +95,7 @@ namespace RtEngine {
 
 		std::unordered_map<std::string, std::shared_ptr<Material>> defaultMaterials;
 
-		std::shared_ptr<VulkanRenderer> renderer; // TODO move further up into runner
+		std::shared_ptr<GeometryManager> geometry_manager;
 		std::shared_ptr<InstanceManager> instance_manager;
 
 		std::shared_ptr<AccelerationStructure> top_level_acceleration_structure;

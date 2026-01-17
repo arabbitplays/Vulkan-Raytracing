@@ -14,6 +14,15 @@ namespace RtEngine {
 		createBlas(mesh_assets);
 	}
 
+	void GeometryManager::writeGeometryBuffers() const {
+		vulkan_context->descriptor_allocator->writeBuffer(3, vertex_buffer.handle, 0,
+												  VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+		vulkan_context->descriptor_allocator->writeBuffer(4, index_buffer.handle, 0,
+														  VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+		vulkan_context->descriptor_allocator->writeBuffer(5, geometry_mapping_buffer.handle, 0,
+														  VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+	}
+
 	AllocatedBuffer GeometryManager::createVertexBuffer(std::vector<std::shared_ptr<MeshAsset>> &mesh_assets) const {
 		assert(!mesh_assets.empty());
 
@@ -115,20 +124,6 @@ namespace RtEngine {
 		}
 	}
 
-	AllocatedBuffer GeometryManager::getVertexBuffer() const {
-		assert(vertex_buffer.handle != VK_NULL_HANDLE);
-		return vertex_buffer;
-	}
-
-	AllocatedBuffer GeometryManager::getIndexBuffer() const {
-		assert(index_buffer.handle != VK_NULL_HANDLE);
-		return index_buffer;
-	}
-
-	AllocatedBuffer GeometryManager::getGeometryMappingBuffer() const {
-		assert(geometry_mapping_buffer.handle != VK_NULL_HANDLE);
-		return geometry_mapping_buffer;
-	}
 
 	void GeometryManager::destroy() {
 		if (vertex_buffer.handle != VK_NULL_HANDLE)
