@@ -24,6 +24,7 @@ namespace RtEngine {
 		mainDeletionQueue.pushFunction([&]() {
 			vkDestroyDescriptorSetLayout(vulkan_context->device_manager->getDevice(), materialLayout, nullptr);
 		});
+		materialDescriptorSet = descriptorAllocator.allocate(device, materialLayout);
 
 		std::vector<VkDescriptorSetLayout> descriptorSetLayouts{sceneLayout, materialLayout};
 		pipeline->setDescriptorSetLayouts(descriptorSetLayouts);
@@ -61,7 +62,6 @@ namespace RtEngine {
 
 	void PhongMaterial::writeMaterial(AllocatedBuffer material_buffer, std::shared_ptr<MaterialTextures<>> material_textures) {
 		VkDevice device = vulkan_context->device_manager->getDevice();
-		materialDescriptorSet = descriptorAllocator.allocate(device, materialLayout);
 		descriptorAllocator.writeBuffer(0, material_buffer.handle, 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
 		descriptorAllocator.updateSet(device, materialDescriptorSet);
 		descriptorAllocator.clearWrites();

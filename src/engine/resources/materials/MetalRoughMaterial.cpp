@@ -23,6 +23,7 @@ namespace RtEngine {
 		mainDeletionQueue.pushFunction([&]() {
 			vkDestroyDescriptorSetLayout(vulkan_context->device_manager->getDevice(), materialLayout, nullptr);
 		});
+		materialDescriptorSet = descriptorAllocator.allocate(vulkan_context->device_manager->getDevice(), materialLayout);
 
 		std::vector<VkDescriptorSetLayout> descriptorSetLayouts{sceneLayout, materialLayout};
 		pipeline->setDescriptorSetLayouts(descriptorSetLayouts);
@@ -60,9 +61,6 @@ namespace RtEngine {
 	}
 
 	void MetalRoughMaterial::writeMaterial(AllocatedBuffer material_buffer, std::shared_ptr<MaterialTextures<>> material_textures) {
-		materialDescriptorSet =
-				descriptorAllocator.allocate(vulkan_context->device_manager->getDevice(), materialLayout); // TODO this doesnt have to be here!?
-
 		descriptorAllocator.writeBuffer(0, material_buffer.handle, 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
 
 		descriptorAllocator.writeImages(1, material_textures->getOrderedImageViews(), sampler, VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL,

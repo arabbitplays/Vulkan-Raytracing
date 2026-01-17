@@ -17,10 +17,6 @@ namespace RtEngine {
 			scene_resource_deletion_queue.flush();
 		}
 
-		for (auto &material: defaultMaterials) {
-			material.second->reset();
-		}
-
 		SceneReader reader = SceneReader(vulkan_context, runtime_context);
 		scene = reader.readScene(scene_path, defaultMaterials);
 
@@ -36,7 +32,6 @@ namespace RtEngine {
 	}
 
 	void SceneManager::setupNewScene(const std::shared_ptr<Scene> &scene) {
-		createUniformBuffers();
 		createNewTlas();
 	}
 
@@ -96,7 +91,7 @@ namespace RtEngine {
 			vkMapMemory(vulkan_context->device_manager->getDevice(), sceneUniformBuffers[i].bufferMemory, 0, size, 0,
 						&sceneUniformBuffersMapped[i]);
 
-			scene_resource_deletion_queue.pushFunction(
+			main_deletion_queue.pushFunction(
 					[&, i]() { vulkan_context->resource_builder->destroyBuffer(sceneUniformBuffers[i]); });
 		}
 	}
@@ -136,11 +131,8 @@ namespace RtEngine {
 
 		// TODO Only partially update tlas depending on the updated dynamic objects
 		updateTlas(draw_context->getRenderObjects());
-
-		std::shared_ptr<SceneData> scene_data = scene->createSceneData(draw_context->getEmittingObjectCount());
-		memcpy(sceneUniformBuffersMapped[draw_context->currentFrame], scene_data.get(), sizeof(SceneData));
-
-		updateSceneDescriptorSets(draw_context->currentFrame, draw_context->target);
+		updateSceneData(draw_context);
+		updateSceneDescriptorSets(draw_context);
 
 		bufferUpdateFlags = NO_UPDATE;
 	}
@@ -170,7 +162,15 @@ namespace RtEngine {
 		material_manager->updateMaterialResources(scene);
 	}
 
-	void SceneManager::updateSceneDescriptorSets(uint32_t current_frame, const std::shared_ptr<RenderTarget>& render_target) {
+	void SceneManager::updateSceneData(const std::shared_ptr<DrawContext> &draw_context) {
+		std::shared_ptr<SceneData> scene_data = scene->createSceneData(draw_context->getEmittingObjectCount());
+		memcpy(sceneUniformBuffersMapped[draw_context->currentFrame], scene_data.get(), sizeof(SceneData));
+
+		vulkan_context->descriptor_allocator->writeBuffer(2, sceneUniformBuffers[draw_context->currentFrame].handle, sizeof(SceneData),
+														  0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+	}
+
+	void SceneManager::updateSceneDescriptorSets(const std::shared_ptr<DrawContext> &draw_context) {
 		VkDevice device = vulkan_context->device_manager->getDevice();
 
 		VkAccelerationStructureKHR tlas_handle = top_level_acceleration_structure->getHandle();
@@ -189,14 +189,13 @@ namespace RtEngine {
 															  VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
 		}
 
-		vulkan_context->descriptor_allocator->writeImage(1, render_target->getCurrentTargetImage().imageView, VK_NULL_HANDLE,
+		vulkan_context->descriptor_allocator->writeImage(1, draw_context->target->getCurrentTargetImage().imageView, VK_NULL_HANDLE,
 														 VK_IMAGE_LAYOUT_GENERAL, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
-		vulkan_context->descriptor_allocator->writeBuffer(2, sceneUniformBuffers[current_frame].handle, sizeof(SceneData),
-														  0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
-		vulkan_context->descriptor_allocator->writeImage(9, render_target->getCurrentRngImage().imageView, VK_NULL_HANDLE, VK_IMAGE_LAYOUT_GENERAL,
+
+		vulkan_context->descriptor_allocator->writeImage(9, draw_context->target->getCurrentRngImage().imageView, VK_NULL_HANDLE, VK_IMAGE_LAYOUT_GENERAL,
 														 VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
 
-		for (int i = 0; i < max_frames_in_flight; i++) {
+		for (int i = 0; i < max_frames_in_flight; i++) { // TODO das is doch schmarn
 			vulkan_context->descriptor_allocator->updateSet(device, scene_descriptor_sets[i]);
 		}
 		vulkan_context->descriptor_allocator->clearWrites();
@@ -205,45 +204,8 @@ namespace RtEngine {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	void SceneManager::initDefaultResources(const VkPhysicalDeviceRayTracingPipelinePropertiesKHR& raytracingProperties) {
-		createDefaultTextures();
 		createDefaultSamplers();
 		createDefaultMaterials(raytracingProperties);
-	}
-
-	void SceneManager::createDefaultTextures() {
-		uint32_t white = glm::packUnorm4x8(glm::vec4(1, 1, 1, 1));
-		whiteImage = vulkan_context->resource_builder->createImage(
-				(void *) &white, VkExtent3D{1, 1, 1}, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL,
-				VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_ASPECT_COLOR_BIT);
-
-		uint32_t grey = glm::packUnorm4x8(glm::vec4(0.66f, 0.66f, 0.66f, 1));
-		greyImage = vulkan_context->resource_builder->createImage(
-				(void *) &grey, VkExtent3D{1, 1, 1}, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL,
-				VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_ASPECT_COLOR_BIT);
-
-		uint32_t black = glm::packUnorm4x8(glm::vec4(0, 0, 0, 0));
-		blackImage = vulkan_context->resource_builder->createImage(
-				(void *) &black, VkExtent3D{1, 1, 1}, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL,
-				VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_ASPECT_COLOR_BIT);
-
-		// checkerboard image
-		const uint32_t magenta = glm::packUnorm4x8(glm::vec4(1, 0, 1, 1));
-		std::array<uint32_t, 16 * 16> pixels{}; // for 16x16 checkerboard texture
-		for (int x = 0; x < 16; x++) {
-			for (int y = 0; y < 16; y++) {
-				pixels[y * 16 + x] = ((x % 2) ^ (y % 2)) ? magenta : black;
-			}
-		}
-		errorCheckerboardImage = vulkan_context->resource_builder->createImage(
-				pixels.data(), VkExtent3D{16, 16, 1}, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL,
-				VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_ASPECT_COLOR_BIT);
-
-		main_deletion_queue.pushFunction([&]() {
-			vulkan_context->resource_builder->destroyImage(whiteImage);
-			vulkan_context->resource_builder->destroyImage(greyImage);
-			vulkan_context->resource_builder->destroyImage(blackImage);
-			vulkan_context->resource_builder->destroyImage(errorCheckerboardImage);
-		});
 	}
 
 	void SceneManager::createDefaultSamplers() {

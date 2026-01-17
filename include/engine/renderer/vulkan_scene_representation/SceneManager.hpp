@@ -44,6 +44,7 @@ namespace RtEngine {
 				material_manager->destroy();
 			});
 
+			createUniformBuffers();
 			createSceneLayout();
 			createSceneDescriptorSets(scene_descriptor_set_layout);
 			initDefaultResources(raytracingProperties);
@@ -77,22 +78,18 @@ namespace RtEngine {
 		void createUniformBuffers();
 
 		void initDefaultResources(const VkPhysicalDeviceRayTracingPipelinePropertiesKHR& raytracingProperties);
-		void createDefaultTextures();
 		void createDefaultSamplers();
 		void createDefaultMaterials(const VkPhysicalDeviceRayTracingPipelinePropertiesKHR& raytracingProperties);
 
-		void updateSceneDescriptorSets(uint32_t current_frame, const std::shared_ptr<RenderTarget>& render_target);
+		void updateSceneDescriptorSets(const std::shared_ptr<DrawContext> &draw_context);
 		void updateTlas(std::vector<RenderObject> objects) const;
 
 		void updateMaterial(const std::shared_ptr<Scene> &scene) const;
 
+		void updateSceneData(const std::shared_ptr<DrawContext> &draw_context);
+
 		DeletionQueue main_deletion_queue, scene_resource_deletion_queue;
 		uint32_t max_frames_in_flight;
-
-		AllocatedImage whiteImage;
-		AllocatedImage greyImage;
-		AllocatedImage blackImage;
-		AllocatedImage errorCheckerboardImage;
 
 		VkSampler defaultSamplerLinear;
 		VkSampler defaultSamplerNearest;

@@ -32,7 +32,9 @@ namespace RtEngine {
         }
 
         std::shared_ptr<Texture> getTextureByName(const std::string& name) {
-            assert(texture_name_cache.contains(name));
+            if (!texture_name_cache.contains(name)) {
+                return error_tex;
+            }
             return texture_name_cache[name];
         }
 
@@ -51,8 +53,23 @@ namespace RtEngine {
                                                   VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_SAMPLED_BIT,
                                                   VK_IMAGE_ASPECT_COLOR_BIT));
 
+            // checkerboard image
+            const uint32_t magenta = glm::packUnorm4x8(glm::vec4(1, 0, 1, 1));
+            std::array<uint32_t, 16 * 16> pixels{}; // for 16x16 checkerboard texture
+            for (int x = 0; x < 16; x++) {
+                for (int y = 0; y < 16; y++) {
+                    pixels[y * 16 + x] = ((x % 2) ^ (y % 2)) ? magenta : black;
+                }
+            }
+            error_tex = std::make_shared<Texture>(
+                    "error", NORMAL, "",
+                    resource_builder->createImage(
+                    pixels.data(), VkExtent3D{16, 16, 1}, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL,
+                    VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_ASPECT_COLOR_BIT));
+
             addTexture(default_tex);
             addTexture(default_normal_tex);
+            addTexture(error_tex);
         }
 
         std::shared_ptr<Texture> getDefaultTex(const TextureType type) {
@@ -77,7 +94,7 @@ namespace RtEngine {
         std::shared_ptr<ResourceBuilder> resource_builder;
         std::unordered_map<std::string, std::shared_ptr<Texture>> texture_name_cache, texture_path_cache;
 
-        std::shared_ptr<Texture> default_tex, default_normal_tex;
+        std::shared_ptr<Texture> default_tex, default_normal_tex, error_tex;
 
 
     };
