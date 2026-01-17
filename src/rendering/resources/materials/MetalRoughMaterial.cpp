@@ -17,9 +17,7 @@ namespace RtEngine {
 		VkDevice device = vulkan_context->device_manager->getDevice();
 
 		layoutBuilder.addBinding(0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
-		layoutBuilder.addBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 16); // TODO make this dynamic depending on the scene
-		layoutBuilder.addBinding(2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 16);
-		layoutBuilder.addBinding(3, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 16);
+		layoutBuilder.addBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 64); // TODO make this dynamic depending on the scene
 
 		materialLayout = layoutBuilder.build(device, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR);
 		mainDeletionQueue.pushFunction([&]() {
@@ -73,31 +71,8 @@ namespace RtEngine {
 
 		descriptorAllocator.writeBuffer(0, material_buffer.handle, 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
 
-		// TODO not needed if they are already buld corretly
-		if (albedo_textures.empty()) {
-			albedo_textures.push_back(runtime_context->texture_repository->getTexture("", TextureType::PARAMETER));
-			metal_rough_ao_textures.push_back(runtime_context->texture_repository->getTexture("", TextureType::PARAMETER));
-			normal_textures.push_back(runtime_context->texture_repository->getTexture("", TextureType::NORMAL));
-		}
 
-		auto extract_views = [](std::vector<std::shared_ptr<Texture>> textures) {
-			std::vector<VkImageView> imageViews{};
-			for (auto &texture: textures) {
-				imageViews.push_back(texture->image.imageView);
-			}
-
-			// TODO make this clean so that holes get filled with the default tex
-			while (imageViews.size() < 16) {
-				imageViews.push_back(textures[0]->image.imageView);
-			}
-			return imageViews;
-		};
-
-		descriptorAllocator.writeImages(1, extract_views(albedo_textures), sampler, VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL,
-										VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
-		descriptorAllocator.writeImages(2, extract_views(metal_rough_ao_textures), sampler,
-										VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
-		descriptorAllocator.writeImages(3, extract_views(normal_textures), sampler, VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL,
+		descriptorAllocator.writeImages(1, material_texture_repo->getOrderedImageViews(), sampler, VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL,
 										VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
 		VkDevice device = vulkan_context->device_manager->getDevice();
 		descriptorAllocator.updateSet(device, materialDescriptorSet);
@@ -105,7 +80,7 @@ namespace RtEngine {
 	}
 
 	std::shared_ptr<MaterialInstance> MetalRoughMaterial::loadInstance(const YAML::Node& yaml_node) {
-		std::shared_ptr<MaterialInstance> instance = std::make_shared<MetalRoughInstance>();
+		std::shared_ptr<MaterialInstance> instance = std::make_shared<MetalRoughInstance>(material_texture_repo);
 		instance->loadResources(yaml_node);
 		instances.push_back(instance);
 		return instance;
@@ -145,29 +120,12 @@ namespace RtEngine {
 	}
 
 	std::vector<std::shared_ptr<Texture>> MetalRoughMaterial::getTextures() {
-		auto append = [](std::vector<std::shared_ptr<Texture>> &dest,
-						 const std::vector<std::shared_ptr<Texture>> &src) {
-			for (const auto &elem: src) {
-				if (elem->path.empty())
-					continue;
-				dest.push_back(elem);
-			}
-		};
-
-		std::vector<std::shared_ptr<Texture>> result(0);
-
-		append(result, albedo_textures);
-		append(result, metal_rough_ao_textures);
-		append(result, normal_textures);
-
-		return result;
+		return material_texture_repo->getNonDefaultTextures();
 	}
 
 	void MetalRoughMaterial::reset() {
 		instances.clear();
-		albedo_textures.clear();
-		metal_rough_ao_textures.clear();
-		normal_textures.clear();
+		material_texture_repo->clear();
 		Material::reset();
 	}
 } // namespace RtEngine

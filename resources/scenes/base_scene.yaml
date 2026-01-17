@@ -1,7 +1,7 @@
 scene:
   material_name: metal_rough
   camera:
-    interactive: true
+    interactive: false
     fov: 45.0
     view_dir: [0.0, 0.0, -1.0]
     position: [0.0, 0.0, 10.0]
@@ -27,6 +27,8 @@ scene:
     - albedo: [ 0.9, 0.9, 0.9 ]
       metallic: 0.1
       roughness: 1
+    - albedo_tex: textures/rusted_iron/rusted_iron_albedo.png
+      metal_rough_ao_tex: textures/rusted_iron/rusted_iron_metal_rough_ao.png
   nodes:
     - name: "Light"
       components:
@@ -37,15 +39,24 @@ scene:
         - MeshRenderer:
             mesh: plane
             material_idx: 0
-    - name: "Sphere"
+    - name: "Sphere1"
       components:
         - Transform:
-            position: [ 0.0, 0.0, 0.0 ]
+            position: [ -1.0, 0.0, 0.0 ]
             rotation: [ 0.0, 0.0, 0.0 ]
             scale: [ 1, 1, 1 ]
         - MeshRenderer:
             mesh: sphere
             material_idx: 5
+    - name: "Sphere2"
+      components:
+        - Transform:
+            position: [ 1.0, 0.0, 0.0 ]
+            rotation: [ 0.0, 0.0, 0.0 ]
+            scale: [ 1, 1, 1 ]
+        - MeshRenderer:
+            mesh: sphere
+            material_idx: 6
     - name: "Room"
       components:
         - Transform:

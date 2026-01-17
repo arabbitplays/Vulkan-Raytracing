@@ -22,7 +22,12 @@ namespace RtEngine {
 
 		MetalRoughMaterial(std::shared_ptr<VulkanContext> context, std::shared_ptr<RuntimeContext> runtime_context,
 						   VkSampler sampler) :
-			Material(METAL_ROUGH_MATERIAL_NAME, context, runtime_context), sampler(sampler) {}
+			Material(METAL_ROUGH_MATERIAL_NAME, context, runtime_context), sampler(sampler) {
+			material_texture_repo = std::make_shared<TextureRepository<>>(vulkan_context->resource_builder);
+			mainDeletionQueue.pushFunction([this] () {
+				material_texture_repo->destroy();
+			});
+		}
 
 		void buildPipelines(VkDescriptorSetLayout sceneLayout) override;
 		void writeMaterial() override;
@@ -40,7 +45,7 @@ namespace RtEngine {
 	private:
 		AllocatedBuffer createMaterialBuffer();
 
-		std::vector<std::shared_ptr<Texture>> albedo_textures, metal_rough_ao_textures, normal_textures;
+		std::shared_ptr<TextureRepository<>> material_texture_repo;
 
 		MaterialProperties material_properties;
 		VkSampler sampler;

@@ -3,11 +3,12 @@
 #include <glm/gtc/epsilon.hpp>
 
 #include "MaterialInstance.hpp"
+#include "TextureRepository.hpp"
 
 namespace RtEngine {
     class MetalRoughInstance final : public MaterialInstance {
     public:
-        MetalRoughInstance() : MaterialInstance() {
+        explicit MetalRoughInstance(const std::shared_ptr<TextureRepository<>>& tex_repo) : MaterialInstance(), tex_repo(tex_repo) {
             resources = std::make_shared<MetalRoughResources>();
         }
 
@@ -33,7 +34,12 @@ namespace RtEngine {
             }
         };
 
-        std::string albedo_tex_name, metal_rough_ao_tex_name, normal_tex_name;
+        std::shared_ptr<TextureRepository<>> tex_repo;
+
+        std::shared_ptr<Texture> albedo_tex;
+        std::shared_ptr<Texture> metal_rough_ao_tex;
+        std::shared_ptr<Texture> normal_tex;
+
         glm::vec3 albedo = glm::vec3(0.0f);
         float metallic = 0.5f, roughness = 0.5f, ao = 0.5f, eta = 1;
         glm::vec3 emission_color = glm::vec3(1.0);

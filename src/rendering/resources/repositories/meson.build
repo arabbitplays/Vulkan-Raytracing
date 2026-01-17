@@ -2,6 +2,5 @@
 
 
 src += files(
-  'TextureRepository.cpp',
   'MeshRepository.cpp',
 )
