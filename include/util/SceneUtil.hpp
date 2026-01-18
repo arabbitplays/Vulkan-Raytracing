@@ -47,8 +47,8 @@ namespace RtEngine {
 				std::shared_ptr<std::unordered_map<std::string, std::shared_ptr<MeshAsset>>> &mesh_map) {
 			for (auto child_node: root_node->children) {
 				std::shared_ptr<MeshRenderer> mesh_renderer = child_node->getComponent<MeshRenderer>();
-				if (mesh_renderer && !mesh_map->contains(mesh_renderer->meshAsset->name)) {
-					(*mesh_map)[mesh_renderer->meshAsset->name] = mesh_renderer->meshAsset;
+				if (mesh_renderer && !mesh_map->contains(mesh_renderer->mesh_asset->name)) {
+					(*mesh_map)[mesh_renderer->mesh_asset->name] = mesh_renderer->mesh_asset;
 				}
 				collectMeshAssetsRecursive(child_node, mesh_map);
 			}
@@ -59,8 +59,8 @@ namespace RtEngine {
 				std::shared_ptr<std::unordered_map<std::string, std::shared_ptr<MaterialInstance>>> &material_map) {
 			for (auto child_node: root_node->children) {
 				std::shared_ptr<MeshRenderer> mesh_renderer = child_node->getComponent<MeshRenderer>();
-				if (mesh_renderer && !material_map->contains(mesh_renderer->meshAsset->name)) {
-					(*material_map)[mesh_renderer->meshMaterial->name] = mesh_renderer->meshMaterial;
+				if (mesh_renderer && !material_map->contains(mesh_renderer->mesh_asset->name)) {
+					(*material_map)[mesh_renderer->mesh_material->name] = mesh_renderer->mesh_material;
 				}
 				collectMaterialInstancesRecursive(child_node, material_map);
 			}

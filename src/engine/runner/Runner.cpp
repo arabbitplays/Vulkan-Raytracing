@@ -23,8 +23,8 @@ namespace RtEngine {
         if (old_scene != nullptr) {
             old_scene->destroy();
         }
-        renderer->loadScene(scene_manager->scene);
         scene_manager->scene->start();
+        renderer->loadScene(scene_manager->scene);
 
         //SceneWriter writer;
         //writer.writeScene(PathUtil::getFileName(scene_manager->getSceneInformation().path), scene_manager->scene);

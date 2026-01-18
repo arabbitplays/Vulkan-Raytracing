@@ -452,6 +452,7 @@ namespace RtEngine {
 
 	void VulkanRenderer::handleGuiUpdate(uint32_t update_flags) const
 	{
+		// TODO this in runner
 		mainDrawContext->target->resetAccumulatedFrames();
 		scene_adapter->bufferUpdateFlags |= update_flags;
 	}

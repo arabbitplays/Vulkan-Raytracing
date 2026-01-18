@@ -19,8 +19,6 @@ namespace RtEngine {
 			update_callbacks.push_back(callback);
 		}
 
-
-
 	protected:
 		void notifyUpdate(uint32_t flags)
 		{

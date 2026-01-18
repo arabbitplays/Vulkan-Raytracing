@@ -85,6 +85,7 @@ namespace RtEngine {
         engine_context->renderer = vulkan_renderer;
         engine_context->texture_repository = vulkan_renderer->getTextureRepository();
         engine_context->mesh_repository = vulkan_renderer->getMeshRepository();
+        engine_context->scene_manager = scene_manager;
     }
 
     void Engine::createRunner() {

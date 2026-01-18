@@ -6,11 +6,14 @@
 #define VULKAN_RAYTRACING_SCENEMANAGER_HPP
 #include <memory>
 
+#include "ISceneManager.hpp"
 #include "Scene.hpp"
 
 namespace RtEngine {
-    class SceneManager {
+    class SceneManager : public ISceneManager {
     public:
+        std::shared_ptr<Material> getCurrentMaterial() override;
+
         std::shared_ptr<Scene> scene;
     };
 } // RtEngine

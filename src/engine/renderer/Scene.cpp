@@ -49,7 +49,7 @@ namespace RtEngine {
 
 	void Scene::start() {
 		for (auto &node: nodes) {
-			node.second->update();
+			node.second->start();
 		}
 	}
 

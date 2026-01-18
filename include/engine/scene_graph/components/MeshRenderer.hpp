@@ -12,7 +12,7 @@ namespace RtEngine {
 
 		static constexpr std::string COMPONENT_NAME = "MeshRenderer";
 
-		void OnStart() override {};
+		void OnStart() override;
 		void OnRender(DrawContext &ctx) override;
 		void OnUpdate() override {};
 		void OnDestroy() override {};
@@ -20,8 +20,12 @@ namespace RtEngine {
 		void definePropertySections() override;
 		void initProperties(const YAML::Node &config_node) override;
 
-		std::shared_ptr<MeshAsset> meshAsset;
-		std::shared_ptr<MaterialInstance> meshMaterial;
+		std::shared_ptr<MeshAsset> mesh_asset;
+		std::shared_ptr<MaterialInstance> mesh_material;
+
+	private:
+		std::string mesh_asset_name;
+		std::string material_instance_name;
 	};
 
 } // namespace RtEngine
