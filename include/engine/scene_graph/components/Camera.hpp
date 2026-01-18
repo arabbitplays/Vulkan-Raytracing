@@ -17,10 +17,10 @@ namespace RtEngine {
             initCamera(static_cast<float>(image_width) / static_cast<float>(image_height));
 
             context->window->addKeyCallback([this](int key, int scancode, int action, int mods) {
-                //processGlfwKeyEvent(key, action);
+                processGlfwKeyEvent(key, action);
             });
             context->window->addMouseCallback([this](double xPos, double yPos) {
-                //processGlfwMouseEvent(xPos, yPos);
+                processGlfwMouseEvent(xPos, yPos);
             });
 
             render_target = context->renderer->createRenderTarget();
@@ -41,22 +41,19 @@ namespace RtEngine {
         [[nodiscard]] glm::mat4 getInverseProjection() const;
         [[nodiscard]] glm::vec3 getPosition() const;
 
-        float fov = 45.0;
-        glm::vec3 position = glm::vec3(0, 0, 10), view_dir = glm::vec3(0, 0, -1);
-
     protected:
-        void initCamera(float aspect) {
-            view = glm::lookAt(position, position + view_dir, glm::vec3(0, 1, 0));
-            inverse_view = glm::inverse(view);
-            updateProjection(aspect);
-            position = glm::vec3(inverse_view[3]);
-        }
+        static constexpr float MOVE_SPEED = 0.2f;
+        static constexpr float ANGULAR_MOVE_SPEED = 1 / 200.0f;
 
-        void updateProjection(float aspect) {
-            projection = glm::perspective(glm::radians(fov), aspect, 0.1f, 512.0f);
-            projection[1][1] *= -1; // flip y-axis because glm is for openGL
-            inverse_projection = glm::inverse(projection);
-        }
+        void processGlfwKeyEvent(int key, int action);
+        void processGlfwMouseEvent(double xPos, double yPos);
+
+        void initCamera(float aspect);
+
+        void updateProjection(float aspect);
+        void updateViewMatrices();
+
+        glm::mat4 getRotationMatrix() const;
 
         glm::mat4 view;
         glm::mat4 inverse_view;
@@ -67,6 +64,24 @@ namespace RtEngine {
         uint32_t image_height;
 
         std::shared_ptr<RenderTarget> render_target;
+
+        float fov = 45.0;
+        int32_t is_interactive = false;
+        glm::vec3 position = glm::vec3(0, 0, 10), view_dir = glm::vec3(0, 0, -1);
+
+        // ----------------------- movement -----------------------
+
+        glm::vec3 velocity;
+        bool isActive = true;
+
+        // Mouse state
+        float lastX = 400, lastY = 300;
+        bool firstMouse = true;
+
+        // vertical rotation
+        float pitch{0.0f};
+        // horizontal rotation
+        float yaw{0.0f};
     };
 } // RtEngine
 

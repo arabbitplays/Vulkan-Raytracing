@@ -1,16 +1,5 @@
 scene:
   material_name: phong
-  camera:
-    position:
-      - 0
-      - 0
-      - 10
-    view_dir:
-      - 0
-      - 0
-      - -1
-    fov: 45
-    interactive: true
   lights:
     point_lights:
       - position:
@@ -144,6 +133,24 @@ scene:
         - 1
         - 1
   nodes:
+    - name: Camera
+      components:
+        - Transform:
+            position:
+              - 0
+              - 0
+              - 10
+            rotation:
+              - 90
+              - 0
+              - 0
+            scale:
+              - 3
+              - 3
+              - 3
+        - Camera:
+            fov: 45
+            interactive: true
     - name: ReflectSphere1
       components:
         - Transform:
