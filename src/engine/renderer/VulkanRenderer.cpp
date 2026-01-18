@@ -41,17 +41,6 @@ namespace RtEngine {
 		window->addResizeCallback([this](uint32_t width, uint32_t height) {
 			framebufferResized = true;
 		});
-		// TODO Input Manager
-		/*window->addKeyCallback([this](int key, int scancode, int action, int mods) {
-			if (scene_manager->scene != nullptr && scene_manager->scene->camera != nullptr) {
-				scene_manager->scene->camera->processGlfwKeyEvent(key, action);
-			}
-		});
-		window->addMouseCallback([this](double xPos, double yPos) {
-			if (scene_manager->scene != nullptr && scene_manager->scene->camera != nullptr) {
-				scene_manager->scene->camera->processGlfwMouseEvent(xPos, yPos);
-			}
-		});*/
 	}
 
 	void VulkanRenderer::initVulkan() {
@@ -214,7 +203,7 @@ namespace RtEngine {
 		vkResetFences(vulkan_context->device_manager->getDevice(), 1, &inFlightFences[mainDrawContext->currentFrame]);
 	}
 
-	void VulkanRenderer::submitCommands(bool present, int32_t swapchain_image_idx) {
+	bool VulkanRenderer::submitCommands(bool present, int32_t swapchain_image_idx) {
 		if (present) {
 			std::vector<VkSemaphore> waitSemaphore = {imageAvailableSemaphores[mainDrawContext->currentFrame]};
 			std::vector<VkSemaphore> signalSemaphore = {renderFinishedSemaphores[mainDrawContext->currentFrame]};
@@ -225,10 +214,12 @@ namespace RtEngine {
 		}
 
 		mainDrawContext->nextFrame();
+
+		return framebufferResized;
 	}
 
 	void VulkanRenderer::submitCommandBuffer(std::vector<VkSemaphore> wait_semaphore,
-										   std::vector<VkSemaphore> signal_semaphore) {
+	                                         std::vector<VkSemaphore> signal_semaphore) {
 		VkSubmitInfo submitInfo{};
 		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 
@@ -260,38 +251,34 @@ namespace RtEngine {
 
 		VkResult result = vkQueuePresentKHR(vulkan_context->device_manager->getQueue(PRESENT), &presentInfo);
 
-		if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || framebufferResized) {
-			framebufferResized = false;
-			refreshAfterResize();
-			return;
+		if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR) {
+			framebufferResized = true;
 		} else if (result != VK_SUCCESS) {
 			throw std::runtime_error("failed to present swap chain image!");
 		}
 	}
 
-	void VulkanRenderer::refreshAfterResize() {
+	void VulkanRenderer::waitForIdle() {
 		vkDeviceWaitIdle(vulkan_context->device_manager->getDevice());
+	}
 
+	void VulkanRenderer::refreshAfterResize() {
+		framebufferResized = false;
 		mainDrawContext->target->resetAccumulatedFrames();
 		vulkan_context->swapchain->recreate();
 		mainDrawContext->target->recreate(vulkan_context->swapchain->extent);
-		//guiManager->updateWindows(); TODO
-		scene_manager->updateScene(mainDrawContext);
 	}
 
-	void VulkanRenderer::recordCommands(bool present, int32_t swapchain_image_idx) {
+	VkCommandBuffer VulkanRenderer::getNewCommandBuffer() {
 		vkResetCommandBuffer(commandBuffers[mainDrawContext->currentFrame], 0);
-		recordCommandBuffer(commandBuffers[mainDrawContext->currentFrame], swapchain_image_idx, present);
+		return commandBuffers[mainDrawContext->currentFrame];
 	}
 
 	void VulkanRenderer::recordCommandBuffer(VkCommandBuffer commandBuffer, const uint32_t swapchain_image_idx, bool present) {
-		recordBeginCommandBuffer(commandBuffer);
 		recordRenderToImage(commandBuffer);
 		if (present) {
 			recordCopyToSwapchain(commandBuffer, swapchain_image_idx);
 		}
-		//guiManager->recordGuiCommands(commandBuffer, swapchain_image_idx); TODO
-		recordEndCommandBuffer(commandBuffer);
 	}
 
 	void VulkanRenderer::recordBeginCommandBuffer(VkCommandBuffer commandBuffer) {
@@ -395,8 +382,6 @@ namespace RtEngine {
 	}
 
 	void VulkanRenderer::cleanup() {
-		vkDeviceWaitIdle(vulkan_context->device_manager->getDevice());
-
 		mainDeletionQueue.flush();
 		window->destroy();
 	}

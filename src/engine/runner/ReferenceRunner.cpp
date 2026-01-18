@@ -35,8 +35,14 @@ namespace RtEngine {
 		renderer->resetCurrFrame();
 
 		renderer->update();
-		renderer->recordCommands(present_image, swapchain_image_idx);
-		renderer->submitCommands(present_image, swapchain_image_idx);
+		/*VkCommandBuffer command_buffer = renderer->getCurrentCommandBuffer();
+		renderer->recordBeginCommandBuffer(command_buffer);
+		renderer->recordCommandBuffer(command_buffer, true, swapchain_image_idx);
+		renderer->recordEndCommandBuffer(command_buffer);
+		if (renderer->submitCommands(true, swapchain_image_idx)) {
+			// TODO handle resize when rendering references
+			renderer->refreshAfterResize();
+		}*/
 
 		if (curr_sample_count % 1000 == 0) {
 			double elapsed_time = stopwatch.elapsed().count();

@@ -22,11 +22,11 @@ namespace RtEngine {
     }
 
     void Engine::init() {
-        window = std::make_shared<Window>(1920, 1040);
-
+        scene_manager = std::make_shared<SceneManager>();
+        createWindow();
         createRenderer();
-        createRunner();
         createGuiManager();
+        createRunner();
     }
 
     void Engine::mainLoop() {
@@ -40,6 +40,21 @@ namespace RtEngine {
             }
             runner->renderScene();
         }
+    }
+
+    void Engine::createWindow() {
+        // TODO Input Manager
+        window = std::make_shared<Window>(1920, 1040);
+        window->addKeyCallback([this](int key, int scancode, int action, int mods) {
+            if (scene_manager->scene != nullptr && scene_manager->scene->camera != nullptr) {
+                scene_manager->scene->camera->processGlfwKeyEvent(key, action);
+            }
+        });
+        window->addMouseCallback([this](double xPos, double yPos) {
+            if (scene_manager->scene != nullptr && scene_manager->scene->camera != nullptr) {
+                scene_manager->scene->camera->processGlfwMouseEvent(xPos, yPos);
+            }
+        });
     }
 
     void Engine::createRenderer() {
@@ -61,13 +76,13 @@ namespace RtEngine {
         guiManager->addWindow(options_window);
 
         // TODO this does not react to new scenes
-        auto inspector_window = std::make_shared<InspectorWindow>(runner->getSceneManager());
+        auto inspector_window = std::make_shared<InspectorWindow>(scene_manager);
         inspector_window->addCallback([this](uint32_t flags) {
             vulkan_renderer->handleGuiUpdate(flags);
         });
         guiManager->addWindow(inspector_window);
 
-        auto hierarchy_window = std::make_shared<HierarchyWindow>(inspector_window, runner->getSceneManager());
+        auto hierarchy_window = std::make_shared<HierarchyWindow>(inspector_window, scene_manager);
         hierarchy_window->addCallback([this](uint32_t flags) {
             vulkan_renderer->handleGuiUpdate(flags);
         });
@@ -87,10 +102,11 @@ namespace RtEngine {
             return;
         }*/
 
-        runner = std::make_shared<Runner>(vulkan_renderer);
+        runner = std::make_shared<Runner>(vulkan_renderer, guiManager, scene_manager);
     }
 
     void Engine::cleanup() {
+        vulkan_renderer->waitForIdle();
         guiManager->destroy();
         vulkan_renderer->cleanup();
     }

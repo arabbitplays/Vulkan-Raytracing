@@ -33,12 +33,18 @@ namespace RtEngine {
 		void loadScene(std::shared_ptr<IScene> scene);
 		void update();
 
+		void waitForIdle();
 		void waitForNextFrameStart();
 		void resetCurrFrame();
 
 		int32_t aquireNextSwapchainImage();
-		void recordCommands(bool present, int32_t swapchain_image_idx);
-		void submitCommands(bool present, int32_t swapchain_image_idx);
+		VkCommandBuffer getNewCommandBuffer();
+		void recordBeginCommandBuffer(VkCommandBuffer commandBuffer);
+		virtual void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t swapchain_image_idx, bool present);
+		void recordEndCommandBuffer(VkCommandBuffer commandBuffer);
+		bool submitCommands(bool present, int32_t swapchain_image_idx);
+
+		void refreshAfterResize();
 
 		void cleanup();
 
@@ -101,16 +107,13 @@ namespace RtEngine {
 		void submitCommandBuffer(std::vector<VkSemaphore> wait_semaphore, std::vector<VkSemaphore> signal_semaphore);
 		void presentSwapchainImage(const std::vector<VkSemaphore>& wait_semaphore, uint32_t image_index);
 
-		void refreshAfterResize();
+
 
 		void outputRenderingTarget(const std::string &output_path);
 		uint8_t *fixImageFormatForStorage(void *image_data, size_t pixel_count, VkFormat originalFormat);
 
-		virtual void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t swapchain_image_idx, bool present);
-		void recordBeginCommandBuffer(VkCommandBuffer commandBuffer);
 		void recordRenderToImage(VkCommandBuffer commandBuffer);
 		void recordCopyToSwapchain(VkCommandBuffer commandBuffer, uint32_t swapchain_image_index);
-		void recordEndCommandBuffer(VkCommandBuffer commandBuffer);
 
 		virtual void initProperties();
 		void initSceneSelectionProperty() const;

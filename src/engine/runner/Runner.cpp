@@ -5,9 +5,8 @@
 #include "../../../include/engine/runner/Runner.hpp"
 
 namespace RtEngine {
-    Runner::Runner(std::shared_ptr<VulkanRenderer> renderer) : renderer(renderer) {
+    Runner::Runner(std::shared_ptr<VulkanRenderer> renderer, std::shared_ptr<GuiManager> gui_manager, std::shared_ptr<SceneManager> scene_manager) : renderer(renderer), gui_manager(gui_manager), scene_manager(scene_manager) {
         scene_reader = std::make_shared<SceneReader>(renderer->getRuntimeContext());
-        scene_manager = std::make_shared<SceneManager>();
     }
 
     std::string Runner::getScenePath() const {
@@ -27,10 +26,6 @@ namespace RtEngine {
         drawFrame();
     }
 
-    std::shared_ptr<SceneManager> Runner::getSceneManager() {
-        return scene_manager;
-    }
-
     void Runner::drawFrame() {
         renderer->waitForNextFrameStart();
 
@@ -43,8 +38,17 @@ namespace RtEngine {
         VkExtent2D extent = renderer->getSwapchainExtent();
         scene_manager->scene->update(extent.width, extent.height);
         renderer->update();
-        renderer->recordCommands(true, swapchain_image_idx);
-        renderer->submitCommands(true, swapchain_image_idx);
+
+        VkCommandBuffer command_buffer = renderer->getNewCommandBuffer();
+        renderer->recordBeginCommandBuffer(command_buffer);
+        renderer->recordCommandBuffer(command_buffer, swapchain_image_idx, true);
+        gui_manager->recordGuiCommands(command_buffer, swapchain_image_idx);
+        renderer->recordEndCommandBuffer(command_buffer);
+        if (renderer->submitCommands(true, swapchain_image_idx)) {
+            renderer->waitForIdle();
+            renderer->refreshAfterResize();
+            gui_manager->updateWindows();
+        }
     }
 
 

@@ -11,19 +11,18 @@
 namespace RtEngine {
     class Runner {
     public:
-        Runner(std::shared_ptr<VulkanRenderer> renderer);
+        Runner(std::shared_ptr<VulkanRenderer> renderer, std::shared_ptr<GuiManager> gui_manager, std::shared_ptr<SceneManager> scene_manager);
 
         std::string getScenePath() const;
         void loadScene(const std::string &scene_path);
         virtual void renderScene();
-
-        std::shared_ptr<SceneManager> getSceneManager();
     protected:
         virtual void drawFrame();
 
         std::shared_ptr<VulkanRenderer> renderer;
-        std::shared_ptr<SceneReader> scene_reader;
+        std::shared_ptr<GuiManager> gui_manager;
 
+        std::shared_ptr<SceneReader> scene_reader;
         std::shared_ptr<SceneManager> scene_manager;
     };
 } // RtEngine
