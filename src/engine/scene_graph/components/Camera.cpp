@@ -6,6 +6,8 @@
 
 #include <glm/gtx/quaternion.hpp>
 
+#include "Node.hpp"
+
 namespace RtEngine {
     void Camera::OnStart() {
 
@@ -24,8 +26,12 @@ namespace RtEngine {
         this->image_height = new_image_height;
 
     	glm::mat4 cameraRotation = getRotationMatrix();
-    	position += glm::vec3(cameraRotation * glm::vec4(velocity * MOVE_SPEED, 0.f));
+    	transform->decomposed_transform.translation += glm::vec3(cameraRotation * glm::vec4(velocity * MOVE_SPEED, 0.f));
     	updateViewMatrices();
+    }
+
+    void Camera::OnDestroy() {
+    	render_target->destroy();
     }
 
     void Camera::definePropertySections() {
@@ -43,13 +49,6 @@ namespace RtEngine {
         fov = config_node[COMPONENT_NAME]["fov"].as<float>();
     	if (config_node[COMPONENT_NAME]["interactive"] && config_node[COMPONENT_NAME]["interactive"].as<bool>())
     		is_interactive = 1;
-    }
-
-	void Camera::initCamera(float aspect) {
-    	view = glm::lookAt(position, position + view_dir, glm::vec3(0, 1, 0));
-    	inverse_view = glm::inverse(view);
-    	updateProjection(aspect);
-    	position = glm::vec3(inverse_view[3]);
     }
 
     void Camera::processGlfwKeyEvent(int key, int action) {
@@ -128,11 +127,11 @@ namespace RtEngine {
 		lastY = yPos;
 
 		// Adjust yaw and pitch like in SDL
-		yaw += xOffset * ANGULAR_MOVE_SPEED;
-		pitch += yOffset * ANGULAR_MOVE_SPEED;
+		transform->decomposed_transform.rotation.y += xOffset * ANGULAR_MOVE_SPEED;
+		transform->decomposed_transform.rotation.x += yOffset * ANGULAR_MOVE_SPEED;
 
 		constexpr float max = M_PI / 2;
-		pitch = std::clamp(pitch, -max, max);
+		transform->decomposed_transform.rotation.x = std::clamp(transform->decomposed_transform.rotation.x, -max, max);
 	}
 
 	void Camera::updateProjection(float aspect) {
@@ -142,20 +141,22 @@ namespace RtEngine {
     }
 
 	void Camera::updateViewMatrices() {
-		glm::mat4 cameraTranslation = glm::translate(glm::mat4(1.0f), position);
+		glm::mat4 cameraTranslation = glm::translate(glm::mat4(1.0f), transform->decomposed_transform.translation);
 		glm::mat4 cameraRotation = getRotationMatrix();
 		inverse_view = cameraTranslation * cameraRotation;
 		view = glm::inverse(getInverseView());
 	}
 
 	glm::mat4 Camera::getRotationMatrix() const {
+    	float pitch = transform->decomposed_transform.rotation.x;
+    	float yaw = transform->decomposed_transform.rotation.y;
 		glm::quat pitchRotation = glm::angleAxis(pitch, glm::vec3{1.0f, 0.0f, 0.0f});
 		glm::quat yawRotation = glm::angleAxis(yaw, glm::vec3{0.0f, -1.0f, 0.0f});
 
 		return glm::toMat4(yawRotation) * glm::toMat4(pitchRotation);
 	}
 
-	glm::vec3 Camera::getPosition() const { return position; }
+	glm::vec3 Camera::getPosition() const { return transform->decomposed_transform.translation; }
 
 	glm::mat4 Camera::getView() const { return view; }
 

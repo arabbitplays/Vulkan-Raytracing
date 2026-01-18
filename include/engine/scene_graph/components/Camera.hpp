@@ -5,6 +5,8 @@
 #ifndef VULKAN_RAYTRACING_CAMERA_HPP
 #define VULKAN_RAYTRACING_CAMERA_HPP
 #include "Component.hpp"
+#include "Node.hpp"
+#include "Transform.hpp"
 
 namespace RtEngine {
     class Camera : public Component {
@@ -14,7 +16,6 @@ namespace RtEngine {
             VkExtent2D swapchain_extent = context->renderer->getSwapchainExtent();
             image_width = swapchain_extent.width;
             image_height = swapchain_extent.height;
-            initCamera(static_cast<float>(image_width) / static_cast<float>(image_height));
 
             context->window->addKeyCallback([this](int key, int scancode, int action, int mods) {
                 processGlfwKeyEvent(key, action);
@@ -24,6 +25,8 @@ namespace RtEngine {
             });
 
             render_target = context->renderer->createRenderTarget();
+
+            transform = node->transform;
         };
 
         static constexpr std::string COMPONENT_NAME = "Camera";
@@ -31,6 +34,7 @@ namespace RtEngine {
         void OnStart() override;
         void OnRender(DrawContext &ctx) override;
         void OnUpdate() override;
+        void OnDestroy() override;
 
         void definePropertySections() override;
         void initProperties(const YAML::Node &config_node) override;
@@ -47,8 +51,6 @@ namespace RtEngine {
 
         void processGlfwKeyEvent(int key, int action);
         void processGlfwMouseEvent(double xPos, double yPos);
-
-        void initCamera(float aspect);
 
         void updateProjection(float aspect);
         void updateViewMatrices();
@@ -67,21 +69,16 @@ namespace RtEngine {
 
         float fov = 45.0;
         int32_t is_interactive = false;
-        glm::vec3 position = glm::vec3(0, 0, 10), view_dir = glm::vec3(0, 0, -1);
+        std::shared_ptr<Transform> transform;
 
         // ----------------------- movement -----------------------
 
-        glm::vec3 velocity;
+        glm::vec3 velocity = glm::vec3(0.0f);
         bool isActive = true;
 
         // Mouse state
         float lastX = 400, lastY = 300;
         bool firstMouse = true;
-
-        // vertical rotation
-        float pitch{0.0f};
-        // horizontal rotation
-        float yaw{0.0f};
     };
 } // RtEngine
 

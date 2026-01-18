@@ -105,6 +105,7 @@ namespace RtEngine {
 
     void Engine::cleanup() {
         vulkan_renderer->waitForIdle();
+        scene_manager->scene->destroy();
         guiManager->destroy();
         vulkan_renderer->cleanup();
     }

@@ -15,6 +15,7 @@ namespace RtEngine {
 		void OnStart() override {};
 		void OnRender(DrawContext &ctx) override;
 		void OnUpdate() override {};
+		void OnDestroy() override {};
 
 		void definePropertySections() override;
 		void initProperties(const YAML::Node &config_node) override;

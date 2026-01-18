@@ -60,7 +60,10 @@ namespace RtEngine {
 		void addNode(std::string name, std::shared_ptr<Node> node);
 		std::shared_ptr<Node> getRootNode();
 
+		void start();
+
 		void update();
+		void destroy();
 
 		std::vector<std::shared_ptr<MeshAsset>> getMeshAssets() override;
 		std::vector<std::shared_ptr<MaterialInstance>> getMaterialInstances() override;

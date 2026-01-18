@@ -23,7 +23,10 @@ namespace RtEngine {
 			}
 			return nullptr;
 		}
-		void update();
+
+		void start() const;
+		void update() const;
+		void destroy() const;
 
 		std::string name;
 

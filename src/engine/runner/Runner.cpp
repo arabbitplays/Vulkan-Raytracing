@@ -16,8 +16,16 @@ namespace RtEngine {
     void Runner::loadScene(const std::string &scene_path) {
         assert(!scene_path.empty());
 
+        std::shared_ptr<Scene> old_scene = scene_manager->scene; // hold until it can be safely destroyed
         scene_manager->scene = scene_reader->readScene(scene_path, renderer->getMaterials());
+
+        renderer->waitForIdle();
+        if (old_scene != nullptr) {
+            old_scene->destroy();
+        }
         renderer->loadScene(scene_manager->scene);
+        scene_manager->scene->start();
+
         //SceneWriter writer;
         //writer.writeScene(PathUtil::getFileName(scene_manager->getSceneInformation().path), scene_manager->scene);
     }

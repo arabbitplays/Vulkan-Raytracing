@@ -47,11 +47,23 @@ namespace RtEngine {
 
 	std::shared_ptr<Node> Scene::getRootNode() { return nodes["root"]; }
 
+	void Scene::start() {
+		for (auto &node: nodes) {
+			node.second->update();
+		}
+	}
+
 	void Scene::update() {
 		getRootNode()->refreshTransform(glm::mat4(1.0f));
 
 		for (auto &node: nodes) {
 			node.second->update();
+		}
+	}
+
+	void Scene::destroy() {
+		for (auto &node: nodes) {
+			node.second->destroy();
 		}
 	}
 

@@ -94,7 +94,6 @@ namespace RtEngine {
 	void VulkanRenderer::createMainDrawContext() {
 		mainDrawContext = std::make_shared<DrawContext>();
 		mainDrawContext->max_frames_in_flight = max_frames_in_flight;
-		mainDeletionQueue.pushFunction([&]() { mainDrawContext->target->destroy(); });
 	}
 
 	std::shared_ptr<RenderTarget> VulkanRenderer::createRenderTarget() {
@@ -121,8 +120,6 @@ namespace RtEngine {
 	}
 
 	void VulkanRenderer::loadScene(std::shared_ptr<IScene> scene) {
-		vkDeviceWaitIdle(vulkan_context->device_manager->getDevice()); // TODO is this needed?
-
 		scene_adapter->loadNewScene(scene);
 		properties_manager->addPropertySection(scene->getMaterial()->getProperties());
 	}

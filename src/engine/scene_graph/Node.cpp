@@ -25,10 +25,21 @@ namespace RtEngine {
 
 	void Node::addComponent(const std::shared_ptr<Component> &component) { components.push_back(component); }
 
-	void Node::update() {
+	void Node::start() const {
+		for (auto &component: components) {
+			component->OnStart();
+		}
+	}
+
+	void Node::update() const {
 		for (auto &component: components) {
 			component->OnUpdate();
 		}
 	}
 
+	void Node::destroy() const {
+		for (auto &component: components) {
+			component->OnDestroy();
+		}
+	}
 } // namespace RtEngine

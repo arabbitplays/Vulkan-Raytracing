@@ -18,6 +18,7 @@ namespace RtEngine {
 		virtual void OnStart() = 0;
 		virtual void OnRender(DrawContext &ctx) = 0;
 		virtual void OnUpdate() = 0;
+		virtual void OnDestroy() = 0;
 
 		virtual void definePropertySections() = 0;
 		std::shared_ptr<PropertiesManager> getProperties() {

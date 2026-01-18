@@ -76,6 +76,23 @@ scene:
         - 0.709999979
       emission_power: 1
   nodes:
+    - name: Camera
+      components:
+        - Transform:
+            position:
+              - 0
+              - 0.6
+              - 10
+            rotation:
+              - -0.1
+              - 0
+              - 0
+            scale:
+              - 3
+              - 3
+              - 3
+        - Camera:
+            fov: 45
     - name: Light
       components:
         - Transform:
