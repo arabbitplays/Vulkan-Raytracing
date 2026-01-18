@@ -28,9 +28,10 @@ namespace RtEngine {
 		}
 	}
 
-	void VulkanRenderer::init(const std::string &config_file, const std::shared_ptr<BaseOptions> base_options) {
+	void VulkanRenderer::init(const std::shared_ptr<BaseOptions> &base_options, std::shared_ptr<Window> window) {
 		this->base_options = base_options;
-		properties_manager = std::make_shared<PropertiesManager>(config_file);
+		this->window = window;
+		properties_manager = std::make_shared<PropertiesManager>(base_options->config_file);
 
 		initWindow();
 		initVulkan();
@@ -42,7 +43,6 @@ namespace RtEngine {
 	}
 
 	void VulkanRenderer::initWindow() {
-		window = std::make_shared<Window>(1920, 1040);
 		window->addResizeCallback([this](uint32_t width, uint32_t height) {
 			framebufferResized = true;
 		});

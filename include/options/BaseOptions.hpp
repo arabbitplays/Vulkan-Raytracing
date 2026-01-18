@@ -11,6 +11,7 @@ namespace RtEngine {
 	struct BaseOptions {
 		int32_t max_depth = 3;
 		std::string resources_dir;
+		std::string config_file;
 		std::string curr_scene_name;
 	};
 

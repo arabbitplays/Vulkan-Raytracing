@@ -28,7 +28,7 @@ namespace RtEngine {
 	public:
 		VulkanRenderer() = default;
 		virtual ~VulkanRenderer() = default;
-		void init(const std::string &config_file, std::shared_ptr<BaseOptions> base_options);
+		void init(const std::shared_ptr<BaseOptions> &base_options, std::shared_ptr<Window> window);
 
 	protected:
 		std::shared_ptr<Window> window;

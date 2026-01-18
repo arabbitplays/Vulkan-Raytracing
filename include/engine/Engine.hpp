@@ -6,13 +6,51 @@
 #define VULKAN_RAYTRACING_ENGINE_HPP
 #include <memory>
 
+#include "Runner.hpp"
+#include "VulkanRenderer.hpp"
+
 namespace RtEngine {
+    enum RunnerType {
+        NONE,
+        REALTIME,
+        OFFLINE,
+        REFERENCE,
+        BENCHMARK,
+    };
+
+    struct EngineOptions {
+        std::string config_file, resources_dir;
+        bool verbose = false;
+        RunnerType runner_type = NONE;
+    };
+
+    struct CliArguments {
+        int argc;
+        char **argv;
+
+        CliArguments() = default;
+
+        CliArguments(int argc, char ** argv) : argc(argc), argv(argv) {}
+    };
+
     class Engine {
     public:
         Engine() = default;
 
-        void run();
+        void run(CliArguments cli_args);
+
+        void init();
+
+        void parseCliArguments(CliArguments cli_args);
+
         void mainLoop();
+
+    private:
+        std::shared_ptr<EngineOptions> options;
+
+        std::shared_ptr<Window> window;
+        std::shared_ptr<VulkanRenderer> vulkan_renderer;
+        std::shared_ptr<Runner> runner;
     };
 } // RtEngine
 
