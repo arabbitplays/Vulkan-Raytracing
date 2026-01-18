@@ -30,19 +30,6 @@ namespace RtEngine {
         createRunner();
     }
 
-    void Engine::mainLoop() {
-        while (window->is_open()) {
-            window->pollEvents();
-
-            if (PathUtil::getFile(runner->getScenePath()) != renderer_options->curr_scene_name) {
-                std::string path = renderer_options->resources_dir + "/scenes/" +
-                           renderer_options->curr_scene_name;
-                runner->loadScene(path);
-            }
-            runner->renderScene();
-        }
-    }
-
     void Engine::createWindow() {
         window = std::make_shared<Window>(1920, 1040);
     }
@@ -85,6 +72,7 @@ namespace RtEngine {
         engine_context->texture_repository = vulkan_renderer->getTextureRepository();
         engine_context->mesh_repository = vulkan_renderer->getMeshRepository();
         engine_context->scene_manager = scene_manager;
+        engine_context->input_manager = std::make_shared<InputManager>(window);
     }
 
     void Engine::createRunner() {
@@ -101,6 +89,24 @@ namespace RtEngine {
         }*/
 
         runner = std::make_shared<Runner>(engine_context, guiManager, scene_manager);
+    }
+
+    void Engine::mainLoop() {
+        while (window->is_open()) {
+            window->pollEvents();
+
+            if (PathUtil::getFile(runner->getScenePath()) != renderer_options->curr_scene_name) {
+                std::string path = renderer_options->resources_dir + "/scenes/" +
+                           renderer_options->curr_scene_name;
+                runner->loadScene(path);
+            }
+            runner->renderScene();
+            finishFrame();
+        }
+    }
+
+    void Engine::finishFrame() {
+        engine_context->input_manager->reset();
     }
 
     void Engine::cleanup() {

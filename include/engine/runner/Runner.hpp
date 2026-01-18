@@ -18,7 +18,6 @@ namespace RtEngine {
         virtual void renderScene();
     protected:
         virtual void drawFrame();
-
         std::shared_ptr<VulkanRenderer> renderer;
         std::shared_ptr<GuiManager> gui_manager;
 

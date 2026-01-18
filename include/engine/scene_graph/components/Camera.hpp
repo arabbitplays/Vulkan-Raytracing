@@ -51,6 +51,7 @@ namespace RtEngine {
 
         void processGlfwKeyEvent(int key, int action);
         void processGlfwMouseEvent(double xPos, double yPos);
+        void handleInputs();
 
         void updateProjection(float aspect);
         void updateViewMatrices();

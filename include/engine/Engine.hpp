@@ -52,6 +52,8 @@ namespace RtEngine {
 
         void mainLoop();
 
+        void finishFrame();
+
         void cleanup();
 
     private:

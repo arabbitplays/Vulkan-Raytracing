@@ -1,8 +1,4 @@
-//
-// Created by oschdi on 18.01.26.
-//
-
-#include "../../../../include/engine/scene_graph/components/Camera.hpp"
+#include "Camera.hpp"
 
 #include <glm/gtx/quaternion.hpp>
 
@@ -24,6 +20,10 @@ namespace RtEngine {
         updateProjection(static_cast<float>(new_image_width) / static_cast<float>(new_image_height));
         this->image_width = new_image_width;
         this->image_height = new_image_height;
+
+    	if (is_interactive != 0) {
+    		handleInputs();
+    	}
 
     	glm::mat4 cameraRotation = getRotationMatrix();
     	transform->decomposed_transform.translation += glm::vec3(cameraRotation * glm::vec4(velocity * MOVE_SPEED, 0.f));
@@ -51,15 +51,18 @@ namespace RtEngine {
     		is_interactive = 1;
     }
 
+	void Camera::handleInputs() {
+    	if (context->input_manager->getKeyDown(Keycode::X)) {
+    		isActive = !isActive;
+    	}
+
+    	if (!isActive)
+    		return;
+    }
+
     void Camera::processGlfwKeyEvent(int key, int action) {
 		if (is_interactive == 0)
 			return;
-
-		if (action == GLFW_PRESS) {
-			if (key == GLFW_KEY_X) {
-				isActive = !isActive;
-			}
-		}
 
 		if (!isActive) {
 			return;

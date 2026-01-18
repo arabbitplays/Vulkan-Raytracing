@@ -4,6 +4,7 @@
 #include <MeshRepository.hpp>
 #include <TextureRepository.hpp>
 
+#include "InputManager.hpp"
 #include "ISceneManager.hpp"
 #include "VulkanRenderer.hpp"
 
@@ -17,6 +18,7 @@ namespace RtEngine {
 		std::shared_ptr<MeshRepository> mesh_repository;
 
 		std::shared_ptr<ISceneManager> scene_manager;
+		std::shared_ptr<InputManager> input_manager;
 	};
 } // namespace RtEngine
 

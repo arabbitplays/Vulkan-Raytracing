@@ -7,6 +7,7 @@ subdir('scene_graph')
 subdir('repositories')
 
 src += files(
+  'InputManager.cpp',
   'Window.cpp',
   'Engine.cpp',
 )
