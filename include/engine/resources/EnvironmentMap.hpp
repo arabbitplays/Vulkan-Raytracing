@@ -6,7 +6,7 @@
 #define VULKAN_RAYTRACING_ENVIRONMENTMAP_HPP
 #include "DescriptorAllocator.hpp"
 #include "TextureRepository.hpp"
-#include "Node.hpp"
+#include <yaml-cpp/yaml.h>
 
 namespace RtEngine {
     class EnvironmentMap {

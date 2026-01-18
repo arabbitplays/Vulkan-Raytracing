@@ -6,7 +6,7 @@
 #define VULKAN_RAYTRACING_ISCENE_HPP
 #include "EnvironmentMap.hpp"
 #include "MeshAsset.hpp"
-#include "MaterialInstance.hpp"
+#include "Material.hpp"
 #include "IRenderable.hpp"
 
 namespace RtEngine {

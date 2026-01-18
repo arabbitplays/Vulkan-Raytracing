@@ -3,6 +3,7 @@
 #include <PropertiesManager.hpp>
 #include <RuntimeContext.hpp>
 #include <IRenderable.hpp>
+#include "VulkanRenderer.hpp"
 
 namespace RtEngine {
 	class Node;

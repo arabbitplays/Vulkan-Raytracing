@@ -18,7 +18,6 @@
 
 #include <RuntimeContext.hpp>
 #include <VulkanContext.hpp>
-#include "../scene_graph/Node.hpp"
 #include "DeletionQueue.hpp"
 #include "Window.hpp"
 
