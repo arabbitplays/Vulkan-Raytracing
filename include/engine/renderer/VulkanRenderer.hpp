@@ -19,7 +19,7 @@
 #include <VulkanContext.hpp>
 #include "DeletionQueue.hpp"
 #include "MeshRepository.hpp"
-#include "Window.hpp"
+#include "../Window.hpp"
 
 namespace RtEngine {
 

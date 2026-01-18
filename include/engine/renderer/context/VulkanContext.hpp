@@ -9,7 +9,7 @@
 #include <ResourceBuilder.hpp>
 #include <Swapchain.hpp>
 
-#include "Window.hpp"
+#include "../../Window.hpp"
 
 namespace RtEngine {
 	struct VulkanContext {

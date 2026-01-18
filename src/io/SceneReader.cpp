@@ -26,7 +26,7 @@ namespace RtEngine {
 			auto material_name = scene_node["material_name"].as<std::string>();
 			if (!materials.contains(material_name))
 				throw std::runtime_error("Material " + material_name + " does not exist");
-			// TODO remove vulkan context from reader?
+
 			std::shared_ptr<Scene> scene =
 					std::make_shared<Scene>(file_path, materials[material_name]);
 			scene->environment_map = std::make_shared<EnvironmentMap>(engine_context->texture_repository);

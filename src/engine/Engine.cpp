@@ -65,7 +65,6 @@ namespace RtEngine {
         });
         guiManager->addWindow(options_window);
 
-        // TODO this does not react to new scenes
         auto inspector_window = std::make_shared<InspectorWindow>(scene_manager);
         inspector_window->addCallback([this](uint32_t flags) {
             vulkan_renderer->handleGuiUpdate(flags);

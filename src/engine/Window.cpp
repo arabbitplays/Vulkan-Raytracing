@@ -2,7 +2,7 @@
 // Created by oschdi on 18.01.26.
 //
 
-#include "Window.hpp"
+#include "../../include/engine/Window.hpp"
 
 namespace RtEngine {
     Window::Window(const uint32_t width, const uint32_t height) {
