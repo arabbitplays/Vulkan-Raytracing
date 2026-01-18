@@ -6,6 +6,8 @@
 
 #include "BenchmarkRunner.hpp"
 #include "CommandLineParser.hpp"
+#include "HierarchyWindow.hpp"
+#include "InspectorWindow.hpp"
 #include "PathUtil.hpp"
 #include "RealtimeRunner.hpp"
 #include "ReferenceRunner.hpp"
@@ -24,7 +26,7 @@ namespace RtEngine {
 
         createRenderer();
         createRunner();
-
+        createGuiManager();
     }
 
     void Engine::mainLoop() {
@@ -49,6 +51,29 @@ namespace RtEngine {
         vulkan_renderer->init(renderer_options, window);
     }
 
+    void Engine::createGuiManager() {
+        guiManager = std::make_shared<GuiManager>(vulkan_renderer->getVulkanContext());
+
+        auto options_window = std::make_shared<OptionsWindow>(vulkan_renderer->getPropertiesManager());
+        options_window->addCallback([this](uint32_t flags) {
+            vulkan_renderer->handleGuiUpdate(flags);
+        });
+        guiManager->addWindow(options_window);
+
+        // TODO this does not react to new scenes
+        auto inspector_window = std::make_shared<InspectorWindow>(runner->getSceneManager());
+        inspector_window->addCallback([this](uint32_t flags) {
+            vulkan_renderer->handleGuiUpdate(flags);
+        });
+        guiManager->addWindow(inspector_window);
+
+        auto hierarchy_window = std::make_shared<HierarchyWindow>(inspector_window, runner->getSceneManager());
+        hierarchy_window->addCallback([this](uint32_t flags) {
+            vulkan_renderer->handleGuiUpdate(flags);
+        });
+        guiManager->addWindow(hierarchy_window);
+    }
+
     void Engine::createRunner() {
         /*if (options->runner_type == OFFLINE) {
             vulkan_renderer = std::make_shared<VulkanRenderer>();
@@ -66,6 +91,7 @@ namespace RtEngine {
     }
 
     void Engine::cleanup() {
+        guiManager->destroy();
         vulkan_renderer->cleanup();
     }
 

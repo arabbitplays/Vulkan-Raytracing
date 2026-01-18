@@ -2,7 +2,7 @@
 #define SCENEREADER_H
 
 #include <RuntimeContext.hpp>
-#include <Scene.hpp>
+#include <../engine/scene_graph/Scene.hpp>
 #include <string>
 #include <yaml-cpp/yaml.h>
 

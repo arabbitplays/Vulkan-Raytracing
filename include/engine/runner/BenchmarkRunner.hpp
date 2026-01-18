@@ -4,8 +4,7 @@
 
 namespace RtEngine {
 	class BenchmarkRunner : public VulkanRenderer {
-		void drawFrame() override;
-		void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex) override;
+		void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex, bool present) override;
 
 		float calculateMSEToReference();
 		void initProperties() override;

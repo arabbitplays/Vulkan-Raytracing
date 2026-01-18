@@ -11,7 +11,7 @@
 #include "MaterialManager.hpp"
 
 namespace RtEngine {
-	class SceneManager {
+	class SceneAdapter {
 	public:
 		struct SceneInfo
 		{
@@ -25,8 +25,8 @@ namespace RtEngine {
 			GEOMETRY_UPDATE = 1 << 1,
 		};
 
-		SceneManager() = default;
-		SceneManager(const std::shared_ptr<VulkanContext> &vulkanContext,
+		SceneAdapter() = default;
+		SceneAdapter(const std::shared_ptr<VulkanContext> &vulkanContext,
 					 const std::shared_ptr<RuntimeContext>& runtime_context,
 					 const uint32_t max_frames_in_flight,
 					 const VkPhysicalDeviceRayTracingPipelinePropertiesKHR& raytracingProperties) :
@@ -43,36 +43,32 @@ namespace RtEngine {
 				material_manager->destroy();
 			});
 
-			createUniformBuffers();
 			createSceneLayout();
 			createSceneDescriptorSets(scene_descriptor_set_layout);
 			initDefaultResources(raytracingProperties);
 		}
 
-		void loadNewScene(const std::shared_ptr<Scene> &new_scene);
+		void loadNewScene(const std::shared_ptr<IScene> &new_scene);
 
-		void setupNewScene(const std::shared_ptr<Scene>& scene);
+		void setupNewScene(const std::shared_ptr<IScene> &scene);
 
-		void createNewTlas();
+		void createTlas();
 
-		void updateGeometryResources(const std::shared_ptr<Scene> &scene);
+		void updateGeometryResources(const std::shared_ptr<IScene> &scene);
 
 		void updateStaticGeometry(std::vector<RenderObject> render_objects, uint32_t update_flags);
 
 		void updateDynamicGeometry(std::vector<RenderObject> render_objects, uint32_t update_flags);
 
-		void createBlas(std::vector<std::shared_ptr<MeshAsset>> &meshes);
 		void updateScene(const std::shared_ptr<DrawContext> &draw_context);
 
 		void clearResources();
 
 		std::shared_ptr<Material> getMaterial() const;
 		VkDescriptorSet getSceneDescriptorSet(uint32_t frame_index) const;
-		SceneInfo getSceneInformation() const;
 
 		std::shared_ptr<VulkanContext> vulkan_context;
 		std::shared_ptr<RuntimeContext> runtime_context;
-		std::shared_ptr<Scene> scene;
 		uint32_t bufferUpdateFlags = 0;
 
 		std::unordered_map<std::string, std::shared_ptr<Material>> defaultMaterials;
@@ -80,7 +76,7 @@ namespace RtEngine {
 	private:
 		void createSceneLayout();
 		void createSceneDescriptorSets(const VkDescriptorSetLayout &layout);
-		void createUniformBuffers();
+		void createUniformBuffers(const std::shared_ptr<IScene> &scene);
 
 		void initDefaultResources(const VkPhysicalDeviceRayTracingPipelinePropertiesKHR& raytracingProperties);
 		void createDefaultSamplers();
@@ -89,12 +85,14 @@ namespace RtEngine {
 		void updateSceneDescriptorSets(const std::shared_ptr<DrawContext> &draw_context);
 		void updateTlas(std::vector<RenderObject> objects) const;
 
-		void updateMaterial(const std::shared_ptr<Scene> &scene) const;
+		void updateMaterial(const std::shared_ptr<IScene> &scene) const;
 
-		void updateSceneData(const std::shared_ptr<DrawContext> &draw_context);
+		void updateSceneData(const std::shared_ptr<IScene> &scene, const std::shared_ptr<DrawContext> &draw_context) const;
 
 		DeletionQueue main_deletion_queue, scene_resource_deletion_queue;
 		uint32_t max_frames_in_flight;
+
+		std::shared_ptr<IScene> loaded_scene;
 
 		VkSampler defaultSamplerLinear;
 		VkSampler defaultSamplerNearest;

@@ -5,9 +5,10 @@
 #ifndef INSTANCEMANAGER_HPP
 #define INSTANCEMANAGER_HPP
 
-#include <IRenderable.hpp>
 #include <Material.hpp>
-#include <VulkanContext.hpp>
+
+#include "IRenderable.hpp"
+
 
 namespace RtEngine {
 	class InstanceManager {

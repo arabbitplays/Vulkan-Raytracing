@@ -12,6 +12,7 @@
 #include <utility>
 
 #include "EnvironmentMap.hpp"
+#include "IScene.hpp"
 
 #define POINT_LIGHT_COUNT 4
 
@@ -48,7 +49,7 @@ namespace RtEngine {
 		float intensity = 0.0f;
 	};
 
-	class Scene
+	class Scene : public IScene
 	{
 	public:
 		Scene(std::string path, const std::shared_ptr<Material>& material) :
@@ -60,8 +61,14 @@ namespace RtEngine {
 		void addNode(std::string name, std::shared_ptr<Node> node);
 		std::shared_ptr<Node> getRootNode();
 
-		std::shared_ptr<SceneData> createSceneData(uint32_t emitting_object_count);
 		void update(uint32_t image_width, uint32_t image_height);
+
+		std::vector<std::shared_ptr<MeshAsset>> getMeshAssets() override;
+		std::vector<std::shared_ptr<MaterialInstance>> getMaterialInstances() override;
+		void fillDrawContext(const std::shared_ptr<DrawContext> &draw_context) override;
+		std::shared_ptr<Material> getMaterial() override;
+		std::shared_ptr<EnvironmentMap> getEnvironmentMap() override;
+		void *getSceneData(size_t *size, uint32_t emitting_instances_count) override;
 
 		std::string path;
 
@@ -70,10 +77,16 @@ namespace RtEngine {
 		std::unordered_map<std::string, std::shared_ptr<Node>> nodes;
 		std::shared_ptr<EnvironmentMap> environment_map;
 
+		std::shared_ptr<SceneData> last_scene_data;
+
 		DirectionalLight sun;
 		std::array<PointLight, POINT_LIGHT_COUNT> pointLights{};
 
 		std::shared_ptr<Material> material;
+
+	private:
+		std::shared_ptr<SceneData> createSceneData(uint32_t emitting_object_count);
+
 	};
 
 } // namespace RtEngine

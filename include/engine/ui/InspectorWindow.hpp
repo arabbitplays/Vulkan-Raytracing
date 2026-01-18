@@ -3,15 +3,16 @@
 
 #include <GuiWindow.hpp>
 #include <Node.hpp>
-#include <../renderer/vulkan_scene_representation/SceneManager.hpp>
 #include <VulkanContext.hpp>
 #include <memory>
+
+#include "SceneManager.hpp"
 
 namespace RtEngine {
 	class InspectorWindow : public GuiWindow {
 	public:
 		InspectorWindow() = default;
-		explicit InspectorWindow(const std::shared_ptr<SceneManager>& scene_manager);
+		explicit InspectorWindow(const std::shared_ptr<SceneManager>& scene);
 		~InspectorWindow() override = default;
 
 		void createFrame() override;

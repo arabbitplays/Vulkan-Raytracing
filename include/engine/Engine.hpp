@@ -47,6 +47,8 @@ namespace RtEngine {
 
         void createRenderer();
 
+        void createGuiManager();
+
         void createRunner();
 
         void cleanup();
@@ -56,6 +58,7 @@ namespace RtEngine {
         std::shared_ptr<BaseOptions> renderer_options;
 
         std::shared_ptr<Window> window;
+        std::shared_ptr<GuiManager> guiManager;
         std::shared_ptr<VulkanRenderer> vulkan_renderer;
         std::shared_ptr<Runner> runner;
     };

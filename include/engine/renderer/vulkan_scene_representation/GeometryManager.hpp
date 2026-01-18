@@ -1,7 +1,6 @@
 #ifndef GEOMETRYMANAGER_HPP
 #define GEOMETRYMANAGER_HPP
 
-#include <../Scene.hpp>
 #include <VulkanContext.hpp>
 
 namespace RtEngine {

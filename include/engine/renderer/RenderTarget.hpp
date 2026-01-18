@@ -32,7 +32,6 @@ namespace RtEngine
         void recreate(VkExtent2D image_extent);
 
         void destroy();
-
     private:
         void createImages(uint32_t image_count);
 

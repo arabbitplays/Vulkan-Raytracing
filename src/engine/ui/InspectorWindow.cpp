@@ -2,6 +2,8 @@
 
 #include <imgui.h>
 
+#include "SceneAdapter.hpp"
+
 namespace RtEngine {
 	InspectorWindow::InspectorWindow(const std::shared_ptr<SceneManager>& scene_manager) :
 		GuiWindow(), scene_manager(scene_manager) {}
@@ -31,7 +33,7 @@ namespace RtEngine {
 		}
 
 		if (refresh) {
-			notifyUpdate(SceneManager::MATERIAL_UPDATE | SceneManager::GEOMETRY_UPDATE);
+			notifyUpdate(SceneAdapter::MATERIAL_UPDATE | SceneAdapter::GEOMETRY_UPDATE);
 		}
 	}
 

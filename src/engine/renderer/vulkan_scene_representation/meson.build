@@ -3,7 +3,7 @@
 
 src += files(
   'InstanceManager.cpp',
-  'SceneManager.cpp',
+  'SceneAdapter.cpp',
   'GeometryManager.cpp',
   'MaterialManager.cpp',
 )

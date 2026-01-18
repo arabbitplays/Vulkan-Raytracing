@@ -1,36 +1,36 @@
-#include "../../../../include/engine/renderer/vulkan_scene_representation/SceneManager.hpp"
+#include "SceneAdapter.hpp"
 
 #include <DescriptorLayoutBuilder.hpp>
 #include <MeshRenderer.hpp>
 #include <MetalRoughMaterial.hpp>
 #include <OptionsWindow.hpp>
 #include <QuickTimer.hpp>
-#include <SceneReader.hpp>
 #include <SceneUtil.hpp>
+
+#include "PhongMaterial.hpp"
 
 namespace RtEngine {
 
-	void SceneManager::loadNewScene(const std::shared_ptr<Scene> &new_scene) {
+	void SceneAdapter::loadNewScene(const std::shared_ptr<IScene> &new_scene) {
 		QuickTimer timer{"Scene Creation", true};
 
-		if (scene != nullptr) {
-			scene_resource_deletion_queue.flush();
-		}
+		scene_resource_deletion_queue.flush();
 
-		scene = new_scene;
+		loaded_scene = new_scene;
 
-		setupNewScene(scene);
-		updateGeometryResources(scene);
-		updateMaterial(scene);
+		setupNewScene(loaded_scene);
+		updateGeometryResources(loaded_scene);
+		updateMaterial(loaded_scene);
 
 		bufferUpdateFlags = static_cast<uint8_t>(GEOMETRY_UPDATE) | static_cast<uint8_t>(MATERIAL_UPDATE);
 	}
 
-	void SceneManager::setupNewScene(const std::shared_ptr<Scene> &scene) {
-		createNewTlas();
+	void SceneAdapter::setupNewScene(const std::shared_ptr<IScene> &scene) {
+		createTlas();
+		createUniformBuffers(scene);
 	}
 
-	void SceneManager::createNewTlas() {
+	void SceneAdapter::createTlas() {
 		assert(top_level_acceleration_structure == nullptr);
 
 		VkDevice device = vulkan_context->device_manager->getDevice();
@@ -44,7 +44,7 @@ namespace RtEngine {
 		});
 	}
 
-	void SceneManager::createSceneLayout() {
+	void SceneAdapter::createSceneLayout() {
 		DescriptorLayoutBuilder layoutBuilder;
 
 		layoutBuilder.addBinding(0, VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR); // TLAS
@@ -67,19 +67,21 @@ namespace RtEngine {
 		});
 	}
 
-	void SceneManager::createSceneDescriptorSets(const VkDescriptorSetLayout &layout) {
+	void SceneAdapter::createSceneDescriptorSets(const VkDescriptorSetLayout &layout) {
 		for (int i = 0; i < max_frames_in_flight; i++) {
 			scene_descriptor_sets.push_back(vulkan_context->descriptor_allocator->allocate(
 					vulkan_context->device_manager->getDevice(), layout));
 		}
 	}
 
-	void SceneManager::createUniformBuffers() {
+	void SceneAdapter::createUniformBuffers(const std::shared_ptr<IScene> &scene) {
 		sceneUniformBuffers.resize(max_frames_in_flight);
 		sceneUniformBuffersMapped.resize(max_frames_in_flight);
 
+		size_t scene_data_size = 0;
+		scene->getSceneData(&scene_data_size, 0);
 		for (size_t i = 0; i < max_frames_in_flight; i++) {
-			VkDeviceSize size = sizeof(SceneData);
+			VkDeviceSize size = scene_data_size;
 			sceneUniformBuffers[i] = vulkan_context->resource_builder->createBuffer(
 					size, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
 					VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
@@ -87,36 +89,34 @@ namespace RtEngine {
 			vkMapMemory(vulkan_context->device_manager->getDevice(), sceneUniformBuffers[i].bufferMemory, 0, size, 0,
 						&sceneUniformBuffersMapped[i]);
 
-			main_deletion_queue.pushFunction(
+			scene_resource_deletion_queue.pushFunction(
 					[&, i]() { vulkan_context->resource_builder->destroyBuffer(sceneUniformBuffers[i]); });
 		}
 	}
 
 	// ----------------------------------------------------------------------------------------------------------------
 
-	void SceneManager::updateScene(const std::shared_ptr<DrawContext> &draw_context) {
-		assert(scene != nullptr);
+	void SceneAdapter::updateScene(const std::shared_ptr<DrawContext> &draw_context) {
+		assert(loaded_scene != nullptr);
 
 		// QuickTimer timer{"Scene Update", true};
 		VkDevice device = vulkan_context->device_manager->getDevice();
-
-		scene->update(vulkan_context->swapchain->extent.width, vulkan_context->swapchain->extent.height);
 
 		if (!(bufferUpdateFlags & NO_UPDATE))
 			vkDeviceWaitIdle(device);
 
 		draw_context->clear();
 
-		scene->nodes["root"]->draw(*draw_context);
+		loaded_scene->fillDrawContext(draw_context);
 		if (bufferUpdateFlags != NO_UPDATE) {
 			if (bufferUpdateFlags & MATERIAL_UPDATE) {
 				// !!!! This clear the descriptor set writes
-				material_manager->updateMaterialResources(scene);
+				material_manager->updateMaterialResources(loaded_scene);
 			}
 		}
 
 		updateStaticGeometry(draw_context->getRenderObjects(), bufferUpdateFlags);
-		updateSceneData(draw_context);
+		updateSceneData(loaded_scene, draw_context);
 
 
 		// TODO Only partially update tlas depending on the updated dynamic objects
@@ -126,14 +126,14 @@ namespace RtEngine {
 		bufferUpdateFlags = NO_UPDATE;
 	}
 
-	void SceneManager::updateGeometryResources(const std::shared_ptr<Scene> &scene) {
-		std::vector<std::shared_ptr<MeshAsset>> mesh_assets = SceneUtil::collectMeshAssets(scene->getRootNode());
+	void SceneAdapter::updateGeometryResources(const std::shared_ptr<IScene> &scene) {
+		std::vector<std::shared_ptr<MeshAsset>> mesh_assets = scene->getMeshAssets();
 		geometry_manager->createGeometryBuffers(mesh_assets);
 		geometry_manager->writeGeometryBuffers();
 	}
 
 	// TODO split into dynamic and static
-	void SceneManager::updateStaticGeometry(std::vector<RenderObject> render_objects, uint32_t update_flags) {
+	void SceneAdapter::updateStaticGeometry(std::vector<RenderObject> render_objects, uint32_t update_flags) {
 		if (update_flags & GEOMETRY_UPDATE) {
 			instance_manager->createInstanceMappingBuffer(render_objects);
 			updateTlas(render_objects);
@@ -151,12 +151,12 @@ namespace RtEngine {
 		}*/
 	}
 
-	void SceneManager::updateDynamicGeometry(std::vector<RenderObject> render_objects, uint32_t update_flags) {
+	void SceneAdapter::updateDynamicGeometry(std::vector<RenderObject> render_objects, uint32_t update_flags) {
 		// TODO This still update all objects in the TLAS
 
 	}
 
-	void SceneManager::updateTlas(std::vector<RenderObject> objects) const
+	void SceneAdapter::updateTlas(std::vector<RenderObject> objects) const
 	{
 		uint32_t instance_id = 0;
 		for (auto & object : objects) {
@@ -171,21 +171,22 @@ namespace RtEngine {
 		top_level_acceleration_structure->build();
 	}
 
-	void SceneManager::updateMaterial(const std::shared_ptr<Scene> &scene) const {
+	void SceneAdapter::updateMaterial(const std::shared_ptr<IScene> &scene) const {
 		material_manager->updateMaterialResources(scene);
 	}
 
-	void SceneManager::updateSceneData(const std::shared_ptr<DrawContext> &draw_context) {
-		std::shared_ptr<SceneData> scene_data = scene->createSceneData(draw_context->getEmittingObjectCount());
-		memcpy(sceneUniformBuffersMapped[draw_context->currentFrame], scene_data.get(), sizeof(SceneData));
+	void SceneAdapter::updateSceneData(const std::shared_ptr<IScene> &scene, const std::shared_ptr<DrawContext> &draw_context) const {
+		size_t size = 0;
+		void* scene_data = scene->getSceneData(&size, draw_context->getEmittingObjectCount());
+		memcpy(sceneUniformBuffersMapped[draw_context->currentFrame], scene_data, size);
 
-		vulkan_context->descriptor_allocator->writeBuffer(2, sceneUniformBuffers[draw_context->currentFrame].handle, sizeof(SceneData),
+		vulkan_context->descriptor_allocator->writeBuffer(2, sceneUniformBuffers[draw_context->currentFrame].handle, size,
 														  0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
 
-		scene->environment_map->writeToDescriptor(vulkan_context->descriptor_allocator, defaultSamplerLinear);
+		scene->getEnvironmentMap()->writeToDescriptor(vulkan_context->descriptor_allocator, defaultSamplerLinear);
 	}
 
-	void SceneManager::updateSceneDescriptorSets(const std::shared_ptr<DrawContext> &draw_context) {
+	void SceneAdapter::updateSceneDescriptorSets(const std::shared_ptr<DrawContext> &draw_context) {
 		VkDevice device = vulkan_context->device_manager->getDevice();
 
 		VkAccelerationStructureKHR tlas_handle = top_level_acceleration_structure->getHandle();
@@ -212,12 +213,12 @@ namespace RtEngine {
 
 	// -----------------------------------------------------------------------------------------------------------------
 
-	void SceneManager::initDefaultResources(const VkPhysicalDeviceRayTracingPipelinePropertiesKHR& raytracingProperties) {
+	void SceneAdapter::initDefaultResources(const VkPhysicalDeviceRayTracingPipelinePropertiesKHR& raytracingProperties) {
 		createDefaultSamplers();
 		createDefaultMaterials(raytracingProperties);
 	}
 
-	void SceneManager::createDefaultSamplers() {
+	void SceneAdapter::createDefaultSamplers() {
 		VkDevice device = vulkan_context->device_manager->getDevice();
 
 		VkSamplerCreateInfo samplerInfo = {.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO};
@@ -251,7 +252,7 @@ namespace RtEngine {
 		});
 	}
 
-	void SceneManager::createDefaultMaterials(const VkPhysicalDeviceRayTracingPipelinePropertiesKHR& raytracingProperties) {
+	void SceneAdapter::createDefaultMaterials(const VkPhysicalDeviceRayTracingPipelinePropertiesKHR& raytracingProperties) {
 		auto phong_material = std::make_shared<PhongMaterial>(vulkan_context, runtime_context);
 		phong_material->buildPipelines(scene_descriptor_set_layout);
 		phong_material->pipeline->createShaderBindingTables(raytracingProperties);
@@ -266,21 +267,13 @@ namespace RtEngine {
 		main_deletion_queue.pushFunction([&]() { defaultMaterials["metal_rough"]->clearResources(); });
 	}
 
-	std::shared_ptr<Material> SceneManager::getMaterial() const { return scene->material; }
+	std::shared_ptr<Material> SceneAdapter::getMaterial() const { return loaded_scene->getMaterial(); }
 
-	VkDescriptorSet SceneManager::getSceneDescriptorSet(uint32_t frame_index) const {
+	VkDescriptorSet SceneAdapter::getSceneDescriptorSet(uint32_t frame_index) const {
 		return scene_descriptor_sets[frame_index];
 	}
 
-	SceneManager::SceneInfo SceneManager::getSceneInformation() const
-	{
-		SceneInfo scene_info {
-			.path = scene != nullptr ? scene->path : "",
-		};
-		return scene_info;
-	}
-
-	void SceneManager::clearResources() {
+	void SceneAdapter::clearResources() {
 		scene_resource_deletion_queue.flush();
 		main_deletion_queue.flush();
 	}

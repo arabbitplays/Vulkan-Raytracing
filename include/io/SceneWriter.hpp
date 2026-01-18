@@ -1,7 +1,7 @@
 #ifndef SCENEWRITER_H
 #define SCENEWRITER_H
 
-#include <Scene.hpp>
+#include <../engine/scene_graph/Scene.hpp>
 #include <string>
 #include <yaml-cpp/yaml.h>
 

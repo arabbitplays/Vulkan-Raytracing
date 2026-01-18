@@ -4,6 +4,8 @@
 #include <glm/ext/matrix_clip_space.hpp>
 #include <glm/ext/matrix_transform.hpp>
 
+#include "SceneUtil.hpp"
+
 namespace RtEngine {
 	std::shared_ptr<SceneData> Scene::createSceneData(uint32_t emitting_object_count) {
 		auto sceneData = std::make_shared<SceneData>();
@@ -47,5 +49,31 @@ namespace RtEngine {
 		for (auto &node: nodes) {
 			node.second->update();
 		}
+	}
+
+	std::vector<std::shared_ptr<MeshAsset>> Scene::getMeshAssets() {
+		return SceneUtil::collectMeshAssets(getRootNode());
+	}
+
+	std::vector<std::shared_ptr<MaterialInstance>> Scene::getMaterialInstances() {
+		return  SceneUtil::collectMaterialInstances(getRootNode());
+	}
+
+	void Scene::fillDrawContext(const std::shared_ptr<DrawContext> &draw_context) {
+		getRootNode()->draw(*draw_context);
+	}
+
+	std::shared_ptr<Material> Scene::getMaterial() {
+		return material;
+	}
+
+	std::shared_ptr<EnvironmentMap> Scene::getEnvironmentMap() {
+		return environment_map;
+	}
+
+	void * Scene::getSceneData(size_t *size, uint32_t emitting_instances_count) {
+		last_scene_data = createSceneData(emitting_instances_count);
+		*size = sizeof(SceneData);
+		return last_scene_data.get();
 	}
 } // namespace RtEngine

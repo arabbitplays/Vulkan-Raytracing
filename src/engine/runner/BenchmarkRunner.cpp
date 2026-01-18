@@ -38,7 +38,7 @@ namespace RtEngine {
 		float mse = calculateMSEToReference();
 		spdlog::info("Sample count: {}, Final Error: {:f}", curr_sample_count, mse);
 		stbi_image_free(reference_image_data);
-	}*/
+	}
 
 	void BenchmarkRunner::drawFrame() {
 		vkWaitForFences(vulkan_context->device_manager->getDevice(), 1, &inFlightFences[mainDrawContext->currentFrame], VK_TRUE,
@@ -63,7 +63,7 @@ namespace RtEngine {
 		scene_manager->updateScene(mainDrawContext);
 
 		vkResetCommandBuffer(commandBuffers[mainDrawContext->currentFrame], 0);
-		recordCommandBuffer(commandBuffers[mainDrawContext->currentFrame], imageIndex);
+		recordCommandBuffer(commandBuffers[mainDrawContext->currentFrame], imageIndex, TODO);
 
 		if (present_image) {
 			std::vector<VkSemaphore> waitSemaphore = {imageAvailableSemaphores[mainDrawContext->currentFrame]};
@@ -75,9 +75,9 @@ namespace RtEngine {
 		}
 
 		mainDrawContext->nextFrame();
-	}
+	}*/
 
-	void BenchmarkRunner::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex) {
+	void BenchmarkRunner::recordCommandBuffer(VkCommandBuffer commandBuffer, const uint32_t imageIndex, bool present) {
 		recordBeginCommandBuffer(commandBuffer);
 		recordRenderToImage(commandBuffer);
 		if (present_image)

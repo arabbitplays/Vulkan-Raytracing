@@ -35,7 +35,6 @@ namespace RtEngine {
 
 		initWindow();
 		initVulkan();
-		initGui();
 	}
 
 	void VulkanRenderer::initWindow() {
@@ -43,7 +42,7 @@ namespace RtEngine {
 			framebufferResized = true;
 		});
 		// TODO Input Manager
-		window->addKeyCallback([this](int key, int scancode, int action, int mods) {
+		/*window->addKeyCallback([this](int key, int scancode, int action, int mods) {
 			if (scene_manager->scene != nullptr && scene_manager->scene->camera != nullptr) {
 				scene_manager->scene->camera->processGlfwKeyEvent(key, action);
 			}
@@ -52,7 +51,7 @@ namespace RtEngine {
 			if (scene_manager->scene != nullptr && scene_manager->scene->camera != nullptr) {
 				scene_manager->scene->camera->processGlfwMouseEvent(xPos, yPos);
 			}
-		});
+		});*/
 	}
 
 	void VulkanRenderer::initVulkan() {
@@ -60,36 +59,12 @@ namespace RtEngine {
 		createRuntimeContext();
 		createMainDrawContext();
 
-		scene_manager = std::make_shared<SceneManager>(vulkan_context, runtime_context, mainDrawContext->max_frames_in_flight,
+		scene_manager = std::make_shared<SceneAdapter>(vulkan_context, runtime_context, mainDrawContext->max_frames_in_flight,
 													   DeviceManager::RAYTRACING_PROPERTIES);
 		mainDeletionQueue.pushFunction([&]() { scene_manager->clearResources(); });
 
 		createCommandBuffers();
 		createSyncObjects();
-	}
-
-	void VulkanRenderer::initGui() {
-		guiManager = std::make_shared<GuiManager>(vulkan_context);
-
-		mainDeletionQueue.pushFunction([&]() { guiManager->destroy(); });
-
-		auto options_window = std::make_shared<OptionsWindow>(properties_manager);
-		options_window->addCallback([this](uint32_t flags) {
-			this->handleGuiUpdate(flags);
-		});
-		guiManager->addWindow(options_window);
-
-		auto inspector_window = std::make_shared<InspectorWindow>(scene_manager);
-		inspector_window->addCallback([this](uint32_t flags) {
-			this->handleGuiUpdate(flags);
-		});
-		guiManager->addWindow(inspector_window);
-
-		auto hierarchy_window = std::make_shared<HierarchyWindow>(inspector_window, scene_manager);
-		hierarchy_window->addCallback([this](uint32_t flags) {
-			this->handleGuiUpdate(flags);
-		});
-		guiManager->addWindow(hierarchy_window);
 	}
 
 	void VulkanRenderer::createVulkanContext() {
@@ -158,12 +133,12 @@ namespace RtEngine {
 		return format == VK_FORMAT_D32_SFLOAT_S8_UINT || format == VK_FORMAT_D24_UNORM_S8_UINT;
 	}
 
-	void VulkanRenderer::loadScene(std::shared_ptr<Scene> scene) {
+	void VulkanRenderer::loadScene(std::shared_ptr<IScene> scene) {
 		vkDeviceWaitIdle(vulkan_context->device_manager->getDevice()); // TODO is this needed?
 		mainDrawContext->target->resetAccumulatedFrames();
 
 		scene_manager->loadNewScene(scene);
-		properties_manager->addPropertySection(scene_manager->scene->material->getProperties());
+		properties_manager->addPropertySection(scene->getMaterial()->getProperties());
 	}
 
 	void VulkanRenderer::createCommandBuffers() {
@@ -213,27 +188,6 @@ namespace RtEngine {
 
 	void VulkanRenderer::update() {
 		scene_manager->updateScene(mainDrawContext);
-	}
-
-	void VulkanRenderer::drawFrame() {
-		vkWaitForFences(vulkan_context->device_manager->getDevice(), 1, &inFlightFences[mainDrawContext->currentFrame], VK_TRUE,
-						UINT64_MAX);
-
-		const int32_t imageIndex = aquireNextSwapchainImage();
-		if (imageIndex < 0)
-			return;
-
-		vkResetFences(vulkan_context->device_manager->getDevice(), 1, &inFlightFences[mainDrawContext->currentFrame]);
-
-		vkResetCommandBuffer(commandBuffers[mainDrawContext->currentFrame], 0);
-		recordCommandBuffer(commandBuffers[mainDrawContext->currentFrame], imageIndex);
-
-		std::vector<VkSemaphore> waitSemaphore = {imageAvailableSemaphores[mainDrawContext->currentFrame]};
-		std::vector<VkSemaphore> signalSemaphore = {renderFinishedSemaphores[mainDrawContext->currentFrame]};
-		submitCommandBuffer(waitSemaphore, signalSemaphore);
-		presentSwapchainImage(signalSemaphore, imageIndex);
-
-		mainDrawContext->nextFrame();
 	}
 
 	void VulkanRenderer::waitForNextFrameStart() {
@@ -321,20 +275,22 @@ namespace RtEngine {
 		mainDrawContext->target->resetAccumulatedFrames();
 		vulkan_context->swapchain->recreate();
 		mainDrawContext->target->recreate(vulkan_context->swapchain->extent);
-		guiManager->updateWindows();
+		//guiManager->updateWindows(); TODO
 		scene_manager->updateScene(mainDrawContext);
 	}
 
-	void VulkanRenderer::recordCommands(int32_t swapchain_image_idx) {
+	void VulkanRenderer::recordCommands(bool present, int32_t swapchain_image_idx) {
 		vkResetCommandBuffer(commandBuffers[mainDrawContext->currentFrame], 0);
-		recordCommandBuffer(commandBuffers[mainDrawContext->currentFrame], swapchain_image_idx);
+		recordCommandBuffer(commandBuffers[mainDrawContext->currentFrame], swapchain_image_idx, present);
 	}
 
-	void VulkanRenderer::recordCommandBuffer(VkCommandBuffer commandBuffer, const uint32_t swapchain_image_idx) {
+	void VulkanRenderer::recordCommandBuffer(VkCommandBuffer commandBuffer, const uint32_t swapchain_image_idx, bool present) {
 		recordBeginCommandBuffer(commandBuffer);
 		recordRenderToImage(commandBuffer);
-		recordCopyToSwapchain(commandBuffer, swapchain_image_idx);
-		guiManager->recordGuiCommands(commandBuffer, swapchain_image_idx);
+		if (present) {
+			recordCopyToSwapchain(commandBuffer, swapchain_image_idx);
+		}
+		//guiManager->recordGuiCommands(commandBuffer, swapchain_image_idx); TODO
 		recordEndCommandBuffer(commandBuffer);
 	}
 
@@ -521,12 +477,28 @@ namespace RtEngine {
 		scene_manager->bufferUpdateFlags |= update_flags;
 	}
 
+	std::shared_ptr<VulkanContext> VulkanRenderer::getVulkanContext() {
+		return vulkan_context;
+	}
+
 	std::shared_ptr<RuntimeContext> VulkanRenderer::getRuntimeContext() {
 		return runtime_context;
 	}
 
 	std::unordered_map<std::string, std::shared_ptr<Material>> VulkanRenderer::getMaterials() const {
 		return scene_manager->defaultMaterials;
+	}
+
+	std::shared_ptr<RenderTarget> VulkanRenderer::getRenderTarget() const {
+		return mainDrawContext->target;
+	}
+
+	std::shared_ptr<PropertiesManager> VulkanRenderer::getPropertiesManager() {
+		return properties_manager;
+	}
+
+	VkExtent2D VulkanRenderer::getSwapchainExtent() {
+		return vulkan_context->swapchain->extent;
 	}
 
 } // namespace RtEngine

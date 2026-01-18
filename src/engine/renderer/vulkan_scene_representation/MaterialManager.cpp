@@ -1,10 +1,6 @@
-//
-// Created by oschdi on 17.01.26.
-//
+#include "MaterialManager.hpp"
 
-#include "../../../../include/engine/renderer/vulkan_scene_representation/MaterialManager.hpp"
-
-#include "SceneUtil.hpp"
+#include "Material.hpp"
 
 namespace RtEngine {
     MaterialManager::MaterialManager(std::shared_ptr<ResourceBuilder> resource_builder,
@@ -12,7 +8,7 @@ namespace RtEngine {
         material_textures = std::make_shared<MaterialTextures<>>(tex_repo);
     }
 
-    void MaterialManager::updateMaterialResources(std::shared_ptr<Scene> scene) {
+    void MaterialManager::updateMaterialResources(std::shared_ptr<IScene> scene) {
         // clear all resources that have been created earlier
         if (material_buffer.handle != VK_NULL_HANDLE) {
             resource_builder->destroyBuffer(material_buffer);
@@ -20,11 +16,11 @@ namespace RtEngine {
         material_textures->clear();
 
         // collect material instance from scene graph, combine their data resources into a buffer and the textures into material_textures
-        std::vector<std::shared_ptr<MaterialInstance>> material_instances = SceneUtil::collectMaterialInstances(scene->getRootNode());
+        std::vector<std::shared_ptr<MaterialInstance>> material_instances = scene->getMaterialInstances();
         material_buffer = createMaterialBuffer(material_instances);
 
         // write new resources
-        std::shared_ptr<Material> material = scene->material;
+        std::shared_ptr<Material> material = scene->getMaterial();
         material->writeMaterial(material_buffer, material_textures);
     }
 

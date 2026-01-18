@@ -4,4 +4,5 @@ subdir('components')
 
 src += files(
   'Node.cpp',
+  'SceneManager.cpp',
 )

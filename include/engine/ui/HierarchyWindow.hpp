@@ -3,7 +3,7 @@
 
 #include <GuiWindow.hpp>
 #include <InspectorWindow.hpp>
-#include <Scene.hpp>
+#include <../scene_graph/Scene.hpp>
 #include <imgui.h>
 #include <memory>
 #include <string>
