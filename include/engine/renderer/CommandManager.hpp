@@ -13,11 +13,11 @@ namespace RtEngine {
 		VkCommandPool commandPool{};
 
 		CommandManager();
-		CommandManager(std::shared_ptr<DeviceManager> deviceManager);
+		CommandManager(const std::shared_ptr<DeviceManager> &deviceManager);
 		void createCommandPool();
-		VkCommandBuffer beginSingleTimeCommands();
-		void endSingleTimeCommand(VkCommandBuffer commandBuffer);
-		void destroyCommandManager();
+		VkCommandBuffer beginSingleTimeCommands() const;
+		void endSingleTimeCommand(VkCommandBuffer commandBuffer) const;
+		void destroy() const;
 
 	private:
 		std::shared_ptr<DeviceManager> deviceManager;

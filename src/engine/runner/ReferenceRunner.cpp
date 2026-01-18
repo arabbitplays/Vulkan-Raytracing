@@ -8,11 +8,11 @@ namespace RtEngine {
 
 		stopwatch.reset();
 
-		while (!glfwWindowShouldClose(window)) {
+		while (window->is_open()) {
 			// render one image and then output it if output path is defined
 			if (sample_count == mainDrawContext->target->getTotalSampleCount()) {
 				vkDeviceWaitIdle(vulkan_context->device_manager->getDevice());
-				outputRenderingTarget(vulkan_context->base_options->resources_dir + "/references/" +
+				outputRenderingTarget(base_options->resources_dir + "/references/" +
 									  std::to_string(sample_count) + "_render.png");
 				break;
 			}

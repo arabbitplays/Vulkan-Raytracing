@@ -28,13 +28,8 @@ namespace RtEngine {
 		}
 	}
 
-	const uint32_t WIDTH = 6144;
-	const uint32_t HEIGHT = 3320;
-
-	void VulkanRenderer::run(const std::string &config_file, const std::string &resources_dir) {
-		vulkan_context = std::make_shared<VulkanContext>();
-		vulkan_context->base_options = std::make_shared<BaseOptions>();
-		vulkan_context->base_options->resources_dir = resources_dir;
+	void VulkanRenderer::init(const std::string &config_file, const std::shared_ptr<BaseOptions> base_options) {
+		this->base_options = base_options;
 		properties_manager = std::make_shared<PropertiesManager>(config_file);
 
 		initWindow();
@@ -47,35 +42,34 @@ namespace RtEngine {
 	}
 
 	void VulkanRenderer::initWindow() {
-		glfwInit();
-
-		glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-		glfwWindowHintString(GLFW_WAYLAND_APP_ID, "test");
-
-		window = glfwCreateWindow(WIDTH, HEIGHT, "Vulkan", nullptr, nullptr);
-		glfwSetWindowUserPointer(window, this);
-		glfwSetFramebufferSizeCallback(window, framebufferResizeCallback);
-		glfwSetKeyCallback(window, keyCallback);
-		glfwSetCursorPosCallback(window, mouseCallback);
+		window = std::make_shared<Window>(1920, 1040);
+		window->addResizeCallback([this](uint32_t width, uint32_t height) {
+			framebufferResized = true;
+		});
+		// TODO Input Manager
+		window->addKeyCallback([this](int key, int scancode, int action, int mods) {
+			if (scene_manager->scene != nullptr && scene_manager->scene->camera != nullptr) {
+				scene_manager->scene->camera->processGlfwKeyEvent(key, action);
+			}
+		});
+		window->addMouseCallback([this](double xPos, double yPos) {
+			if (scene_manager->scene != nullptr && scene_manager->scene->camera != nullptr) {
+				scene_manager->scene->camera->processGlfwMouseEvent(xPos, yPos);
+			}
+		});
 	}
 
-	void VulkanRenderer::framebufferResizeCallback(GLFWwindow *window, int width, int height) {
-		auto app = reinterpret_cast<VulkanRenderer *>(glfwGetWindowUserPointer(window));
-		app->framebufferResized = true;
-	}
+	void VulkanRenderer::initVulkan() {
+		createVulkanContext();
+		createRuntimeContext();
+		createMainDrawContext();
 
-	void VulkanRenderer::keyCallback(GLFWwindow *window, int key, int scancode, int action, int mods) {
-		auto app = reinterpret_cast<VulkanRenderer *>(glfwGetWindowUserPointer(window));
-		if (app->scene_manager->scene != nullptr && app->scene_manager->scene->camera != nullptr) {
-			app->scene_manager->scene->camera->processGlfwKeyEvent(key, action);
-		}
-	}
+		scene_manager = std::make_shared<SceneManager>(vulkan_context, runtime_context, mainDrawContext->max_frames_in_flight,
+													   DeviceManager::RAYTRACING_PROPERTIES);
+		mainDeletionQueue.pushFunction([&]() { scene_manager->clearResources(); });
 
-	void VulkanRenderer::mouseCallback(GLFWwindow *window, double xPos, double yPos) {
-		auto app = reinterpret_cast<VulkanRenderer *>(glfwGetWindowUserPointer(window));
-		if (app->scene_manager->scene != nullptr && app->scene_manager->scene->camera != nullptr) {
-			app->scene_manager->scene->camera->processGlfwMouseEvent(xPos, yPos);
-		}
+		createCommandBuffers();
+		createSyncObjects();
 	}
 
 	void VulkanRenderer::initGui() {
@@ -102,26 +96,11 @@ namespace RtEngine {
 		guiManager->addWindow(hierarchy_window);
 	}
 
-	void VulkanRenderer::initVulkan() {
-		createVulkanContext();
-		createRuntimeContext();
-
-		mainDrawContext = std::make_shared<DrawContext>();
-		mainDrawContext->max_frames_in_flight = max_frames_in_flight;
-		mainDrawContext->target = std::make_shared<RenderTarget>(vulkan_context->resource_builder, vulkan_context->swapchain->extent, mainDrawContext->max_frames_in_flight);
-		mainDeletionQueue.pushFunction([&]() { mainDrawContext->target->destroy(); });
-
-		scene_manager = std::make_shared<SceneManager>(vulkan_context, runtime_context, mainDrawContext->max_frames_in_flight,
-													   DeviceManager::RAYTRACING_PROPERTIES);
-		mainDeletionQueue.pushFunction([&]() { scene_manager->clearResources(); });
-
-		createCommandBuffers();
-		createSyncObjects();
-	}
-
 	void VulkanRenderer::createVulkanContext() {
+		vulkan_context = std::make_shared<VulkanContext>();
+
 		vulkan_context->window = window;
-		vulkan_context->device_manager = std::make_shared<DeviceManager>(window, enableValidationLayers);
+		vulkan_context->device_manager = std::make_shared<DeviceManager>(window->getHandle(), enableValidationLayers);
 
 		initProperties();
 		properties_manager->addPropertySection(renderer_properties);
@@ -129,28 +108,39 @@ namespace RtEngine {
 		vulkan_context->command_manager = std::make_shared<CommandManager>(vulkan_context->device_manager);
 		vulkan_context->resource_builder =
 				std::make_shared<ResourceBuilder>(vulkan_context->device_manager, vulkan_context->command_manager,
-												  vulkan_context->base_options->resources_dir);
+												  base_options->resources_dir);
 		vulkan_context->swapchain =
-				std::make_shared<Swapchain>(vulkan_context->device_manager, window, vulkan_context->resource_builder);
+				std::make_shared<Swapchain>(vulkan_context->device_manager, window->getHandle(), vulkan_context->resource_builder);
 		vulkan_context->descriptor_allocator = createDescriptorAllocator();
 
 		mainDeletionQueue.pushFunction([&]() {
 			vulkan_context->descriptor_allocator->destroyPools(vulkan_context->device_manager->getDevice());
 			vulkan_context->swapchain->destroy();
-			vulkan_context->command_manager->destroyCommandManager();
+			vulkan_context->command_manager->destroy();
 			vulkan_context->device_manager->destroy();
 		});
 	}
 
 	void VulkanRenderer::createRuntimeContext() {
 		runtime_context = std::make_shared<RuntimeContext>();
-		runtime_context->mesh_repository = std::make_shared<MeshRepository>(vulkan_context);
+		runtime_context->mesh_repository = std::make_shared<MeshRepository>(vulkan_context, base_options->resources_dir);
 		runtime_context->texture_repository = std::make_shared<TextureRepository>(vulkan_context->resource_builder);
 
 		mainDeletionQueue.pushFunction([&]() {
 			runtime_context->mesh_repository->destroy();
 			runtime_context->texture_repository->destroy();
 		});
+	}
+
+	void VulkanRenderer::createMainDrawContext() {
+		mainDrawContext = std::make_shared<DrawContext>();
+		mainDrawContext->max_frames_in_flight = max_frames_in_flight;
+		mainDrawContext->target = createRenderTarget();
+		mainDeletionQueue.pushFunction([&]() { mainDrawContext->target->destroy(); });
+	}
+
+	std::shared_ptr<RenderTarget> VulkanRenderer::createRenderTarget() {
+		return std::make_shared<RenderTarget>(vulkan_context->resource_builder, vulkan_context->swapchain->extent, mainDrawContext->max_frames_in_flight);
 	}
 
 	std::shared_ptr<DescriptorAllocator> VulkanRenderer::createDescriptorAllocator() {
@@ -173,11 +163,11 @@ namespace RtEngine {
 	}
 
 	void VulkanRenderer::loadScene() {
-		assert(!vulkan_context->base_options->curr_scene_name.empty());
+		assert(!base_options->curr_scene_name.empty());
 		vkDeviceWaitIdle(vulkan_context->device_manager->getDevice()); // TODO is this needed?
 		mainDrawContext->target->resetAccumulatedFrames();
-		std::string path = vulkan_context->base_options->resources_dir + "/scenes/" +
-						   vulkan_context->base_options->curr_scene_name;
+		std::string path = base_options->resources_dir + "/scenes/" +
+						   base_options->curr_scene_name;
 		scene_manager->createScene(path);
 		properties_manager->addPropertySection(scene_manager->scene->material->getProperties());
 
@@ -231,10 +221,10 @@ namespace RtEngine {
 	}
 
 	void VulkanRenderer::mainLoop() {
-		while (!glfwWindowShouldClose(window)) {
-			glfwPollEvents();
+		while (window->is_open()) {
+			window->pollEvents();
 
-			if (PathUtil::getFile(scene_manager->getSceneInformation().path) != vulkan_context->base_options->curr_scene_name) {
+			if (PathUtil::getFile(scene_manager->getSceneInformation().path) != base_options->curr_scene_name) {
 				loadScene();
 			}
 			scene_manager->updateScene(mainDrawContext);
@@ -442,8 +432,7 @@ namespace RtEngine {
 
 	void VulkanRenderer::cleanup() {
 		mainDeletionQueue.flush();
-		glfwDestroyWindow(window);
-		glfwTerminate();
+		window->destroy();
 	}
 
 	void VulkanRenderer::outputRenderingTarget(const std::string &output_path) {
@@ -488,8 +477,8 @@ namespace RtEngine {
 	void VulkanRenderer::initProperties() {
 		renderer_properties = std::make_shared<PropertiesSection>(RENDERER_SECTION_NAME);
 
-		renderer_properties->addString(RESOURCES_DIR_OPTION_NAME, &vulkan_context->base_options->resources_dir);
-		renderer_properties->addInt(RECURSION_DEPTH_OPTION_NAME, &vulkan_context->base_options->max_depth, 1, 5);
+		renderer_properties->addString(RESOURCES_DIR_OPTION_NAME, &base_options->resources_dir);
+		renderer_properties->addInt(RECURSION_DEPTH_OPTION_NAME, &base_options->max_depth, 1, 5);
 
 		initSceneSelectionProperty();
 	}
@@ -497,7 +486,7 @@ namespace RtEngine {
 	void VulkanRenderer::initSceneSelectionProperty() const
 	{
 		assert(renderer_properties != nullptr);
-		std::string scenes_dir = vulkan_context->base_options->resources_dir + "/scenes";
+		std::string scenes_dir = base_options->resources_dir + "/scenes";
 		std::vector<std::string> scenes;
 		try {
 			for (const auto &entry: std::filesystem::__cxx11::directory_iterator(scenes_dir)) {
@@ -510,9 +499,9 @@ namespace RtEngine {
 		if (scenes.empty()) {
 			throw std::runtime_error("No scenes found in scene directory " + scenes_dir + ".");
 		}
-		vulkan_context->base_options->curr_scene_name = scenes[0];
+		base_options->curr_scene_name = scenes[0];
 
-		renderer_properties->addSelection(CURR_SCENE_OPTION_NAME, &vulkan_context->base_options->curr_scene_name,
+		renderer_properties->addSelection(CURR_SCENE_OPTION_NAME, &base_options->curr_scene_name,
 										  scenes);
 	}
 

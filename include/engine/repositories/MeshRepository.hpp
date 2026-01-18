@@ -11,7 +11,7 @@ namespace RtEngine {
 	class MeshRepository {
 	public:
 		MeshRepository() = default;
-		MeshRepository(const std::shared_ptr<VulkanContext> &context);
+		MeshRepository(const std::shared_ptr<VulkanContext> &context, const std::string &resource_dir);
 
 		std::shared_ptr<MeshAsset> getMesh(const std::string &name);
 		std::string addMesh(std::string path);

@@ -4,7 +4,7 @@
 namespace RtEngine {
 	CommandManager::CommandManager() = default;
 
-	CommandManager::CommandManager(std::shared_ptr<DeviceManager> deviceManager) : deviceManager(deviceManager) {
+	CommandManager::CommandManager(const std::shared_ptr<DeviceManager> &deviceManager) : deviceManager(deviceManager) {
 		createCommandPool();
 	}
 
@@ -19,7 +19,7 @@ namespace RtEngine {
 		}
 	}
 
-	VkCommandBuffer CommandManager::beginSingleTimeCommands() {
+	VkCommandBuffer CommandManager::beginSingleTimeCommands() const {
 		VkCommandBufferAllocateInfo allocInfo{};
 		allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
 		allocInfo.commandPool = commandPool;
@@ -38,7 +38,7 @@ namespace RtEngine {
 		return commandBuffer;
 	}
 
-	void CommandManager::endSingleTimeCommand(VkCommandBuffer commandBuffer) {
+	void CommandManager::endSingleTimeCommand(const VkCommandBuffer commandBuffer) const {
 		vkEndCommandBuffer(commandBuffer);
 
 		VkSubmitInfo submitInfo{};
@@ -53,7 +53,7 @@ namespace RtEngine {
 		vkFreeCommandBuffers(deviceManager->getDevice(), commandPool, 1, &commandBuffer);
 	}
 
-	void CommandManager::destroyCommandManager() {
+	void CommandManager::destroy() const {
 		vkDestroyCommandPool(deviceManager->getDevice(), commandPool, nullptr);
 	}
 } // namespace RtEngine

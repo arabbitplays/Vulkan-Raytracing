@@ -25,7 +25,7 @@ namespace RtEngine {
 			vkDestroyDescriptorPool(this->context->device_manager->getDevice(), descriptor_pool, nullptr);
 		});
 
-		initImGui(context->device_manager, context->window, context->swapchain);
+		initImGui(context->device_manager, context->window->getHandle(), context->swapchain);
 	}
 
 	void GuiManager::createRenderPass(VkDevice device, VkFormat image_format) {

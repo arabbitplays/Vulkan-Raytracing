@@ -20,6 +20,7 @@
 #include <VulkanContext.hpp>
 #include "../scene_graph/Node.hpp"
 #include "DeletionQueue.hpp"
+#include "Window.hpp"
 
 namespace RtEngine {
 
@@ -27,13 +28,15 @@ namespace RtEngine {
 	public:
 		VulkanRenderer() = default;
 		virtual ~VulkanRenderer() = default;
-		void run(const std::string &config_file, const std::string &resources_dir);
+		void init(const std::string &config_file, std::shared_ptr<BaseOptions> base_options);
 
 	protected:
-		GLFWwindow *window;
+		std::shared_ptr<Window> window;
 		std::shared_ptr<GuiManager> guiManager;
 
 		DeletionQueue mainDeletionQueue;
+
+		std::shared_ptr<BaseOptions> base_options;
 
 		std::shared_ptr<VulkanContext> vulkan_context;
 		std::shared_ptr<RuntimeContext> runtime_context;
@@ -58,13 +61,14 @@ namespace RtEngine {
 		void initVulkan();
 		void createVulkanContext();
 		void createRuntimeContext();
+
+		void createMainDrawContext();
+
+		std::shared_ptr<RenderTarget> createRenderTarget();
+
 		void initGui();
 		virtual void mainLoop();
 		void cleanup();
-
-		static void framebufferResizeCallback(GLFWwindow *window, int width, int height);
-		static void keyCallback(GLFWwindow *window, int key, int scancode, int action, int mods);
-		static void mouseCallback(GLFWwindow *window, double xPos, double yPos);
 
 		static bool hasStencilComponent(VkFormat format);
 

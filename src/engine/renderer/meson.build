@@ -4,6 +4,7 @@ subdir('context')
 subdir('vulkan_scene_representation')
 
 src += files(
+  'Window.cpp',
   'CommandManager.cpp',
   'DescriptorAllocator.cpp',
   'Swapchain.cpp',

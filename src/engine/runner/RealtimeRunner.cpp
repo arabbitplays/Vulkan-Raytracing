@@ -11,10 +11,9 @@
 namespace RtEngine {
 	void RealtimeRunner::mainLoop() {
 		mainDrawContext->target->setSamplesPerFrame(SAMPLES_PER_PIXEL);
-		while (!glfwWindowShouldClose(window)) {
-			glfwPollEvents();
-
-			if (PathUtil::getFile(scene_manager->getSceneInformation().path) != vulkan_context->base_options->curr_scene_name) {
+		while (window->is_open()) {
+			window->pollEvents();
+			if (PathUtil::getFile(scene_manager->getSceneInformation().path) != base_options->curr_scene_name) {
 				loadScene();
 			}
 			scene_manager->updateScene(mainDrawContext);

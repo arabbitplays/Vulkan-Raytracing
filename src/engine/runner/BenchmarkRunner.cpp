@@ -14,7 +14,7 @@ namespace RtEngine {
 
 		uint32_t curr_sample_count = mainDrawContext->target->getTotalSampleCount();
 
-		while (!glfwWindowShouldClose(window)) {
+		while (window->is_open()) {
 			// render one image and then output it if output path is defined
 			if (sample_count == curr_sample_count) {
 				vkDeviceWaitIdle(vulkan_context->device_manager->getDevice());

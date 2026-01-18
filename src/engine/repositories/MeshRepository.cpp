@@ -4,9 +4,9 @@
 #include <spdlog/spdlog.h>
 
 namespace RtEngine {
-	MeshRepository::MeshRepository(const std::shared_ptr<VulkanContext> &context) {
+	MeshRepository::MeshRepository(const std::shared_ptr<VulkanContext> &context, const std::string& resource_dir) {
 		mesh_asset_builder = std::make_shared<MeshAssetBuilder>(context->device_manager->getDevice(),
-																context->base_options->resources_dir);
+																resource_dir);
 	}
 
 	std::shared_ptr<MeshAsset> MeshRepository::getMesh(const std::string &name) {

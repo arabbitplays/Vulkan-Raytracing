@@ -49,8 +49,11 @@ int main(int argc, char *argv[]) {
 		app = std::make_shared<VulkanRenderer>();
 	}
 
+	auto base_options = std::make_shared<BaseOptions>();
+	base_options->resources_dir = resources_dir;
+
 	try {
-		app->run(config_file, resources_dir);
+		app->init(config_file, base_options);
 	} catch (const std::exception &e) {
 		spdlog::error(e.what());
 		return EXIT_FAILURE;
