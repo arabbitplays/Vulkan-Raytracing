@@ -32,9 +32,15 @@ namespace RtEngine {
 
 	void MeshRenderer::initProperties(const YAML::Node &config_node) {
 		meshAsset = context->mesh_repository->getMesh(config_node[COMPONENT_NAME]["mesh"].as<std::string>());
-		std::shared_ptr<Material> material = context->curr_material.lock();
-		assert(material != nullptr);
-		meshMaterial = material->getInstanceByName(config_node[COMPONENT_NAME]["material_name"].as<std::string>());
+		std::unordered_map<std::string, std::shared_ptr<Material>> materials = context->renderer->getMaterials();
+		for (const auto& [_, material] : materials) {
+			std::shared_ptr<MaterialInstance> instance = material->getInstanceByName(config_node[COMPONENT_NAME]["material_name"].as<std::string>());
+			if (instance != nullptr) {
+				meshMaterial = instance;
+				break;
+			}
+		}
+		assert(meshMaterial != nullptr);
 	}
 
 } // namespace RtEngine

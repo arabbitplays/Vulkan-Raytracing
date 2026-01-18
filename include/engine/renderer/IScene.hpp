@@ -7,7 +7,7 @@
 #include "EnvironmentMap.hpp"
 #include "MeshAsset.hpp"
 #include "Material.hpp"
-#include "IRenderable.hpp"
+#include "resources/IRenderable.hpp"
 
 namespace RtEngine {
     class IScene {

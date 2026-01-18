@@ -40,24 +40,25 @@ namespace RtEngine {
         void run(CliArguments cli_args);
 
         void init();
-
         void parseCliArguments(CliArguments cli_args);
 
-        void mainLoop();
-
         void createWindow();
-
         void createRenderer();
-
         void createGuiManager();
 
+        void createEngineContext();
+
         void createRunner();
+
+        void mainLoop();
 
         void cleanup();
 
     private:
         std::shared_ptr<EngineOptions> options;
         std::shared_ptr<BaseOptions> renderer_options;
+
+        std::shared_ptr<EngineContext> engine_context;
 
         std::shared_ptr<Window> window;
         std::shared_ptr<SceneManager> scene_manager;

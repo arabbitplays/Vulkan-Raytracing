@@ -1,21 +1,18 @@
-//
-// Created by oschdi on 5/19/25.
-//
-
 #ifndef RUNTIMECONTEXT_HPP
 #define RUNTIMECONTEXT_HPP
 
 #include <MeshRepository.hpp>
-#include <MaterialTextures.hpp>
+#include <TextureRepository.hpp>
+
+#include "VulkanRenderer.hpp"
 
 namespace RtEngine {
 	class Material;
 
-	struct RuntimeContext {
+	struct EngineContext {
+		std::shared_ptr<VulkanRenderer> renderer;
 		std::shared_ptr<TextureRepository> texture_repository;
 		std::shared_ptr<MeshRepository> mesh_repository;
-
-		std::weak_ptr<Material> curr_material;
 	};
 } // namespace RtEngine
 

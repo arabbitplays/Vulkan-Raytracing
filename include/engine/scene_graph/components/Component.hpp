@@ -1,9 +1,8 @@
 #ifndef COMPONENT_HPP
 #define COMPONENT_HPP
 #include <PropertiesManager.hpp>
-#include <RuntimeContext.hpp>
-#include <IRenderable.hpp>
-#include "VulkanRenderer.hpp"
+
+#include "EngineContext.hpp"
 
 namespace RtEngine {
 	class Node;
@@ -13,7 +12,7 @@ namespace RtEngine {
 	class Component {
 	public:
 		Component() = default;
-		Component(const std::shared_ptr<RuntimeContext>& context, const std::shared_ptr<Node>& node) : node(node), context(context){};
+		Component(const std::shared_ptr<EngineContext>& context, const std::shared_ptr<Node>& node) : node(node), context(context){};
 		virtual ~Component() = default;
 
 		virtual void OnStart() = 0;
@@ -37,7 +36,7 @@ namespace RtEngine {
 		};
 
 		std::weak_ptr<Node> node;
-		std::shared_ptr<RuntimeContext> context;
+		std::shared_ptr<EngineContext> context;
 
 	protected:
 		std::shared_ptr<PropertiesManager> properties;

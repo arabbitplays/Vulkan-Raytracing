@@ -5,8 +5,8 @@
 #include "../../../include/engine/runner/Runner.hpp"
 
 namespace RtEngine {
-    Runner::Runner(std::shared_ptr<VulkanRenderer> renderer, std::shared_ptr<GuiManager> gui_manager, std::shared_ptr<SceneManager> scene_manager) : renderer(renderer), gui_manager(gui_manager), scene_manager(scene_manager) {
-        scene_reader = std::make_shared<SceneReader>(renderer->getRuntimeContext());
+    Runner::Runner(std::shared_ptr<EngineContext> engine_context, std::shared_ptr<GuiManager> gui_manager, std::shared_ptr<SceneManager> scene_manager) : renderer(engine_context->renderer), gui_manager(gui_manager), scene_manager(scene_manager) {
+        scene_reader = std::make_shared<SceneReader>(engine_context);
     }
 
     std::string Runner::getScenePath() const {

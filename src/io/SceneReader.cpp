@@ -1,9 +1,7 @@
 #include "SceneReader.hpp"
 
-#include <AccelerationStructure.hpp>
 #include <InteractiveCamera.hpp>
 #include <MeshRenderer.hpp>
-#include <MetalRoughMaterial.hpp>
 #include <Node.hpp>
 #include <QuickTimer.hpp>
 #include <Rigidbody.hpp>
@@ -11,6 +9,9 @@
 #include <YAML_glm.hpp>
 #include <glm/gtx/quaternion.hpp>
 #include <spdlog/spdlog.h>
+#include "Material.hpp"
+
+#include "resources/EnvironmentMap.hpp"
 
 namespace RtEngine {
 	std::shared_ptr<Scene>
@@ -28,7 +29,7 @@ namespace RtEngine {
 			// TODO remove vulkan context from reader?
 			std::shared_ptr<Scene> scene =
 					std::make_shared<Scene>(file_path, materials[material_name]);
-			scene->environment_map = std::make_shared<EnvironmentMap>(runtime_context->texture_repository);
+			scene->environment_map = std::make_shared<EnvironmentMap>(engine_context->texture_repository);
 
 			scene->camera = loadCamera(scene_node["camera"]);
 			loadSceneLights(scene_node["lights"], scene);
@@ -39,7 +40,7 @@ namespace RtEngine {
 
 			for (const auto &mesh_node: scene_node["meshes"]) {
 				std::string mesh_path = mesh_node["path"].as<std::string>();
-				runtime_context->mesh_repository->addMesh(mesh_path);
+				engine_context->mesh_repository->addMesh(mesh_path);
 			}
 
 			initializeMaterial(scene_node["materials"], materials[material_name]);
@@ -88,7 +89,6 @@ namespace RtEngine {
 	}
 
 	void SceneReader::initializeMaterial(const YAML::Node &material_nodes, std::shared_ptr<Material> &material) {
-		runtime_context->curr_material = material;
 		for (const auto &material_node: material_nodes) {
 			material->loadInstance(material_node);
 		}
@@ -121,7 +121,7 @@ namespace RtEngine {
 				scene_node->transform->initProperties(comp_node);
 			} else if (comp_name == MeshRenderer::COMPONENT_NAME) {
 				std::shared_ptr<MeshRenderer> mesh_component =
-						std::make_shared<MeshRenderer>(runtime_context, scene_node);
+						std::make_shared<MeshRenderer>(engine_context, scene_node);
 				mesh_component->initProperties(comp_node);
 				scene_node->addComponent(mesh_component);
 			} else if (comp_name == Rigidbody::COMPONENT_NAME) {

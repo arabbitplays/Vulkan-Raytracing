@@ -11,7 +11,7 @@
 namespace RtEngine {
     class Runner {
     public:
-        Runner(std::shared_ptr<VulkanRenderer> renderer, std::shared_ptr<GuiManager> gui_manager, std::shared_ptr<SceneManager> scene_manager);
+        Runner(std::shared_ptr<EngineContext> engine_context, std::shared_ptr<GuiManager> gui_manager, std::shared_ptr<SceneManager> scene_manager);
 
         std::string getScenePath() const;
         void loadScene(const std::string &scene_path);

@@ -45,12 +45,12 @@ namespace RtEngine {
 
 	void VulkanRenderer::initVulkan() {
 		createVulkanContext();
-		createRuntimeContext();
+		createRepositories();
 		createMainDrawContext();
 
-		scene_manager = std::make_shared<SceneAdapter>(vulkan_context, runtime_context, mainDrawContext->max_frames_in_flight,
+		scene_adapter = std::make_shared<SceneAdapter>(vulkan_context, texture_repository, mainDrawContext->max_frames_in_flight,
 													   DeviceManager::RAYTRACING_PROPERTIES);
-		mainDeletionQueue.pushFunction([&]() { scene_manager->clearResources(); });
+		mainDeletionQueue.pushFunction([&]() { scene_adapter->clearResources(); });
 
 		createCommandBuffers();
 		createSyncObjects();
@@ -81,14 +81,13 @@ namespace RtEngine {
 		});
 	}
 
-	void VulkanRenderer::createRuntimeContext() {
-		runtime_context = std::make_shared<RuntimeContext>();
-		runtime_context->mesh_repository = std::make_shared<MeshRepository>(vulkan_context, base_options->resources_dir);
-		runtime_context->texture_repository = std::make_shared<TextureRepository>(vulkan_context->resource_builder);
+	void VulkanRenderer::createRepositories() {
+		mesh_repository = std::make_shared<MeshRepository>(vulkan_context, base_options->resources_dir);
+		texture_repository = std::make_shared<TextureRepository>(vulkan_context->resource_builder);
 
 		mainDeletionQueue.pushFunction([&]() {
-			runtime_context->mesh_repository->destroy();
-			runtime_context->texture_repository->destroy();
+			mesh_repository->destroy();
+			texture_repository->destroy();
 		});
 	}
 
@@ -126,7 +125,7 @@ namespace RtEngine {
 		vkDeviceWaitIdle(vulkan_context->device_manager->getDevice()); // TODO is this needed?
 		mainDrawContext->target->resetAccumulatedFrames();
 
-		scene_manager->loadNewScene(scene);
+		scene_adapter->loadNewScene(scene);
 		properties_manager->addPropertySection(scene->getMaterial()->getProperties());
 	}
 
@@ -176,7 +175,7 @@ namespace RtEngine {
 	}
 
 	void VulkanRenderer::update() {
-		scene_manager->updateScene(mainDrawContext);
+		scene_adapter->updateScene(mainDrawContext);
 	}
 
 	void VulkanRenderer::waitForNextFrameStart() {
@@ -291,7 +290,7 @@ namespace RtEngine {
 	}
 
 	void VulkanRenderer::recordRenderToImage(VkCommandBuffer commandBuffer) {
-		Pipeline pipeline = *scene_manager->getMaterial()->pipeline;
+		Pipeline pipeline = *scene_adapter->getMaterial()->pipeline;
 
 		const uint32_t handleSizeAligned =
 				VulkanUtil::alignedSize(DeviceManager::RAYTRACING_PROPERTIES.shaderGroupHandleSize,
@@ -315,8 +314,8 @@ namespace RtEngine {
 		VkStridedDeviceAddressRegionKHR callableShaderSbtEntry{};
 
 		std::vector<VkDescriptorSet> descriptor_sets{};
-		descriptor_sets.push_back(scene_manager->getSceneDescriptorSet(mainDrawContext->currentFrame));
-		descriptor_sets.push_back(scene_manager->getMaterial()->materialDescriptorSet);
+		descriptor_sets.push_back(scene_adapter->getSceneDescriptorSet(mainDrawContext->currentFrame));
+		descriptor_sets.push_back(scene_adapter->getMaterial()->materialDescriptorSet);
 
 		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, pipeline.getHandle());
 		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, pipeline.getLayoutHandle(), 0,
@@ -459,19 +458,23 @@ namespace RtEngine {
 	void VulkanRenderer::handleGuiUpdate(uint32_t update_flags) const
 	{
 		mainDrawContext->target->resetAccumulatedFrames();
-		scene_manager->bufferUpdateFlags |= update_flags;
+		scene_adapter->bufferUpdateFlags |= update_flags;
 	}
 
 	std::shared_ptr<VulkanContext> VulkanRenderer::getVulkanContext() {
 		return vulkan_context;
 	}
 
-	std::shared_ptr<RuntimeContext> VulkanRenderer::getRuntimeContext() {
-		return runtime_context;
+	std::shared_ptr<TextureRepository> VulkanRenderer::getTextureRepository() {
+		return texture_repository;
+	}
+
+	std::shared_ptr<MeshRepository> VulkanRenderer::getMeshRepository() {
+		return mesh_repository;
 	}
 
 	std::unordered_map<std::string, std::shared_ptr<Material>> VulkanRenderer::getMaterials() const {
-		return scene_manager->defaultMaterials;
+		return scene_adapter->defaultMaterials;
 	}
 
 	std::shared_ptr<RenderTarget> VulkanRenderer::getRenderTarget() const {
@@ -485,5 +488,4 @@ namespace RtEngine {
 	VkExtent2D VulkanRenderer::getSwapchainExtent() {
 		return vulkan_context->swapchain->extent;
 	}
-
 } // namespace RtEngine

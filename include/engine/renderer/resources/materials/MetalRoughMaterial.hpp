@@ -20,9 +20,9 @@ namespace RtEngine {
 			int32_t normal_mapping = 0, sample_lights = 0, sample_bsdf = 0, russian_roulette = 0;
 		};
 
-		MetalRoughMaterial(std::shared_ptr<VulkanContext> context, std::shared_ptr<RuntimeContext> runtime_context,
+		MetalRoughMaterial(std::shared_ptr<VulkanContext> context, std::shared_ptr<TextureRepository> tex_repo,
 						   VkSampler sampler) :
-			Material(METAL_ROUGH_MATERIAL_NAME, context, runtime_context), sampler(sampler) {}
+			Material(METAL_ROUGH_MATERIAL_NAME, context, tex_repo), sampler(sampler) {}
 
 		void buildPipelines(VkDescriptorSetLayout sceneLayout) override;
 		void writeMaterial(AllocatedBuffer material_buffer, std::shared_ptr<MaterialTextures<>> material_textures) override;

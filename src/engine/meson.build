@@ -3,7 +3,6 @@
 subdir('ui')
 subdir('builders')
 subdir('runner')
-subdir('resources')
 subdir('renderer')
 subdir('camera')
 subdir('scene_graph')

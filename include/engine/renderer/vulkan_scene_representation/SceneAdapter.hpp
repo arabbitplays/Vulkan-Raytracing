@@ -27,15 +27,15 @@ namespace RtEngine {
 
 		SceneAdapter() = default;
 		SceneAdapter(const std::shared_ptr<VulkanContext> &vulkanContext,
-					 const std::shared_ptr<RuntimeContext>& runtime_context,
+					 const std::shared_ptr<TextureRepository>& texture_repository,
 					 const uint32_t max_frames_in_flight,
 					 const VkPhysicalDeviceRayTracingPipelinePropertiesKHR& raytracingProperties) :
-			vulkan_context(vulkanContext), runtime_context(runtime_context),
+			vulkan_context(vulkanContext), texture_repository(texture_repository),
 			max_frames_in_flight(max_frames_in_flight) {
 
 			instance_manager = std::make_shared<InstanceManager>(vulkan_context->resource_builder);
 			geometry_manager = std::make_shared<GeometryManager>(vulkan_context);
-			material_manager = std::make_shared<MaterialManager>(vulkan_context->resource_builder, runtime_context->texture_repository);
+			material_manager = std::make_shared<MaterialManager>(vulkan_context->resource_builder, texture_repository);
 
 			main_deletion_queue.pushFunction([&]() {
 				geometry_manager->destroy();
@@ -68,7 +68,7 @@ namespace RtEngine {
 		VkDescriptorSet getSceneDescriptorSet(uint32_t frame_index) const;
 
 		std::shared_ptr<VulkanContext> vulkan_context;
-		std::shared_ptr<RuntimeContext> runtime_context;
+		std::shared_ptr<TextureRepository> texture_repository;
 		uint32_t bufferUpdateFlags = 0;
 
 		std::unordered_map<std::string, std::shared_ptr<Material>> defaultMaterials;

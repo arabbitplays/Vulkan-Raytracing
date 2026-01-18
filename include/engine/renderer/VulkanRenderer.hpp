@@ -16,9 +16,9 @@
 #include "DescriptorAllocator.hpp"
 #include "SceneAdapter.hpp"
 
-#include <RuntimeContext.hpp>
 #include <VulkanContext.hpp>
 #include "DeletionQueue.hpp"
+#include "MeshRepository.hpp"
 #include "Window.hpp"
 
 namespace RtEngine {
@@ -47,7 +47,9 @@ namespace RtEngine {
 
 		void cleanup();
 
-		std::shared_ptr<RuntimeContext> getRuntimeContext();
+		std::shared_ptr<TextureRepository> getTextureRepository();
+		std::shared_ptr<MeshRepository> getMeshRepository();
+
 		std::unordered_map<std::string, std::shared_ptr<Material>> getMaterials() const;
 
 		std::shared_ptr<RenderTarget> getRenderTarget() const;
@@ -68,7 +70,8 @@ namespace RtEngine {
 		std::shared_ptr<BaseOptions> base_options;
 
 		std::shared_ptr<VulkanContext> vulkan_context;
-		std::shared_ptr<RuntimeContext> runtime_context;
+		std::shared_ptr<TextureRepository> texture_repository;
+		std::shared_ptr<MeshRepository> mesh_repository;
 
 		std::vector<VkCommandBuffer> commandBuffers;
 
@@ -76,7 +79,7 @@ namespace RtEngine {
 		std::shared_ptr<PropertiesManager> properties_manager;
 		std::shared_ptr<PropertiesSection> renderer_properties;
 
-		std::shared_ptr<SceneAdapter> scene_manager;
+		std::shared_ptr<SceneAdapter> scene_adapter;
 
 		std::vector<VkSemaphore> imageAvailableSemaphores;
 		std::vector<VkSemaphore> renderFinishedSemaphores;
@@ -89,7 +92,7 @@ namespace RtEngine {
 		void initWindow();
 		void initVulkan();
 		void createVulkanContext();
-		void createRuntimeContext();
+		void createRepositories();
 
 		void createMainDrawContext();
 

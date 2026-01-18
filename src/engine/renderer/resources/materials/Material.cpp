@@ -11,8 +11,10 @@ namespace RtEngine {
 		return result;
 	}
 
-	std::shared_ptr<MaterialInstance> Material::getInstanceByName(const std::string& name) {
-		return instances[name];
+	std::shared_ptr<MaterialInstance> Material::getInstanceByName(const std::string& instance_name) {
+		if (!instances.contains(instance_name))
+			return nullptr;
+		return instances[instance_name];
 	}
 
 	std::shared_ptr<PropertiesSection> Material::getProperties() {

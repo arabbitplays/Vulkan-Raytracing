@@ -2,7 +2,7 @@
 #define MODELLOADER_HPP
 
 #include <MeshAsset.hpp>
-#include <Vertex.hpp>
+#include <../renderer/resources/Vertex.hpp>
 #include <string.h>
 #include <vector>
 

@@ -26,6 +26,7 @@ namespace RtEngine {
         createWindow();
         createRenderer();
         createGuiManager();
+        createEngineContext();
         createRunner();
     }
 
@@ -89,6 +90,13 @@ namespace RtEngine {
         guiManager->addWindow(hierarchy_window);
     }
 
+    void Engine::createEngineContext() {
+        engine_context = std::make_shared<EngineContext>();
+        engine_context->renderer = vulkan_renderer;
+        engine_context->texture_repository = vulkan_renderer->getTextureRepository();
+        engine_context->mesh_repository = vulkan_renderer->getMeshRepository();
+    }
+
     void Engine::createRunner() {
         /*if (options->runner_type == OFFLINE) {
             vulkan_renderer = std::make_shared<VulkanRenderer>();
@@ -102,7 +110,7 @@ namespace RtEngine {
             return;
         }*/
 
-        runner = std::make_shared<Runner>(vulkan_renderer, guiManager, scene_manager);
+        runner = std::make_shared<Runner>(engine_context, guiManager, scene_manager);
     }
 
     void Engine::cleanup() {
