@@ -10,15 +10,14 @@
 
 namespace RtEngine {
 
-	void SceneManager::createScene(const std::string& scene_path) {
+	void SceneManager::loadNewScene(const std::shared_ptr<Scene> &new_scene) {
 		QuickTimer timer{"Scene Creation", true};
 
 		if (scene != nullptr) {
 			scene_resource_deletion_queue.flush();
 		}
 
-		SceneReader reader = SceneReader(runtime_context);
-		scene = reader.readScene(scene_path, defaultMaterials);
+		scene = new_scene;
 
 		setupNewScene(scene);
 		updateGeometryResources(scene);

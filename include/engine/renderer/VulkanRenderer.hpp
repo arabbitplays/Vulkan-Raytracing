@@ -30,6 +30,14 @@ namespace RtEngine {
 		virtual ~VulkanRenderer() = default;
 		void init(const std::shared_ptr<BaseOptions> &base_options, std::shared_ptr<Window> window);
 
+		void loadScene(std::shared_ptr<Scene> scene);
+		void update();
+		virtual void drawFrame();
+		void cleanup();
+
+		std::shared_ptr<RuntimeContext> getRuntimeContext();
+		std::unordered_map<std::string, std::shared_ptr<Material>> getMaterials() const;
+
 	protected:
 		std::shared_ptr<Window> window;
 		std::shared_ptr<GuiManager> guiManager;
@@ -67,8 +75,6 @@ namespace RtEngine {
 		std::shared_ptr<RenderTarget> createRenderTarget();
 
 		void initGui();
-		virtual void mainLoop();
-		void cleanup();
 
 		static bool hasStencilComponent(VkFormat format);
 
@@ -78,7 +84,6 @@ namespace RtEngine {
 
 		void pollSdlEvents();
 
-		virtual void drawFrame();
 		int32_t aquireNextSwapchainImage();
 		void submitCommandBuffer(std::vector<VkSemaphore> wait_semaphore, std::vector<VkSemaphore> signal_semaphore);
 		void presentSwapchainImage(const std::vector<VkSemaphore>& wait_semaphore, uint32_t image_index);
@@ -94,7 +99,6 @@ namespace RtEngine {
 		void recordCopyToSwapchain(VkCommandBuffer commandBuffer, uint32_t swapchain_image_index);
 		void recordEndCommandBuffer(VkCommandBuffer commandBuffer);
 
-		void loadScene();
 		virtual void initProperties();
 		void initSceneSelectionProperty() const;
 

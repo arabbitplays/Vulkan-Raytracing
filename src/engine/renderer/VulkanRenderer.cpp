@@ -36,10 +36,6 @@ namespace RtEngine {
 		initWindow();
 		initVulkan();
 		initGui();
-
-		mainLoop();
-
-		cleanup();
 	}
 
 	void VulkanRenderer::initWindow() {
@@ -162,17 +158,12 @@ namespace RtEngine {
 		return format == VK_FORMAT_D32_SFLOAT_S8_UINT || format == VK_FORMAT_D24_UNORM_S8_UINT;
 	}
 
-	void VulkanRenderer::loadScene() {
-		assert(!base_options->curr_scene_name.empty());
+	void VulkanRenderer::loadScene(std::shared_ptr<Scene> scene) {
 		vkDeviceWaitIdle(vulkan_context->device_manager->getDevice()); // TODO is this needed?
 		mainDrawContext->target->resetAccumulatedFrames();
-		std::string path = base_options->resources_dir + "/scenes/" +
-						   base_options->curr_scene_name;
-		scene_manager->createScene(path);
-		properties_manager->addPropertySection(scene_manager->scene->material->getProperties());
 
-		SceneWriter writer;
-		writer.writeScene(PathUtil::getFileName(scene_manager->getSceneInformation().path), scene_manager->scene);
+		scene_manager->loadNewScene(scene);
+		properties_manager->addPropertySection(scene_manager->scene->material->getProperties());
 	}
 
 	void VulkanRenderer::createCommandBuffers() {
@@ -220,18 +211,8 @@ namespace RtEngine {
 		}
 	}
 
-	void VulkanRenderer::mainLoop() {
-		while (window->is_open()) {
-			window->pollEvents();
-
-			if (PathUtil::getFile(scene_manager->getSceneInformation().path) != base_options->curr_scene_name) {
-				loadScene();
-			}
-			scene_manager->updateScene(mainDrawContext);
-			drawFrame();
-		}
-
-		vkDeviceWaitIdle(vulkan_context->device_manager->getDevice());
+	void VulkanRenderer::update() {
+		scene_manager->updateScene(mainDrawContext);
 	}
 
 	void VulkanRenderer::drawFrame() {
@@ -431,6 +412,8 @@ namespace RtEngine {
 	}
 
 	void VulkanRenderer::cleanup() {
+		vkDeviceWaitIdle(vulkan_context->device_manager->getDevice());
+
 		mainDeletionQueue.flush();
 		window->destroy();
 	}
@@ -509,6 +492,14 @@ namespace RtEngine {
 	{
 		mainDrawContext->target->resetAccumulatedFrames();
 		scene_manager->bufferUpdateFlags |= update_flags;
+	}
+
+	std::shared_ptr<RuntimeContext> VulkanRenderer::getRuntimeContext() {
+		return runtime_context;
+	}
+
+	std::unordered_map<std::string, std::shared_ptr<Material>> VulkanRenderer::getMaterials() const {
+		return scene_manager->defaultMaterials;
 	}
 
 } // namespace RtEngine

@@ -13,7 +13,6 @@ namespace RtEngine {
 		RealtimeRunner() { max_frames_in_flight = 2; };
 
 	protected:
-		void mainLoop() override;
 	};
 } // namespace RtEngine
 

@@ -49,7 +49,7 @@ namespace RtEngine {
 			initDefaultResources(raytracingProperties);
 		}
 
-		void createScene(const std::string& scene_path);
+		void loadNewScene(const std::shared_ptr<Scene> &new_scene);
 
 		void setupNewScene(const std::shared_ptr<Scene>& scene);
 
@@ -75,6 +75,8 @@ namespace RtEngine {
 		std::shared_ptr<Scene> scene;
 		uint32_t bufferUpdateFlags = 0;
 
+		std::unordered_map<std::string, std::shared_ptr<Material>> defaultMaterials;
+
 	private:
 		void createSceneLayout();
 		void createSceneDescriptorSets(const VkDescriptorSetLayout &layout);
@@ -97,8 +99,6 @@ namespace RtEngine {
 		VkSampler defaultSamplerLinear;
 		VkSampler defaultSamplerNearest;
 		VkSampler defaultSamplerAnisotropic;
-
-		std::unordered_map<std::string, std::shared_ptr<Material>> defaultMaterials;
 
 		std::shared_ptr<GeometryManager> geometry_manager;
 		std::shared_ptr<InstanceManager> instance_manager;

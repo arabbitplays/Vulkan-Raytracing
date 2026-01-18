@@ -5,10 +5,10 @@ namespace RtEngine {
 	constexpr std::string SAMPLE_COUNT_OPTION_NAME = "Sample_Count";
 	constexpr std::string REFERENCE_IMAGE_PATH_OPTION_NAME = "Reference_Image";
 
-	void BenchmarkRunner::mainLoop() {
+	/*void BenchmarkRunner::mainLoop() {
 		omp_set_num_threads(omp_get_max_threads());
 
-		loadScene();
+		loadScene(TODO);
 		reference_image_data = vulkan_context->resource_builder->loadImageData(reference_image_path, &ref_width,
 																			   &ref_height, &ref_channels);
 
@@ -38,7 +38,7 @@ namespace RtEngine {
 		float mse = calculateMSEToReference();
 		spdlog::info("Sample count: {}, Final Error: {:f}", curr_sample_count, mse);
 		stbi_image_free(reference_image_data);
-	}
+	}*/
 
 	void BenchmarkRunner::drawFrame() {
 		vkWaitForFences(vulkan_context->device_manager->getDevice(), 1, &inFlightFences[mainDrawContext->currentFrame], VK_TRUE,

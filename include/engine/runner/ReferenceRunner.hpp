@@ -6,7 +6,6 @@
 
 namespace RtEngine {
 	class ReferenceRunner : public VulkanRenderer {
-		void mainLoop() override;
 		void drawFrame() override;
 		void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex) override;
 		void initProperties() override;

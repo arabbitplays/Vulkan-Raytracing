@@ -6,12 +6,21 @@
 
 #include "BenchmarkRunner.hpp"
 #include "CommandLineParser.hpp"
+#include "PathUtil.hpp"
 #include "RealtimeRunner.hpp"
 #include "ReferenceRunner.hpp"
 
 namespace RtEngine {
     void Engine::run(CliArguments cli_args) {
         parseCliArguments(cli_args);
+
+        init();
+        mainLoop();
+        cleanup();
+    }
+
+    void Engine::init() {
+        window = std::make_shared<Window>(1920, 1040);
 
         if (options->runner_type == OFFLINE) {
             vulkan_renderer = std::make_shared<VulkanRenderer>();
@@ -25,22 +34,30 @@ namespace RtEngine {
             return;
         }
 
-        init();
-    }
-
-    void Engine::init() {
-        window = std::make_shared<Window>(1920, 1040);
-
-        auto renderer_options = std::make_shared<BaseOptions>();
+        renderer_options = std::make_shared<BaseOptions>();
         renderer_options->resources_dir = options->resources_dir;
         renderer_options->config_file = options->config_file;
         vulkan_renderer->init(renderer_options, window);
+
+        runner = std::make_shared<Runner>(vulkan_renderer);
     }
 
     void Engine::mainLoop() {
+        while (window->is_open()) {
+            window->pollEvents();
 
+            if (PathUtil::getFile(runner->getScenePath()) != renderer_options->curr_scene_name) {
+                std::string path = renderer_options->resources_dir + "/scenes/" +
+                           renderer_options->curr_scene_name;
+                runner->loadScene(path);
+            }
+            runner->renderScene();
+        }
     }
 
+    void Engine::cleanup() {
+        vulkan_renderer->cleanup();
+    }
 
     void Engine::parseCliArguments(CliArguments cli_args) {
         options = std::make_shared<EngineOptions>();

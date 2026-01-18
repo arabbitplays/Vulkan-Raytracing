@@ -4,7 +4,6 @@
 
 namespace RtEngine {
 	class BenchmarkRunner : public VulkanRenderer {
-		void mainLoop() override;
 		void drawFrame() override;
 		void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex) override;
 

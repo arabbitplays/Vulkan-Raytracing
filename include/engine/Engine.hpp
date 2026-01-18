@@ -45,8 +45,11 @@ namespace RtEngine {
 
         void mainLoop();
 
+        void cleanup();
+
     private:
         std::shared_ptr<EngineOptions> options;
+        std::shared_ptr<BaseOptions> renderer_options;
 
         std::shared_ptr<Window> window;
         std::shared_ptr<VulkanRenderer> vulkan_renderer;

@@ -3,8 +3,8 @@
 namespace RtEngine {
 	constexpr std::string SAMPLE_COUNT_OPTION_NAME = "Sample_Count";
 
-	void ReferenceRunner::mainLoop() {
-		loadScene();
+	/*void ReferenceRunner::mainLoop() {
+		loadScene(TODO);
 
 		stopwatch.reset();
 
@@ -23,7 +23,7 @@ namespace RtEngine {
 		}
 
 		vkDeviceWaitIdle(vulkan_context->device_manager->getDevice());
-	}
+	}*/
 
 	void ReferenceRunner::drawFrame() {
 		vkWaitForFences(vulkan_context->device_manager->getDevice(), 1, &inFlightFences[mainDrawContext->currentFrame], VK_TRUE,

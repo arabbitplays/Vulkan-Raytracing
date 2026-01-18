@@ -4,6 +4,7 @@
 
 #ifndef VULKAN_RAYTRACING_RUNNER_HPP
 #define VULKAN_RAYTRACING_RUNNER_HPP
+#include "SceneReader.hpp"
 #include "VulkanRenderer.hpp"
 
 namespace RtEngine {
@@ -11,10 +12,12 @@ namespace RtEngine {
     public:
         Runner(std::shared_ptr<VulkanRenderer> renderer);
 
-        void loadScene();
+        std::string getScenePath() const;
+        void loadScene(const std::string &scene_path);
         void renderScene();
     private:
         std::shared_ptr<VulkanRenderer> renderer;
+        std::shared_ptr<SceneReader> scene_reader;
 
         std::shared_ptr<Scene> scene;
     };

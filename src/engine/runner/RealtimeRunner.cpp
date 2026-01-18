@@ -9,12 +9,12 @@
 #define SAMPLES_PER_PIXEL 100
 
 namespace RtEngine {
-	void RealtimeRunner::mainLoop() {
+	/*void RealtimeRunner::mainLoop() {
 		mainDrawContext->target->setSamplesPerFrame(SAMPLES_PER_PIXEL);
 		while (window->is_open()) {
 			window->pollEvents();
 			if (PathUtil::getFile(scene_manager->getSceneInformation().path) != base_options->curr_scene_name) {
-				loadScene();
+				loadScene(TODO);
 			}
 			scene_manager->updateScene(mainDrawContext);
 
@@ -23,5 +23,5 @@ namespace RtEngine {
 		}
 
 		vkDeviceWaitIdle(vulkan_context->device_manager->getDevice());
-	}
+	}*/
 } // namespace RtEngine
