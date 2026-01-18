@@ -23,7 +23,23 @@ namespace RtEngine {
     }
 
     void Runner::renderScene() {
-        renderer->update();
-        renderer->drawFrame();
+        drawFrame();
     }
+
+    void Runner::drawFrame() {
+        renderer->waitForNextFrameStart();
+
+        const int32_t swapchain_image_idx = renderer->aquireNextSwapchainImage();
+        if (swapchain_image_idx < 0)
+            return;
+
+        renderer->resetCurrFrame();
+
+        renderer->update();
+        renderer->recordCommands(swapchain_image_idx);
+
+        renderer->submitCommands(true, swapchain_image_idx);
+    }
+
+
 } // RtEngine

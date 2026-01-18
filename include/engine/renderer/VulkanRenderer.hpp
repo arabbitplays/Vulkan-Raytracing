@@ -32,7 +32,17 @@ namespace RtEngine {
 
 		void loadScene(std::shared_ptr<Scene> scene);
 		void update();
+
 		virtual void drawFrame();
+
+		void waitForNextFrameStart();
+		void resetCurrFrame();
+
+
+		int32_t aquireNextSwapchainImage();
+		void recordCommands(int32_t swapchain_image_idx);
+		void submitCommands(bool present, int32_t swapchain_image_idx);
+
 		void cleanup();
 
 		std::shared_ptr<RuntimeContext> getRuntimeContext();
@@ -84,7 +94,8 @@ namespace RtEngine {
 
 		void pollSdlEvents();
 
-		int32_t aquireNextSwapchainImage();
+
+
 		void submitCommandBuffer(std::vector<VkSemaphore> wait_semaphore, std::vector<VkSemaphore> signal_semaphore);
 		void presentSwapchainImage(const std::vector<VkSemaphore>& wait_semaphore, uint32_t image_index);
 
@@ -93,7 +104,7 @@ namespace RtEngine {
 		void outputRenderingTarget(const std::string &output_path);
 		uint8_t *fixImageFormatForStorage(void *image_data, size_t pixel_count, VkFormat originalFormat);
 
-		virtual void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
+		virtual void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t swapchain_image_idx);
 		void recordBeginCommandBuffer(VkCommandBuffer commandBuffer);
 		void recordRenderToImage(VkCommandBuffer commandBuffer);
 		void recordCopyToSwapchain(VkCommandBuffer commandBuffer, uint32_t swapchain_image_index);

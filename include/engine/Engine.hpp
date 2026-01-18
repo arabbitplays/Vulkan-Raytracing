@@ -45,6 +45,10 @@ namespace RtEngine {
 
         void mainLoop();
 
+        void createRenderer();
+
+        void createRunner();
+
         void cleanup();
 
     private:

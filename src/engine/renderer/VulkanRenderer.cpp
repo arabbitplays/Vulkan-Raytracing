@@ -236,6 +236,11 @@ namespace RtEngine {
 		mainDrawContext->nextFrame();
 	}
 
+	void VulkanRenderer::waitForNextFrameStart() {
+		vkWaitForFences(vulkan_context->device_manager->getDevice(), 1, &inFlightFences[mainDrawContext->currentFrame], VK_TRUE,
+						UINT64_MAX);
+	}
+
 	int32_t VulkanRenderer::aquireNextSwapchainImage() {
 		uint32_t imageIndex;
 		VkResult result =
@@ -249,6 +254,23 @@ namespace RtEngine {
 			throw std::runtime_error("failed to acquire swap chain image!");
 		}
 		return static_cast<int32_t>(imageIndex);
+	}
+
+	void VulkanRenderer::resetCurrFrame() {
+		vkResetFences(vulkan_context->device_manager->getDevice(), 1, &inFlightFences[mainDrawContext->currentFrame]);
+	}
+
+	void VulkanRenderer::submitCommands(bool present, int32_t swapchain_image_idx) {
+		if (present) {
+			std::vector<VkSemaphore> waitSemaphore = {imageAvailableSemaphores[mainDrawContext->currentFrame]};
+			std::vector<VkSemaphore> signalSemaphore = {renderFinishedSemaphores[mainDrawContext->currentFrame]};
+			submitCommandBuffer(waitSemaphore, signalSemaphore);
+			presentSwapchainImage(signalSemaphore, swapchain_image_idx);
+		} else {
+			submitCommandBuffer({} , {});
+		}
+
+		mainDrawContext->nextFrame();
 	}
 
 	void VulkanRenderer::submitCommandBuffer(std::vector<VkSemaphore> wait_semaphore,
@@ -303,11 +325,16 @@ namespace RtEngine {
 		scene_manager->updateScene(mainDrawContext);
 	}
 
-	void VulkanRenderer::recordCommandBuffer(VkCommandBuffer commandBuffer, const uint32_t imageIndex) {
+	void VulkanRenderer::recordCommands(int32_t swapchain_image_idx) {
+		vkResetCommandBuffer(commandBuffers[mainDrawContext->currentFrame], 0);
+		recordCommandBuffer(commandBuffers[mainDrawContext->currentFrame], swapchain_image_idx);
+	}
+
+	void VulkanRenderer::recordCommandBuffer(VkCommandBuffer commandBuffer, const uint32_t swapchain_image_idx) {
 		recordBeginCommandBuffer(commandBuffer);
 		recordRenderToImage(commandBuffer);
-		recordCopyToSwapchain(commandBuffer, imageIndex);
-		guiManager->recordGuiCommands(commandBuffer, imageIndex);
+		recordCopyToSwapchain(commandBuffer, swapchain_image_idx);
+		guiManager->recordGuiCommands(commandBuffer, swapchain_image_idx);
 		recordEndCommandBuffer(commandBuffer);
 	}
 

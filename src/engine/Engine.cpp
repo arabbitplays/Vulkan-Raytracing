@@ -22,24 +22,9 @@ namespace RtEngine {
     void Engine::init() {
         window = std::make_shared<Window>(1920, 1040);
 
-        if (options->runner_type == OFFLINE) {
-            vulkan_renderer = std::make_shared<VulkanRenderer>();
-        } else if (options->runner_type == REALTIME) {
-            vulkan_renderer = std::make_shared<RealtimeRunner>();
-        } else if (options->runner_type == REFERENCE) {
-            vulkan_renderer = std::make_shared<ReferenceRunner>();
-        } else if (options->runner_type == REFERENCE) {
-            vulkan_renderer = std::make_shared<BenchmarkRunner>();
-        } else {
-            return;
-        }
+        createRenderer();
+        createRunner();
 
-        renderer_options = std::make_shared<BaseOptions>();
-        renderer_options->resources_dir = options->resources_dir;
-        renderer_options->config_file = options->config_file;
-        vulkan_renderer->init(renderer_options, window);
-
-        runner = std::make_shared<Runner>(vulkan_renderer);
     }
 
     void Engine::mainLoop() {
@@ -53,6 +38,31 @@ namespace RtEngine {
             }
             runner->renderScene();
         }
+    }
+
+    void Engine::createRenderer() {
+        vulkan_renderer = std::make_shared<VulkanRenderer>();
+
+        renderer_options = std::make_shared<BaseOptions>();
+        renderer_options->resources_dir = options->resources_dir;
+        renderer_options->config_file = options->config_file;
+        vulkan_renderer->init(renderer_options, window);
+    }
+
+    void Engine::createRunner() {
+        /*if (options->runner_type == OFFLINE) {
+            vulkan_renderer = std::make_shared<VulkanRenderer>();
+        } else if (options->runner_type == REALTIME) {
+            vulkan_renderer = std::make_shared<RealtimeRunner>();
+        } else if (options->runner_type == REFERENCE) {
+            vulkan_renderer = std::make_shared<ReferenceRunner>();
+        } else if (options->runner_type == REFERENCE) {
+            vulkan_renderer = std::make_shared<BenchmarkRunner>();
+        } else {
+            return;
+        }*/
+
+        runner = std::make_shared<Runner>(vulkan_renderer);
     }
 
     void Engine::cleanup() {

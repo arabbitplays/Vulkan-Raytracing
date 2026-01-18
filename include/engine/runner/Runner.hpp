@@ -14,7 +14,8 @@ namespace RtEngine {
 
         std::string getScenePath() const;
         void loadScene(const std::string &scene_path);
-        void renderScene();
+        virtual void renderScene();
+        virtual void drawFrame();
     private:
         std::shared_ptr<VulkanRenderer> renderer;
         std::shared_ptr<SceneReader> scene_reader;
