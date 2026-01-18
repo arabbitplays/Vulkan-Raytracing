@@ -6,7 +6,7 @@
 #include <glm/glm.hpp>
 #include <memory>
 
-namespace RtEngine {
+/*namespace RtEngine {
 	class Camera {
 	public:
 		Camera() = default;
@@ -57,5 +57,5 @@ namespace RtEngine {
 		uint32_t image_height;
 	};
 
-} // namespace RtEngine
+} // namespace RtEngine*/
 #endif // CAMERA_HPP

@@ -1,7 +1,6 @@
 #ifndef SCENE_HPP
 #define SCENE_HPP
 
-#include <Camera.hpp>
 #include <MeshAsset.hpp>
 #include <MeshAssetBuilder.hpp>
 #include <Node.hpp>
@@ -61,7 +60,7 @@ namespace RtEngine {
 		void addNode(std::string name, std::shared_ptr<Node> node);
 		std::shared_ptr<Node> getRootNode();
 
-		void update(uint32_t image_width, uint32_t image_height);
+		void update();
 
 		std::vector<std::shared_ptr<MeshAsset>> getMeshAssets() override;
 		std::vector<std::shared_ptr<MaterialInstance>> getMaterialInstances() override;
@@ -71,8 +70,6 @@ namespace RtEngine {
 		void *getSceneData(size_t *size, uint32_t emitting_instances_count) override;
 
 		std::string path;
-
-		std::shared_ptr<Camera> camera;
 
 		std::unordered_map<std::string, std::shared_ptr<Node>> nodes;
 		std::shared_ptr<EnvironmentMap> environment_map;

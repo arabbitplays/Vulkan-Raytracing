@@ -5,7 +5,7 @@
 #include <glm/fwd.hpp>
 #include <glm/vec3.hpp>
 
-namespace RtEngine {
+/*namespace RtEngine {
 	class InteractiveCamera : public Camera {
 	public:
 		static constexpr float MOVE_SPEED = 0.2f;
@@ -40,5 +40,5 @@ namespace RtEngine {
 		glm::mat4 getRotationMatrix() const;
 	};
 
-} // namespace RtEngine
+}*/ // namespace RtEngine
 #endif // INTERACTIVECAMERA_HPP

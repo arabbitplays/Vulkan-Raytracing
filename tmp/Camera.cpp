@@ -1,6 +1,6 @@
 #include "Camera.hpp"
 
-namespace RtEngine {
+/*namespace RtEngine {
 	glm::vec3 Camera::getPosition() const { return position; }
 
 	glm::mat4 Camera::getView() const { return view; }
@@ -11,4 +11,4 @@ namespace RtEngine {
 
 	glm::mat4 Camera::getInverseProjection() const { return inverse_projection; }
 
-} // namespace RtEngine
+}*/ // namespace RtEngine

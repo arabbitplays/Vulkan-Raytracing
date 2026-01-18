@@ -1,6 +1,5 @@
 #include "SceneReader.hpp"
 
-#include <InteractiveCamera.hpp>
 #include <MeshRenderer.hpp>
 #include <Node.hpp>
 #include <QuickTimer.hpp>
@@ -10,6 +9,7 @@
 #include <glm/gtx/quaternion.hpp>
 #include <spdlog/spdlog.h>
 #include "Material.hpp"
+#include "components/Camera.hpp"
 
 #include "resources/EnvironmentMap.hpp"
 
@@ -31,7 +31,6 @@ namespace RtEngine {
 					std::make_shared<Scene>(file_path, materials[material_name]);
 			scene->environment_map = std::make_shared<EnvironmentMap>(engine_context->texture_repository);
 
-			scene->camera = loadCamera(scene_node["camera"]);
 			loadSceneLights(scene_node["lights"], scene);
 
 			if (scene_node["environment_map"]) {
@@ -59,17 +58,6 @@ namespace RtEngine {
 			return scene;
 		} catch (const YAML::Exception &e) {
 			throw std::runtime_error(e.what());
-		}
-	}
-
-	std::shared_ptr<Camera> SceneReader::loadCamera(const YAML::Node &camera_node) const {
-		if (camera_node["interactive"].as<bool>()) {
-			return std::make_shared<InteractiveCamera>(camera_node["fov"].as<float>(), camera_node["position"].as<glm::vec3>(),
-					camera_node["view_dir"].as<glm::vec3>());
-		} else {
-			return std::make_shared<Camera>(camera_node["fov"].as<float>(),
-											camera_node["position"].as<glm::vec3>(),
-											camera_node["view_dir"].as<glm::vec3>());
 		}
 	}
 
@@ -128,6 +116,10 @@ namespace RtEngine {
 				auto rb = std::make_shared<Rigidbody>(scene_node);
 				rb->initProperties(comp_node);
 				scene_node->addComponent(rb);
+			} else if (comp_name == Camera::COMPONENT_NAME) {
+				auto cam = std::make_shared<Camera>(engine_context, scene_node);
+				cam->initProperties(comp_node);
+				scene_node->addComponent(cam);
 			}
 		}
 	}

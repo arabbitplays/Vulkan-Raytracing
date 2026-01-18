@@ -10,6 +10,7 @@ namespace RtEngine {
 	class Material;
 
 	struct EngineContext {
+		std::shared_ptr<Window> window; // TODO Replace this by an input manager
 		std::shared_ptr<VulkanRenderer> renderer;
 		std::shared_ptr<TextureRepository> texture_repository;
 		std::shared_ptr<MeshRepository> mesh_repository;

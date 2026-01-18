@@ -5,7 +5,6 @@
 #include <TransformUtil.hpp>
 #include <YAML_glm.hpp>
 #include <fstream>
-#include <InteractiveCamera.hpp>
 #include <iostream>
 #include <MetalRoughMaterial.hpp>
 #include <spdlog/spdlog.h>
@@ -20,14 +19,6 @@ namespace RtEngine {
 		out << YAML::Key << "scene" << YAML::Value << YAML::BeginMap;
 
 		out << YAML::Key << "material_name" << YAML::Value << scene->material->name;
-
-		out << YAML::Key << "camera" << YAML::Value << YAML::BeginMap;
-		Camera camera = *scene->camera;
-		out << YAML::Key << "position" << YAML::Value << YAML::convert<glm::vec3>::encode(camera.position);
-		out << YAML::Key << "view_dir" << YAML::Value << YAML::convert<glm::vec3>::encode(camera.view_dir);
-		out << YAML::Key << "fov" << YAML::Value << camera.fov;
-		out << YAML::Key << "interactive" << YAML::Value << (typeid(*scene->camera) == typeid(InteractiveCamera));
-		out << YAML::EndMap;
 
 		writeSceneLights(out, scene);
 

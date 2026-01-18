@@ -4,7 +4,6 @@ subdir('ui')
 subdir('builders')
 subdir('runner')
 subdir('renderer')
-subdir('camera')
 subdir('scene_graph')
 subdir('repositories')
 

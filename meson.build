@@ -10,7 +10,6 @@ incdirs = [
     include_directories('include'),
     include_directories('include/engine'),
     include_directories('include/engine/builders'),
-    include_directories('include/engine/camera'),
     include_directories('include/engine/renderer'),
     include_directories('include/engine/renderer/context'),
     include_directories('include/engine/renderer/resources'),

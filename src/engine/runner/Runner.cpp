@@ -35,8 +35,7 @@ namespace RtEngine {
 
         renderer->resetCurrFrame();
 
-        VkExtent2D extent = renderer->getSwapchainExtent();
-        scene_manager->scene->update(extent.width, extent.height);
+        scene_manager->scene->update();
         renderer->update();
 
         VkCommandBuffer command_buffer = renderer->getNewCommandBuffer();

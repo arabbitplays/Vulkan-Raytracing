@@ -44,18 +44,7 @@ namespace RtEngine {
     }
 
     void Engine::createWindow() {
-        // TODO Input Manager
         window = std::make_shared<Window>(1920, 1040);
-        window->addKeyCallback([this](int key, int scancode, int action, int mods) {
-            if (scene_manager->scene != nullptr && scene_manager->scene->camera != nullptr) {
-                scene_manager->scene->camera->processGlfwKeyEvent(key, action);
-            }
-        });
-        window->addMouseCallback([this](double xPos, double yPos) {
-            if (scene_manager->scene != nullptr && scene_manager->scene->camera != nullptr) {
-                scene_manager->scene->camera->processGlfwMouseEvent(xPos, yPos);
-            }
-        });
     }
 
     void Engine::createRenderer() {
@@ -92,6 +81,7 @@ namespace RtEngine {
 
     void Engine::createEngineContext() {
         engine_context = std::make_shared<EngineContext>();
+        engine_context->window = window;
         engine_context->renderer = vulkan_renderer;
         engine_context->texture_repository = vulkan_renderer->getTextureRepository();
         engine_context->mesh_repository = vulkan_renderer->getMeshRepository();

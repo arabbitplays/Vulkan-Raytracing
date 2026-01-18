@@ -52,6 +52,7 @@ namespace RtEngine {
 
 		std::unordered_map<std::string, std::shared_ptr<Material>> getMaterials() const;
 
+		std::shared_ptr<RenderTarget> createRenderTarget();
 		std::shared_ptr<RenderTarget> getRenderTarget() const;
 
 		std::shared_ptr<PropertiesManager> getPropertiesManager();
@@ -96,7 +97,6 @@ namespace RtEngine {
 
 		void createMainDrawContext();
 
-		std::shared_ptr<RenderTarget> createRenderTarget();
 
 		static bool hasStencilComponent(VkFormat format);
 

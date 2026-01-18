@@ -12,7 +12,7 @@ namespace RtEngine {
 
 		void draw(DrawContext &ctx) override;
 		void refreshTransform(const glm::mat4 &parentMatrix);
-		void addComponent(std::shared_ptr<Component> component);
+		void addComponent(const std::shared_ptr<Component> &component);
 		template<typename T>
 		std::shared_ptr<T> getComponent() {
 			for (auto &component: components) {

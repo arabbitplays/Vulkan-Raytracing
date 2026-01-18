@@ -3,12 +3,18 @@
 #include <PhongMaterial.hpp>
 #include <glm/ext/matrix_clip_space.hpp>
 #include <glm/ext/matrix_transform.hpp>
+#include <components/Camera.hpp>
 
 #include "SceneUtil.hpp"
 
 namespace RtEngine {
 	std::shared_ptr<SceneData> Scene::createSceneData(uint32_t emitting_object_count) {
 		auto sceneData = std::make_shared<SceneData>();
+
+		//TODO support multiple
+		std::vector<std::shared_ptr<Camera>> cameras = SceneUtil::collectCameras(getRootNode());
+		assert(cameras.size() > 0);
+		std::shared_ptr<Camera> camera = cameras[0];
 
 		sceneData->inverse_view = camera->getInverseView();
 		sceneData->inverse_proj = camera->getInverseProjection();
@@ -41,9 +47,7 @@ namespace RtEngine {
 
 	std::shared_ptr<Node> Scene::getRootNode() { return nodes["root"]; }
 
-	void Scene::update(uint32_t image_width, uint32_t image_height) {
-		camera->update(image_width, image_height);
-
+	void Scene::update() {
 		getRootNode()->refreshTransform(glm::mat4(1.0f));
 
 		for (auto &node: nodes) {

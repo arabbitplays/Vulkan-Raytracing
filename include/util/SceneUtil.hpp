@@ -8,6 +8,8 @@
 #include <Node.hpp>
 #include <MeshRenderer.hpp>
 
+#include "components/Camera.hpp"
+
 namespace RtEngine {
 	class SceneUtil {
 	public:
@@ -33,6 +35,12 @@ namespace RtEngine {
 			return material_instances;
 		}
 
+		static std::vector<std::shared_ptr<Camera>> collectCameras(const std::shared_ptr<Node> &root_node) {
+			auto cameras = std::make_shared<std::vector<std::shared_ptr<Camera>>>();
+			collectCamerasRecursive(root_node, cameras);
+			return *cameras;
+		}
+
 	private:
 		static void collectMeshAssetsRecursive(
 				const std::shared_ptr<Node> &root_node,
@@ -55,6 +63,18 @@ namespace RtEngine {
 					(*material_map)[mesh_renderer->meshMaterial->name] = mesh_renderer->meshMaterial;
 				}
 				collectMaterialInstancesRecursive(child_node, material_map);
+			}
+		}
+
+		static void collectCamerasRecursive(
+				const std::shared_ptr<Node> &root_node,
+				std::shared_ptr<std::vector<std::shared_ptr<Camera>>> &cameras) {
+			for (auto child_node: root_node->children) {
+				std::shared_ptr<Camera> camera = child_node->getComponent<Camera>();
+				if (camera) {
+					(*cameras).push_back(camera);
+				}
+				collectCamerasRecursive(child_node, cameras);
 			}
 		}
 	};

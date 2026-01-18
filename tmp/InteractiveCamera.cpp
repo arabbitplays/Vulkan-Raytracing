@@ -7,7 +7,7 @@
 #include <glm/gtx/quaternion.hpp>
 #include <spdlog/spdlog.h>
 
-namespace RtEngine {
+/*namespace RtEngine {
 	void InteractiveCamera::update(uint32_t image_width, uint32_t image_height) {
 		glm::mat4 cameraRotation = getRotationMatrix();
 		position += glm::vec3(cameraRotation * glm::vec4(velocity * MOVE_SPEED, 0.f));
@@ -106,4 +106,4 @@ namespace RtEngine {
 
 		return glm::toMat4(yawRotation) * glm::toMat4(pitchRotation);
 	}
-} // namespace RtEngine
+} // namespace RtEngine*/
