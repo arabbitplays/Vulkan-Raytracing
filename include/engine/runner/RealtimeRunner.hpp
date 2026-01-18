@@ -5,12 +5,12 @@
 #ifndef REALTIMERENDERER_HPP
 #define REALTIMERENDERER_HPP
 
-#include <VulkanEngine.hpp>
+#include <../renderer/VulkanRenderer.hpp>
 
 namespace RtEngine {
-	class RealtimeRenderer : public VulkanEngine {
+	class RealtimeRunner : public VulkanRenderer {
 	public:
-		RealtimeRenderer() { max_frames_in_flight = 2; };
+		RealtimeRunner() { max_frames_in_flight = 2; };
 
 	protected:
 		void mainLoop() override;

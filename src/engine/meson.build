@@ -10,4 +10,5 @@ subdir('scene_graph')
 subdir('repositories')
 
 src += files(
+  'Engine.cpp',
 )

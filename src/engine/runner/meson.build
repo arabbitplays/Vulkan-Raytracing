@@ -2,8 +2,7 @@
 
 
 src += files(
-  'RealtimeRenderer.cpp',
-  'ReferenceRenderer.cpp',
-  'VulkanEngine.cpp',
-  'BenchmarkRenderer.cpp',
+  'ReferenceRunner.cpp',
+  'BenchmarkRunner.cpp',
+  'RealtimeRunner.cpp',
 )

@@ -1,11 +1,13 @@
-#include <BenchmarkRenderer.hpp>
+#include <BenchmarkRunner.hpp>
 #include <CommandLineParser.hpp>
-#include <RealtimeRenderer.hpp>
-#include <ReferenceRenderer.hpp>
-#include <VulkanEngine.hpp>
+#include <RealtimeRunner.hpp>
+#include <ReferenceRunner.hpp>
+#include <VulkanRenderer.hpp>
 #include <exception>
 #include <filesystem>
 #include <iostream>
+
+#include "VulkanRenderer.hpp"
 using namespace RtEngine;
 
 int main(int argc, char *argv[]) {
@@ -38,13 +40,13 @@ int main(int argc, char *argv[]) {
 		spdlog::set_level(spdlog::level::debug);
 	}
 
-	std::shared_ptr<VulkanEngine> app;
+	std::shared_ptr<VulkanRenderer> app;
 	if (benchmark) {
-		app = std::make_shared<BenchmarkRenderer>();
+		app = std::make_shared<BenchmarkRunner>();
 	} else if (reference) {
-		app = std::make_shared<ReferenceRenderer>();
+		app = std::make_shared<ReferenceRunner>();
 	} else {
-		app = std::make_shared<VulkanEngine>();
+		app = std::make_shared<VulkanRenderer>();
 	}
 
 	try {

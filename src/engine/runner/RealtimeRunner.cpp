@@ -2,14 +2,14 @@
 // Created by oschdi on 5/4/25.
 //
 
-#include "RealtimeRenderer.hpp"
+#include "RealtimeRunner.hpp"
 
 #include <PathUtil.hpp>
 
 #define SAMPLES_PER_PIXEL 100
 
 namespace RtEngine {
-	void RealtimeRenderer::mainLoop() {
+	void RealtimeRunner::mainLoop() {
 		mainDrawContext->target->setSamplesPerFrame(SAMPLES_PER_PIXEL);
 		while (!glfwWindowShouldClose(window)) {
 			glfwPollEvents();

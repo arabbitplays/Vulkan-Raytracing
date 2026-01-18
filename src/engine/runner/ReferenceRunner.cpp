@@ -1,9 +1,9 @@
-#include "ReferenceRenderer.hpp"
+#include "ReferenceRunner.hpp"
 
 namespace RtEngine {
 	constexpr std::string SAMPLE_COUNT_OPTION_NAME = "Sample_Count";
 
-	void ReferenceRenderer::mainLoop() {
+	void ReferenceRunner::mainLoop() {
 		loadScene();
 
 		stopwatch.reset();
@@ -25,7 +25,7 @@ namespace RtEngine {
 		vkDeviceWaitIdle(vulkan_context->device_manager->getDevice());
 	}
 
-	void ReferenceRenderer::drawFrame() {
+	void ReferenceRunner::drawFrame() {
 		vkWaitForFences(vulkan_context->device_manager->getDevice(), 1, &inFlightFences[mainDrawContext->currentFrame], VK_TRUE,
 						UINT64_MAX);
 
@@ -73,7 +73,7 @@ namespace RtEngine {
 		mainDrawContext->nextFrame();
 	}
 
-	void ReferenceRenderer::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex) {
+	void ReferenceRunner::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex) {
 		recordBeginCommandBuffer(commandBuffer);
 		recordRenderToImage(commandBuffer);
 		if (present_image)
@@ -81,8 +81,8 @@ namespace RtEngine {
 		recordEndCommandBuffer(commandBuffer);
 	}
 
-	void ReferenceRenderer::initProperties() {
-		VulkanEngine::initProperties();
+	void ReferenceRunner::initProperties() {
+		VulkanRenderer::initProperties();
 		renderer_properties->addInt(SAMPLE_COUNT_OPTION_NAME, &sample_count);
 	}
 } // namespace RtEngine

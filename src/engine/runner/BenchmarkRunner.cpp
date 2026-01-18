@@ -1,11 +1,11 @@
-#include "BenchmarkRenderer.hpp"
+#include "BenchmarkRunner.hpp"
 #include <omp.h>
 
 namespace RtEngine {
 	constexpr std::string SAMPLE_COUNT_OPTION_NAME = "Sample_Count";
 	constexpr std::string REFERENCE_IMAGE_PATH_OPTION_NAME = "Reference_Image";
 
-	void BenchmarkRenderer::mainLoop() {
+	void BenchmarkRunner::mainLoop() {
 		omp_set_num_threads(omp_get_max_threads());
 
 		loadScene();
@@ -40,7 +40,7 @@ namespace RtEngine {
 		stbi_image_free(reference_image_data);
 	}
 
-	void BenchmarkRenderer::drawFrame() {
+	void BenchmarkRunner::drawFrame() {
 		vkWaitForFences(vulkan_context->device_manager->getDevice(), 1, &inFlightFences[mainDrawContext->currentFrame], VK_TRUE,
 						UINT64_MAX);
 
@@ -77,7 +77,7 @@ namespace RtEngine {
 		mainDrawContext->nextFrame();
 	}
 
-	void BenchmarkRenderer::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex) {
+	void BenchmarkRunner::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex) {
 		recordBeginCommandBuffer(commandBuffer);
 		recordRenderToImage(commandBuffer);
 		if (present_image)
@@ -85,7 +85,7 @@ namespace RtEngine {
 		recordEndCommandBuffer(commandBuffer);
 	}
 
-	float BenchmarkRenderer::calculateMSEToReference() {
+	float BenchmarkRunner::calculateMSEToReference() {
 		QuickTimer timer("MSE Calculation");
 		AllocatedImage render_target = mainDrawContext->target->getCurrentTargetImage();
 		uint32_t width = render_target.imageExtent.width;
@@ -119,8 +119,8 @@ namespace RtEngine {
 		return static_cast<float>(sum / static_cast<double>(height));
 	}
 
-	void BenchmarkRenderer::initProperties() {
-		VulkanEngine::initProperties();
+	void BenchmarkRunner::initProperties() {
+		VulkanRenderer::initProperties();
 		renderer_properties->addInt(SAMPLE_COUNT_OPTION_NAME, &sample_count);
 		renderer_properties->addString(REFERENCE_IMAGE_PATH_OPTION_NAME, &reference_image_path);
 	}

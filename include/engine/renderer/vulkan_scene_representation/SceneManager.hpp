@@ -9,7 +9,6 @@
 #include <vulkan/vulkan_core.h>
 
 #include "MaterialManager.hpp"
-#include "../VulkanRenderer.hpp"
 
 namespace RtEngine {
 	class SceneManager {

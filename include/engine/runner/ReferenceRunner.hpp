@@ -1,11 +1,11 @@
 #ifndef REFERENCERENDERER_HPP
 #define REFERENCERENDERER_HPP
 
-#include <VulkanEngine.hpp>
+#include <../renderer/VulkanRenderer.hpp>
 #include "spdlog/stopwatch.h"
 
 namespace RtEngine {
-	class ReferenceRenderer : public VulkanEngine {
+	class ReferenceRunner : public VulkanRenderer {
 		void mainLoop() override;
 		void drawFrame() override;
 		void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex) override;

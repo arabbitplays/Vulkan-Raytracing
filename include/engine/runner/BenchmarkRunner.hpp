@@ -1,9 +1,9 @@
 #ifndef BENCHMARKRENDERER_HPP
 #define BENCHMARKRENDERER_HPP
-#include <VulkanEngine.hpp>
+#include <../renderer/VulkanRenderer.hpp>
 
 namespace RtEngine {
-	class BenchmarkRenderer : public VulkanEngine {
+	class BenchmarkRunner : public VulkanRenderer {
 		void mainLoop() override;
 		void drawFrame() override;
 		void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex) override;

@@ -2,7 +2,7 @@
 
 #include <BaseOptions.hpp>
 #include <Material.hpp>
-#include <ReferenceRenderer.hpp>
+#include <ReferenceRunner.hpp>
 #include <spdlog/spdlog.h>
 
 namespace RtEngine {

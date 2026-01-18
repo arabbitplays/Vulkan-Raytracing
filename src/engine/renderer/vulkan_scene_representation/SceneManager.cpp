@@ -135,12 +135,12 @@ namespace RtEngine {
 
 	// TODO split into dynamic and static
 	void SceneManager::updateStaticGeometry(std::vector<RenderObject> render_objects, uint32_t update_flags) {
-		if (bufferUpdateFlags & GEOMETRY_UPDATE) {
+		if (update_flags & GEOMETRY_UPDATE) {
 			instance_manager->createInstanceMappingBuffer(render_objects);
 			updateTlas(render_objects);
 		}
 
-		if (bufferUpdateFlags & GEOMETRY_UPDATE || bufferUpdateFlags & MATERIAL_UPDATE) {
+		if (update_flags & GEOMETRY_UPDATE || bufferUpdateFlags & MATERIAL_UPDATE) {
 			instance_manager->createEmittingInstancesBuffer(render_objects);
 			vulkan_context->descriptor_allocator->writeBuffer(7, instance_manager->getEmittingInstancesBuffer().handle,
 												  0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
