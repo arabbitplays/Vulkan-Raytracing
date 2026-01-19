@@ -25,8 +25,7 @@ namespace RtEngine {
     		handleInputs();
     	}
 
-    	glm::mat4 cameraRotation = getRotationMatrix();
-    	transform->decomposed_transform.translation += glm::vec3(cameraRotation * glm::vec4(velocity * MOVE_SPEED, 0.f));
+    	updateTransform();
     	updateViewMatrices();
     }
 
@@ -52,90 +51,75 @@ namespace RtEngine {
     }
 
 	void Camera::handleInputs() {
-    	if (context->input_manager->getKeyDown(Keycode::X)) {
+    	std::shared_ptr<InputManager> input_manager = context->input_manager;
+    	if (input_manager->getKeyDown(Keycode::X)) {
     		isActive = !isActive;
     	}
 
-    	if (!isActive)
+    	if (!isActive) {
+    		firstMouse = true;
     		return;
+    	}
+
+    	if (input_manager->getKeyDown(Keycode::W))
+    		velocity.z = -1;
+    	if (input_manager->getKeyUp(Keycode::W))
+    		velocity.z = 0;
+
+    	if (input_manager->getKeyDown(Keycode::S))
+    		velocity.z = 1;
+    	if (input_manager->getKeyUp(Keycode::S))
+    		velocity.z = 0;
+
+    	if (input_manager->getKeyDown(Keycode::A))
+    		velocity.x = -1;
+    	if (input_manager->getKeyUp(Keycode::A))
+    		velocity.x = 0;
+
+    	if (input_manager->getKeyDown(Keycode::D))
+    		velocity.x = 1;
+    	if (input_manager->getKeyUp(Keycode::D))
+    		velocity.x = 0;
+
+    	if (input_manager->getKeyDown(Keycode::SHIFT))
+    		velocity.y = -0.5f;
+    	if (input_manager->getKeyUp(Keycode::SHIFT))
+    		velocity.y = 0;
+
+    	if (input_manager->getKeyDown(Keycode::SPACE))
+    		velocity.y = 0.5f;
+    	if (input_manager->getKeyUp(Keycode::SPACE))
+    		velocity.y = 0;
+
+
+    	glm::vec2 mouse_pos = input_manager->getMousePosition();
+
+    	if (firstMouse && glm::length(mouse_pos) > 0.001f) { // Initialize first frame
+    		last_mouse_pos = mouse_pos;
+    		firstMouse = false;
+    	}
+
+    	glm::vec2 offset = mouse_pos - last_mouse_pos;
+    	offset.y *= -1; // Inverted Y-axis
+
+    	last_mouse_pos = mouse_pos;
+
+    	// Adjust yaw and pitch like in SDL
+    	angular_velocity.y += offset.x * ANGULAR_MOVE_SPEED;
+    	angular_velocity.x += offset.y * ANGULAR_MOVE_SPEED;
     }
 
-    void Camera::processGlfwKeyEvent(int key, int action) {
-		if (is_interactive == 0)
-			return;
+	void Camera::updateTransform() {
+    	transform->decomposed_transform.rotation += angular_velocity;
+    	constexpr float max = M_PI / 2;
+    	transform->decomposed_transform.rotation.x = std::clamp(transform->decomposed_transform.rotation.x, -max, max);
 
-		if (!isActive) {
-			return;
-		}
+    	glm::mat4 cameraRotation = getRotationMatrix();
+    	transform->decomposed_transform.translation += glm::vec3(cameraRotation * glm::vec4(velocity * MOVE_SPEED, 0.f));
 
-		if (action == GLFW_PRESS) {
-			if (key == GLFW_KEY_W) {
-				velocity.z = -1;
-			}
-			if (key == GLFW_KEY_S) {
-				velocity.z = 1;
-			}
-			if (key == GLFW_KEY_A) {
-				velocity.x = -1;
-			}
-			if (key == GLFW_KEY_D) {
-				velocity.x = 1;
-			}
-			if (key == GLFW_KEY_SPACE) {
-				velocity.y = 0.5;
-			}
-			if (key == GLFW_KEY_LEFT_SHIFT) {
-				velocity.y = -0.5;
-			}
-		}
-
-		if (action == GLFW_RELEASE) {
-			if (key == GLFW_KEY_W) {
-				velocity.z = 0;
-			}
-			if (key == GLFW_KEY_S) {
-				velocity.z = 0;
-			}
-			if (key == GLFW_KEY_A) {
-				velocity.x = 0;
-			}
-			if (key == GLFW_KEY_D) {
-				velocity.x = 0;
-			}
-			if (key == GLFW_KEY_SPACE) {
-				velocity.y = 0;
-			}
-			if (key == GLFW_KEY_LEFT_SHIFT) {
-				velocity.y = 0;
-			}
-		}
-	}
-
-	void Camera::processGlfwMouseEvent(double xPos, double yPos) {
-		if (!isActive || is_interactive == 0) {
-			firstMouse = true;
-			return;
-		}
-
-		if (firstMouse) { // Initialize first frame
-			lastX = xPos;
-			lastY = yPos;
-			firstMouse = false;
-		}
-
-		// Calculate mouse offset
-		float xOffset = xPos - lastX;
-		float yOffset = lastY - yPos; // Inverted Y-axis
-		lastX = xPos;
-		lastY = yPos;
-
-		// Adjust yaw and pitch like in SDL
-		transform->decomposed_transform.rotation.y += xOffset * ANGULAR_MOVE_SPEED;
-		transform->decomposed_transform.rotation.x += yOffset * ANGULAR_MOVE_SPEED;
-
-		constexpr float max = M_PI / 2;
-		transform->decomposed_transform.rotation.x = std::clamp(transform->decomposed_transform.rotation.x, -max, max);
-	}
+    	velocity = glm::vec3(0);
+    	angular_velocity = velocity;
+    }
 
 	void Camera::updateProjection(float aspect) {
     	projection = glm::perspective(glm::radians(fov), aspect, 0.1f, 512.0f);

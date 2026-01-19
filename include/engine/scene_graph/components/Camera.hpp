@@ -17,15 +17,7 @@ namespace RtEngine {
             image_width = swapchain_extent.width;
             image_height = swapchain_extent.height;
 
-            context->window->addKeyCallback([this](int key, int scancode, int action, int mods) {
-                processGlfwKeyEvent(key, action);
-            });
-            context->window->addMouseCallback([this](double xPos, double yPos) {
-                processGlfwMouseEvent(xPos, yPos);
-            });
-
             render_target = context->renderer->createRenderTarget();
-
             transform = node->transform;
         };
 
@@ -49,9 +41,8 @@ namespace RtEngine {
         static constexpr float MOVE_SPEED = 0.2f;
         static constexpr float ANGULAR_MOVE_SPEED = 1 / 200.0f;
 
-        void processGlfwKeyEvent(int key, int action);
-        void processGlfwMouseEvent(double xPos, double yPos);
         void handleInputs();
+        void updateTransform();
 
         void updateProjection(float aspect);
         void updateViewMatrices();
@@ -75,10 +66,11 @@ namespace RtEngine {
         // ----------------------- movement -----------------------
 
         glm::vec3 velocity = glm::vec3(0.0f);
+        glm::vec3 angular_velocity = glm::vec3(0.0f);
         bool isActive = true;
 
         // Mouse state
-        float lastX = 400, lastY = 300;
+        glm::vec2 last_mouse_pos = glm::vec2(0.0f);
         bool firstMouse = true;
     };
 } // RtEngine

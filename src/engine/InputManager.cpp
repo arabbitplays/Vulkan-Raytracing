@@ -11,7 +11,11 @@ namespace RtEngine {
     }
 
     bool InputManager::getKeyDown(const Keycode key) const {
-        return pressed_keycodes.contains(key);
+        return down_keycodes.contains(key);
+    }
+
+    bool InputManager::getKeyUp(const Keycode key) const {
+        return up_keycodes.contains(key);
     }
 
     glm::vec2 InputManager::getMousePosition() const {
@@ -19,12 +23,17 @@ namespace RtEngine {
     }
 
     void InputManager::reset() {
-        pressed_keycodes.clear();
+        down_keycodes.clear();
+        up_keycodes.clear();
     }
 
     void InputManager::processGlfwKeyEvent(int key, int action) {
         if (action == GLFW_PRESS) {
-            pressed_keycodes.insert(glfwToEngineKeycode(key));
+            down_keycodes.insert(glfwToEngineKeycode(key));
+        }
+
+        if (action == GLFW_RELEASE) {
+            up_keycodes.insert(glfwToEngineKeycode(key));
         }
     }
 

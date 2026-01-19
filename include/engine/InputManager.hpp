@@ -16,6 +16,8 @@ namespace RtEngine {
         explicit InputManager(std::shared_ptr<Window> window);
 
         bool getKeyDown(Keycode key) const;
+        bool getKeyUp(Keycode key) const;
+
         glm::vec2 getMousePosition() const;
         void reset();
 
@@ -27,7 +29,7 @@ namespace RtEngine {
 
         std::shared_ptr<Window> window;
 
-        std::unordered_set<Keycode> pressed_keycodes;
+        std::unordered_set<Keycode> down_keycodes, up_keycodes;
         glm::vec2 mouse_pos;
     };
 } // RtEngine
