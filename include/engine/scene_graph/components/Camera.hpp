@@ -12,14 +12,7 @@ namespace RtEngine {
     class Camera : public Component {
     public:
         Camera() = default;
-        Camera(const std::shared_ptr<EngineContext>& context, const std::shared_ptr<Node>& node) : Component(context, node) {
-            VkExtent2D swapchain_extent = context->renderer->getSwapchainExtent();
-            image_width = swapchain_extent.width;
-            image_height = swapchain_extent.height;
-
-            render_target = context->renderer->createRenderTarget();
-            transform = node->transform;
-        };
+        Camera(const std::shared_ptr<EngineContext>& context, const std::shared_ptr<Node>& node) : Component(context, node) { };
 
         static constexpr std::string COMPONENT_NAME = "Camera";
 

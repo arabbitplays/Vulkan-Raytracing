@@ -179,7 +179,6 @@ namespace RtEngine {
 									  UINT64_MAX, imageAvailableSemaphores[current_frame], VK_NULL_HANDLE, &imageIndex);
 
 		if (result == VK_ERROR_OUT_OF_DATE_KHR) {
-			refreshAfterResize();
 			return -1;
 		} else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
 			throw std::runtime_error("failed to acquire swap chain image!");
@@ -200,8 +199,11 @@ namespace RtEngine {
 		} else {
 			submitCommandBuffer({} , {});
 		}
-		
-		return framebufferResized;
+
+		bool rebuild_needed = framebufferResized;
+		framebufferResized = false;
+
+		return rebuild_needed;
 	}
 
 	void VulkanRenderer::nextFrame() {
@@ -250,11 +252,6 @@ namespace RtEngine {
 
 	void VulkanRenderer::waitForIdle() {
 		vkDeviceWaitIdle(vulkan_context->device_manager->getDevice());
-	}
-
-	void VulkanRenderer::refreshAfterResize() {
-		framebufferResized = false;
-		vulkan_context->swapchain->recreate();
 	}
 
 	VkCommandBuffer VulkanRenderer::getNewCommandBuffer() {
@@ -471,7 +468,7 @@ namespace RtEngine {
 		return properties_manager;
 	}
 
-	VkExtent2D VulkanRenderer::getSwapchainExtent() {
-		return vulkan_context->swapchain->extent;
+	std::shared_ptr<Swapchain> VulkanRenderer::getSwapchain() {
+		return vulkan_context->swapchain;
 	}
 } // namespace RtEngine

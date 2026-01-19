@@ -41,8 +41,10 @@ namespace RtEngine {
         renderer->waitForNextFrameStart();
 
         const int32_t swapchain_image_idx = renderer->aquireNextSwapchainImage();
-        if (swapchain_image_idx < 0)
+        if (swapchain_image_idx < 0) {
+            handle_resize();
             return;
+        }
 
         renderer->resetCurrFrame();
 
@@ -58,14 +60,16 @@ namespace RtEngine {
         gui_manager->recordGuiCommands(command_buffer, swapchain_image_idx);
         renderer->recordEndCommandBuffer(command_buffer);
         if (renderer->submitCommands(true, swapchain_image_idx)) {
-            renderer->waitForIdle();
-            renderer->refreshAfterResize();
-            VkExtent2D extent = renderer->getSwapchainExtent();
-            engine_context->swapchain_manager->recreate(extent.width, extent.height);
-            gui_manager->updateWindows();
+            handle_resize();
         }
         renderer->nextFrame();
         draw_context->nextFrame();
+    }
+
+    void Runner::handle_resize() {
+        renderer->waitForIdle();
+        engine_context->swapchain_manager->recreate();
+        gui_manager->updateWindows();
     }
 
     std::shared_ptr<DrawContext> Runner::createMainDrawContext() {

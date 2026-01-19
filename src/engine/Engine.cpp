@@ -73,7 +73,7 @@ namespace RtEngine {
         engine_context->mesh_repository = vulkan_renderer->getMeshRepository();
         engine_context->scene_manager = scene_manager;
         engine_context->input_manager = std::make_shared<InputManager>(window);
-        engine_context->swapchain_manager = std::make_shared<SwapchainManager>();
+        engine_context->swapchain_manager = std::make_shared<SwapchainManager>(vulkan_renderer->getSwapchain());
     }
 
     void Engine::createRunner() {

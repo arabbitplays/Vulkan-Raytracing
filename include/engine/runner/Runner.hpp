@@ -19,6 +19,8 @@ namespace RtEngine {
     protected:
         virtual void drawFrame(std::shared_ptr<DrawContext> draw_context);
 
+        void handle_resize();
+
         std::shared_ptr<DrawContext> createMainDrawContext();
 
         std::shared_ptr<EngineContext> engine_context;

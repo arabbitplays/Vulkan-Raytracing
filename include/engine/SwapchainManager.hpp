@@ -11,12 +11,16 @@ namespace RtEngine {
     class SwapchainManager {
     public:
         SwapchainManager() = default;
+        explicit SwapchainManager(const std::shared_ptr<Swapchain> &swapchain);
 
-        void addRecreateCallback(std::function<void(uint32_t, uint32_t)> func);
+        void addRecreateCallback(const std::function<void(uint32_t, uint32_t)> &func);
 
-        void recreate(uint32_t new_width, uint32_t new_height);
+        void recreate() const;
+
+        VkExtent2D getSwapchainExtent() const;
 
     private:
+        std::shared_ptr<Swapchain> swapchain;
         std::vector<std::function<void(uint32_t, uint32_t)>> recreate_callbacks;
     };
 } // RtEngine

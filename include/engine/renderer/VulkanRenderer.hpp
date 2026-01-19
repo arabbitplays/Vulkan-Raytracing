@@ -45,24 +45,20 @@ namespace RtEngine {
 
 		void nextFrame();
 
-		void refreshAfterResize();
-
 		void cleanup();
-
-		std::shared_ptr<TextureRepository> getTextureRepository();
-		std::shared_ptr<MeshRepository> getMeshRepository();
-
-		std::unordered_map<std::string, std::shared_ptr<Material>> getMaterials() const;
 
 		std::shared_ptr<RenderTarget> createRenderTarget();
 
-		std::shared_ptr<PropertiesManager> getPropertiesManager();
-
-		void handleGuiUpdate(uint32_t update_flags) const;
-
 		std::shared_ptr<VulkanContext> getVulkanContext();
 
-		VkExtent2D getSwapchainExtent();
+		std::shared_ptr<TextureRepository> getTextureRepository();
+		std::shared_ptr<MeshRepository> getMeshRepository();
+		std::unordered_map<std::string, std::shared_ptr<Material>> getMaterials() const;
+
+		std::shared_ptr<PropertiesManager> getPropertiesManager();
+		std::shared_ptr<Swapchain> getSwapchain();
+
+		void handleGuiUpdate(uint32_t update_flags) const;
 
 	protected:
 		std::shared_ptr<Window> window;
@@ -106,8 +102,6 @@ namespace RtEngine {
 
 		void submitCommandBuffer(std::vector<VkSemaphore> wait_semaphore, std::vector<VkSemaphore> signal_semaphore);
 		void presentSwapchainImage(const std::vector<VkSemaphore>& wait_semaphore, uint32_t image_index);
-
-
 
 		void outputRenderingTarget(std::shared_ptr<RenderTarget> target, const std::string &output_path);
 		uint8_t *fixImageFormatForStorage(void *image_data, size_t pixel_count, VkFormat originalFormat);

@@ -6,13 +6,22 @@
 
 namespace RtEngine {
     void Camera::OnStart() {
-		context->swapchain_manager->addRecreateCallback([this] (uint32_t new_width, uint32_t new_height) {
+
+
+    	VkExtent2D swapchain_extent = context->swapchain_manager->getSwapchainExtent();
+    	image_width = swapchain_extent.width;
+    	image_height = swapchain_extent.height;
+
+    	context->swapchain_manager->addRecreateCallback([this] (uint32_t new_width, uint32_t new_height) {
 			image_width = new_width;
 			image_height = new_height;
 			if (render_target != nullptr) {
 				render_target->recreate(VkExtent2D{image_width, image_height});
 			}
 		});
+
+    	render_target = context->renderer->createRenderTarget();
+    	transform = node.lock()->transform;
     }
 
     void Camera::OnRender(DrawContext &ctx) {
@@ -117,8 +126,7 @@ namespace RtEngine {
     	glm::mat4 cameraRotation = getRotationMatrix();
     	transform->decomposed_transform.translation += glm::vec3(cameraRotation * glm::vec4(velocity * MOVE_SPEED, 0.f));
 
-    	velocity = glm::vec3(0);
-    	angular_velocity = velocity;
+    	angular_velocity = glm::vec3(0);
     }
 
 	void Camera::updateProjection(float aspect) {
