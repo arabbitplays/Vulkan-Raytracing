@@ -60,7 +60,9 @@ namespace RtEngine {
 
 		void updateDynamicGeometry(std::vector<RenderObject> render_objects, uint32_t update_flags);
 
-		void updateScene(const std::shared_ptr<DrawContext> &draw_context);
+		void updateScene(const std::shared_ptr<DrawContext> &draw_context, uint32_t current_frame);
+
+		void updateRenderTarget(std::shared_ptr<RenderTarget> target);
 
 		void clearResources();
 
@@ -87,7 +89,7 @@ namespace RtEngine {
 
 		void updateMaterial(const std::shared_ptr<IScene> &scene) const;
 
-		void updateSceneData(const std::shared_ptr<IScene> &scene, const std::shared_ptr<DrawContext> &draw_context) const;
+		void updateSceneData(const std::shared_ptr<IScene> &scene, const std::shared_ptr<DrawContext> &draw_context, uint32_t current_frame) const;
 
 		DeletionQueue main_deletion_queue, scene_resource_deletion_queue;
 		uint32_t max_frames_in_flight;

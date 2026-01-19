@@ -4,9 +4,9 @@
 
 namespace RtEngine {
 	class BenchmarkRunner : public VulkanRenderer {
-		void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex, bool present) override;
+		void recordCommandBuffer(VkCommandBuffer commandBuffer, std::shared_ptr<RenderTarget> target, uint32_t imageIndex, bool present) override;
 
-		float calculateMSEToReference();
+		float calculateMSEToReference(std::shared_ptr<RenderTarget> render_target);
 		void initProperties() override;
 
 		uint8_t *reference_image_data;

@@ -37,6 +37,8 @@ namespace RtEngine {
         [[nodiscard]] glm::mat4 getInverseProjection() const;
         [[nodiscard]] glm::vec3 getPosition() const;
 
+        std::shared_ptr<RenderTarget> getRenderTarget();
+
     protected:
         static constexpr float MOVE_SPEED = 0.2f;
         static constexpr float ANGULAR_MOVE_SPEED = 1 / 200.0f;

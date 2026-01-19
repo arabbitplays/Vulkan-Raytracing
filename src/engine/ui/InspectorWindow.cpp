@@ -12,7 +12,7 @@ namespace RtEngine {
 		if (!node || !scene_manager)
 			return;
 
-		std::shared_ptr<Node> root_node = scene_manager->scene->nodes["root"];
+		std::shared_ptr<Node> root_node = scene_manager->getCurrentScene()->nodes["root"];
 
 		ImGui::SetNextWindowSize(ImVec2(400, 300), ImGuiCond_Once);
 

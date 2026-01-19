@@ -26,15 +26,14 @@ namespace RtEngine {
 	};
 
 	struct DrawContext {
-		uint32_t currentFrame = 0;
-		uint32_t max_frames_in_flight = 1;
-		std::shared_ptr<RenderTarget> target;
+		std::vector<std::shared_ptr<RenderTarget>> targets;
 
 		void nextFrame()
 		{
-			currentFrame = (currentFrame + 1) % max_frames_in_flight;
-			target->nextImage();
-			target->incrementAccumulatedFrameCount();
+			for (const auto& target : targets) {
+				target->nextImage();
+				target->incrementAccumulatedFrameCount();
+			}
 		}
 
 		void clear() {

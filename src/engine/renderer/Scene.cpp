@@ -11,11 +11,7 @@ namespace RtEngine {
 	std::shared_ptr<SceneData> Scene::createSceneData(uint32_t emitting_object_count) {
 		auto sceneData = std::make_shared<SceneData>();
 
-		//TODO support multiple
-		std::vector<std::shared_ptr<Camera>> cameras = SceneUtil::collectCameras(getRootNode());
-		assert(cameras.size() > 0);
-		std::shared_ptr<Camera> camera = cameras[0];
-
+		std::shared_ptr<Camera> camera = SceneUtil::collectCameras(getRootNode()).at(0); // TODO remove this by having a own camera uniform buffer
 		sceneData->inverse_view = camera->getInverseView();
 		sceneData->inverse_proj = camera->getInverseProjection();
 		sceneData->view_pos = glm::vec4(camera->getPosition(), 0.0f);
@@ -92,4 +88,5 @@ namespace RtEngine {
 		*size = sizeof(SceneData);
 		return last_scene_data.get();
 	}
+
 } // namespace RtEngine

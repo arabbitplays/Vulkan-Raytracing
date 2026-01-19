@@ -7,7 +7,7 @@
 namespace RtEngine {
 	class ReferenceRunner : public Runner {
 		void renderScene() override;
-		void drawFrame() override;
+		void drawFrame(std::shared_ptr<DrawContext> draw_context) override;
 		//void initProperties() override;
 
 		spdlog::stopwatch stopwatch;

@@ -9,5 +9,6 @@ subdir('repositories')
 src += files(
   'InputManager.cpp',
   'Window.cpp',
+  'SwapchainManager.cpp',
   'Engine.cpp',
 )

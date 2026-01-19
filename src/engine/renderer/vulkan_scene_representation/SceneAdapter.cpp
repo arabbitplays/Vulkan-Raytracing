@@ -96,7 +96,7 @@ namespace RtEngine {
 
 	// ----------------------------------------------------------------------------------------------------------------
 
-	void SceneAdapter::updateScene(const std::shared_ptr<DrawContext> &draw_context) {
+	void SceneAdapter::updateScene(const std::shared_ptr<DrawContext> &draw_context, uint32_t current_frame) {
 		assert(loaded_scene != nullptr);
 
 		// QuickTimer timer{"Scene Update", true};
@@ -105,9 +105,6 @@ namespace RtEngine {
 		if (!(bufferUpdateFlags & NO_UPDATE))
 			vkDeviceWaitIdle(device);
 
-		draw_context->clear();
-
-		loaded_scene->fillDrawContext(draw_context);
 		if (bufferUpdateFlags != NO_UPDATE) {
 			if (bufferUpdateFlags & MATERIAL_UPDATE) {
 				// !!!! This clear the descriptor set writes
@@ -116,14 +113,20 @@ namespace RtEngine {
 		}
 
 		updateStaticGeometry(draw_context->getRenderObjects(), bufferUpdateFlags);
-		updateSceneData(loaded_scene, draw_context);
-
-
-		// TODO Only partially update tlas depending on the updated dynamic objects
+		updateSceneData(loaded_scene, draw_context, current_frame);
+		updateRenderTarget(draw_context->targets.at(0)); // TODO move this to runner
 
 		updateSceneDescriptorSets(draw_context);
 
 		bufferUpdateFlags = NO_UPDATE;
+	}
+
+	void SceneAdapter::updateRenderTarget(const std::shared_ptr<RenderTarget> target) {
+		vulkan_context->descriptor_allocator->writeImage(1, target->getCurrentTargetImage().imageView, VK_NULL_HANDLE,
+														 VK_IMAGE_LAYOUT_GENERAL, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
+
+		vulkan_context->descriptor_allocator->writeImage(9, target->getCurrentRngImage().imageView, VK_NULL_HANDLE, VK_IMAGE_LAYOUT_GENERAL,
+														 VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
 	}
 
 	void SceneAdapter::updateGeometryResources(const std::shared_ptr<IScene> &scene) {
@@ -136,6 +139,7 @@ namespace RtEngine {
 	void SceneAdapter::updateStaticGeometry(std::vector<RenderObject> render_objects, uint32_t update_flags) {
 		if (update_flags & GEOMETRY_UPDATE) {
 			instance_manager->createInstanceMappingBuffer(render_objects);
+			// TODO Only partially update tlas depending on the updated dynamic objects
 			updateTlas(render_objects);
 		}
 
@@ -152,7 +156,6 @@ namespace RtEngine {
 	}
 
 	void SceneAdapter::updateDynamicGeometry(std::vector<RenderObject> render_objects, uint32_t update_flags) {
-		// TODO This still update all objects in the TLAS
 
 	}
 
@@ -175,12 +178,12 @@ namespace RtEngine {
 		material_manager->updateMaterialResources(scene);
 	}
 
-	void SceneAdapter::updateSceneData(const std::shared_ptr<IScene> &scene, const std::shared_ptr<DrawContext> &draw_context) const {
+	void SceneAdapter::updateSceneData(const std::shared_ptr<IScene> &scene, const std::shared_ptr<DrawContext> &draw_context, uint32_t current_frame) const {
 		size_t size = 0;
 		void* scene_data = scene->getSceneData(&size, draw_context->getEmittingObjectCount());
-		memcpy(sceneUniformBuffersMapped[draw_context->currentFrame], scene_data, size);
+		memcpy(sceneUniformBuffersMapped[current_frame], scene_data, size);
 
-		vulkan_context->descriptor_allocator->writeBuffer(2, sceneUniformBuffers[draw_context->currentFrame].handle, size,
+		vulkan_context->descriptor_allocator->writeBuffer(2, sceneUniformBuffers[current_frame].handle, size,
 														  0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
 
 		scene->getEnvironmentMap()->writeToDescriptor(vulkan_context->descriptor_allocator, defaultSamplerLinear);
@@ -198,12 +201,6 @@ namespace RtEngine {
 			vulkan_context->descriptor_allocator->writeBuffer(6, instance_manager->getInstanceBuffer().handle, 0,
 															  VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
 		}
-
-		vulkan_context->descriptor_allocator->writeImage(1, draw_context->target->getCurrentTargetImage().imageView, VK_NULL_HANDLE,
-														 VK_IMAGE_LAYOUT_GENERAL, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
-
-		vulkan_context->descriptor_allocator->writeImage(9, draw_context->target->getCurrentRngImage().imageView, VK_NULL_HANDLE, VK_IMAGE_LAYOUT_GENERAL,
-														 VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
 
 		for (int i = 0; i < max_frames_in_flight; i++) { // TODO das is doch schmarn
 			vulkan_context->descriptor_allocator->updateSet(device, scene_descriptor_sets[i]);

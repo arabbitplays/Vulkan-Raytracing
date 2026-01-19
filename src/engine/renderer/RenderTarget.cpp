@@ -48,6 +48,7 @@ namespace RtEngine
         uint32_t image_count = render_targets.size();
         destroy();
         createImages(image_count);
+        resetAccumulatedFrames();
     }
 
 

@@ -8,10 +8,10 @@ namespace RtEngine {
 		GuiWindow(), inspector_window(inspector_window), scene_manager(scene_manager) {}
 
 	void HierarchyWindow::createFrame() {
-		if (!scene_manager || !scene_manager->scene)
+		if (!scene_manager || !scene_manager->getCurrentScene())
 			return;
 
-		std::shared_ptr<Scene> scene = scene_manager->scene;
+		std::shared_ptr<Scene> scene = scene_manager->getCurrentScene();
 
 		ImGui::SetNextWindowSize(ImVec2(400, 300), ImGuiCond_Once);
 
@@ -80,7 +80,7 @@ namespace RtEngine {
 
 			if (drag_payload) {
 				DragPayload dragged_keys = *static_cast<DragPayload *>(drag_payload->Data);
-				std::shared_ptr<Node> dragged_node = scene_manager->scene->nodes[dragged_keys.source_key];
+				std::shared_ptr<Node> dragged_node = scene_manager->getCurrentScene()->nodes[dragged_keys.source_key];
 				nodes_to_add.push_back({node->name, dragged_keys.source_key});
 				nodes_to_remove.push_back({dragged_keys.parent_key, dragged_keys.source_key});
 			}

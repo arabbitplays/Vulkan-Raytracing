@@ -73,6 +73,7 @@ namespace RtEngine {
         engine_context->mesh_repository = vulkan_renderer->getMeshRepository();
         engine_context->scene_manager = scene_manager;
         engine_context->input_manager = std::make_shared<InputManager>(window);
+        engine_context->swapchain_manager = std::make_shared<SwapchainManager>();
     }
 
     void Engine::createRunner() {
@@ -111,7 +112,7 @@ namespace RtEngine {
 
     void Engine::cleanup() {
         vulkan_renderer->waitForIdle();
-        scene_manager->scene->destroy();
+        scene_manager->getCurrentScene()->destroy();
         guiManager->destroy();
         vulkan_renderer->cleanup();
     }

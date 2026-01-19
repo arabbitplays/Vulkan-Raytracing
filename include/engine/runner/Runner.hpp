@@ -17,7 +17,11 @@ namespace RtEngine {
         void loadScene(const std::string &scene_path);
         virtual void renderScene();
     protected:
-        virtual void drawFrame();
+        virtual void drawFrame(std::shared_ptr<DrawContext> draw_context);
+
+        std::shared_ptr<DrawContext> createMainDrawContext();
+
+        std::shared_ptr<EngineContext> engine_context;
         std::shared_ptr<VulkanRenderer> renderer;
         std::shared_ptr<GuiManager> gui_manager;
 

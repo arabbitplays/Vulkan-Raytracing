@@ -10,6 +10,7 @@
 #include <glm/vec3.hpp>
 #include <utility>
 
+#include "Camera.hpp"
 #include "EnvironmentMap.hpp"
 #include "IScene.hpp"
 
@@ -70,7 +71,9 @@ namespace RtEngine {
 		void fillDrawContext(const std::shared_ptr<DrawContext> &draw_context) override;
 		std::shared_ptr<Material> getMaterial() override;
 		std::shared_ptr<EnvironmentMap> getEnvironmentMap() override;
+
 		void *getSceneData(size_t *size, uint32_t emitting_instances_count) override;
+
 
 		std::string path;
 
@@ -87,6 +90,8 @@ namespace RtEngine {
 	private:
 		std::shared_ptr<SceneData> createSceneData(uint32_t emitting_object_count);
 
+		std::shared_ptr<Camera> main_camera;
+		std::vector<std::shared_ptr<Camera>> cameras{};
 	};
 
 } // namespace RtEngine

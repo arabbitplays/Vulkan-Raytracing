@@ -17,8 +17,8 @@ namespace RtEngine {
 		drawFrame();*/
 	}
 
-	void ReferenceRunner::drawFrame() {
-		renderer->waitForNextFrameStart();
+	void ReferenceRunner::drawFrame(std::shared_ptr<DrawContext> draw_context) {
+		/*renderer->waitForNextFrameStart();
 
 		uint32_t curr_sample_count = renderer->getRenderTarget()->getTotalSampleCount();
 		present_image = present_sample_count == curr_sample_count;
@@ -34,15 +34,15 @@ namespace RtEngine {
 
 		renderer->resetCurrFrame();
 
-		renderer->update();
-		/*VkCommandBuffer command_buffer = renderer->getCurrentCommandBuffer();
+		/renderer->update(TODO);
+		VkCommandBuffer command_buffer = renderer->getCurrentCommandBuffer();
 		renderer->recordBeginCommandBuffer(command_buffer);
 		renderer->recordCommandBuffer(command_buffer, true, swapchain_image_idx);
 		renderer->recordEndCommandBuffer(command_buffer);
 		if (renderer->submitCommands(true, swapchain_image_idx)) {
 			// TODO handle resize when rendering references
 			renderer->refreshAfterResize();
-		}*/
+		}
 
 		if (curr_sample_count % 1000 == 0) {
 			double elapsed_time = stopwatch.elapsed().count();
@@ -55,7 +55,7 @@ namespace RtEngine {
 			uint32_t progress = round((float) curr_sample_count / (float) sample_count * 100);
 			spdlog::info("Current sample count: {}, progress: {}%, estimated time remaining: {}h {}m {}s",
 						 curr_sample_count, progress, hours, minutes, sec);
-		}
+		}*/
 	}
 
 	/*void ReferenceRunner::initProperties() {

@@ -6,27 +6,27 @@
 
 namespace RtEngine {
     void Camera::OnStart() {
-
+		context->swapchain_manager->addRecreateCallback([this] (uint32_t new_width, uint32_t new_height) {
+			image_width = new_width;
+			image_height = new_height;
+			if (render_target != nullptr) {
+				render_target->recreate(VkExtent2D{image_width, image_height});
+			}
+		});
     }
 
     void Camera::OnRender(DrawContext &ctx) {
-        ctx.target = render_target;
+        ctx.targets.push_back(render_target);
     }
 
     void Camera::OnUpdate() {
-        VkExtent2D swapchain_extent = context->renderer->getSwapchainExtent();
-        uint32_t new_image_width = swapchain_extent.width;
-        uint32_t new_image_height = swapchain_extent.height;
-        updateProjection(static_cast<float>(new_image_width) / static_cast<float>(new_image_height));
-        this->image_width = new_image_width;
-        this->image_height = new_image_height;
-
     	if (is_interactive != 0) {
     		handleInputs();
     	}
 
     	updateTransform();
     	updateViewMatrices();
+    	updateProjection(static_cast<float>(image_width) / static_cast<float>(image_height));
     }
 
     void Camera::OnDestroy() {
@@ -144,6 +144,10 @@ namespace RtEngine {
 	}
 
 	glm::vec3 Camera::getPosition() const { return transform->decomposed_transform.translation; }
+
+	std::shared_ptr<RenderTarget> Camera::getRenderTarget() {
+    	return render_target;
+	}
 
 	glm::mat4 Camera::getView() const { return view; }
 

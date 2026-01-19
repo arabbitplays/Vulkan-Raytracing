@@ -77,24 +77,24 @@ namespace RtEngine {
 		mainDrawContext->nextFrame();
 	}*/
 
-	void BenchmarkRunner::recordCommandBuffer(VkCommandBuffer commandBuffer, const uint32_t imageIndex, bool present) {
+	void BenchmarkRunner::recordCommandBuffer(VkCommandBuffer commandBuffer, std::shared_ptr<RenderTarget> target, const uint32_t imageIndex, bool present) {
 		recordBeginCommandBuffer(commandBuffer);
-		recordRenderToImage(commandBuffer);
+		recordRenderToImage(commandBuffer, target);
 		if (present_image)
-			recordCopyToSwapchain(commandBuffer, imageIndex);
+			recordCopyToSwapchain(commandBuffer, target, imageIndex);
 		recordEndCommandBuffer(commandBuffer);
 	}
 
-	float BenchmarkRunner::calculateMSEToReference() {
+	float BenchmarkRunner::calculateMSEToReference(std::shared_ptr<RenderTarget> render_target) {
 		QuickTimer timer("MSE Calculation");
-		AllocatedImage render_target = mainDrawContext->target->getCurrentTargetImage();
-		uint32_t width = render_target.imageExtent.width;
-		uint32_t height = render_target.imageExtent.height;
+		AllocatedImage render_image = render_target->getCurrentTargetImage();
+		uint32_t width = render_image.imageExtent.width;
+		uint32_t height = render_image.imageExtent.height;
 
 		assert(ref_width == width && ref_height == height && ref_channels == 4);
 
-		void *raw_data = vulkan_context->resource_builder->downloadImage(render_target, sizeof(uint32_t));
-		uint8_t *image_data = fixImageFormatForStorage(raw_data, width * height, render_target.imageFormat);
+		void *raw_data = vulkan_context->resource_builder->downloadImage(render_image, sizeof(uint32_t));
+		uint8_t *image_data = fixImageFormatForStorage(raw_data, width * height, render_image.imageFormat);
 
 		assert(image_data != nullptr && reference_image_data != nullptr);
 
