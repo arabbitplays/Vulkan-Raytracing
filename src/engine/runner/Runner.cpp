@@ -58,6 +58,7 @@ namespace RtEngine {
 
         prepareFrame(cmd, draw_context);
 
+        renderer->updateRenderTarget(target);
         renderer->recordCommandBuffer(cmd, target, swapchain_image_idx, true);
         gui_manager->recordGuiCommands(cmd, swapchain_image_idx);
 
@@ -65,7 +66,7 @@ namespace RtEngine {
     }
 
     void Runner::prepareFrame(VkCommandBuffer cmd, const std::shared_ptr<DrawContext> &draw_context) {
-        renderer->update(draw_context, update_flags);
+        renderer->updateSceneRepresentation(draw_context, update_flags);
 
         if (update_flags > 0) {
             for (const auto& target : draw_context->targets) {

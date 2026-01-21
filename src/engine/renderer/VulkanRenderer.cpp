@@ -163,8 +163,12 @@ namespace RtEngine {
 		}
 	}
 
-	void VulkanRenderer::update(std::shared_ptr<DrawContext> draw_context, uint32_t update_flags) {
+	void VulkanRenderer::updateSceneRepresentation(const std::shared_ptr<DrawContext> &draw_context, uint32_t update_flags) {
 		scene_adapter->updateScene(draw_context, current_frame, update_flags);
+	}
+
+	void VulkanRenderer::updateRenderTarget(const std::shared_ptr<RenderTarget> &target) {
+		scene_adapter->updateRenderTarget(target);
 	}
 
 	void VulkanRenderer::waitForNextFrameStart() {

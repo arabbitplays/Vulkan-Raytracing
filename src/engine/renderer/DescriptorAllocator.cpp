@@ -183,22 +183,25 @@ namespace RtEngine {
 	}
 
 	void DescriptorAllocator::writeAccelerationStructure(uint32_t binding,
-														 const VkAccelerationStructureKHR &accelerationStructure,
+														 VkAccelerationStructureKHR accelerationStructure,
 														 VkDescriptorType type) {
-		VkWriteDescriptorSetAccelerationStructureKHR &descriptorSetAccelerationStructure =
-				accelerationStructureInfos.emplace_back(VkWriteDescriptorSetAccelerationStructureKHR{
-						.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_ACCELERATION_STRUCTURE_KHR,
-						.pNext = nullptr,
-						.accelerationStructureCount = 1,
-						.pAccelerationStructures = &accelerationStructure,
-				});
+		auto& wrapper = accelerationStructureInfos.emplace_back();
+
+		wrapper.structure = accelerationStructure;
+
+		wrapper.info = VkWriteDescriptorSetAccelerationStructureKHR{
+			.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_ACCELERATION_STRUCTURE_KHR,
+			.pNext = nullptr,
+			.accelerationStructureCount = 1,
+			.pAccelerationStructures = &wrapper.structure,
+		};
 
 		VkWriteDescriptorSet write{};
 		write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 		write.dstBinding = binding;
 		write.descriptorCount = 1;
 		write.descriptorType = type;
-		write.pNext = &descriptorSetAccelerationStructure;
+		write.pNext = &wrapper.info;
 
 		writes.push_back(write);
 	}

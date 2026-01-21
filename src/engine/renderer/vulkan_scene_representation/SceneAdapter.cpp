@@ -111,9 +111,8 @@ namespace RtEngine {
 
 		updateStaticGeometry(draw_context->getRenderObjects(), update_flags);
 		updateSceneData(loaded_scene, draw_context, current_frame);
-		updateRenderTarget(draw_context->targets.at(0)); // TODO move this to runner
 
-		updateSceneDescriptorSets(draw_context, update_flags);
+		updateSceneDescriptorSets();
 	}
 
 	void SceneAdapter::updateRenderTarget(const std::shared_ptr<RenderTarget> target) {
@@ -122,6 +121,8 @@ namespace RtEngine {
 
 		vulkan_context->descriptor_allocator->writeImage(9, target->getCurrentRngImage().imageView, VK_NULL_HANDLE, VK_IMAGE_LAYOUT_GENERAL,
 														 VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
+
+		updateSceneDescriptorSets();
 	}
 
 	void SceneAdapter::updateGeometryResources(const std::shared_ptr<IScene> &scene) {
@@ -134,8 +135,13 @@ namespace RtEngine {
 	void SceneAdapter::updateStaticGeometry(std::vector<RenderObject> render_objects, uint32_t update_flags) {
 		if (update_flags & STATIC_GEOMETRY_UPDATE) {
 			instance_manager->createInstanceMappingBuffer(render_objects);
+			vulkan_context->descriptor_allocator->writeBuffer(6, instance_manager->getInstanceBuffer().handle, 0,
+															  VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+
 			// TODO Only partially update tlas depending on the updated dynamic objects
 			updateTlas(render_objects);
+			vulkan_context->descriptor_allocator->writeAccelerationStructure(
+				0, top_level_acceleration_structure->getHandle(), VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR);
 		}
 
 		if (update_flags & STATIC_GEOMETRY_UPDATE || update_flags & MATERIAL_UPDATE) {
@@ -184,19 +190,8 @@ namespace RtEngine {
 		scene->getEnvironmentMap()->writeToDescriptor(vulkan_context->descriptor_allocator, defaultSamplerLinear);
 	}
 
-	void SceneAdapter::updateSceneDescriptorSets(const std::shared_ptr<DrawContext> &draw_context, uint32_t update_flags) {
+	void SceneAdapter::updateSceneDescriptorSets() {
 		VkDevice device = vulkan_context->device_manager->getDevice();
-
-		VkAccelerationStructureKHR tlas_handle = top_level_acceleration_structure->getHandle();
-		if (update_flags & STATIC_GEOMETRY_UPDATE) {
-			//TODO move those two to updateStaticGeometry
-			vulkan_context->descriptor_allocator->writeAccelerationStructure(
-					0, tlas_handle, VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR);
-
-			vulkan_context->descriptor_allocator->writeBuffer(6, instance_manager->getInstanceBuffer().handle, 0,
-															  VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
-		}
-
 		for (int i = 0; i < max_frames_in_flight; i++) { // TODO das is doch schmarn
 			vulkan_context->descriptor_allocator->updateSet(device, scene_descriptor_sets[i]);
 		}

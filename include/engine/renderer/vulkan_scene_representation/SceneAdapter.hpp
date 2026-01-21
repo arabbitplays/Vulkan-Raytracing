@@ -44,18 +44,7 @@ namespace RtEngine {
 
 		void loadNewScene(const std::shared_ptr<IScene> &new_scene);
 
-		void setupNewScene(const std::shared_ptr<IScene> &scene);
-
-		void createTlas();
-
-		void updateGeometryResources(const std::shared_ptr<IScene> &scene);
-
-		void updateStaticGeometry(std::vector<RenderObject> render_objects, uint32_t update_flags);
-
-		void updateDynamicGeometry(std::vector<RenderObject> render_objects, uint32_t update_flags);
-
 		void updateScene(const std::shared_ptr<DrawContext> &draw_context, uint32_t current_frame, uint32_t update_flags);
-
 		void updateRenderTarget(std::shared_ptr<RenderTarget> target);
 
 		void clearResources();
@@ -77,7 +66,14 @@ namespace RtEngine {
 		void createDefaultSamplers();
 		void createDefaultMaterials(const VkPhysicalDeviceRayTracingPipelinePropertiesKHR& raytracingProperties);
 
-		void updateSceneDescriptorSets(const std::shared_ptr<DrawContext> &draw_context, uint32_t update_flags);
+		void setupNewScene(const std::shared_ptr<IScene> &scene);
+		void createTlas();
+
+		void updateGeometryResources(const std::shared_ptr<IScene> &scene);
+		void updateStaticGeometry(std::vector<RenderObject> render_objects, uint32_t update_flags);
+		void updateDynamicGeometry(std::vector<RenderObject> render_objects, uint32_t update_flags);
+
+		void updateSceneDescriptorSets();
 		void updateTlas(std::vector<RenderObject> objects) const;
 
 		void updateMaterial(const std::shared_ptr<IScene> &scene) const;

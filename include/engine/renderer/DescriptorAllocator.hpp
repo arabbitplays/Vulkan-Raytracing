@@ -19,6 +19,11 @@ namespace RtEngine {
 			std::vector<VkDescriptorImageInfo> image_infos;
 		};
 
+		struct AccelerationStructureInfoWrapper {
+			VkAccelerationStructureKHR structure;
+			VkWriteDescriptorSetAccelerationStructureKHR info;
+		};
+
 		void init(VkDevice device, uint32_t initialSetCount, std::span<PoolSizeRatio> poolRatios);
 		void clearPools(VkDevice device);
 		void destroyPools(VkDevice device);
@@ -32,8 +37,8 @@ namespace RtEngine {
 						VkDescriptorType type);
 		void writeImages(uint32_t binding, const std::vector<VkImageView>& imageViews, VkSampler sampler, VkImageLayout layout,
 						 VkDescriptorType type);
-		void writeAccelerationStructure(uint32_t binding, const VkAccelerationStructureKHR &accelerationStructure,
-										VkDescriptorType type);
+		void writeAccelerationStructure(uint32_t binding, VkAccelerationStructureKHR accelerationStructure,
+		                                VkDescriptorType type);
 		void updateSet(const VkDevice &device, const VkDescriptorSet &set);
 		void clearWrites();
 
@@ -50,7 +55,7 @@ namespace RtEngine {
 
 		std::list<ImageInfoWrapper> imageInfos{};
 		std::list<VkDescriptorBufferInfo> bufferInfos;
-		std::list<VkWriteDescriptorSetAccelerationStructureKHR> accelerationStructureInfos;
+		std::list<AccelerationStructureInfoWrapper> accelerationStructureInfos;
 		std::vector<VkWriteDescriptorSet> writes;
 
 		const uint32_t GROW_RATIO = 2;

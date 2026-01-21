@@ -30,7 +30,9 @@ namespace RtEngine {
 		void init(const std::shared_ptr<BaseOptions> &base_options, std::shared_ptr<Window> window);
 
 		void loadScene(std::shared_ptr<IScene> scene);
-		void update(std::shared_ptr<DrawContext> draw_context, uint32_t update_flags);
+
+		void updateSceneRepresentation(const std::shared_ptr<DrawContext> &draw_context, uint32_t update_flags);
+		void updateRenderTarget(const std::shared_ptr<RenderTarget> &target);
 
 		void waitForIdle();
 		void waitForNextFrameStart();
