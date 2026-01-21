@@ -2,6 +2,8 @@
 
 #include <imgui.h>
 
+#include "UpdateFlags.hpp"
+
 namespace RtEngine {
 	void OptionsWindow::createFrame() {
 		ImGui::SetNextWindowSize(ImVec2(400, 300), ImGuiCond_Once);
@@ -14,7 +16,7 @@ namespace RtEngine {
 		}
 
 		if (reset_image) {
-			notifyUpdate(0);
+			notifyUpdate(MATERIAL_UPDATE);
 		}
 	}
 } // namespace RtEngine

@@ -19,12 +19,6 @@ namespace RtEngine {
 			uint32_t emitting_instances_count;
 		};
 
-		enum SceneBufferUpdateFlags {
-			NO_UPDATE = 0,
-			MATERIAL_UPDATE = 1 << 0,
-			GEOMETRY_UPDATE = 1 << 1,
-		};
-
 		SceneAdapter() = default;
 		SceneAdapter(const std::shared_ptr<VulkanContext> &vulkanContext,
 					 const std::shared_ptr<TextureRepository>& texture_repository,
@@ -60,7 +54,7 @@ namespace RtEngine {
 
 		void updateDynamicGeometry(std::vector<RenderObject> render_objects, uint32_t update_flags);
 
-		void updateScene(const std::shared_ptr<DrawContext> &draw_context, uint32_t current_frame);
+		void updateScene(const std::shared_ptr<DrawContext> &draw_context, uint32_t current_frame, uint32_t update_flags);
 
 		void updateRenderTarget(std::shared_ptr<RenderTarget> target);
 
@@ -71,7 +65,6 @@ namespace RtEngine {
 
 		std::shared_ptr<VulkanContext> vulkan_context;
 		std::shared_ptr<TextureRepository> texture_repository;
-		uint32_t bufferUpdateFlags = 0;
 
 		std::unordered_map<std::string, std::shared_ptr<Material>> defaultMaterials;
 
@@ -84,7 +77,7 @@ namespace RtEngine {
 		void createDefaultSamplers();
 		void createDefaultMaterials(const VkPhysicalDeviceRayTracingPipelinePropertiesKHR& raytracingProperties);
 
-		void updateSceneDescriptorSets(const std::shared_ptr<DrawContext> &draw_context);
+		void updateSceneDescriptorSets(const std::shared_ptr<DrawContext> &draw_context, uint32_t update_flags);
 		void updateTlas(std::vector<RenderObject> objects) const;
 
 		void updateMaterial(const std::shared_ptr<IScene> &scene) const;

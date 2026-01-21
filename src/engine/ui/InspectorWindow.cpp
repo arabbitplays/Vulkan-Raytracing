@@ -3,6 +3,7 @@
 #include <imgui.h>
 
 #include "SceneAdapter.hpp"
+#include "UpdateFlags.hpp"
 
 namespace RtEngine {
 	InspectorWindow::InspectorWindow(const std::shared_ptr<SceneManager>& scene_manager) :
@@ -33,7 +34,7 @@ namespace RtEngine {
 		}
 
 		if (refresh) {
-			notifyUpdate(SceneAdapter::MATERIAL_UPDATE | SceneAdapter::GEOMETRY_UPDATE);
+			notifyUpdate(MATERIAL_UPDATE | STATIC_GEOMETRY_UPDATE);
 		}
 	}
 

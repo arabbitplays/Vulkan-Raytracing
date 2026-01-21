@@ -48,19 +48,19 @@ namespace RtEngine {
 
         auto options_window = std::make_shared<OptionsWindow>(vulkan_renderer->getPropertiesManager());
         options_window->addCallback([this](uint32_t flags) {
-            vulkan_renderer->handleGuiUpdate(flags);
+            runner->setUpdateFlags(flags);
         });
         guiManager->addWindow(options_window);
 
         auto inspector_window = std::make_shared<InspectorWindow>(scene_manager);
         inspector_window->addCallback([this](uint32_t flags) {
-            vulkan_renderer->handleGuiUpdate(flags);
+            runner->setUpdateFlags(flags);
         });
         guiManager->addWindow(inspector_window);
 
         auto hierarchy_window = std::make_shared<HierarchyWindow>(inspector_window, scene_manager);
         hierarchy_window->addCallback([this](uint32_t flags) {
-            vulkan_renderer->handleGuiUpdate(flags);
+            runner->setUpdateFlags(flags);
         });
         guiManager->addWindow(hierarchy_window);
     }

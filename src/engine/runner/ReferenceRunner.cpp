@@ -17,7 +17,7 @@ namespace RtEngine {
 		drawFrame();*/
 	}
 
-	void ReferenceRunner::drawFrame(std::shared_ptr<DrawContext> draw_context) {
+	void ReferenceRunner::drawFrame(const std::shared_ptr<DrawContext> &draw_context) {
 		/*renderer->waitForNextFrameStart();
 
 		uint32_t curr_sample_count = renderer->getRenderTarget()->getTotalSampleCount();

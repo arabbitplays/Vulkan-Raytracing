@@ -4,6 +4,8 @@
 
 #include "../../../include/engine/runner/Runner.hpp"
 
+#include "UpdateFlags.hpp"
+
 namespace RtEngine {
     Runner::Runner(std::shared_ptr<EngineContext> engine_context, std::shared_ptr<GuiManager> gui_manager, std::shared_ptr<SceneManager> scene_manager) : engine_context(engine_context), renderer(engine_context->renderer), gui_manager(gui_manager), scene_manager(scene_manager) {
         scene_reader = std::make_shared<SceneReader>(engine_context);
@@ -26,6 +28,7 @@ namespace RtEngine {
         }
         new_scene->start();
         renderer->loadScene(new_scene);
+        update_flags |= MATERIAL_UPDATE | STATIC_GEOMETRY_UPDATE;
 
         //SceneWriter writer;
         //writer.writeScene(PathUtil::getFileName(scene_manager->getSceneInformation().path), scene_manager->scene);
@@ -34,10 +37,12 @@ namespace RtEngine {
     void Runner::renderScene() {
         scene_manager->getCurrentScene()->update();
         std::shared_ptr<DrawContext> draw_context = createMainDrawContext();
+        if (draw_context->targets.size() < 1)
+            return;
         drawFrame(draw_context);
     }
 
-    void Runner::drawFrame(std::shared_ptr<DrawContext> draw_context) {
+    void Runner::drawFrame(const std::shared_ptr<DrawContext>& draw_context) {
         renderer->waitForNextFrameStart();
 
         const int32_t swapchain_image_idx = renderer->aquireNextSwapchainImage();
@@ -48,17 +53,32 @@ namespace RtEngine {
 
         renderer->resetCurrFrame();
 
-        renderer->update(draw_context);
-
-        if (draw_context->targets.size() < 0)
-            return;
+        VkCommandBuffer cmd = renderer->getNewCommandBuffer();
         std::shared_ptr<RenderTarget> target = draw_context->targets[0]; // TODO handle multiple
 
-        VkCommandBuffer command_buffer = renderer->getNewCommandBuffer();
-        renderer->recordBeginCommandBuffer(command_buffer);
-        renderer->recordCommandBuffer(command_buffer, target, swapchain_image_idx, true);
-        gui_manager->recordGuiCommands(command_buffer, swapchain_image_idx);
-        renderer->recordEndCommandBuffer(command_buffer);
+        prepareFrame(cmd, draw_context);
+
+        renderer->recordCommandBuffer(cmd, target, swapchain_image_idx, true);
+        gui_manager->recordGuiCommands(cmd, swapchain_image_idx);
+
+        finishFrame(cmd, draw_context, static_cast<uint32_t>(swapchain_image_idx));
+    }
+
+    void Runner::prepareFrame(VkCommandBuffer cmd, const std::shared_ptr<DrawContext> &draw_context) {
+        renderer->update(draw_context, update_flags);
+
+        if (update_flags > 0) {
+            for (const auto& target : draw_context->targets) {
+                target->resetAccumulatedFrames();
+            }
+        }
+        update_flags = 0;
+
+        renderer->recordBeginCommandBuffer(cmd);
+    }
+
+    void Runner::finishFrame(VkCommandBuffer cmd, const std::shared_ptr<DrawContext> &draw_context, uint32_t swapchain_image_idx) const {
+        renderer->recordEndCommandBuffer(cmd);
         if (renderer->submitCommands(true, swapchain_image_idx)) {
             handle_resize();
         }
@@ -66,17 +86,19 @@ namespace RtEngine {
         draw_context->nextFrame();
     }
 
-    void Runner::handle_resize() {
+    void Runner::handle_resize() const {
         renderer->waitForIdle();
         engine_context->swapchain_manager->recreate();
         gui_manager->updateWindows();
     }
 
-    std::shared_ptr<DrawContext> Runner::createMainDrawContext() {
+    std::shared_ptr<DrawContext> Runner::createMainDrawContext() const {
         auto draw_context = std::make_shared<DrawContext>();
         scene_manager->getCurrentScene()->fillDrawContext(draw_context);
         return draw_context;
     }
 
-
+    void Runner::setUpdateFlags(uint32_t new_flags) {
+        update_flags |= new_flags;
+    }
 } // RtEngine

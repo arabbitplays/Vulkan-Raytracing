@@ -163,8 +163,8 @@ namespace RtEngine {
 		}
 	}
 
-	void VulkanRenderer::update(std::shared_ptr<DrawContext> draw_context) {
-		scene_adapter->updateScene(draw_context, current_frame);
+	void VulkanRenderer::update(std::shared_ptr<DrawContext> draw_context, uint32_t update_flags) {
+		scene_adapter->updateScene(draw_context, current_frame, update_flags);
 	}
 
 	void VulkanRenderer::waitForNextFrameStart() {
@@ -439,13 +439,6 @@ namespace RtEngine {
 
 		renderer_properties->addSelection(CURR_SCENE_OPTION_NAME, &base_options->curr_scene_name,
 										  scenes);
-	}
-
-	void VulkanRenderer::handleGuiUpdate(uint32_t update_flags) const
-	{
-		// TODO this in runner
-		//mainDrawContext->target->resetAccumulatedFrames();
-		scene_adapter->bufferUpdateFlags |= update_flags;
 	}
 
 	std::shared_ptr<VulkanContext> VulkanRenderer::getVulkanContext() {

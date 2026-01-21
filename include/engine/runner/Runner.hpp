@@ -16,12 +16,17 @@ namespace RtEngine {
         std::string getScenePath() const;
         void loadScene(const std::string &scene_path);
         virtual void renderScene();
+
+        void setUpdateFlags(uint32_t new_flags);
     protected:
-        virtual void drawFrame(std::shared_ptr<DrawContext> draw_context);
+        virtual void drawFrame(const std::shared_ptr<DrawContext> &draw_context);
 
-        void handle_resize();
+        void prepareFrame(VkCommandBuffer cmd, const std::shared_ptr<DrawContext> &draw_context);
+        void finishFrame(VkCommandBuffer cmd, const std::shared_ptr<DrawContext> &draw_context, uint32_t swapchain_image_idx) const;
 
-        std::shared_ptr<DrawContext> createMainDrawContext();
+        void handle_resize() const;
+
+        std::shared_ptr<DrawContext> createMainDrawContext() const;
 
         std::shared_ptr<EngineContext> engine_context;
         std::shared_ptr<VulkanRenderer> renderer;
@@ -29,6 +34,8 @@ namespace RtEngine {
 
         std::shared_ptr<SceneReader> scene_reader;
         std::shared_ptr<SceneManager> scene_manager;
+
+        uint32_t update_flags;
     };
 } // RtEngine
 

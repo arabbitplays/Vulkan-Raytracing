@@ -8,6 +8,7 @@
 #include <SceneUtil.hpp>
 
 #include "PhongMaterial.hpp"
+#include "UpdateFlags.hpp"
 
 namespace RtEngine {
 
@@ -21,8 +22,6 @@ namespace RtEngine {
 		setupNewScene(loaded_scene);
 		updateGeometryResources(loaded_scene);
 		updateMaterial(loaded_scene);
-
-		bufferUpdateFlags = static_cast<uint8_t>(GEOMETRY_UPDATE) | static_cast<uint8_t>(MATERIAL_UPDATE);
 	}
 
 	void SceneAdapter::setupNewScene(const std::shared_ptr<IScene> &scene) {
@@ -96,29 +95,25 @@ namespace RtEngine {
 
 	// ----------------------------------------------------------------------------------------------------------------
 
-	void SceneAdapter::updateScene(const std::shared_ptr<DrawContext> &draw_context, uint32_t current_frame) {
+	void SceneAdapter::updateScene(const std::shared_ptr<DrawContext> &draw_context, uint32_t current_frame, uint32_t update_flags) {
 		assert(loaded_scene != nullptr);
 
 		// QuickTimer timer{"Scene Update", true};
 		VkDevice device = vulkan_context->device_manager->getDevice();
 
-		if (!(bufferUpdateFlags & NO_UPDATE))
+		if (!(update_flags & NO_UPDATE))
 			vkDeviceWaitIdle(device);
 
-		if (bufferUpdateFlags != NO_UPDATE) {
-			if (bufferUpdateFlags & MATERIAL_UPDATE) {
-				// !!!! This clear the descriptor set writes
-				material_manager->updateMaterialResources(loaded_scene);
-			}
+		if (update_flags & MATERIAL_UPDATE) {
+			// !!!! This clear the descriptor set writes
+			material_manager->updateMaterialResources(loaded_scene);
 		}
 
-		updateStaticGeometry(draw_context->getRenderObjects(), bufferUpdateFlags);
+		updateStaticGeometry(draw_context->getRenderObjects(), update_flags);
 		updateSceneData(loaded_scene, draw_context, current_frame);
 		updateRenderTarget(draw_context->targets.at(0)); // TODO move this to runner
 
-		updateSceneDescriptorSets(draw_context);
-
-		bufferUpdateFlags = NO_UPDATE;
+		updateSceneDescriptorSets(draw_context, update_flags);
 	}
 
 	void SceneAdapter::updateRenderTarget(const std::shared_ptr<RenderTarget> target) {
@@ -137,13 +132,13 @@ namespace RtEngine {
 
 	// TODO split into dynamic and static
 	void SceneAdapter::updateStaticGeometry(std::vector<RenderObject> render_objects, uint32_t update_flags) {
-		if (update_flags & GEOMETRY_UPDATE) {
+		if (update_flags & STATIC_GEOMETRY_UPDATE) {
 			instance_manager->createInstanceMappingBuffer(render_objects);
 			// TODO Only partially update tlas depending on the updated dynamic objects
 			updateTlas(render_objects);
 		}
 
-		if (update_flags & GEOMETRY_UPDATE || bufferUpdateFlags & MATERIAL_UPDATE) {
+		if (update_flags & STATIC_GEOMETRY_UPDATE || update_flags & MATERIAL_UPDATE) {
 			instance_manager->createEmittingInstancesBuffer(render_objects);
 			vulkan_context->descriptor_allocator->writeBuffer(7, instance_manager->getEmittingInstancesBuffer().handle,
 												  0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
@@ -189,11 +184,11 @@ namespace RtEngine {
 		scene->getEnvironmentMap()->writeToDescriptor(vulkan_context->descriptor_allocator, defaultSamplerLinear);
 	}
 
-	void SceneAdapter::updateSceneDescriptorSets(const std::shared_ptr<DrawContext> &draw_context) {
+	void SceneAdapter::updateSceneDescriptorSets(const std::shared_ptr<DrawContext> &draw_context, uint32_t update_flags) {
 		VkDevice device = vulkan_context->device_manager->getDevice();
 
 		VkAccelerationStructureKHR tlas_handle = top_level_acceleration_structure->getHandle();
-		if (bufferUpdateFlags & GEOMETRY_UPDATE) {
+		if (update_flags & STATIC_GEOMETRY_UPDATE) {
 			//TODO move those two to updateStaticGeometry
 			vulkan_context->descriptor_allocator->writeAccelerationStructure(
 					0, tlas_handle, VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR);
