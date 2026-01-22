@@ -77,23 +77,26 @@ namespace RtEngine {
     }
 
     void Engine::createRunner() {
-        /*if (options->runner_type == OFFLINE) {
-            vulkan_renderer = std::make_shared<VulkanRenderer>();
+        if (options->runner_type == OFFLINE) {
+            runner = std::make_shared<Runner>(engine_context, guiManager, scene_manager);
+            SPDLOG_INFO("Offline runner created");
         } else if (options->runner_type == REALTIME) {
-            vulkan_renderer = std::make_shared<RealtimeRunner>();
+            //vulkan_renderer = std::make_shared<RealtimeRunner>();
         } else if (options->runner_type == REFERENCE) {
-            vulkan_renderer = std::make_shared<ReferenceRunner>();
+            runner = std::make_shared<ReferenceRunner>(engine_context, guiManager, scene_manager);
+            SPDLOG_INFO("Reference runner created");
         } else if (options->runner_type == REFERENCE) {
-            vulkan_renderer = std::make_shared<BenchmarkRunner>();
+            //vulkan_renderer = std::make_shared<BenchmarkRunner>();
         } else {
+            SPDLOG_ERROR("No runner created");
             return;
-        }*/
+        }
 
-        runner = std::make_shared<Runner>(engine_context, guiManager, scene_manager);
+
     }
 
     void Engine::mainLoop() {
-        while (window->is_open()) {
+        while (window->is_open() && runner->isRunning()) {
             window->pollEvents();
 
             if (PathUtil::getFile(runner->getScenePath()) != renderer_options->curr_scene_name) {

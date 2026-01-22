@@ -36,16 +36,17 @@ namespace RtEngine {
 
 		void waitForIdle();
 		void waitForNextFrameStart();
-		void resetCurrFrame();
+		void resetCurrFrameFence();
 
 		int32_t aquireNextSwapchainImage();
 		VkCommandBuffer getNewCommandBuffer();
 		void recordBeginCommandBuffer(VkCommandBuffer commandBuffer);
 		virtual void recordCommandBuffer(VkCommandBuffer commandBuffer, std::shared_ptr<RenderTarget> target, uint32_t swapchain_image_idx, bool present);
 		void recordEndCommandBuffer(VkCommandBuffer commandBuffer);
-		bool submitCommands(bool present, int32_t swapchain_image_idx);
+		bool submitCommands(bool present, uint32_t swapchain_image_idx);
 
 		void nextFrame();
+		void outputRenderingTarget(std::shared_ptr<RenderTarget> target, const std::string &output_path);
 
 		void cleanup();
 
@@ -56,9 +57,9 @@ namespace RtEngine {
 		std::shared_ptr<TextureRepository> getTextureRepository();
 		std::shared_ptr<MeshRepository> getMeshRepository();
 		std::unordered_map<std::string, std::shared_ptr<Material>> getMaterials() const;
+		std::shared_ptr<Swapchain> getSwapchain();
 
 		std::shared_ptr<PropertiesManager> getPropertiesManager();
-		std::shared_ptr<Swapchain> getSwapchain();
 
 	protected:
 		std::shared_ptr<Window> window;
@@ -100,14 +101,13 @@ namespace RtEngine {
 
 		void pollSdlEvents();
 
-		void submitCommandBuffer(std::vector<VkSemaphore> wait_semaphore, std::vector<VkSemaphore> signal_semaphore);
+		void submitCommandBuffer(const std::vector<VkSemaphore> &wait_semaphore, const std::vector<VkSemaphore> &signal_semaphore);
 		void presentSwapchainImage(const std::vector<VkSemaphore>& wait_semaphore, uint32_t image_index);
 
-		void outputRenderingTarget(std::shared_ptr<RenderTarget> target, const std::string &output_path);
 		uint8_t *fixImageFormatForStorage(void *image_data, size_t pixel_count, VkFormat originalFormat);
 
 		void recordRenderToImage(VkCommandBuffer commandBuffer, std::shared_ptr<RenderTarget> target);
-		void recordCopyToSwapchain(VkCommandBuffer commandBuffer, std::shared_ptr<RenderTarget> render_target, uint32_t swapchain_image_index);
+		void recordCopyToSwapchain(VkCommandBuffer commandBuffer, const std::shared_ptr<RenderTarget> &render_target, uint32_t swapchain_image_index);
 
 		virtual void initProperties();
 		void initSceneSelectionProperty() const;

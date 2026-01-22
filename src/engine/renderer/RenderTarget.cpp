@@ -18,7 +18,7 @@ namespace RtEngine
         render_targets.resize(image_count);
         for (uint32_t i = 0; i < image_count; i++) {
             render_targets[i] = resource_builder->createImage(
-                    VkExtent3D{image_extent.width, image_extent.height, 1}, VK_FORMAT_R8G8B8A8_UNORM, // TODO read out needed format from the swap chain
+                    VkExtent3D{image_extent.width, image_extent.height, 1}, VK_FORMAT_R8G8B8A8_UNORM,
                     VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_STORAGE_BIT,
                     VK_IMAGE_ASPECT_COLOR_BIT);
 
@@ -29,7 +29,7 @@ namespace RtEngine
 
         std::vector<uint32_t> pixels(image_extent.width * image_extent.height * 4);
 
-        for (int i = 0; i < image_extent.width * image_extent.height * 4; i++) {
+        for (uint32_t i = 0; i < image_extent.width * image_extent.height * 4; i++) {
             pixels[i] = RandomUtil::generateInt();
         }
 
@@ -42,9 +42,9 @@ namespace RtEngine
         }
     }
 
-    void RenderTarget::recreate(VkExtent2D image_extent)
+    void RenderTarget::recreate(const VkExtent2D new_image_extent)
     {
-        this->image_extent = image_extent;
+        this->image_extent = new_image_extent;
         uint32_t image_count = render_targets.size();
         destroy();
         createImages(image_count);
@@ -66,6 +66,10 @@ namespace RtEngine
     void RenderTarget::nextImage()
     {
         current_image = (current_image + 1) % render_targets.size();
+    }
+
+    VkExtent2D RenderTarget::getExtent() const {
+        return image_extent;
     }
 
     uint32_t RenderTarget::getAccumulatedFrameCount() const {
@@ -90,11 +94,9 @@ namespace RtEngine
 
     void RenderTarget::setSamplesPerFrame(uint32_t new_samples_per_frame) {
         samples_per_frame = new_samples_per_frame;
-        resetAccumulatedFrames();
     }
 
-    void RenderTarget::destroy()
-    {
+    void RenderTarget::destroy() const {
         for (auto &image: render_targets) {
             resource_builder->destroyImage(image);
         }

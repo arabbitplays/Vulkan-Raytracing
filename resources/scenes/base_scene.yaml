@@ -92,6 +92,8 @@ scene:
               - 3
         - Camera:
             fov: 45
+            width: 1000
+            height: 1000
     - name: Light
       components:
         - Transform:

@@ -365,12 +365,4 @@ namespace RtEngine {
 		vkDestroyImage(device, image.image, nullptr);
 		vkFreeMemory(device, image.imageMemory, nullptr);
 	}
-
-	void ResourceBuilder::writePNG(std::string path, void *data, uint32_t width, uint32_t height) {
-		if (stbi_write_png(path.c_str(), width, height, 4, data, width * 4)) {
-			spdlog::info("Saved rendered image to {}!", path);
-		} else {
-			spdlog::error("failed to save output image to {}!", path);
-		}
-	}
 } // namespace RtEngine

@@ -1,7 +1,3 @@
-//
-// Created by oschdi on 18.01.26.
-//
-
 #ifndef VULKAN_RAYTRACING_ENGINE_HPP
 #define VULKAN_RAYTRACING_ENGINE_HPP
 #include <memory>

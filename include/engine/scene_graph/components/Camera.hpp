@@ -49,8 +49,8 @@ namespace RtEngine {
         glm::mat4 projection;
         glm::mat4 inverse_projection;
 
-        uint32_t image_width;
-        uint32_t image_height;
+        int32_t image_width = 0;
+        int32_t image_height = 0;
 
         std::shared_ptr<RenderTarget> render_target;
 

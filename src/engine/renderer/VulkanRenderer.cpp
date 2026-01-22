@@ -7,6 +7,8 @@
 #include <set>
 #include <RandomUtil.hpp>
 
+#include "ImageUtil.hpp"
+
 namespace RtEngine {
 
 #ifdef NDEBUG
@@ -190,11 +192,11 @@ namespace RtEngine {
 		return static_cast<int32_t>(imageIndex);
 	}
 
-	void VulkanRenderer::resetCurrFrame() {
+	void VulkanRenderer::resetCurrFrameFence() {
 		vkResetFences(vulkan_context->device_manager->getDevice(), 1, &inFlightFences[current_frame]);
 	}
 
-	bool VulkanRenderer::submitCommands(bool present, int32_t swapchain_image_idx) {
+	bool VulkanRenderer::submitCommands(bool present, uint32_t swapchain_image_idx) {
 		if (present) {
 			std::vector<VkSemaphore> waitSemaphore = {imageAvailableSemaphores[current_frame]};
 			std::vector<VkSemaphore> signalSemaphore = {renderFinishedSemaphores[current_frame]};
@@ -214,8 +216,8 @@ namespace RtEngine {
 		current_frame = (current_frame + 1) % max_frames_in_flight;
 	}
 
-	void VulkanRenderer::submitCommandBuffer(std::vector<VkSemaphore> wait_semaphore,
-	                                         std::vector<VkSemaphore> signal_semaphore) {
+	void VulkanRenderer::submitCommandBuffer(const std::vector<VkSemaphore> &wait_semaphore,
+	                                         const std::vector<VkSemaphore> &signal_semaphore) {
 		VkSubmitInfo submitInfo{};
 		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 
@@ -318,12 +320,13 @@ namespace RtEngine {
 								   VK_SHADER_STAGE_MISS_BIT_KHR,
 						   0, pc_size, pc_data);
 
+		const auto [width, height] = target->getExtent();
 		CmdTraceRaysKHR(vulkan_context->device_manager->getDevice(), commandBuffer, &raygenShaderSbtEntry,
 						&missShaderSbtEntry, &closestHitShaderSbtEntry, &callableShaderSbtEntry,
-						vulkan_context->swapchain->extent.width, vulkan_context->swapchain->extent.height, 1);
+						width, height, 1);
 	}
 
-	void VulkanRenderer::recordCopyToSwapchain(VkCommandBuffer commandBuffer, std::shared_ptr<RenderTarget> target, const uint32_t swapchain_image_index) {
+	void VulkanRenderer::recordCopyToSwapchain(VkCommandBuffer commandBuffer, const std::shared_ptr<RenderTarget> &target, const uint32_t swapchain_image_index) {
 		AllocatedImage render_target = target->getCurrentTargetImage();
 		std::shared_ptr<ResourceBuilder> resource_builder = vulkan_context->resource_builder;
 		std::shared_ptr<Swapchain> swapchain = vulkan_context->swapchain;
@@ -338,16 +341,18 @@ namespace RtEngine {
 				VK_PIPELINE_STAGE_TRANSFER_BIT, VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT,
 				VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
 
-		int width = swapchain->extent.width;
-		int height = swapchain->extent.height;
+		const int32_t swapchain_width = swapchain->extent.width;
+		const int32_t swapchain_height = swapchain->extent.height;
+		const int32_t target_width = target->getExtent().width;
+		const int32_t target_height = target->getExtent().height;
 
 		VkImageBlit blitRegion{};
 		blitRegion.srcSubresource = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1};
 		blitRegion.srcOffsets[0] = {0, 0, 0};
-		blitRegion.srcOffsets[1] = {width, height, 1};
+		blitRegion.srcOffsets[1] = {target_width, target_height, 1};
 		blitRegion.dstSubresource = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1};
 		blitRegion.dstOffsets[0] = {0, 0, 0};
-		blitRegion.dstOffsets[1] = {width, height, 1};
+		blitRegion.dstOffsets[1] = {swapchain_width, swapchain_height, 1};
 
 		vkCmdBlitImage(commandBuffer, render_target.image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
 					   swapchain->images[swapchain_image_index], VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &blitRegion,
@@ -380,8 +385,8 @@ namespace RtEngine {
 		void *data = vulkan_context->resource_builder->downloadImage(render_target, sizeof(uint32_t));
 		uint8_t *fixed_data = fixImageFormatForStorage(
 				data, render_target.imageExtent.width * render_target.imageExtent.height, render_target.imageFormat);
-		vulkan_context->resource_builder->writePNG(output_path, fixed_data, render_target.imageExtent.width,
-												   render_target.imageExtent.height);
+		ImageUtil::writePNG(output_path, fixed_data, render_target.imageExtent.width,
+		                                           render_target.imageExtent.height);
 
 		delete fixed_data;
 	}

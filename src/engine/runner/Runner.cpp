@@ -1,13 +1,13 @@
-//
-// Created by oschdi on 18.01.26.
-//
-
 #include "../../../include/engine/runner/Runner.hpp"
 
 #include "UpdateFlags.hpp"
 
 namespace RtEngine {
-    Runner::Runner(std::shared_ptr<EngineContext> engine_context, std::shared_ptr<GuiManager> gui_manager, std::shared_ptr<SceneManager> scene_manager) : engine_context(engine_context), renderer(engine_context->renderer), gui_manager(gui_manager), scene_manager(scene_manager) {
+    Runner::Runner(std::shared_ptr<EngineContext> engine_context,
+        const std::shared_ptr<GuiManager> &gui_manager, const std::shared_ptr<SceneManager> &scene_manager)
+        : engine_context(engine_context), renderer(engine_context->renderer),
+        gui_manager(gui_manager), scene_manager(scene_manager) {
+
         scene_reader = std::make_shared<SceneReader>(engine_context);
     }
 
@@ -51,7 +51,7 @@ namespace RtEngine {
             return;
         }
 
-        renderer->resetCurrFrame();
+        renderer->resetCurrFrameFence();
 
         VkCommandBuffer cmd = renderer->getNewCommandBuffer();
         std::shared_ptr<RenderTarget> target = draw_context->targets[0]; // TODO handle multiple
@@ -62,7 +62,7 @@ namespace RtEngine {
         renderer->recordCommandBuffer(cmd, target, swapchain_image_idx, true);
         gui_manager->recordGuiCommands(cmd, swapchain_image_idx);
 
-        finishFrame(cmd, draw_context, static_cast<uint32_t>(swapchain_image_idx));
+        finishFrame(cmd, draw_context, static_cast<uint32_t>(swapchain_image_idx), true);
     }
 
     void Runner::prepareFrame(VkCommandBuffer cmd, const std::shared_ptr<DrawContext> &draw_context) {
@@ -78,9 +78,9 @@ namespace RtEngine {
         renderer->recordBeginCommandBuffer(cmd);
     }
 
-    void Runner::finishFrame(VkCommandBuffer cmd, const std::shared_ptr<DrawContext> &draw_context, uint32_t swapchain_image_idx) const {
+    void Runner::finishFrame(VkCommandBuffer cmd, const std::shared_ptr<DrawContext> &draw_context, uint32_t swapchain_image_idx, bool present) const {
         renderer->recordEndCommandBuffer(cmd);
-        if (renderer->submitCommands(true, swapchain_image_idx)) {
+        if (renderer->submitCommands(present, swapchain_image_idx)) {
             handle_resize();
         }
         renderer->nextFrame();
@@ -101,5 +101,9 @@ namespace RtEngine {
 
     void Runner::setUpdateFlags(uint32_t new_flags) {
         update_flags |= new_flags;
+    }
+
+    bool Runner::isRunning() const {
+        return running;
     }
 } // RtEngine
