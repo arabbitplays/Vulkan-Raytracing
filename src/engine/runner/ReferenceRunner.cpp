@@ -114,7 +114,7 @@ namespace RtEngine {
 			current_sample_count *= 2;
 		}
 
-		clearTmpfolder();
+		//clearTmpfolder();
 	}
 
 	void ReferenceRunner::clearTmpfolder() {

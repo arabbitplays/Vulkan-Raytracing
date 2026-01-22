@@ -21,8 +21,7 @@ namespace RtEngine {
 			});
 		}
 
-
-    	render_target = context->renderer->createRenderTarget();
+    	render_target = context->renderer->createRenderTarget(image_width, image_height);
     	transform = node.lock()->transform;
     }
 

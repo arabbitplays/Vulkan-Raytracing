@@ -92,8 +92,9 @@ namespace RtEngine {
 		});
 	}
 
-	std::shared_ptr<RenderTarget> VulkanRenderer::createRenderTarget() {
-		return std::make_shared<RenderTarget>(vulkan_context->resource_builder, vulkan_context->swapchain->extent, max_frames_in_flight);
+	std::shared_ptr<RenderTarget> VulkanRenderer::createRenderTarget(uint32_t width, uint32_t height) {
+		VkExtent2D extent(width, height);
+		return std::make_shared<RenderTarget>(vulkan_context->resource_builder, extent, max_frames_in_flight);
 	}
 
 	std::shared_ptr<DescriptorAllocator> VulkanRenderer::createDescriptorAllocator() {

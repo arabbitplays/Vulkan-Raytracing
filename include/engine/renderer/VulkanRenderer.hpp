@@ -50,7 +50,7 @@ namespace RtEngine {
 
 		void cleanup();
 
-		std::shared_ptr<RenderTarget> createRenderTarget();
+		std::shared_ptr<RenderTarget> createRenderTarget(uint32_t width, uint32_t height);
 
 		std::shared_ptr<VulkanContext> getVulkanContext();
 

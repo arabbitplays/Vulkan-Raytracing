@@ -31,6 +31,15 @@ scene:
       roughness: 1
       ao: 0.5
       eta: 1
+    - name: sphere3
+      albedo:
+        - 0.899999976
+        - 0.899999976
+        - 0.899999976
+      metallic: 0.9
+      roughness: 0.1
+      ao: 0.5
+      eta: 1
     - name: diffuse_blue
       albedo:
         - 0
@@ -92,6 +101,8 @@ scene:
               - 3
         - Camera:
             fov: 45
+            width: 1024
+            height: 1024
     - name: Light
       components:
         - Transform:
@@ -116,7 +127,7 @@ scene:
       components:
         - Transform:
             position:
-              - -1
+              - -1.5
               - 0
               - 0
             rotation:
@@ -124,9 +135,9 @@ scene:
               - 0
               - 0
             scale:
-              - 1
-              - 1
-              - 1
+              - 0.7
+              - 0.7
+              - 0.7
         - MeshRenderer:
             material_name: sphere1
             mesh: sphere
@@ -136,7 +147,27 @@ scene:
       components:
         - Transform:
             position:
-              - 1
+              - 0
+              - -1
+              - 0
+            rotation:
+              - 0
+              - 0
+              - 0
+            scale:
+              - 0.7
+              - 0.7
+              - 0.7
+        - MeshRenderer:
+            material_name: sphere2
+            mesh: sphere
+      children:
+        []
+    - name: Sphere3
+      components:
+        - Transform:
+            position:
+              - 1.5
               - 0
               - 0
             rotation:
@@ -144,14 +175,14 @@ scene:
               - 0
               - 0
             scale:
-              - 1
-              - 1
-              - 1
+              - 0.7
+              - 0.7
+              - 0.7
         - MeshRenderer:
-            material_name: sphere2
+            material_name: sphere3
             mesh: sphere
       children:
-        []
+        [ ]
     - name: Room
       components:
         - Transform:
