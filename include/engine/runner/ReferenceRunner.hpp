@@ -17,8 +17,6 @@ namespace RtEngine {
 
 		void mergeImages(uint32_t width, uint32_t height);
 
-		void clearTmpfolder();
-
 		std::string getTmpImagePath(uint32_t image_idx, uint32_t samples);
 		std::string getOutputImagePath(uint32_t samples);
 

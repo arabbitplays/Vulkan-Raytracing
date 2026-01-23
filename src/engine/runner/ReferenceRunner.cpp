@@ -117,19 +117,6 @@ namespace RtEngine {
 		done_images.clear(); // every pointer is now invalid anyway
 	}
 
-	void ReferenceRunner::clearTmpfolder() {
-		namespace fs = std::filesystem;
-
-		if (!fs::exists(TMP_FOLDER) || !fs::is_directory(TMP_FOLDER))
-			return;
-
-		for (const fs::directory_entry& entry : fs::directory_iterator(TMP_FOLDER)) {
-			if (entry.is_regular_file()) {
-				fs::remove(entry.path());
-			}
-		}
-	}
-
 	std::string ReferenceRunner::getTmpImagePath(uint32_t image_idx, uint32_t samples) {
 		std::string scene_name = PathUtil::getFileName(scene_manager->getCurrentScene()->path);
 		return std::format("{}/{}_{}_{}.png", TMP_FOLDER, samples, scene_name, image_idx);

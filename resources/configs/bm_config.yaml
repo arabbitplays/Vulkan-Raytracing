@@ -1,7 +1,7 @@
 Material:
   Normal_Mapping: false
   Sample_Lights: false
-  Sample_BSDF: false
+  Sample_BSDF: true
   Russian_Roulette: false
 Renderer:
   Max_Depth: 5

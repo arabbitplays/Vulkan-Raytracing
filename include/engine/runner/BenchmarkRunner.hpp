@@ -17,19 +17,20 @@ namespace RtEngine {
 		void prepareFrame(VkCommandBuffer cmd, const std::shared_ptr<DrawContext> &draw_context) override;
 
 		std::string getTmpImagePath(uint32_t samples);
-
 		std::string getOutputFilePath();
+		void clearTmpfolder();
 
-		void outputBenchmarkData();
+		void outputBenchmarkDataToCsv();
 
 		float calculateMSE(uint8_t *ref_data, uint8_t *data, uint32_t size);
+
 
 		std::string TMP_FOLDER = "./tmp";
 		std::string OUT_FOLDER = "../resources/benchmarks";
 		std::string REF_FOLDER = "../resources/references";
 
 		uint32_t error_calculation_sample_count = 1;
-		uint32_t final_sample_count = 256;
+		uint32_t final_sample_count = 1 << 12;
 	};
 
 } // namespace RtEngine

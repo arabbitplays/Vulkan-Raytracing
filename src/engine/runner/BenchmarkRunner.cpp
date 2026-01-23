@@ -1,4 +1,6 @@
 #include "BenchmarkRunner.hpp"
+
+#include <filesystem>
 #include <omp.h>
 
 #include "ImageUtil.hpp"
@@ -33,7 +35,7 @@ namespace RtEngine {
 
 			if (error_calculation_sample_count == final_sample_count) {
 				running = false;
-				outputBenchmarkData();
+				outputBenchmarkDataToCsv();
 			} else {
 				error_calculation_sample_count *= 2;
 			}
@@ -84,19 +86,20 @@ namespace RtEngine {
 
 	std::string BenchmarkRunner::getOutputFilePath() {
 		std::string scene_name = PathUtil::getFileName(scene_manager->getCurrentScene()->path);
-		return std::format("{}/{}.csv", OUT_FOLDER, scene_name);
+		return std::format("{}/bm_out.csv", OUT_FOLDER, scene_name);
 	}
 
-	void BenchmarkRunner::outputBenchmarkData() {
+	void BenchmarkRunner::outputBenchmarkDataToCsv() {
 		std::string scene_name = PathUtil::getFileName(scene_manager->getCurrentScene()->path);
-		std::string ref_path = std::format("{}/8388608_{}.png", REF_FOLDER, scene_name);
+		std::string ref_path = std::format("{}/131072_{}.png", REF_FOLDER, scene_name);
 
 		int ref_width, ref_height;
 		uint8_t* ref_data = ImageUtil::loadPNG(ref_path, &ref_width, &ref_height);
 
 		assert(ref_data != nullptr);
 
-		std::ofstream out(getOutputFilePath());
+		std::string output_path = getOutputFilePath();
+		std::ofstream out(output_path);
 		if (!out)
 			throw std::runtime_error("Failed to open CSV file");
 		out << "samples,mse\n";
@@ -114,6 +117,22 @@ namespace RtEngine {
 			stbi_image_free(data);
 		}
 		stbi_image_free(ref_data);
+
+		clearTmpfolder();
+		SPDLOG_INFO("Saved benchmark data to {}!", output_path);
+	}
+
+	void BenchmarkRunner::clearTmpfolder() {
+		namespace fs = std::filesystem;
+
+		if (!fs::exists(TMP_FOLDER) || !fs::is_directory(TMP_FOLDER))
+			return;
+
+		for (const fs::directory_entry& entry : fs::directory_iterator(TMP_FOLDER)) {
+			if (entry.is_regular_file()) {
+				fs::remove(entry.path());
+			}
+		}
 	}
 
 	float BenchmarkRunner::calculateMSE(uint8_t* ref_data, uint8_t* data, uint32_t size) {

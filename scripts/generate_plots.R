@@ -11,10 +11,10 @@ names(data) <- c("samples", "mse")
 pdf(output_path, width = 10, height = 7)
 
 data %>%
-	ggplot(aes(x = samples, y = mse)) +
+	ggplot(aes(x = log2(samples), y = log2(mse))) +
 	geom_line() +
-	scale_x_log10() +
-    scale_y_log10() +
-	labs(title = "MSE against reference image", x = "Samples", y = "MSE")
+	scale_x_continuous("Samples", labels = math_format(2^.x)) +
+    scale_y_continuous("Log MSE") +
+	labs(title = "Log MSE against reference image")
 
 dev.off()
