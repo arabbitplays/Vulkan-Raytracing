@@ -46,9 +46,12 @@ namespace RtEngine {
 		bool submitCommands(bool present, uint32_t swapchain_image_idx);
 
 		void nextFrame();
-		void outputRenderingTarget(std::shared_ptr<RenderTarget> target, const std::string &output_path);
 
 		void cleanup();
+
+		void outputRenderingTarget(std::shared_ptr<RenderTarget> target, const std::string &output_path);
+		float *downloadRenderTarget(std::shared_ptr<RenderTarget> target);
+		uint8_t *fixImageFormatForStorage(void *image_data, size_t pixel_count, VkFormat originalFormat);
 
 		std::shared_ptr<RenderTarget> createRenderTarget(uint32_t width, uint32_t height);
 
@@ -104,10 +107,8 @@ namespace RtEngine {
 		void submitCommandBuffer(const std::vector<VkSemaphore> &wait_semaphore, const std::vector<VkSemaphore> &signal_semaphore);
 		void presentSwapchainImage(const std::vector<VkSemaphore>& wait_semaphore, uint32_t image_index);
 
-		uint8_t *fixImageFormatForStorage(void *image_data, size_t pixel_count, VkFormat originalFormat);
-
 		void recordRenderToImage(VkCommandBuffer commandBuffer, std::shared_ptr<RenderTarget> target);
-		void recordCopyToSwapchain(VkCommandBuffer commandBuffer, const std::shared_ptr<RenderTarget> &render_target, uint32_t swapchain_image_index);
+		void recordBlitToSwapchain(VkCommandBuffer commandBuffer, const std::shared_ptr<RenderTarget> &render_target, uint32_t swapchain_image_index);
 
 		virtual void initProperties();
 		void initSceneSelectionProperty() const;

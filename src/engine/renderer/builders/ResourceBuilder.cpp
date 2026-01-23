@@ -230,7 +230,7 @@ namespace RtEngine {
 		return stbi_load(path.c_str(), width, height, channels, STBI_rgb_alpha);
 	}
 
-	void *ResourceBuilder::downloadImage(AllocatedImage image, uint32_t bytes_per_channel) {
+	uint8_t *ResourceBuilder::downloadImage(AllocatedImage image, uint32_t bytes_per_channel) {
 		size_t buffer_size =
 				image.imageExtent.width * image.imageExtent.height * image.imageExtent.depth * 4 * bytes_per_channel;
 		AllocatedBuffer staging_buffer =

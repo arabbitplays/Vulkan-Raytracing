@@ -26,6 +26,11 @@
         pkg-config
         doxygen
         python3
+        (pkgs.python3.withPackages (python-pkgs: with python-pkgs; [
+            # select Python packages here
+            pillow
+            numpy
+        ]))
       ];
 
       buildInputs = with pkgs; [

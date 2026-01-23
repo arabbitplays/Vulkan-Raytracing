@@ -15,25 +15,26 @@ namespace RtEngine {
 	private:
 		void prepareFrame(VkCommandBuffer cmd, const std::shared_ptr<DrawContext> &draw_context) override;
 
-		void mergeImages();
+		void mergeImages(uint32_t width, uint32_t height);
 
 		void clearTmpfolder();
 
 		std::string getTmpImagePath(uint32_t image_idx, uint32_t samples);
 		std::string getOutputImagePath(uint32_t samples);
 
-		void writeMeanPng(std::string path1, std::string path2, std::string out_path);
+		float *calculateMean(float *imgA, float *imgB, uint32_t size);
 
 		const std::string TMP_FOLDER = "./tmp";
 		const std::string OUT_FOLDER = "../resources/references";
 
 		spdlog::stopwatch stopwatch;
 		uint32_t present_sample_count = 8;
-		int32_t final_sample_count = 1 << 20;
+		int32_t final_sample_count = 1 << 17;
 		int32_t samples_per_image = 1 << 12;
-		//int32_t final_sample_count = 32;
+		// int32_t samples_per_image = 32;
+		// int32_t final_sample_count = 256;
 
-		uint32_t done_images = 0;
+		std::vector<float*> done_images;
 		uint32_t final_image_count;
 	};
 

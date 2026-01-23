@@ -6,6 +6,7 @@
 #include <PathUtil.hpp>
 #include <set>
 #include <RandomUtil.hpp>
+#include <glm/gtc/packing.hpp>
 
 #include "ImageUtil.hpp"
 
@@ -269,7 +270,7 @@ namespace RtEngine {
 	void VulkanRenderer::recordCommandBuffer(VkCommandBuffer commandBuffer, std::shared_ptr<RenderTarget> target, const uint32_t swapchain_image_idx, bool present) {
 		recordRenderToImage(commandBuffer, target);
 		if (present) {
-			recordCopyToSwapchain(commandBuffer, target, swapchain_image_idx);
+			recordBlitToSwapchain(commandBuffer, target, swapchain_image_idx);
 		}
 	}
 
@@ -327,7 +328,7 @@ namespace RtEngine {
 						width, height, 1);
 	}
 
-	void VulkanRenderer::recordCopyToSwapchain(VkCommandBuffer commandBuffer, const std::shared_ptr<RenderTarget> &target, const uint32_t swapchain_image_index) {
+	void VulkanRenderer::recordBlitToSwapchain(VkCommandBuffer commandBuffer, const std::shared_ptr<RenderTarget> &target, const uint32_t swapchain_image_index) {
 		AllocatedImage render_target = target->getCurrentTargetImage();
 		std::shared_ptr<ResourceBuilder> resource_builder = vulkan_context->resource_builder;
 		std::shared_ptr<Swapchain> swapchain = vulkan_context->swapchain;
@@ -381,15 +382,22 @@ namespace RtEngine {
 		window->destroy();
 	}
 
+	float* VulkanRenderer::downloadRenderTarget(std::shared_ptr<RenderTarget> target) {
+		AllocatedImage image = target->getCurrentTargetImage();
+		uint8_t *data = vulkan_context->resource_builder->downloadImage(image, sizeof(float));
+
+		return reinterpret_cast<float*>(data);
+	}
+
 	void VulkanRenderer::outputRenderingTarget(std::shared_ptr<RenderTarget> target, const std::string &output_path) {
 		AllocatedImage render_target = target->getCurrentTargetImage();
-		void *data = vulkan_context->resource_builder->downloadImage(render_target, sizeof(uint32_t));
+		uint8_t *data = vulkan_context->resource_builder->downloadImage(render_target, sizeof(uint32_t));
 		uint8_t *fixed_data = fixImageFormatForStorage(
 				data, render_target.imageExtent.width * render_target.imageExtent.height, render_target.imageFormat);
 		ImageUtil::writePNG(output_path, fixed_data, render_target.imageExtent.width,
 		                                           render_target.imageExtent.height);
 
-		delete fixed_data;
+		delete[] fixed_data;
 	}
 
 	// target format is R8G8B8A8_UNORM
@@ -412,7 +420,7 @@ namespace RtEngine {
 				// Clamp each channel to the [0, 1] range and then scale to [0, 255]
 				output_image[i] = static_cast<uint8_t>(std::fmin(1.0f, std::fmax(0.0f, image_data[i])) * 255);
 			}
-			delete image_data;
+			delete[] image_data;
 			return output_image;
 		} else {
 			spdlog::error("Image format of the storage image is not supported to be stored correctly!");

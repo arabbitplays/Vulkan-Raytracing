@@ -21,7 +21,7 @@ namespace RtEngine {
 		std::shared_ptr<RenderTarget> target = draw_context->targets[0];
 		target->setSamplesPerFrame(8);
 
-		if (done_images == 0 && target->getTotalSampleCount() == 0) {
+		if (done_images.size() == 0 && target->getTotalSampleCount() == 0) {
 			scene_manager->getCurrentScene()->update();
 			draw_context = createMainDrawContext();
 			stopwatch.reset();
@@ -31,12 +31,13 @@ namespace RtEngine {
 		if (samples_per_image == static_cast<int32_t>(target->getTotalSampleCount())) {
 			// TODO this is timing wise done after the render target is advanced
 			renderer->waitForIdle();
-			renderer->outputRenderingTarget(target, getTmpImagePath(done_images, samples_per_image));
 
-			done_images++;
-			if (done_images == final_image_count) {
+			float *data = renderer->downloadRenderTarget(target);
+			done_images.push_back(data);
+
+			if (done_images.size() == final_image_count) {
 				running = false;
-				mergeImages();
+				mergeImages(target->getExtent().width, target->getExtent().height);
 			} else {
 				target->resetAccumulatedFrames();
 				present_sample_count = 8;
@@ -78,7 +79,7 @@ namespace RtEngine {
 
 		if (curr_sample_count % (1 << 10) == 0) {
 			double elapsed_time = stopwatch.elapsed().count();
-			uint32_t collected_sample_count = done_images * samples_per_image + curr_sample_count;
+			uint32_t collected_sample_count = done_images.size() * samples_per_image + curr_sample_count;
 
 			uint32_t samples_left = final_sample_count - collected_sample_count;
 			double time_left = elapsed_time / collected_sample_count * samples_left;
@@ -97,23 +98,23 @@ namespace RtEngine {
 		renderer->recordBeginCommandBuffer(cmd);
 	}
 
-	void ReferenceRunner::mergeImages() {
-		uint32_t current_sample_count = final_sample_count;
-		uint32_t current_image_count = final_image_count;
-		while (current_image_count != 1) {
-			for (uint32_t i = 0; i < current_image_count; i += 2) {
-				std::string path1 = getTmpImagePath(i, current_sample_count);
-				std::string path2 = getTmpImagePath(i + 1, current_sample_count);
-				std::string out_path = current_sample_count * 2 == final_image_count * final_sample_count
-					? getOutputImagePath(final_image_count * final_sample_count)
-					: getTmpImagePath(i / 2, current_sample_count * 2);
-				writeMeanPng(path1, path2, out_path);
+	void ReferenceRunner::mergeImages(const uint32_t width, const uint32_t height) {
+		std::vector<float*> merged_images{};
+		while (done_images.size() != 1) {
+			assert(done_images.size() % 2 == 0);
+			for (uint32_t i = 0; i < done_images.size(); i += 2) {
+				merged_images.push_back(calculateMean(done_images[i], done_images[i+1], width * height * 4));
 			}
-			current_image_count /= 2;
-			current_sample_count *= 2;
+			done_images = merged_images;
+			merged_images.clear();
 		}
 
-		clearTmpfolder();
+		uint8_t *fixed_data = renderer->fixImageFormatForStorage(
+			done_images[0], width * height, VK_FORMAT_R32G32B32A32_SFLOAT);
+		ImageUtil::writePNG(getOutputImagePath(final_sample_count), fixed_data, width, height);
+
+		delete[] fixed_data;
+		done_images.clear(); // every pointer is now invalid anyway
 	}
 
 	void ReferenceRunner::clearTmpfolder() {
@@ -139,32 +140,13 @@ namespace RtEngine {
 		return std::format("{}/{}_{}.png", OUT_FOLDER, samples, scene_name);
 	}
 
-	void ReferenceRunner::writeMeanPng(std::string path1, std::string path2, std::string out_path) {
-		int w1, h1;
-		int w2, h2;
-
-		uint8_t* imgA = ImageUtil::loadPNG(path1, &w1, &h1);
-		uint8_t* imgB = ImageUtil::loadPNG(path2, &w2, &h2);
-
-		if (w1 != w2 || h1 != h2) {
-			stbi_image_free(imgA);
-			stbi_image_free(imgB);
-			throw std::runtime_error("PNG dimensions do not match");
+	float* ReferenceRunner::calculateMean(float* imgA, float* imgB, uint32_t size) {
+		for (int i = 0; i < size; ++i) {
+			imgA[i] = (imgA[i] + imgB[i]) / 2.0f;
 		}
 
-		const int count = w1 * h1 * 4;
-		std::vector<uint8_t> out(count);
-
-		for (int i = 0; i < count; ++i) {
-			out[i] = static_cast<unsigned char>(
-				(static_cast<uint32_t>(imgA[i]) + static_cast<uint32_t>(imgB[i])) / 2
-			);
-		}
-
-		ImageUtil::writePNG(out_path, out.data(), w1, h1);
-
-		stbi_image_free(imgA);
-		stbi_image_free(imgB);
+		delete[] imgB;
+		return imgA;
 	}
 
 

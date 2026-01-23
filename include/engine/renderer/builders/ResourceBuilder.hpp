@@ -42,7 +42,8 @@ namespace RtEngine {
 								   VkImageLayout target_layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 		Texture loadTextureImage(std::string path, TextureType type = PARAMETER);
 		uint8_t *loadImageData(std::string path, int *width, int *height, int *channels);
-		void *downloadImage(AllocatedImage image, uint32_t bytes_per_channel = 1);
+
+		uint8_t *downloadImage(AllocatedImage image, uint32_t bytes_per_channel = 1);
 
 		VkImageView createImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags);
 
