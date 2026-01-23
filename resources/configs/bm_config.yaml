@@ -1,8 +1,8 @@
 Material:
   Normal_Mapping: false
   Sample_Lights: false
-  Sample_BSDF: true
+  Sample_BSDF: false
   Russian_Roulette: false
 Renderer:
   Max_Depth: 5
-  Scene: ref_scene_small_light.yaml
+  Scene: ref_scene_big_light.yaml

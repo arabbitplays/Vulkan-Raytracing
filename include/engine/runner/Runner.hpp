@@ -10,7 +10,7 @@ namespace RtEngine {
         Runner(std::shared_ptr<EngineContext> engine_context, const std::shared_ptr<GuiManager> &gui_manager, const std::shared_ptr<SceneManager> &scene_manager);
 
         std::string getScenePath() const;
-        void loadScene(const std::string &scene_path);
+        virtual void loadScene(const std::string &scene_path);
         virtual void renderScene();
 
         void setUpdateFlags(uint32_t new_flags);

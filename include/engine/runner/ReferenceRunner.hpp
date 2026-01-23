@@ -9,6 +9,7 @@ namespace RtEngine {
 	public:
 		ReferenceRunner(const std::shared_ptr<EngineContext> &engine_context, const std::shared_ptr<GuiManager> &gui_manager, const std::shared_ptr<SceneManager> &scene_manager);
 
+		void loadScene(const std::string &scene_path) override;
 		void renderScene() override;
 		void drawFrame(const std::shared_ptr<DrawContext> &draw_context) override;
 
@@ -25,9 +26,11 @@ namespace RtEngine {
 		const std::string TMP_FOLDER = "./tmp";
 		const std::string OUT_FOLDER = "../resources/references";
 
+		std::shared_ptr<DrawContext> draw_context;
+
 		spdlog::stopwatch stopwatch;
 		uint32_t present_sample_count = 8;
-		int32_t final_sample_count = 1 << 17;
+		int32_t final_sample_count = 1 << 20;
 		int32_t samples_per_image = 1 << 12;
 		// int32_t samples_per_image = 32;
 		// int32_t final_sample_count = 256;

@@ -49,8 +49,8 @@ namespace RtEngine {
 
 		void cleanup();
 
-		void outputRenderingTarget(std::shared_ptr<RenderTarget> target, const std::string &output_path);
-		float *downloadRenderTarget(std::shared_ptr<RenderTarget> target);
+		void outputRenderingTarget(const std::shared_ptr<RenderTarget> &target, const std::string &output_path);
+		float *downloadRenderTarget(const std::shared_ptr<RenderTarget> &target) const;
 		uint8_t *fixImageFormatForStorage(void *image_data, size_t pixel_count, VkFormat originalFormat);
 
 		std::shared_ptr<RenderTarget> createRenderTarget(uint32_t width, uint32_t height);

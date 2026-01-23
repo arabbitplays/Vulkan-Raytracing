@@ -14,22 +14,32 @@ namespace RtEngine {
 	BenchmarkRunner::BenchmarkRunner(const std::shared_ptr<EngineContext> &engine_context,
 		const std::shared_ptr<GuiManager> &gui_manager, const std::shared_ptr<SceneManager> &scene_manager)
 			: Runner(engine_context, gui_manager, scene_manager) {
+
+		if (std::filesystem::create_directories(TMP_FOLDER)) {
+			SPDLOG_INFO("Created directory {}");
+		}
+
+		if (std::filesystem::create_directories(OUT_FOLDER)) {
+			SPDLOG_INFO("Created directory {}");
+		}
 	}
 
-	void BenchmarkRunner::renderScene() {
-		std::shared_ptr<DrawContext> draw_context = createMainDrawContext();
+	void BenchmarkRunner::loadScene(const std::string &scene_path) {
+		Runner::loadScene(scene_path);
+
+		scene_manager->getCurrentScene()->update();
+		draw_context = createMainDrawContext();
+
 		assert(draw_context->targets.size() == 1);
 		std::shared_ptr<RenderTarget> target = draw_context->targets[0];
 		target->setSamplesPerFrame(1);
+	}
 
-		if (target->getTotalSampleCount() == 0) {
-			scene_manager->getCurrentScene()->update();
-			draw_context = createMainDrawContext();
-		}
+	void BenchmarkRunner::renderScene() {
+		std::shared_ptr<RenderTarget> target = draw_context->targets[0];
 
 		// render one image and then output it if output path is defined
 		if (error_calculation_sample_count == static_cast<int32_t>(target->getTotalSampleCount())) {
-			// TODO this is timing wise done after the render target is advanced
 			renderer->waitForIdle();
 			renderer->outputRenderingTarget(target, getTmpImagePath(error_calculation_sample_count));
 
@@ -89,9 +99,13 @@ namespace RtEngine {
 		return std::format("{}/bm_out.csv", OUT_FOLDER, scene_name);
 	}
 
-	void BenchmarkRunner::outputBenchmarkDataToCsv() {
+	std::string BenchmarkRunner::getRefFilePath() {
 		std::string scene_name = PathUtil::getFileName(scene_manager->getCurrentScene()->path);
-		std::string ref_path = std::format("{}/131072_{}.png", REF_FOLDER, scene_name);
+		return std::format("{}/1048576_{}.png", REF_FOLDER, scene_name);
+	}
+
+	void BenchmarkRunner::outputBenchmarkDataToCsv() {
+		std::string ref_path = getRefFilePath();
 
 		int ref_width, ref_height;
 		uint8_t* ref_data = ImageUtil::loadPNG(ref_path, &ref_width, &ref_height);
@@ -124,6 +138,7 @@ namespace RtEngine {
 
 	void BenchmarkRunner::clearTmpfolder() {
 		namespace fs = std::filesystem;
+		QuickTimer timer("MSE Calculation");
 
 		if (!fs::exists(TMP_FOLDER) || !fs::is_directory(TMP_FOLDER))
 			return;
@@ -136,9 +151,8 @@ namespace RtEngine {
 	}
 
 	float BenchmarkRunner::calculateMSE(uint8_t* ref_data, uint8_t* data, uint32_t size) {
-		QuickTimer timer("MSE Calculation");
-
 		float result = 0;
+#pragma omp parallel for reduction(+:result)
 		for (uint32_t i = 0; i < size; i++) {
 			int32_t difference = static_cast<int32_t>(ref_data[i]) - static_cast<int32_t>(data[i]);
 			result += static_cast<float>(difference * difference) / static_cast<float>(size);

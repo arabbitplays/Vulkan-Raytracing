@@ -57,6 +57,11 @@ namespace RtEngine
         return render_targets[current_image];
     }
 
+    AllocatedImage RenderTarget::getLastTargetImage() const {
+        uint32_t idx = current_image != 0 ? current_image - 1 : render_targets.size() - 1;
+        return render_targets[idx];
+    }
+
 
     AllocatedImage RenderTarget::getCurrentRngImage() const
     {

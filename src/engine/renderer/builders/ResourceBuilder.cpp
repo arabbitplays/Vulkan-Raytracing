@@ -12,6 +12,8 @@
 #include <glm/vector_relational.hpp>
 #include <spdlog/spdlog.h>
 
+#include "QuickTimer.hpp"
+
 namespace RtEngine {
 	VkDeviceAddress GetBufferDeviceAddressKHR(VkDevice device, const VkBufferDeviceAddressInfoKHR *address_info) {
 		auto func = (PFN_vkGetBufferDeviceAddressKHR) vkGetDeviceProcAddr(device, "vkGetBufferDeviceAddressKHR");
@@ -231,6 +233,8 @@ namespace RtEngine {
 	}
 
 	uint8_t *ResourceBuilder::downloadImage(AllocatedImage image, uint32_t bytes_per_channel) {
+		QuickTimer timer("download image");
+
 		size_t buffer_size =
 				image.imageExtent.width * image.imageExtent.height * image.imageExtent.depth * 4 * bytes_per_channel;
 		AllocatedBuffer staging_buffer =

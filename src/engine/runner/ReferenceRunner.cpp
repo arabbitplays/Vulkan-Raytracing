@@ -13,23 +13,28 @@ namespace RtEngine {
 		const std::shared_ptr<GuiManager> &gui_manager, const std::shared_ptr<SceneManager> &scene_manager)
 			: Runner(engine_context, gui_manager, scene_manager) {
 		final_image_count = final_sample_count / samples_per_image;
+		if (std::filesystem::create_directories(OUT_FOLDER)) {
+			SPDLOG_INFO("Created directory {}");
+		}
 	}
 
-	void ReferenceRunner::renderScene() {
-		std::shared_ptr<DrawContext> draw_context = createMainDrawContext();
+	void ReferenceRunner::loadScene(const std::string &scene_path) {
+		Runner::loadScene(scene_path);
+
+		scene_manager->getCurrentScene()->update();
+		draw_context = createMainDrawContext();
+
 		assert(draw_context->targets.size() == 1);
 		std::shared_ptr<RenderTarget> target = draw_context->targets[0];
 		target->setSamplesPerFrame(8);
 
-		if (done_images.size() == 0 && target->getTotalSampleCount() == 0) {
-			scene_manager->getCurrentScene()->update();
-			draw_context = createMainDrawContext();
-			stopwatch.reset();
-		}
+		stopwatch.reset();
+	}
 
-		// render one image and then output it if output path is defined
+	void ReferenceRunner::renderScene() {
+		std::shared_ptr<RenderTarget> target = draw_context->targets[0];
+
 		if (samples_per_image == static_cast<int32_t>(target->getTotalSampleCount())) {
-			// TODO this is timing wise done after the render target is advanced
 			renderer->waitForIdle();
 
 			float *data = renderer->downloadRenderTarget(target);

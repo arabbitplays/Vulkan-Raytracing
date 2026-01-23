@@ -5,4 +5,4 @@ Material:
   Russian_Roulette: false
 Renderer:
   Max_Depth: 5
-  Scene: ref_scene_small_light.yaml
+  Scene: ref_scene_big_light.yaml
