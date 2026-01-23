@@ -85,8 +85,9 @@ namespace RtEngine {
         } else if (options->runner_type == REFERENCE) {
             runner = std::make_shared<ReferenceRunner>(engine_context, guiManager, scene_manager);
             SPDLOG_INFO("Reference runner created");
-        } else if (options->runner_type == REFERENCE) {
-            //vulkan_renderer = std::make_shared<BenchmarkRunner>();
+        } else if (options->runner_type == BENCHMARK) {
+            runner = std::make_shared<BenchmarkRunner>(engine_context, guiManager, scene_manager);
+            SPDLOG_INFO("Benchmark runner created");
         } else {
             SPDLOG_ERROR("No runner created");
             return;

@@ -12,6 +12,7 @@ namespace RtEngine {
 	ReferenceRunner::ReferenceRunner(const std::shared_ptr<EngineContext> &engine_context,
 		const std::shared_ptr<GuiManager> &gui_manager, const std::shared_ptr<SceneManager> &scene_manager)
 			: Runner(engine_context, gui_manager, scene_manager) {
+		final_image_count = final_sample_count / samples_per_image;
 	}
 
 	void ReferenceRunner::renderScene() {
@@ -23,13 +24,14 @@ namespace RtEngine {
 		if (done_images == 0 && target->getTotalSampleCount() == 0) {
 			scene_manager->getCurrentScene()->update();
 			draw_context = createMainDrawContext();
+			stopwatch.reset();
 		}
 
 		// render one image and then output it if output path is defined
-		if (final_sample_count == static_cast<int32_t>(target->getTotalSampleCount())) {
+		if (samples_per_image == static_cast<int32_t>(target->getTotalSampleCount())) {
 			// TODO this is timing wise done after the render target is advanced
 			renderer->waitForIdle();
-			renderer->outputRenderingTarget(target, getTmpImagePath(done_images, final_sample_count));
+			renderer->outputRenderingTarget(target, getTmpImagePath(done_images, samples_per_image));
 
 			done_images++;
 			if (done_images == final_image_count) {
@@ -74,19 +76,16 @@ namespace RtEngine {
 
 		finishFrame(cmd, draw_context, static_cast<uint32_t>(swapchain_image_idx), present_image);
 
-		if (curr_sample_count % 1000 == 0) {
+		if (curr_sample_count % (1 << 10) == 0) {
 			double elapsed_time = stopwatch.elapsed().count();
-			stopwatch.reset();
+			uint32_t collected_sample_count = done_images * samples_per_image + curr_sample_count;
 
-			uint32_t total_sample_count = final_image_count * final_sample_count;
-			uint32_t collected_sample_count = done_images * final_sample_count + curr_sample_count;
-
-			uint32_t samples_left = total_sample_count - collected_sample_count;
-			double time_left = elapsed_time / 1000.0f * samples_left;
+			uint32_t samples_left = final_sample_count - collected_sample_count;
+			double time_left = elapsed_time / collected_sample_count * samples_left;
 			int hours = static_cast<int>(time_left) / 3600;
 			int minutes = (static_cast<int>(time_left) % 3600) / 60;
 			int sec = static_cast<int>(time_left) % 60;
-			uint32_t progress = round(static_cast<float>(collected_sample_count) / static_cast<float>(total_sample_count) * 100.0f);
+			uint32_t progress = round(static_cast<float>(collected_sample_count) / static_cast<float>(final_sample_count) * 100.0f);
 			SPDLOG_INFO("Collected sample count: {}, progress: {}%, estimated time remaining: {}h {}m {}s",
 						 collected_sample_count, progress, hours, minutes, sec);
 		}
@@ -114,7 +113,7 @@ namespace RtEngine {
 			current_sample_count *= 2;
 		}
 
-		//clearTmpfolder();
+		clearTmpfolder();
 	}
 
 	void ReferenceRunner::clearTmpfolder() {
@@ -163,6 +162,9 @@ namespace RtEngine {
 		}
 
 		ImageUtil::writePNG(out_path, out.data(), w1, h1);
+
+		stbi_image_free(imgA);
+		stbi_image_free(imgB);
 	}
 
 

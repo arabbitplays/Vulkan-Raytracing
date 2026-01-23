@@ -36,6 +36,12 @@
         stb
         assimp
         yaml-cpp
+
+        R
+        rPackages.tidyverse
+        rPackages.scales
+        rPackages.ggplot2
+
       ];
 
       shellHook = ''

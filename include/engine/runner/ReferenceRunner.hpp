@@ -11,7 +11,6 @@ namespace RtEngine {
 
 		void renderScene() override;
 		void drawFrame(const std::shared_ptr<DrawContext> &draw_context) override;
-		//void initProperties() override;
 
 	private:
 		void prepareFrame(VkCommandBuffer cmd, const std::shared_ptr<DrawContext> &draw_context) override;
@@ -21,7 +20,6 @@ namespace RtEngine {
 		void clearTmpfolder();
 
 		std::string getTmpImagePath(uint32_t image_idx, uint32_t samples);
-
 		std::string getOutputImagePath(uint32_t samples);
 
 		void writeMeanPng(std::string path1, std::string path2, std::string out_path);
@@ -32,10 +30,11 @@ namespace RtEngine {
 		spdlog::stopwatch stopwatch;
 		uint32_t present_sample_count = 8;
 		int32_t final_sample_count = 1 << 20;
+		int32_t samples_per_image = 1 << 12;
 		//int32_t final_sample_count = 32;
 
 		uint32_t done_images = 0;
-		uint32_t final_image_count = 8;
+		uint32_t final_image_count;
 	};
 
 } // namespace RtEngine

@@ -2,21 +2,34 @@
 #define BENCHMARKRENDERER_HPP
 #include <../renderer/VulkanRenderer.hpp>
 
+#include "Runner.hpp"
+
 namespace RtEngine {
-	class BenchmarkRunner : public VulkanRenderer {
-		void recordCommandBuffer(VkCommandBuffer commandBuffer, std::shared_ptr<RenderTarget> target, uint32_t imageIndex, bool present) override;
+	class BenchmarkRunner : public Runner {
+	public:
+		BenchmarkRunner(const std::shared_ptr<EngineContext> &engine_context, const std::shared_ptr<GuiManager> &gui_manager, const std::shared_ptr<SceneManager> &scene_manager);
 
-		float calculateMSEToReference(std::shared_ptr<RenderTarget> render_target);
-		void initProperties() override;
+		void renderScene() override;
+		void drawFrame(const std::shared_ptr<DrawContext> &draw_context) override;
+		//void initProperties() override;
 
-		uint8_t *reference_image_data;
-		int ref_width, ref_height, ref_channels;
+	private:
+		void prepareFrame(VkCommandBuffer cmd, const std::shared_ptr<DrawContext> &draw_context) override;
+
+		std::string getTmpImagePath(uint32_t samples);
+
+		std::string getOutputFilePath();
+
+		void outputBenchmarkData();
+
+		float calculateMSE(uint8_t *ref_data, uint8_t *data, uint32_t size);
+
+		std::string TMP_FOLDER = "./tmp";
+		std::string OUT_FOLDER = "../resources/benchmarks";
+		std::string REF_FOLDER = "../resources/references";
 
 		uint32_t error_calculation_sample_count = 1;
-		bool present_image = false, calculate_error = true;
-
-		std::string reference_image_path;
-		int32_t sample_count = 1000;
+		uint32_t final_sample_count = 256;
 	};
 
 } // namespace RtEngine
