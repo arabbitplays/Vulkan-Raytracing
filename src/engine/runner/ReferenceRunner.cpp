@@ -10,8 +10,8 @@ namespace RtEngine {
 	constexpr std::string SAMPLE_COUNT_OPTION_NAME = "Sample_Count";
 
 	ReferenceRunner::ReferenceRunner(const std::shared_ptr<EngineContext> &engine_context,
-		const std::shared_ptr<GuiManager> &gui_manager, const std::shared_ptr<SceneManager> &scene_manager)
-			: Runner(engine_context, gui_manager, scene_manager) {
+		const std::shared_ptr<GuiRenderer> &gui_renderer, const std::shared_ptr<SceneManager> &scene_manager)
+			: Runner(engine_context, gui_renderer, scene_manager) {
 		final_image_count = final_sample_count / samples_per_image;
 		if (std::filesystem::create_directories(OUT_FOLDER)) {
 			SPDLOG_INFO("Created directory {}");

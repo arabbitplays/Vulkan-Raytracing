@@ -4,9 +4,9 @@
 
 namespace RtEngine {
     Runner::Runner(std::shared_ptr<EngineContext> engine_context,
-        const std::shared_ptr<GuiManager> &gui_manager, const std::shared_ptr<SceneManager> &scene_manager)
+        const std::shared_ptr<GuiRenderer> &gui_renderer, const std::shared_ptr<SceneManager> &scene_manager)
         : engine_context(engine_context), renderer(engine_context->renderer),
-        gui_manager(gui_manager), scene_manager(scene_manager) {
+        gui_manager(gui_renderer), scene_manager(scene_manager) {
 
         scene_reader = std::make_shared<SceneReader>(engine_context);
     }
@@ -112,10 +112,11 @@ namespace RtEngine {
     }
 
     void Runner::initProperties(const std::shared_ptr<IProperties>& config) {
-        config->startChild("runner");
-        if (config->addSelection("scene_name", &scene_name, scene_manager->getSceneNames())) {
-            update_flags |= SCENE_UPDATE;
+        if (config->startChild("runner")) {
+            if (config->addSelection("scene_name", &scene_name, scene_manager->getSceneNames())) {
+                update_flags |= SCENE_UPDATE;
+            }
+            config->endChild();
         }
-        config->endChild();
     }
 } // RtEngine

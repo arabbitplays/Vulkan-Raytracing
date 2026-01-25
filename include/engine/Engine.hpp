@@ -2,6 +2,7 @@
 #define VULKAN_RAYTRACING_ENGINE_HPP
 #include <memory>
 
+#include "GuiManager.hpp"
 #include "Runner.hpp"
 #include "VulkanRenderer.hpp"
 
@@ -60,7 +61,7 @@ namespace RtEngine {
 
         std::shared_ptr<Window> window;
         std::shared_ptr<SceneManager> scene_manager;
-        std::shared_ptr<GuiManager> guiManager;
+        std::shared_ptr<GuiManager> gui_manager;
         std::shared_ptr<VulkanRenderer> vulkan_renderer;
         std::shared_ptr<Runner> runner;
     };

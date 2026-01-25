@@ -6,5 +6,6 @@ src += files(
   'HierarchyWindow.cpp',
   'InspectorWindow.cpp',
   'OptionsWindow.cpp',
+  'GuiRenderer.cpp',
   'GuiWindow.cpp',
 )

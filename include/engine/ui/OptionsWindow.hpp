@@ -5,13 +5,15 @@
 #include <bits/shared_ptr.h>
 #include <glm/fwd.hpp>
 
+#include "ISerializable.hpp"
+
 namespace RtEngine {
 	class OptionsWindow final : public GuiWindow {
 	public:
 		OptionsWindow() : GuiWindow() {}
-		explicit OptionsWindow(const std::shared_ptr<PropertiesManager>& props_manager) : GuiWindow(), main_props_manager(props_manager) {}
 
 		void createFrame() override;
+		void addSerializable(const SerializableHandle& serializable);
 
 	private:
 		struct ImguiOptions {
@@ -30,7 +32,7 @@ namespace RtEngine {
 				.sample_brdf = true,
 		};
 
-		std::shared_ptr<PropertiesManager> main_props_manager;
+		std::vector<SerializableHandle> serializables;
 	};
 
 } // namespace RtEngine

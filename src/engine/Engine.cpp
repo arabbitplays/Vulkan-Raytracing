@@ -28,8 +28,8 @@ namespace RtEngine {
         scene_manager = std::make_shared<SceneManager>(options->resources_dir);
         createWindow();
         createRenderer();
-        createGuiManager();
         createEngineContext();
+        createGuiManager();
         createRunner();
     }
 
@@ -47,25 +47,8 @@ namespace RtEngine {
     }
 
     void Engine::createGuiManager() {
-        guiManager = std::make_shared<GuiManager>(vulkan_renderer->getVulkanContext());
-
-        auto options_window = std::make_shared<OptionsWindow>(vulkan_renderer->getPropertiesManager());
-        options_window->addCallback([this](uint32_t flags) {
-            runner->setUpdateFlags(flags);
-        });
-        guiManager->addWindow(options_window);
-
-        auto inspector_window = std::make_shared<InspectorWindow>(scene_manager);
-        inspector_window->addCallback([this](uint32_t flags) {
-            runner->setUpdateFlags(flags);
-        });
-        guiManager->addWindow(inspector_window);
-
-        auto hierarchy_window = std::make_shared<HierarchyWindow>(inspector_window, scene_manager);
-        hierarchy_window->addCallback([this](uint32_t flags) {
-            runner->setUpdateFlags(flags);
-        });
-        guiManager->addWindow(hierarchy_window);
+        auto gui_renderer = std::make_shared<GuiRenderer>(vulkan_renderer->getVulkanContext());
+        gui_manager = std::make_shared<GuiManager>(scene_manager, gui_renderer);
     }
 
     void Engine::createEngineContext() {
@@ -80,16 +63,17 @@ namespace RtEngine {
     }
 
     void Engine::createRunner() {
+        std::shared_ptr<GuiRenderer> gui_renderer = gui_manager->getGuiRenderer();
         if (options->runner_type == OFFLINE) {
-            runner = std::make_shared<Runner>(engine_context, guiManager, scene_manager);
+            runner = std::make_shared<Runner>(engine_context, gui_renderer, scene_manager);
             SPDLOG_INFO("Offline runner created");
         } else if (options->runner_type == REALTIME) {
             //vulkan_renderer = std::make_shared<RealtimeRunner>();
         } else if (options->runner_type == REFERENCE) {
-            runner = std::make_shared<ReferenceRunner>(engine_context, guiManager, scene_manager);
+            runner = std::make_shared<ReferenceRunner>(engine_context, gui_renderer, scene_manager);
             SPDLOG_INFO("Reference runner created");
         } else if (options->runner_type == BENCHMARK) {
-            runner = std::make_shared<BenchmarkRunner>(engine_context, guiManager, scene_manager);
+            runner = std::make_shared<BenchmarkRunner>(engine_context, gui_renderer, scene_manager);
             SPDLOG_INFO("Benchmark runner created");
         } else {
             SPDLOG_ERROR("No runner created");
@@ -97,6 +81,7 @@ namespace RtEngine {
         }
 
         runner->initProperties(config_properties);
+        gui_manager->options_window->addSerializable(runner);
     }
 
     void Engine::mainLoop() {
@@ -115,7 +100,7 @@ namespace RtEngine {
     void Engine::cleanup() {
         vulkan_renderer->waitForIdle();
         scene_manager->getCurrentScene()->destroy();
-        guiManager->destroy();
+        gui_manager->destroy();
         vulkan_renderer->cleanup();
     }
 

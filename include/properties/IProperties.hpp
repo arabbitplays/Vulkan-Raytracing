@@ -15,7 +15,7 @@ namespace RtEngine {
         virtual ~IProperties() = default;
 
         virtual bool startChild(const std::string& name) = 0;
-        virtual bool endChild() = 0;
+        virtual void endChild() = 0;
 
         virtual bool addBool(const std::string &name, bool *var) = 0;
 

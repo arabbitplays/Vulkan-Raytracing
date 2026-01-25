@@ -4,6 +4,9 @@
 #include "IProperties.hpp"
 
 namespace RtEngine {
+    class ISerializable;
+    typedef std::shared_ptr<ISerializable> SerializableHandle;
+
     class ISerializable {
     public:
         virtual ~ISerializable() = default;

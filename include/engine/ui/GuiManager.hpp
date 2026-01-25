@@ -1,51 +1,34 @@
-#ifndef GUIMANAGER_HPP
-#define GUIMANAGER_HPP
+//
+// Created by oschdi on 25.01.26.
+//
 
-#include <DescriptorAllocator.hpp>
-#include <GLFW/glfw3.h>
-#include <OptionsWindow.hpp>
-#include <Swapchain.hpp>
-#include <VulkanContext.hpp>
-#include <bits/shared_ptr.h>
-#include <imgui.h>
-#include <vulkan/vulkan_core.h>
-#include "DeletionQueue.hpp"
+#ifndef VULKAN_RAYTRACING_GUIMANAGER_HPP
+#define VULKAN_RAYTRACING_GUIMANAGER_HPP
+#include "HierarchyWindow.hpp"
+#include "InspectorWindow.hpp"
+#include "SceneManager.hpp"
 
 namespace RtEngine {
-	class GuiManager {
-	public:
-		GuiManager() = default;
-		GuiManager(std::shared_ptr<VulkanContext> context);
+    class GuiManager {
+    public:
+        GuiManager(std::shared_ptr<SceneManager> scene_manager, const std::shared_ptr<GuiRenderer> &gui_renderer);
 
-		void addWindow(std::shared_ptr<GuiWindow> window);
-		void updateWindows();
-		void recordGuiCommands(VkCommandBuffer commandBuffer, uint32_t imageIndex);
-		void destroy();
+        void addCallbackToAll(const std::function<void(uint32_t)>& callback);
 
-		VkRenderPass render_pass;
-		std::vector<VkFramebuffer> frame_buffers;
+        std::shared_ptr<GuiRenderer> getGuiRenderer() const;
 
-	private:
-		void createRenderPass(VkDevice device, VkFormat image_format);
-		void createFrameBuffers(VkDevice device, std::shared_ptr<Swapchain> swapchain);
-		void createDescriptorPool(VkDevice device);
-		void initImGui(std::shared_ptr<DeviceManager> device_manager, GLFWwindow *window,
-					   std::shared_ptr<Swapchain> swapchain);
-		void shutdownImGui();
+        void destroy();
 
-		std::shared_ptr<VulkanContext> context;
+        std::shared_ptr<GuiRenderer> gui_renderer;
 
-		std::shared_ptr<OptionsWindow> options_window;
-		std::vector<std::shared_ptr<GuiWindow>> gui_windows{};
+        std::shared_ptr<OptionsWindow> options_window;
+        std::shared_ptr<InspectorWindow> inspector_window;
+        std::shared_ptr<HierarchyWindow> hierarchy_window;
+    private:
+        std::shared_ptr<SceneManager> scene_manager;
+    };
+}
 
-		uint32_t minImageCount = 2;
-		VkDescriptorPool descriptor_pool;
 
-		DeletionQueue deletion_queue{};
 
-		bool show_demo_window = true;
-		bool show_main_window = true;
-	};
-
-} // namespace RtEngine
-#endif // GUIWINDOW_HPP
+#endif //VULKAN_RAYTRACING_GUIMANAGER_HPP

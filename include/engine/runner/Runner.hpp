@@ -8,7 +8,7 @@
 namespace RtEngine {
     class Runner : public ISerializable {
     public:
-        Runner(std::shared_ptr<EngineContext> engine_context, const std::shared_ptr<GuiManager> &gui_manager, const std::shared_ptr<SceneManager> &scene_manager);
+        Runner(std::shared_ptr<EngineContext> engine_context, const std::shared_ptr<GuiRenderer> &gui_renderer, const std::shared_ptr<SceneManager> &scene_manager);
 
         std::string getScenePath() const;
         virtual void loadScene(const std::string &scene_path);
@@ -35,7 +35,7 @@ namespace RtEngine {
 
         std::shared_ptr<EngineContext> engine_context;
         std::shared_ptr<VulkanRenderer> renderer;
-        std::shared_ptr<GuiManager> gui_manager;
+        std::shared_ptr<GuiRenderer> gui_manager;
 
         std::shared_ptr<SceneReader> scene_reader;
         std::shared_ptr<SceneManager> scene_manager;

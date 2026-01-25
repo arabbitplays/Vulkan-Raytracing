@@ -14,10 +14,9 @@ namespace RtEngine {
         return false;
     }
 
-    bool YamlLoadProperties::endChild() {
+    void YamlLoadProperties::endChild() {
         assert(nodes.size() > 1);
         nodes.pop_back();
-        return true;
     }
 
     bool YamlLoadProperties::addBool(const std::string &name, bool *var) {

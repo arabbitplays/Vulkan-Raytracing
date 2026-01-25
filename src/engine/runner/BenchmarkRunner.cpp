@@ -12,7 +12,7 @@ namespace RtEngine {
 	constexpr std::string REFERENCE_IMAGE_PATH_OPTION_NAME = "Reference_Image";
 
 	BenchmarkRunner::BenchmarkRunner(const std::shared_ptr<EngineContext> &engine_context,
-		const std::shared_ptr<GuiManager> &gui_manager, const std::shared_ptr<SceneManager> &scene_manager)
+		const std::shared_ptr<GuiRenderer> &gui_manager, const std::shared_ptr<SceneManager> &scene_manager)
 			: Runner(engine_context, gui_manager, scene_manager) {
 
 		if (std::filesystem::create_directories(TMP_FOLDER)) {

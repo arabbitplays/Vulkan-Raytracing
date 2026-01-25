@@ -8,7 +8,7 @@
 #include <chrono>
 #define TINYOBJLOADER_IMPLEMENTATION
 #include <AccelerationStructure.hpp>
-#include <GuiManager.hpp>
+#include <GuiRenderer.hpp>
 #include <GuiWindow.hpp>
 #include <RenderTarget.hpp>
 #include <../renderer/vulkan_scene_representation/SceneAdapter.hpp>
