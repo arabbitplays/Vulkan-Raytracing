@@ -82,15 +82,27 @@ namespace RtEngine {
 		return instance;
 	}
 
-	void MetalRoughMaterial::initProperties() {
-		properties = std::make_shared<PropertiesSection>(MATERIAL_SECTION_NAME);
-		properties->addBool("Normal_Mapping", &material_properties.normal_mapping);
-		properties->addBool("Sample_Lights", &material_properties.sample_lights);
-		properties->addBool("Sample_BSDF", &material_properties.sample_bsdf);
-		properties->addBool("Russian_Roulette", &material_properties.russian_roulette);
+	void MetalRoughMaterial::initProperties(const std::shared_ptr<IProperties> &config, const UpdateFlagsHandle &update_flags) {
+		bool reset_required = false;
+		if (config->startChild(name)) {
+			reset_required |= config->addBool("normal_mapping", &normal_mapping);
+			reset_required |= config->addBool("nearest_neighbor_estimation", &sample_lights);
+			reset_required |= config->addBool("bsdf_importance_sampling", &sample_bsdf);
+			reset_required |= config->addBool("russian_roulette", &russian_roulette);
+			config->endChild();
+		}
+
+		if (reset_required) {
+			update_flags->setFlag(TARGET_RESET);
+		}
 	}
 
-
+	void MetalRoughMaterial::getPushConstantValues(std::vector<int32_t> &push_constants) {
+		push_constants.push_back(static_cast<int32_t>(normal_mapping));
+		push_constants.push_back(static_cast<int32_t>(sample_lights));
+		push_constants.push_back(static_cast<int32_t>(sample_bsdf));
+		push_constants.push_back(static_cast<int32_t>(russian_roulette));
+	}
 
 	void MetalRoughMaterial::reset() {
 		instances.clear();

@@ -338,10 +338,8 @@ namespace RtEngine {
 		push_constants.clear();
 
 		push_constants.push_back(recursion_depth);
-		std::shared_ptr<PropertiesSection> material_props = scene_adapter->getMaterial()->getProperties();
-		for (auto &bool_option: material_props->bool_properties) {
-			push_constants.push_back(*bool_option->var);
-		}
+		std::shared_ptr<Material> material = scene_adapter->getMaterial();
+		material->getPushConstantValues(push_constants);
 
 		push_constants.push_back(target->getAccumulatedFrameCount());
 		push_constants.push_back(target->getSamplesPerFrame());
@@ -463,9 +461,8 @@ namespace RtEngine {
 			config->endChild();
 		}
 
-		std::shared_ptr<Material> loaded_material = scene_adapter->getMaterial();
-		if (loaded_material != nullptr) {
-			// TODO call material
+		for (auto [name, material] : scene_adapter->defaultMaterials) {
+			material->initProperties(config, update_flags);
 		}
 	}
 

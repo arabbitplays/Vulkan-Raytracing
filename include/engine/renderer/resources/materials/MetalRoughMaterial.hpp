@@ -13,13 +13,8 @@ namespace RtEngine {
 	};
 
 	class MetalRoughMaterial : public Material {
+
 	public:
-
-
-		struct MaterialProperties {
-			int32_t normal_mapping = 0, sample_lights = 0, sample_bsdf = 0, russian_roulette = 0;
-		};
-
 		MetalRoughMaterial(std::shared_ptr<VulkanContext> context, std::shared_ptr<TextureRepository> tex_repo,
 						   VkSampler sampler) :
 			Material(METAL_ROUGH_MATERIAL_NAME, context, tex_repo), sampler(sampler) {}
@@ -29,14 +24,15 @@ namespace RtEngine {
 
 		std::shared_ptr<MaterialInstance> loadInstance(const YAML::Node &yaml_node) override;
 
-		void reset() override;
+		void initProperties(const std::shared_ptr<IProperties> &config, const UpdateFlagsHandle &update_flags) override;
+		void getPushConstantValues(std::vector<int32_t> &push_constants) override;
 
-	protected:
-		void initProperties() override;
+		void reset() override;
 
 	private:
 
-		MaterialProperties material_properties;
+		bool normal_mapping = false, sample_lights = false, sample_bsdf = false, russian_roulette = false;
+
 		VkSampler sampler;
 	};
 

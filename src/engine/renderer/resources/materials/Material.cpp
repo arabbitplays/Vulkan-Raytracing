@@ -17,15 +17,6 @@ namespace RtEngine {
 		return instances[instance_name];
 	}
 
-	std::shared_ptr<PropertiesSection> Material::getProperties() {
-		if (properties == nullptr) {
-			initProperties();
-		}
-
-		assert(properties != nullptr);
-		return properties;
-	}
-
 	void Material::clearResources() {
 		mainDeletionQueue.flush();
 	}

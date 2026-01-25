@@ -16,7 +16,7 @@
 namespace RtEngine {
 	class Pipeline;
 
-	class Material {
+	class Material : ISerializable {
 	public:
 		Material() = default;
 		Material(std::string name, std::shared_ptr<VulkanContext> vulkan_context,
@@ -47,23 +47,20 @@ namespace RtEngine {
 
 		std::shared_ptr<MaterialInstance> getInstanceByName(const std::string &name);
 
-		std::shared_ptr<PropertiesSection> getProperties();
+		void initProperties(const std::shared_ptr<IProperties> &config, const UpdateFlagsHandle &update_flags) override = 0;
+		virtual void getPushConstantValues(std::vector<int32_t>& push_constants) = 0;
 
 		void clearResources();
 		virtual void reset();
 
 		std::string name;
-
 	protected:
-		virtual void initProperties() = 0;
-
 		std::shared_ptr<VulkanContext> vulkan_context;
 		std::shared_ptr<TextureRepository> tex_repo;
 		DescriptorAllocator descriptorAllocator;
 		DeletionQueue mainDeletionQueue;
 
 		std::unordered_map<std::string, std::shared_ptr<MaterialInstance>> instances;
-		std::shared_ptr<PropertiesSection> properties;
 	};
 
 } // namespace RtEngine

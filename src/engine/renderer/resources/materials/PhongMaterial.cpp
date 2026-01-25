@@ -79,11 +79,24 @@ namespace RtEngine {
 		return instance;
 	}
 
-	void PhongMaterial::initProperties() {
-		properties = std::make_shared<PropertiesSection>(MATERIAL_SECTION_NAME);
-		properties->addBool("Shadows", &material_properties.shadows);
-		properties->addBool("Fresnel", &material_properties.fresnel);
-		properties->addBool("Dispersion", &material_properties.dispersion);
+	void PhongMaterial::initProperties(const std::shared_ptr<IProperties> &config, const UpdateFlagsHandle &update_flags) {
+		bool reset_required = false;
+		if (config->startChild(name)) {
+			reset_required |= config->addBool("shadows", &shadows);
+			reset_required |= config->addBool("fresnel", &fresnel);
+			reset_required |= config->addBool("dispersion", &dispersion);
+			config->endChild();
+		}
+
+		if (reset_required) {
+			update_flags->setFlag(TARGET_RESET);
+		}
+	}
+
+	void PhongMaterial::getPushConstantValues(std::vector<int32_t> &push_constants) {
+		push_constants.push_back(static_cast<int32_t>(shadows));
+		push_constants.push_back(static_cast<int32_t>(fresnel));
+		push_constants.push_back(static_cast<int32_t>(dispersion));
 	}
 
 	void PhongMaterial::reset() {

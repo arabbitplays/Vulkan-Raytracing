@@ -8,12 +8,6 @@
 namespace RtEngine {
 	class PhongMaterial : public Material {
 	public:
-
-
-		struct MaterialProperties {
-			int32_t shadows, dispersion, fresnel;
-		};
-
 		PhongMaterial(std::shared_ptr<VulkanContext> context, std::shared_ptr<TextureRepository> tex_repo) :
 			Material(PHONG_MATERIAL_NAME, context, tex_repo) {}
 
@@ -23,12 +17,11 @@ namespace RtEngine {
 
 		void reset() override;
 
-	protected:
-		void initProperties() override;
+		void initProperties(const std::shared_ptr<IProperties> &config, const UpdateFlagsHandle &update_flags) override;
+		void getPushConstantValues(std::vector<int32_t> &push_constants) override;
 
 	private:
-
-		MaterialProperties material_properties;
+		bool shadows = false, dispersion = false, fresnel = false;
 	};
 
 } // namespace RtEngine
