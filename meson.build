@@ -21,7 +21,6 @@ incdirs = [
     include_directories('include/engine/scene_graph/components'),
     include_directories('include/engine/ui'),
     include_directories('include/io'),
-    include_directories('include/options'),
     include_directories('include/properties'),
     include_directories('include/util'),
 ]

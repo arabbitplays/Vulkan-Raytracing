@@ -36,6 +36,9 @@ namespace RtEngine {
 	}
 
 	void BenchmarkRunner::renderScene() {
+		if (update_flags->checkFlag(SCENE_UPDATE)) {
+			loadScene(scene_manager->getScenePath(scene_name));
+		}
 		std::shared_ptr<RenderTarget> target = draw_context->targets[0];
 
 		// render one image and then output it if output path is defined
@@ -87,6 +90,7 @@ namespace RtEngine {
 	void BenchmarkRunner::prepareFrame(VkCommandBuffer cmd, const std::shared_ptr<DrawContext> &draw_context) {
 		renderer->updateSceneRepresentation(draw_context, update_flags);
 		renderer->recordBeginCommandBuffer(cmd);
+		update_flags->resetFlags();
 	}
 
 	std::string BenchmarkRunner::getTmpImagePath(uint32_t samples) {

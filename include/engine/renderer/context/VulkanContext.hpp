@@ -1,7 +1,6 @@
 #ifndef VULKANCONTEXT_HPP
 #define VULKANCONTEXT_HPP
 
-#include <BaseOptions.hpp>
 #include <CommandManager.hpp>
 #include <DescriptorAllocator.hpp>
 #include <DeviceManager.hpp>

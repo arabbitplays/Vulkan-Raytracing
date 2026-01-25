@@ -25,7 +25,6 @@ namespace RtEngine {
     void Engine::init() {
         config_properties = std::make_shared<YamlLoadProperties>(options->config_file);
 
-        scene_manager = std::make_shared<SceneManager>(options->resources_dir);
         createWindow();
         createRenderer();
         createEngineContext();
@@ -40,12 +39,8 @@ namespace RtEngine {
     }
 
     void Engine::createRenderer() {
-        vulkan_renderer = std::make_shared<VulkanRenderer>();
-
-        std::shared_ptr<BaseOptions> renderer_options = std::make_shared<BaseOptions>();
-        renderer_options->resources_dir = options->resources_dir;
-        renderer_options->config_file = options->config_file;
-        vulkan_renderer->init(renderer_options, window);
+        vulkan_renderer = std::make_shared<VulkanRenderer>(options->resources_dir);
+        vulkan_renderer->init(window);
 
         auto update_flags = std::make_shared<UpdateFlags>();
         vulkan_renderer->initProperties(config_properties, update_flags);
@@ -65,7 +60,8 @@ namespace RtEngine {
         engine_context->renderer = vulkan_renderer;
         engine_context->texture_repository = vulkan_renderer->getTextureRepository();
         engine_context->mesh_repository = vulkan_renderer->getMeshRepository();
-        engine_context->scene_manager = scene_manager;
+        scene_manager = std::make_shared<SceneManager>(options->resources_dir); // this is the non interfaced version
+        engine_context->scene_manager = scene_manager; // this it the version for the components providing scene information
         engine_context->input_manager = std::make_shared<InputManager>(window);
         engine_context->swapchain_manager = std::make_shared<SwapchainManager>(vulkan_renderer->getSwapchain());
     }

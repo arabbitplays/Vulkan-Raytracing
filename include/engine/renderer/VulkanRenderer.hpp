@@ -27,9 +27,9 @@ namespace RtEngine {
 
 	class VulkanRenderer : public ISerializable {
 	public:
-		VulkanRenderer() = default;
+		explicit VulkanRenderer(const std::string &resources_dir);
 
-		void init(const std::shared_ptr<BaseOptions> &base_options, std::shared_ptr<Window> window);
+		void init(std::shared_ptr<Window> window);
 		void initProperties(const std::shared_ptr<IProperties> &config, const UpdateFlagsHandle &update_flags) override;
 
 		void loadScene(std::shared_ptr<IScene> scene);
@@ -66,11 +66,12 @@ namespace RtEngine {
 		std::shared_ptr<Swapchain> getSwapchain();
 
 	protected:
+		std::string resources_dir;
+
 		std::shared_ptr<Window> window;
 
 		DeletionQueue mainDeletionQueue;
 
-		std::shared_ptr<BaseOptions> base_options;
 		uint32_t recursion_depth = 5;
 		std::vector<int32_t> push_constants{};
 
@@ -89,7 +90,7 @@ namespace RtEngine {
 		bool framebufferResized = false;
 
 		uint32_t max_frames_in_flight = 1;
-		uint32_t current_frame;
+		uint32_t current_frame = 0;
 
 		void initWindow();
 		void initVulkan();

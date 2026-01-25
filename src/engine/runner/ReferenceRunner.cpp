@@ -32,6 +32,9 @@ namespace RtEngine {
 	}
 
 	void ReferenceRunner::renderScene() {
+		if (update_flags->checkFlag(SCENE_UPDATE)) {
+			loadScene(scene_manager->getScenePath(scene_name));
+		}
 		std::shared_ptr<RenderTarget> target = draw_context->targets[0];
 
 		if (samples_per_image == static_cast<int32_t>(target->getTotalSampleCount())) {
@@ -101,6 +104,7 @@ namespace RtEngine {
 	void ReferenceRunner::prepareFrame(VkCommandBuffer cmd, const std::shared_ptr<DrawContext> &draw_context) {
 		renderer->updateSceneRepresentation(draw_context, update_flags);
 		renderer->recordBeginCommandBuffer(cmd);
+		update_flags->resetFlags();
 	}
 
 	void ReferenceRunner::mergeImages(const uint32_t width, const uint32_t height) {

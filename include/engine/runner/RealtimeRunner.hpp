@@ -4,13 +4,15 @@
 
 #ifndef REALTIMERENDERER_HPP
 #define REALTIMERENDERER_HPP
-
-#include <../renderer/VulkanRenderer.hpp>
+#include "Runner.hpp"
 
 namespace RtEngine {
-	class RealtimeRunner : public VulkanRenderer {
+	class RealtimeRunner : public Runner {
 	public:
-		RealtimeRunner() { max_frames_in_flight = 2; };
+		RealtimeRunner(std::shared_ptr<EngineContext> engine_context,
+		const std::shared_ptr<GuiRenderer> &gui_renderer, const std::shared_ptr<SceneManager> &scene_manager) : Runner(engine_context, gui_renderer, scene_manager) {
+			//max_frames_in_flight = 2;
+		} ;
 
 	protected:
 	};

@@ -32,8 +32,10 @@ namespace RtEngine {
 		}
 	}
 
-	void VulkanRenderer::init(const std::shared_ptr<BaseOptions> &base_options, std::shared_ptr<Window> window) {
-		this->base_options = base_options;
+	VulkanRenderer::VulkanRenderer(const std::string &resources_dir) : resources_dir(resources_dir) {
+	}
+
+	void VulkanRenderer::init(std::shared_ptr<Window> window) {
 		this->window = window;
 
 		initWindow();
@@ -67,7 +69,7 @@ namespace RtEngine {
 		vulkan_context->command_manager = std::make_shared<CommandManager>(vulkan_context->device_manager);
 		vulkan_context->resource_builder =
 				std::make_shared<ResourceBuilder>(vulkan_context->device_manager, vulkan_context->command_manager,
-												  base_options->resources_dir);
+												  resources_dir);
 		vulkan_context->swapchain =
 				std::make_shared<Swapchain>(vulkan_context->device_manager, window->getHandle(), vulkan_context->resource_builder);
 		vulkan_context->descriptor_allocator = createDescriptorAllocator();
@@ -81,7 +83,7 @@ namespace RtEngine {
 	}
 
 	void VulkanRenderer::createRepositories() {
-		mesh_repository = std::make_shared<MeshRepository>(vulkan_context, base_options->resources_dir);
+		mesh_repository = std::make_shared<MeshRepository>(vulkan_context, resources_dir);
 		texture_repository = std::make_shared<TextureRepository>(vulkan_context->resource_builder);
 
 		mainDeletionQueue.pushFunction([&]() {
