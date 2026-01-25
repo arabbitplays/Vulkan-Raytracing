@@ -3,8 +3,23 @@
 #include "PhongInstance.hpp"
 
 namespace RtEngine {
-    void PhongInstance::initializeInstanceProperties() {
-        properties = std::make_shared<PropertiesSection>("Phong Material");
+    void PhongInstance::initProperties(const std::shared_ptr<IProperties> &config,
+    const UpdateFlagsHandle &update_flags) {
+        bool requires_reload = false;
+        if (config->startChild(name)) {
+            requires_reload |= config->addVector("Diffuse", &diffuse);
+            requires_reload |= config->addVector("Specular", &specular);
+            requires_reload |= config->addFloat("N", &n);
+            requires_reload |= config->addVector("Ambient", &ambient);
+            requires_reload |= config->addVector("Reflection", &reflection);
+            requires_reload |= config->addVector("Transmission", &transmission);
+            requires_reload |= config->addVector("Eta", &eta);
+            config->endChild();
+        }
+
+        if (requires_reload) {
+            update_flags->setFlag(MATERIAL_UPDATE);
+        }
     }
 
     void *PhongInstance::getResources(size_t *size, const std::shared_ptr<MaterialTextures<>>& material_textures) {

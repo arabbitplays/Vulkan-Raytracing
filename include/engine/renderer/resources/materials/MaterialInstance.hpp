@@ -1,10 +1,12 @@
 #ifndef VULKAN_RAYTRACING_MATERIALINSTANCE_HPP
 #define VULKAN_RAYTRACING_MATERIALINSTANCE_HPP
 #include "MaterialTextures.hpp"
-#include "PropertiesManager.hpp"
+#include "ISerializable.hpp"
+#include <yaml-cpp/yaml.h>
+#include "YAML_glm.hpp"
 
 namespace RtEngine {
-    class MaterialInstance {
+    class MaterialInstance : public ISerializable {
     public:
         MaterialInstance() = default;
         explicit MaterialInstance(const std::string& name) : name(name) {}
@@ -23,18 +25,11 @@ namespace RtEngine {
         }
 
         virtual float getEmissionPower() { return 0.0f; }
-        std::shared_ptr<PropertiesSection> getProperties() {
-            if (properties == nullptr) {
-                initializeInstanceProperties();
-            }
-            return properties;
-        }
+
+        void initProperties(const std::shared_ptr<IProperties> &config, const UpdateFlagsHandle &update_flags) override = 0;
 
         std::string name = "";
     protected:
-        virtual void initializeInstanceProperties() = 0;
-
-        std::shared_ptr<PropertiesSection> properties;
         uint32_t material_index = 0;
     };
 

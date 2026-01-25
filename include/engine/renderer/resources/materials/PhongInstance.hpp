@@ -1,7 +1,3 @@
-//
-// Created by oschdi on 17.01.26.
-//
-
 #ifndef VULKAN_RAYTRACING_METALROUGHINSTANCE_HPP
 #define VULKAN_RAYTRACING_METALROUGHINSTANCE_HPP
 #include "MaterialInstance.hpp"
@@ -17,9 +13,9 @@ namespace RtEngine {
         void loadResources(YAML::Node yaml_node) override;
         YAML::Node writeResourcesToYaml() override;
 
-    protected:
-        void initializeInstanceProperties() override;
+        void initProperties(const std::shared_ptr<IProperties> &config, const UpdateFlagsHandle &update_flags) override;
 
+    protected:
         struct PhongResources {
             glm::vec3 diffuse;
             glm::vec3 specular;

@@ -1,14 +1,24 @@
 #include "MetalRoughInstance.hpp"
 
+#include "Node.hpp"
+
 namespace RtEngine {
-    void MetalRoughInstance::initializeInstanceProperties() {
-        properties = std::make_shared<PropertiesSection>("Metal Rough Material");
-        properties->addVector("Albedo", &albedo);
-        properties->addFloat("Metal", &metallic, ALL_PROPERTY_FLAGS, 0, 1);
-        properties->addFloat("Roughness", &roughness, ALL_PROPERTY_FLAGS, 0, 1);
-        properties->addFloat("Eta", &eta);
-        properties->addVector("Emission Color", &emission_color);
-        properties->addFloat("Emission Power", &emission_power);
+    void MetalRoughInstance::initProperties(const std::shared_ptr<IProperties> &config,
+        const UpdateFlagsHandle &update_flags) {
+        bool requires_reload = false;
+        if (config->startChild(name)) {
+            requires_reload |= config->addVector("Albedo", &albedo);
+            requires_reload |= config->addFloat("Metal", &metallic, 0, 1);
+            requires_reload |= config->addFloat("Roughness", &roughness, 0, 1);
+            requires_reload |= config->addFloat("Eta", &eta);
+            requires_reload |= config->addVector("Emission Color", &emission_color);
+            requires_reload |= config->addFloat("Emission Power", &emission_power);
+            config->endChild();
+        }
+
+        if (requires_reload) {
+            update_flags->setFlag(MATERIAL_UPDATE);
+        }
     }
 
     void *MetalRoughInstance::getResources(size_t *size, const std::shared_ptr<MaterialTextures<>> &material_textures) {

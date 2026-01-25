@@ -34,7 +34,7 @@ namespace RtEngine {
 		properties->addPropertySection(mesh_renderer_section);
 
 		if (mesh_material) {
-			properties->addPropertySection(mesh_material->getProperties(), SERIALIZABLE_PROPERTY_FLAG);
+			//properties->addPropertySection(mesh_material->getProperties(), SERIALIZABLE_PROPERTY_FLAG);
 		}
 	}
 

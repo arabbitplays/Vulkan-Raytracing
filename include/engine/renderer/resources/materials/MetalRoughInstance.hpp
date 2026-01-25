@@ -19,9 +19,9 @@ namespace RtEngine {
 
         float getEmissionPower() override;
 
-    protected:
-        void initializeInstanceProperties() override;
+        void initProperties(const std::shared_ptr<IProperties> &config, const UpdateFlagsHandle &update_flags) override;
 
+    protected:
         struct MetalRoughResources {
             glm::vec3 albedo;
             float padding;
