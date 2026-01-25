@@ -2,6 +2,7 @@
 #define VULKAN_RAYTRACING_ISERIALIZABLE_HPP
 #include <memory>
 #include "IProperties.hpp"
+#include "UpdateFlagValue.hpp"
 
 namespace RtEngine {
     class ISerializable;
@@ -11,7 +12,7 @@ namespace RtEngine {
     public:
         virtual ~ISerializable() = default;
 
-        virtual void initProperties(const std::shared_ptr<IProperties> &config) = 0;
+        virtual void initProperties(const std::shared_ptr<IProperties> &config, const UpdateFlagsHandle& update_flags) = 0;
     };
 }
 

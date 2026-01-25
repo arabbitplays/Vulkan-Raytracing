@@ -12,7 +12,7 @@ namespace RtEngine {
         gui_renderer->addWindow(hierarchy_window);
     }
 
-    void GuiManager::addCallbackToAll(const std::function<void(uint32_t)> &callback) {
+    void GuiManager::addCallbackToAll(const std::function<void(const UpdateFlagsHandle&)> &callback) const {
         options_window->addCallback(callback);
         inspector_window->addCallback(callback);
         hierarchy_window->addCallback(callback);

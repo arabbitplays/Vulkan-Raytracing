@@ -14,11 +14,11 @@ namespace RtEngine {
         virtual void loadScene(const std::string &scene_path);
         virtual void renderScene();
 
-        void setUpdateFlags(uint32_t new_flags);
+        void setUpdateFlags(const UpdateFlagsHandle &new_flags) const;
 
         bool isRunning() const;
 
-        void initProperties(const std::shared_ptr<IProperties> &config) override;
+        void initProperties(const std::shared_ptr<IProperties> &config, const UpdateFlagsHandle& update_flags) override;
 
     protected:
         virtual void drawFrame(const std::shared_ptr<DrawContext> &draw_context);
@@ -40,7 +40,7 @@ namespace RtEngine {
         std::shared_ptr<SceneReader> scene_reader;
         std::shared_ptr<SceneManager> scene_manager;
 
-        uint32_t update_flags;
+        UpdateFlagsHandle update_flags;
     };
 } // RtEngine
 

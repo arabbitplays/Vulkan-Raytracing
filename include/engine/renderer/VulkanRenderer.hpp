@@ -10,6 +10,7 @@
 #include <AccelerationStructure.hpp>
 #include <GuiRenderer.hpp>
 #include <GuiWindow.hpp>
+#include <memory>
 #include <RenderTarget.hpp>
 #include <../renderer/vulkan_scene_representation/SceneAdapter.hpp>
 #include "../../util/QuickTimer.hpp"
@@ -19,6 +20,7 @@
 #include <VulkanContext.hpp>
 #include "DeletionQueue.hpp"
 #include "MeshRepository.hpp"
+#include "UpdateFlagValue.hpp"
 #include "../Window.hpp"
 
 namespace RtEngine {
@@ -28,11 +30,11 @@ namespace RtEngine {
 		VulkanRenderer() = default;
 
 		void init(const std::shared_ptr<BaseOptions> &base_options, std::shared_ptr<Window> window);
-		void initProperties(const std::shared_ptr<IProperties> &config) override;
+		void initProperties(const std::shared_ptr<IProperties> &config, const UpdateFlagsHandle &update_flags) override;
 
 		void loadScene(std::shared_ptr<IScene> scene);
 
-		void updateSceneRepresentation(const std::shared_ptr<DrawContext> &draw_context, uint32_t update_flags);
+		void updateSceneRepresentation(const std::shared_ptr<DrawContext> &draw_context, UpdateFlagsHandle update_flags);
 		void updateRenderTarget(const std::shared_ptr<RenderTarget> &target);
 
 		void waitForIdle();

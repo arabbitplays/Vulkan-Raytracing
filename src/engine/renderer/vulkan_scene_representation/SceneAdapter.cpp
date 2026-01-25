@@ -8,7 +8,7 @@
 #include <SceneUtil.hpp>
 
 #include "PhongMaterial.hpp"
-#include "UpdateFlags.hpp"
+#include "UpdateFlagValue.hpp"
 
 namespace RtEngine {
 
@@ -95,16 +95,16 @@ namespace RtEngine {
 
 	// ----------------------------------------------------------------------------------------------------------------
 
-	void SceneAdapter::updateScene(const std::shared_ptr<DrawContext> &draw_context, uint32_t current_frame, uint32_t update_flags) {
+	void SceneAdapter::updateScene(const std::shared_ptr<DrawContext> &draw_context, uint32_t current_frame, UpdateFlagsHandle update_flags) {
 		assert(loaded_scene != nullptr);
 
 		// QuickTimer timer{"Scene Update", true};
 		VkDevice device = vulkan_context->device_manager->getDevice();
 
-		if (!(update_flags & NO_UPDATE))
+		if (update_flags->checkFlag(STATIC_GEOMETRY_UPDATE) || update_flags->checkFlag(MATERIAL_UPDATE))
 			vkDeviceWaitIdle(device);
 
-		if (update_flags & MATERIAL_UPDATE) {
+		if (update_flags->checkFlag(MATERIAL_UPDATE)) {
 			// !!!! This clear the descriptor set writes
 			material_manager->updateMaterialResources(loaded_scene);
 		}
@@ -132,8 +132,8 @@ namespace RtEngine {
 	}
 
 	// TODO split into dynamic and static
-	void SceneAdapter::updateStaticGeometry(std::vector<RenderObject> render_objects, uint32_t update_flags) {
-		if (update_flags & STATIC_GEOMETRY_UPDATE) {
+	void SceneAdapter::updateStaticGeometry(std::vector<RenderObject> render_objects, UpdateFlagsHandle update_flags) {
+		if (update_flags->checkFlag(STATIC_GEOMETRY_UPDATE)) {
 			instance_manager->createInstanceMappingBuffer(render_objects);
 			vulkan_context->descriptor_allocator->writeBuffer(6, instance_manager->getInstanceBuffer().handle, 0,
 															  VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
@@ -144,7 +144,7 @@ namespace RtEngine {
 				0, top_level_acceleration_structure->getHandle(), VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR);
 		}
 
-		if (update_flags & STATIC_GEOMETRY_UPDATE || update_flags & MATERIAL_UPDATE) {
+		if (update_flags->checkFlag(STATIC_GEOMETRY_UPDATE) || update_flags->checkFlag(MATERIAL_UPDATE)) {
 			instance_manager->createEmittingInstancesBuffer(render_objects);
 			vulkan_context->descriptor_allocator->writeBuffer(7, instance_manager->getEmittingInstancesBuffer().handle,
 												  0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);

@@ -3,7 +3,7 @@
 #include <imgui.h>
 
 #include "SceneAdapter.hpp"
-#include "UpdateFlags.hpp"
+#include "UpdateFlagValue.hpp"
 
 namespace RtEngine {
 	InspectorWindow::InspectorWindow(const std::shared_ptr<SceneManager>& scene_manager) :
@@ -17,7 +17,7 @@ namespace RtEngine {
 
 		ImGui::SetNextWindowSize(ImVec2(400, 300), ImGuiCond_Once);
 
-		bool refresh = false;
+		auto updateFlags = std::make_shared<UpdateFlags>();
 		if (show_window) {
 			ImGui::Begin("Inspector", &show_window);
 			ImGui::Text("%s", node->name.c_str());
@@ -27,14 +27,14 @@ namespace RtEngine {
 				std::shared_ptr<PropertiesManager> properties = component->getProperties();
 				if (!properties)
 					continue;
-				refresh |= properties->serialize();
+				//refresh |= properties->serialize();
 			}
 
 			ImGui::End();
 		}
 
-		if (refresh) {
-			notifyUpdate(MATERIAL_UPDATE | STATIC_GEOMETRY_UPDATE);
+		if (updateFlags->hasAny()) {
+			notifyUpdate(updateFlags);
 		}
 	}
 

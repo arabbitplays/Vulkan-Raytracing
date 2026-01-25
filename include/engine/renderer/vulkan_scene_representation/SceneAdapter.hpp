@@ -3,12 +3,14 @@
 
 #include <GeometryManager.hpp>
 #include <InstanceManager.hpp>
+#include <memory>
 #include <OptionsWindow.hpp>
 #include <VulkanContext.hpp>
 #include <vector>
 #include <vulkan/vulkan_core.h>
 
 #include "MaterialManager.hpp"
+#include "UpdateFlagValue.hpp"
 
 namespace RtEngine {
 	class SceneAdapter {
@@ -44,7 +46,7 @@ namespace RtEngine {
 
 		void loadNewScene(const std::shared_ptr<IScene> &new_scene);
 
-		void updateScene(const std::shared_ptr<DrawContext> &draw_context, uint32_t current_frame, uint32_t update_flags);
+		void updateScene(const std::shared_ptr<DrawContext> &draw_context, uint32_t current_frame, UpdateFlagsHandle update_flags);
 		void updateRenderTarget(std::shared_ptr<RenderTarget> target);
 
 		void clearResources();
@@ -70,7 +72,7 @@ namespace RtEngine {
 		void createTlas();
 
 		void updateGeometryResources(const std::shared_ptr<IScene> &scene);
-		void updateStaticGeometry(std::vector<RenderObject> render_objects, uint32_t update_flags);
+		void updateStaticGeometry(std::vector<RenderObject> render_objects, UpdateFlagsHandle update_flags);
 		void updateDynamicGeometry(std::vector<RenderObject> render_objects, uint32_t update_flags);
 
 		void updateSceneDescriptorSets();

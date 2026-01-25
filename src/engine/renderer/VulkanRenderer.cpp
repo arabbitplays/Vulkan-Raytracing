@@ -9,6 +9,7 @@
 #include <glm/gtc/packing.hpp>
 
 #include "ImageUtil.hpp"
+#include "UpdateFlagValue.hpp"
 
 namespace RtEngine {
 
@@ -133,8 +134,10 @@ namespace RtEngine {
 	}
 
 	void VulkanRenderer::createSyncObjects() {
+		uint32_t swapchain_image_count = vulkan_context->swapchain->images.size();
+
 		imageAvailableSemaphores.resize(max_frames_in_flight);
-		renderFinishedSemaphores.resize(max_frames_in_flight);
+		renderFinishedSemaphores.resize(swapchain_image_count);
 		inFlightFences.resize(max_frames_in_flight);
 
 		VkSemaphoreCreateInfo semaphoreInfo{};
@@ -147,8 +150,6 @@ namespace RtEngine {
 		for (size_t i = 0; i < max_frames_in_flight; i++) {
 			if (vkCreateSemaphore(vulkan_context->device_manager->getDevice(), &semaphoreInfo, nullptr,
 								  &imageAvailableSemaphores[i]) != VK_SUCCESS ||
-				vkCreateSemaphore(vulkan_context->device_manager->getDevice(), &semaphoreInfo, nullptr,
-								  &renderFinishedSemaphores[i]) != VK_SUCCESS ||
 				vkCreateFence(vulkan_context->device_manager->getDevice(), &fenceInfo, nullptr, &inFlightFences[i]) !=
 						VK_SUCCESS) {
 				throw std::runtime_error("failed to create sync objects");
@@ -156,13 +157,23 @@ namespace RtEngine {
 
 			mainDeletionQueue.pushFunction([&, i]() {
 				vkDestroySemaphore(vulkan_context->device_manager->getDevice(), imageAvailableSemaphores[i], nullptr);
-				vkDestroySemaphore(vulkan_context->device_manager->getDevice(), renderFinishedSemaphores[i], nullptr);
 				vkDestroyFence(vulkan_context->device_manager->getDevice(), inFlightFences[i], nullptr);
+			});
+		}
+
+		for (size_t i = 0; i < swapchain_image_count; i++) {
+			if (vkCreateSemaphore(vulkan_context->device_manager->getDevice(), &semaphoreInfo, nullptr,
+								  &renderFinishedSemaphores[i]) != VK_SUCCESS) {
+				throw std::runtime_error("failed to create sync objects");
+						}
+
+			mainDeletionQueue.pushFunction([&, i]() {
+				vkDestroySemaphore(vulkan_context->device_manager->getDevice(), renderFinishedSemaphores[i], nullptr);
 			});
 		}
 	}
 
-	void VulkanRenderer::updateSceneRepresentation(const std::shared_ptr<DrawContext> &draw_context, uint32_t update_flags) {
+	void VulkanRenderer::updateSceneRepresentation(const std::shared_ptr<DrawContext> &draw_context, UpdateFlagsHandle update_flags) {
 		scene_adapter->updateScene(draw_context, current_frame, update_flags);
 	}
 
@@ -196,7 +207,7 @@ namespace RtEngine {
 	bool VulkanRenderer::submitCommands(bool present, uint32_t swapchain_image_idx) {
 		if (present) {
 			std::vector<VkSemaphore> waitSemaphore = {imageAvailableSemaphores[current_frame]};
-			std::vector<VkSemaphore> signalSemaphore = {renderFinishedSemaphores[current_frame]};
+			std::vector<VkSemaphore> signalSemaphore = {renderFinishedSemaphores[swapchain_image_idx]};
 			submitCommandBuffer(waitSemaphore, signalSemaphore);
 			presentSwapchainImage(signalSemaphore, swapchain_image_idx);
 		} else {
@@ -443,9 +454,12 @@ namespace RtEngine {
 		}
 	}
 
-	void VulkanRenderer::initProperties(const std::shared_ptr<IProperties> &config) {
+	void VulkanRenderer::initProperties(const std::shared_ptr<IProperties> &config,
+	const UpdateFlagsHandle &update_flags) {
 		if (config->startChild("renderer")) {
-			config->addUint("recursion_depth", &recursion_depth, 1, 10);
+			if (config->addUint("recursion_depth", &recursion_depth, 1, 10)) {
+				update_flags->setFlag(TARGET_RESET);
+			}
 			config->endChild();
 		}
 

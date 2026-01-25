@@ -46,12 +46,17 @@ namespace RtEngine {
         renderer_options->resources_dir = options->resources_dir;
         renderer_options->config_file = options->config_file;
         vulkan_renderer->init(renderer_options, window);
-        vulkan_renderer->initProperties(config_properties);
+
+        auto update_flags = std::make_shared<UpdateFlags>();
+        vulkan_renderer->initProperties(config_properties, update_flags);
     }
 
     void Engine::createGuiManager() {
         auto gui_renderer = std::make_shared<GuiRenderer>(vulkan_renderer->getVulkanContext());
         gui_manager = std::make_shared<GuiManager>(scene_manager, gui_renderer);
+        gui_manager->addCallbackToAll([&] (const UpdateFlagsHandle& update_flags) {
+            runner->setUpdateFlags(update_flags);
+        });
     }
 
     void Engine::createEngineContext() {
@@ -83,7 +88,9 @@ namespace RtEngine {
             return;
         }
 
-        runner->initProperties(config_properties);
+        auto update_flags = std::make_shared<UpdateFlags>();
+        runner->initProperties(config_properties, update_flags);
+        runner->setUpdateFlags(update_flags);
     }
 
     void Engine::setupGui() const {

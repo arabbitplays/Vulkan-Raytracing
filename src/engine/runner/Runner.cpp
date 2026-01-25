@@ -1,6 +1,6 @@
 #include "../../../include/engine/runner/Runner.hpp"
 
-#include "UpdateFlags.hpp"
+#include "UpdateFlagValue.hpp"
 
 namespace RtEngine {
     Runner::Runner(std::shared_ptr<EngineContext> engine_context,
@@ -9,6 +9,7 @@ namespace RtEngine {
         gui_manager(gui_renderer), scene_manager(scene_manager) {
 
         scene_reader = std::make_shared<SceneReader>(engine_context);
+        update_flags = std::make_shared<UpdateFlags>();
     }
 
     std::string Runner::getScenePath() const {
@@ -28,14 +29,13 @@ namespace RtEngine {
         }
         new_scene->start();
         renderer->loadScene(new_scene);
-        update_flags |= MATERIAL_UPDATE | STATIC_GEOMETRY_UPDATE;
 
         //SceneWriter writer;
         //writer.writeScene(PathUtil::getFileName(scene_manager->getSceneInformation().path), scene_manager->scene);
     }
 
     void Runner::renderScene() {
-        if ((update_flags & SCENE_UPDATE) != 0) {
+        if (update_flags->checkFlag(SCENE_UPDATE)) {
             loadScene(scene_manager->getScenePath(scene_name));
         }
 
@@ -72,12 +72,12 @@ namespace RtEngine {
     void Runner::prepareFrame(VkCommandBuffer cmd, const std::shared_ptr<DrawContext> &draw_context) {
         renderer->updateSceneRepresentation(draw_context, update_flags);
 
-        if (update_flags > 0) {
+        if (update_flags->hasAny()) { // TODO
             for (const auto& target : draw_context->targets) {
                 target->resetAccumulatedFrames();
             }
         }
-        update_flags = 0;
+        update_flags->resetFlags();
 
         renderer->recordBeginCommandBuffer(cmd);
     }
@@ -103,18 +103,18 @@ namespace RtEngine {
         return draw_context;
     }
 
-    void Runner::setUpdateFlags(uint32_t new_flags) {
-        update_flags |= new_flags;
+    void Runner::setUpdateFlags(const UpdateFlagsHandle &new_flags) const {
+        update_flags->setFlags(new_flags);
     }
 
     bool Runner::isRunning() const {
         return running;
     }
 
-    void Runner::initProperties(const std::shared_ptr<IProperties>& config) {
+    void Runner::initProperties(const std::shared_ptr<IProperties> &config, const UpdateFlagsHandle& update_flags) {
         if (config->startChild("runner")) {
             if (config->addSelection("scene_name", &scene_name, scene_manager->getSceneNames())) {
-                update_flags |= SCENE_UPDATE;
+                update_flags->setFlag(SCENE_UPDATE);
             }
             config->endChild();
         }
