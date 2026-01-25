@@ -54,7 +54,7 @@ namespace RtEngine {
         std::shared_ptr<RenderTarget> render_target;
 
         float fov = 45.0;
-        bool is_interactive = false;
+        bool is_interactive = false, follow_window = false;
         std::shared_ptr<Transform> transform;
 
         // ----------------------- movement -----------------------

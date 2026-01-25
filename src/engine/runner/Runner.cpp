@@ -1,5 +1,7 @@
 #include "../../../include/engine/runner/Runner.hpp"
 
+#include "PathUtil.hpp"
+#include "SceneWriter.hpp"
 #include "UpdateFlagValue.hpp"
 
 namespace RtEngine {
@@ -30,8 +32,8 @@ namespace RtEngine {
         new_scene->start();
         renderer->loadScene(new_scene);
 
-        //SceneWriter writer;
-        //writer.writeScene(PathUtil::getFileName(scene_manager->getSceneInformation().path), scene_manager->scene);
+        SceneWriter writer;
+        writer.writeScene(PathUtil::getFileName(scene_path), new_scene);
     }
 
     void Runner::renderScene() {

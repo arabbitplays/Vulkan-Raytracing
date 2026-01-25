@@ -9,6 +9,8 @@
 #include <MetalRoughMaterial.hpp>
 #include <spdlog/spdlog.h>
 
+#include "YamlDumpProperties.hpp"
+
 namespace RtEngine {
 	void SceneWriter::writeScene(const std::string &filename, std::shared_ptr<Scene> scene) {
 		QuickTimer quick_timer("Writing scene to file");
@@ -101,11 +103,7 @@ namespace RtEngine {
 		out << YAML::BeginMap;
 		out << YAML::Key << "name" << YAML::Value << node->name;
 
-		out << YAML::Key << "components" << YAML::Value << YAML::BeginSeq;
-		for (auto &component: node->components) {
-			writeComponent(out, component);
-		}
-		out << YAML::EndSeq;
+		out << YAML::Key << "components" << YAML::Value << writeComponents(node);
 
 		out << YAML::Key << "children" << YAML::Value << YAML::BeginSeq;
 		for (const auto &child: node->children) {
@@ -115,52 +113,15 @@ namespace RtEngine {
 		out << YAML::EndMap;
 	}
 
-	void SceneWriter::writeComponent(YAML::Emitter &out, const std::shared_ptr<Component> &component) {
-		/*std::shared_ptr<PropertiesManager> properties = component->getProperties();
-		std::vector<std::shared_ptr<PropertiesSection>> sections = properties->getSections(PERSISTENT_PROPERTY_FLAG);
-		assert(sections.size() <= 1);
-		if (sections.empty())
-			return;
+	YAML::Node SceneWriter::writeComponents(const std::shared_ptr<Node> &node) {
+		YAML::Node components_root(YAML::NodeType::Map);
+		std::shared_ptr<YamlDumpProperties> props = std::make_shared<YamlDumpProperties>(components_root);
+		auto update_flags = std::make_shared<UpdateFlags>();
 
-		out << YAML::BeginMap;
-
-		for (auto &section: sections) {
-			out << YAML::Key << section->section_name << YAML::BeginMap;
-
-			for (auto &prop: section->bool_properties) {
-				if (prop->flags & PERSISTENT_PROPERTY_FLAG)
-					out << YAML::Key << prop->name << YAML::Value << *prop->var;
-			}
-
-			for (auto &prop: section->float_properties) {
-				if (prop->flags & PERSISTENT_PROPERTY_FLAG)
-					out << YAML::Key << prop->name << YAML::Value << *prop->var;
-			}
-
-			for (auto &prop: section->int_properties) {
-				if (prop->flags & PERSISTENT_PROPERTY_FLAG)
-					out << YAML::Key << prop->name << YAML::Value << *prop->var;
-			}
-
-			for (auto &prop: section->string_properties) {
-				if (prop->flags & PERSISTENT_PROPERTY_FLAG)
-					out << YAML::Key << prop->name << YAML::Value << *prop->var;
-			}
-
-			for (auto &prop: section->vector_properties) {
-				if (prop->flags & PERSISTENT_PROPERTY_FLAG)
-					out << YAML::Key << prop->name << YAML::Value << YAML::convert<glm::vec3>::encode(*prop->var);
-			}
-
-			for (auto &prop: section->selection_properties) {
-				if (prop->flags & PERSISTENT_PROPERTY_FLAG)
-					out << YAML::Key << prop->name << YAML::Value << *prop->var;
-			}
-
-			out << YAML::EndMap;
+		for (auto &component: node->components) {
+			component->initProperties(props, update_flags);
 		}
-		auto section = sections.at(0);
 
-		out << YAML::EndMap;*/
+		return components_root;
 	}
 } // namespace RtEngine

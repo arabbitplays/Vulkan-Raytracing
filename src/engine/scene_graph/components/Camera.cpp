@@ -8,6 +8,8 @@ namespace RtEngine {
     void Camera::OnStart() {
 
 		if (image_height == 0 || image_width == 0) {
+			follow_window = true;
+
 			VkExtent2D swapchain_extent = context->swapchain_manager->getSwapchainExtent();
 			image_width = swapchain_extent.width;
 			image_height = swapchain_extent.height;
@@ -48,8 +50,10 @@ namespace RtEngine {
     	if (config->startChild(COMPONENT_NAME)) {
     		requires_reset |= config->addFloat("fov", &fov, 10.0f, 80.0f);
     		requires_reset |= config->addBool("interactive", &is_interactive);
-    		requires_reset |= config->addUint("width", &image_width);
-    		requires_reset |= config->addUint("height", &image_height);
+    		if (!follow_window) {
+    			requires_reset |= config->addUint("width", &image_width);
+    			requires_reset |= config->addUint("height", &image_height);
+    		}
     		config->endChild();
     	}
 
