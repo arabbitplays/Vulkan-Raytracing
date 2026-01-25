@@ -15,13 +15,9 @@ namespace RtEngine {
 		shared_node->transform->decomposed_transform.translation.y -= gravity * FIXED_DELTA_TIME;
 	}
 
-	void Rigidbody::definePropertySections() {
-		assert(properties != nullptr);
-		auto section = std::make_shared<PropertiesSection>(COMPONENT_NAME);
-
-		section->addFloat("Gravity", &gravity);
-
-		properties->addPropertySection(section);
+	void Rigidbody::initProperties(const std::shared_ptr<IProperties> &config, const UpdateFlagsHandle &update_flags) {
+		if (config->startChild(COMPONENT_NAME)) {
+			config->addFloat("Gravity", &gravity);
+		}
 	}
-
 } // namespace RtEngine

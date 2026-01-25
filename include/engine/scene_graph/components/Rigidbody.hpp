@@ -19,7 +19,7 @@ namespace RtEngine {
 		void OnUpdate() override;
 		void OnDestroy() override {}
 
-		void definePropertySections() override;
+		void initProperties(const std::shared_ptr<IProperties> &config, const UpdateFlagsHandle &update_flags) override;
 
 	private:
 		float gravity = 0.0f;

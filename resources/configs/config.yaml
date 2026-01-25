@@ -1,5 +1,5 @@
 runner:
-  scene_name: showcase
+  scene_name: base_scene
 renderer:
   recursion_depth: 3
 phong:

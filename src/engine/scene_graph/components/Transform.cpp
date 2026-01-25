@@ -20,15 +20,12 @@ namespace RtEngine {
 
 	glm::mat4 Transform::getWorldTransform() const { return worldTransform; }
 
-	void Transform::definePropertySections() {
-		assert(properties != nullptr);
-
-		auto section = std::make_shared<PropertiesSection>(COMPONENT_NAME);
-
-		section->addVector("position", &decomposed_transform.translation);
-		section->addVector("rotation", &decomposed_transform.rotation);
-		section->addVector("scale", &decomposed_transform.scale);
-
-		properties->addPropertySection(section);
+	void Transform::initProperties(const std::shared_ptr<IProperties> &config, const UpdateFlagsHandle &update_flags) {
+		if (config->startChild(COMPONENT_NAME)) {
+			config->addVector("position", &decomposed_transform.translation);
+			config->addVector("rotation", &decomposed_transform.rotation);
+			config->addVector("scale", &decomposed_transform.scale);
+			config->endChild();
+		}
 	}
 } // namespace RtEngine

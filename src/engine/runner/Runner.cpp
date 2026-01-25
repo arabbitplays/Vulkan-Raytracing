@@ -72,7 +72,7 @@ namespace RtEngine {
     void Runner::prepareFrame(VkCommandBuffer cmd, const std::shared_ptr<DrawContext> &draw_context) {
         renderer->updateSceneRepresentation(draw_context, update_flags);
 
-        if (update_flags->hasAny()) { // TODO
+        if (update_flags->checkFlag(TARGET_RESET)) {
             for (const auto& target : draw_context->targets) {
                 target->resetAccumulatedFrames();
             }

@@ -135,7 +135,7 @@ scene:
   nodes:
     - name: Camera
       components:
-        - Transform:
+        Transform:
             position:
               - 0
               - 0
@@ -148,12 +148,12 @@ scene:
               - 3
               - 3
               - 3
-        - Camera:
+        Camera:
             fov: 45
             interactive: true
     - name: ReflectSphere1
       components:
-        - Transform:
+        Transform:
             position:
               - -1.5
               - -1.5
@@ -166,14 +166,14 @@ scene:
               - 0.600000024
               - 0.600000024
               - 0.600000024
-        - MeshRenderer:
+        MeshRenderer:
             material_name: reflection
             mesh: sphere
       children:
         []
     - name: ReflectSphere2
       components:
-        - Transform:
+        Transform:
             position:
               - 1.5
               - 1.5
@@ -186,14 +186,14 @@ scene:
               - 0.600000024
               - 0.600000024
               - 0.600000024
-        - MeshRenderer:
+        MeshRenderer:
             material_name: reflection
             mesh: sphere
       children:
         []
     - name: TransmissionSphere1
       components:
-        - Transform:
+        Transform:
             position:
               - 1.5
               - -1.5
@@ -206,14 +206,14 @@ scene:
               - 0.600000024
               - 0.600000024
               - 0.600000024
-        - MeshRenderer:
+        MeshRenderer:
             material_name: transmission
             mesh: sphere
       children:
         []
     - name: TransmissionSphere2
       components:
-        - Transform:
+        Transform:
             position:
               - -1.5
               - 1.5
@@ -226,14 +226,14 @@ scene:
               - 0.600000024
               - 0.600000024
               - 0.600000024
-        - MeshRenderer:
+        MeshRenderer:
             material_name: transmission
             mesh: sphere
       children:
         []
     - name: Sphere1
       components:
-        - Transform:
+        Transform:
             position:
               - -1.79999995
               - -2.0999999
@@ -246,14 +246,14 @@ scene:
               - 0.300000012
               - 0.300000012
               - 0.300000012
-        - MeshRenderer:
+        MeshRenderer:
             material_name: sphere1
             mesh: sphere
       children:
         []
     - name: Sphere2
       components:
-        - Transform:
+        Transform:
             position:
               - -0.899999976
               - -2.0999999
@@ -266,14 +266,14 @@ scene:
               - 0.300000012
               - 0.300000012
               - 0.300000012
-        - MeshRenderer:
+        MeshRenderer:
             material_name: sphere2
             mesh: sphere
       children:
         []
     - name: Sphere3
       components:
-        - Transform:
+        Transform:
             position:
               - 0
               - -2.0999999
@@ -286,14 +286,14 @@ scene:
               - 0.300000012
               - 0.300000012
               - 0.300000012
-        - MeshRenderer:
+        MeshRenderer:
             material_name: sphere3
             mesh: sphere
       children:
         []
     - name: Sphere4
       components:
-        - Transform:
+        Transform:
             position:
               - 0.899999976
               - -2.0999999
@@ -306,14 +306,14 @@ scene:
               - 0.300000012
               - 0.300000012
               - 0.300000012
-        - MeshRenderer:
+        MeshRenderer:
             material_name: sphere4
             mesh: sphere
       children:
         []
     - name: Sphere5
       components:
-        - Transform:
+        Transform:
             position:
               - 1.79999995
               - -2.0999999
@@ -326,14 +326,14 @@ scene:
               - 0.300000012
               - 0.300000012
               - 0.300000012
-        - MeshRenderer:
+        MeshRenderer:
             material_name: sphere5
             mesh: sphere
       children:
         []
     - name: Room
       components:
-        - Transform:
+        Transform:
             position:
               - 0
               - 0
@@ -349,7 +349,7 @@ scene:
       children:
         - name: Floor
           components:
-            - Transform:
+            Transform:
                 position:
                   - 0
                   - -2.5
@@ -362,14 +362,14 @@ scene:
                   - 5
                   - 5
                   - 5
-            - MeshRenderer:
+            MeshRenderer:
                 material_name: diffuse_grey
                 mesh: plane
           children:
             []
         - name: Ceil
           components:
-            - Transform:
+            Transform:
                 position:
                   - 0
                   - 2.5
@@ -382,14 +382,14 @@ scene:
                   - 5
                   - 5
                   - 5
-            - MeshRenderer:
+            MeshRenderer:
                 material_name: diffuse_grey
                 mesh: plane
           children:
             []
         - name: Left
           components:
-            - Transform:
+            Transform:
                 position:
                   - -2.5
                   - 0
@@ -402,14 +402,14 @@ scene:
                   - 5
                   - 5
                   - 5
-            - MeshRenderer:
+            MeshRenderer:
                 material_name: diffuse_red
                 mesh: plane
           children:
             []
         - name: Right
           components:
-            - Transform:
+            Transform:
                 position:
                   - 2.5
                   - 0
@@ -422,14 +422,14 @@ scene:
                   - 5
                   - 5
                   - 5
-            - MeshRenderer:
+            MeshRenderer:
                 material_name: diffuse_green
                 mesh: plane
           children:
             []
         - name: Back11
           components:
-            - Transform:
+            Transform:
                 position:
                   - -2
                   - -2
@@ -442,14 +442,14 @@ scene:
                   - 1
                   - 1
                   - 1
-            - MeshRenderer:
+            MeshRenderer:
                 material_name: diffuse_blue
                 mesh: plane
           children:
             []
         - name: Back12
           components:
-            - Transform:
+            Transform:
                 position:
                   - -2
                   - -1
@@ -462,14 +462,14 @@ scene:
                   - 1
                   - 1
                   - 1
-            - MeshRenderer:
+            MeshRenderer:
                 material_name: diffuse_grey
                 mesh: plane
           children:
             []
         - name: Back13
           components:
-            - Transform:
+            Transform:
                 position:
                   - -2
                   - 0
@@ -482,14 +482,14 @@ scene:
                   - 1
                   - 1
                   - 1
-            - MeshRenderer:
+            MeshRenderer:
                 material_name: diffuse_blue
                 mesh: plane
           children:
             []
         - name: Back14
           components:
-            - Transform:
+            Transform:
                 position:
                   - -2
                   - 1
@@ -502,14 +502,14 @@ scene:
                   - 1
                   - 1
                   - 1
-            - MeshRenderer:
+            MeshRenderer:
                 material_name: diffuse_grey
                 mesh: plane
           children:
             []
         - name: Back15
           components:
-            - Transform:
+            Transform:
                 position:
                   - -2
                   - 2
@@ -522,14 +522,14 @@ scene:
                   - 1
                   - 1
                   - 1
-            - MeshRenderer:
+            MeshRenderer:
                 material_name: diffuse_blue
                 mesh: plane
           children:
             []
         - name: Back21
           components:
-            - Transform:
+            Transform:
                 position:
                   - -1
                   - -2
@@ -542,14 +542,14 @@ scene:
                   - 1
                   - 1
                   - 1
-            - MeshRenderer:
+            MeshRenderer:
                 material_name: diffuse_grey
                 mesh: plane
           children:
             []
         - name: Back22
           components:
-            - Transform:
+            Transform:
                 position:
                   - -1
                   - -1
@@ -562,14 +562,14 @@ scene:
                   - 1
                   - 1
                   - 1
-            - MeshRenderer:
+            MeshRenderer:
                 material_name: diffuse_blue
                 mesh: plane
           children:
             []
         - name: Back23
           components:
-            - Transform:
+            Transform:
                 position:
                   - -1
                   - 0
@@ -582,14 +582,14 @@ scene:
                   - 1
                   - 1
                   - 1
-            - MeshRenderer:
+            MeshRenderer:
                 material_name: diffuse_grey
                 mesh: plane
           children:
             []
         - name: Back24
           components:
-            - Transform:
+            Transform:
                 position:
                   - -1
                   - 1
@@ -602,14 +602,14 @@ scene:
                   - 1
                   - 1
                   - 1
-            - MeshRenderer:
+            MeshRenderer:
                 material_name: diffuse_blue
                 mesh: plane
           children:
             []
         - name: Back25
           components:
-            - Transform:
+            Transform:
                 position:
                   - -1
                   - 2
@@ -622,14 +622,14 @@ scene:
                   - 1
                   - 1
                   - 1
-            - MeshRenderer:
+            MeshRenderer:
                 material_name: diffuse_grey
                 mesh: plane
           children:
             []
         - name: Back31
           components:
-            - Transform:
+            Transform:
                 position:
                   - 0
                   - -2
@@ -642,14 +642,14 @@ scene:
                   - 1
                   - 1
                   - 1
-            - MeshRenderer:
+            MeshRenderer:
                 material_name: diffuse_blue
                 mesh: plane
           children:
             []
         - name: Back32
           components:
-            - Transform:
+            Transform:
                 position:
                   - 0
                   - -1
@@ -662,14 +662,14 @@ scene:
                   - 1
                   - 1
                   - 1
-            - MeshRenderer:
+            MeshRenderer:
                 material_name: diffuse_grey
                 mesh: plane
           children:
             []
         - name: Back33
           components:
-            - Transform:
+            Transform:
                 position:
                   - 0
                   - 0
@@ -682,14 +682,14 @@ scene:
                   - 1
                   - 1
                   - 1
-            - MeshRenderer:
+            MeshRenderer:
                 material_name: diffuse_blue
                 mesh: plane
           children:
             []
         - name: Back34
           components:
-            - Transform:
+            Transform:
                 position:
                   - 0
                   - 1
@@ -702,14 +702,14 @@ scene:
                   - 1
                   - 1
                   - 1
-            - MeshRenderer:
+            MeshRenderer:
                 material_name: diffuse_grey
                 mesh: plane
           children:
             []
         - name: Back35
           components:
-            - Transform:
+            Transform:
                 position:
                   - 0
                   - 2
@@ -722,14 +722,14 @@ scene:
                   - 1
                   - 1
                   - 1
-            - MeshRenderer:
+            MeshRenderer:
                 material_name: diffuse_blue
                 mesh: plane
           children:
             []
         - name: Back41
           components:
-            - Transform:
+            Transform:
                 position:
                   - 1
                   - -2
@@ -742,14 +742,14 @@ scene:
                   - 1
                   - 1
                   - 1
-            - MeshRenderer:
+            MeshRenderer:
                 material_name: diffuse_grey
                 mesh: plane
           children:
             []
         - name: Back42
           components:
-            - Transform:
+            Transform:
                 position:
                   - 1
                   - -1
@@ -762,14 +762,14 @@ scene:
                   - 1
                   - 1
                   - 1
-            - MeshRenderer:
+            MeshRenderer:
                 material_name: diffuse_blue
                 mesh: plane
           children:
             []
         - name: Back43
           components:
-            - Transform:
+            Transform:
                 position:
                   - 1
                   - 0
@@ -782,14 +782,14 @@ scene:
                   - 1
                   - 1
                   - 1
-            - MeshRenderer:
+            MeshRenderer:
                 material_name: diffuse_grey
                 mesh: plane
           children:
             []
         - name: Back44
           components:
-            - Transform:
+            Transform:
                 position:
                   - 1
                   - 1
@@ -802,14 +802,14 @@ scene:
                   - 1
                   - 1
                   - 1
-            - MeshRenderer:
+            MeshRenderer:
                 material_name: diffuse_blue
                 mesh: plane
           children:
             []
         - name: Back45
           components:
-            - Transform:
+            Transform:
                 position:
                   - 1
                   - 2
@@ -822,14 +822,14 @@ scene:
                   - 1
                   - 1
                   - 1
-            - MeshRenderer:
+            MeshRenderer:
                 material_name: diffuse_grey
                 mesh: plane
           children:
             []
         - name: Back51
           components:
-            - Transform:
+            Transform:
                 position:
                   - 2
                   - -2
@@ -842,14 +842,14 @@ scene:
                   - 1
                   - 1
                   - 1
-            - MeshRenderer:
+            MeshRenderer:
                 material_name: diffuse_blue
                 mesh: plane
           children:
             []
         - name: Back52
           components:
-            - Transform:
+            Transform:
                 position:
                   - 2
                   - -1
@@ -862,14 +862,14 @@ scene:
                   - 1
                   - 1
                   - 1
-            - MeshRenderer:
+            MeshRenderer:
                 material_name: diffuse_grey
                 mesh: plane
           children:
             []
         - name: Back53
           components:
-            - Transform:
+            Transform:
                 position:
                   - 2
                   - 0
@@ -882,14 +882,14 @@ scene:
                   - 1
                   - 1
                   - 1
-            - MeshRenderer:
+            MeshRenderer:
                 material_name: diffuse_blue
                 mesh: plane
           children:
             []
         - name: Back54
           components:
-            - Transform:
+            Transform:
                 position:
                   - 2
                   - 1
@@ -902,14 +902,14 @@ scene:
                   - 1
                   - 1
                   - 1
-            - MeshRenderer:
+            MeshRenderer:
                 material_name: diffuse_grey
                 mesh: plane
           children:
             []
         - name: Back55
           components:
-            - Transform:
+            Transform:
                 position:
                   - 2
                   - 2
@@ -922,7 +922,7 @@ scene:
                   - 1
                   - 1
                   - 1
-            - MeshRenderer:
+            MeshRenderer:
                 material_name: diffuse_blue
                 mesh: plane
           children:

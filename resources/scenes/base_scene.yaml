@@ -77,7 +77,7 @@ scene:
   nodes:
     - name: Camera
       components:
-        - Transform:
+        Transform:
             position:
               - 0
               - 0
@@ -90,11 +90,11 @@ scene:
               - 3
               - 3
               - 3
-        - Camera:
+        Camera:
             fov: 45
     - name: Light
       components:
-        - Transform:
+        Transform:
             position:
               - 0
               - 2.4000001
@@ -107,14 +107,14 @@ scene:
               - 3
               - 3
               - 3
-        - MeshRenderer:
+        MeshRenderer:
             material_name: light
             mesh: plane
       children:
         []
     - name: Sphere1
       components:
-        - Transform:
+        Transform:
             position:
               - -1
               - 0
@@ -127,14 +127,14 @@ scene:
               - 1
               - 1
               - 1
-        - MeshRenderer:
+        MeshRenderer:
             material_name: sphere1
             mesh: sphere
       children:
         []
     - name: Sphere2
       components:
-        - Transform:
+        Transform:
             position:
               - 1
               - 0
@@ -147,14 +147,14 @@ scene:
               - 1
               - 1
               - 1
-        - MeshRenderer:
+        MeshRenderer:
             material_name: sphere2
             mesh: sphere
       children:
         []
     - name: Room
       components:
-        - Transform:
+        Transform:
             position:
               - 0
               - 0
@@ -170,7 +170,7 @@ scene:
       children:
         - name: Floor
           components:
-            - Transform:
+            Transform:
                 position:
                   - 0
                   - -2.5
@@ -183,14 +183,14 @@ scene:
                   - 5
                   - 5
                   - 5
-            - MeshRenderer:
+            MeshRenderer:
                 material_name: diffuse_grey
                 mesh: plane
           children:
             []
         - name: Ceil
           components:
-            - Transform:
+            Transform:
                 position:
                   - 0
                   - 2.5
@@ -203,14 +203,14 @@ scene:
                   - 5
                   - 5
                   - 5
-            - MeshRenderer:
+            MeshRenderer:
                 material_name: diffuse_grey
                 mesh: plane
           children:
             []
         - name: Left
           components:
-            - Transform:
+            Transform:
                 position:
                   - -2.5
                   - 0
@@ -223,14 +223,14 @@ scene:
                   - 5
                   - 5
                   - 5
-            - MeshRenderer:
+            MeshRenderer:
                 material_name: diffuse_red
                 mesh: plane
           children:
             []
         - name: Right
           components:
-            - Transform:
+            Transform:
                 position:
                   - 2.5
                   - 0
@@ -243,14 +243,14 @@ scene:
                   - 5
                   - 5
                   - 5
-            - MeshRenderer:
+            MeshRenderer:
                 material_name: diffuse_green
                 mesh: plane
           children:
             []
         - name: Back
           components:
-            - Transform:
+            Transform:
                 position:
                   - 0
                   - 0
@@ -263,7 +263,7 @@ scene:
                   - 5
                   - 5
                   - 5
-            - MeshRenderer:
+            MeshRenderer:
                 material_name: diffuse_blue
                 mesh: plane
           children:

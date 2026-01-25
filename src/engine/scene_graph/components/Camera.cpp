@@ -30,7 +30,7 @@ namespace RtEngine {
     }
 
     void Camera::OnUpdate() {
-    	if (is_interactive != 0) {
+    	if (is_interactive) {
     		handleInputs();
     	}
 
@@ -43,26 +43,18 @@ namespace RtEngine {
     	render_target->destroy();
     }
 
-    void Camera::definePropertySections() {
-        assert(properties != nullptr);
+    void Camera::initProperties(const std::shared_ptr<IProperties> &config, const UpdateFlagsHandle &update_flags) {
+    	bool requires_reset = false;
+    	if (config->startChild(COMPONENT_NAME)) {
+    		requires_reset |= config->addFloat("fov", &fov, 10.0f, 80.0f);
+    		requires_reset |= config->addBool("interactive", &is_interactive);
+    		requires_reset |= config->addUint("width", &image_width);
+    		requires_reset |= config->addUint("height", &image_height);
+    		config->endChild();
+    	}
 
-        auto section = std::make_shared<PropertiesSection>(COMPONENT_NAME);
-        section->addFloat("fov", &fov, ALL_PROPERTY_FLAGS, 10.0f, 80.0f);
-        properties->addPropertySection(section);
-    	section->addBool("interactive", &is_interactive);
-    	section->addInt("width", &image_width);
-    	section->addBool("height", &image_height);
-    	properties->addPropertySection(section);
-    }
-
-    void Camera::initProperties(const YAML::Node &config_node) {
-        fov = config_node[COMPONENT_NAME]["fov"].as<float>();
-    	if (config_node[COMPONENT_NAME]["interactive"] && config_node[COMPONENT_NAME]["interactive"].as<bool>())
-    		is_interactive = 1;
-
-    	if (config_node[COMPONENT_NAME]["width"] && config_node[COMPONENT_NAME]["height"]) {
-    		image_width = config_node[COMPONENT_NAME]["width"].as<int32_t>();
-    		image_height = config_node[COMPONENT_NAME]["height"].as<int32_t>();
+    	if (requires_reset) {
+    		update_flags->setFlag(TARGET_RESET);
     	}
     }
 

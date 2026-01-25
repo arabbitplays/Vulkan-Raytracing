@@ -5,6 +5,10 @@ namespace RtEngine {
         nodes.push_back(YAML::LoadFile(config_path));
     }
 
+    YamlLoadProperties::YamlLoadProperties(YAML::Node config_node) {
+        nodes.push_back(config_node);
+    }
+
     bool YamlLoadProperties::startChild(const std::string &name) {
         YAML::Node child_node;
         if (getConfigValue(name, &child_node)) {

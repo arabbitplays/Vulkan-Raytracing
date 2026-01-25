@@ -2,6 +2,7 @@
 
 #include <imgui.h>
 
+#include "ImGuiProperties.hpp"
 #include "SceneAdapter.hpp"
 #include "UpdateFlagValue.hpp"
 
@@ -19,15 +20,14 @@ namespace RtEngine {
 
 		auto updateFlags = std::make_shared<UpdateFlags>();
 		if (show_window) {
+			std::shared_ptr<ImGuiProperties> props = std::make_shared<ImGuiProperties>();
+
 			ImGui::Begin("Inspector", &show_window);
 			ImGui::Text("%s", node->name.c_str());
 			ImGui::Separator();
 
 			for (auto &component: node->components) {
-				std::shared_ptr<PropertiesManager> properties = component->getProperties();
-				if (!properties)
-					continue;
-				//refresh |= properties->serialize();
+				component->initProperties(props, updateFlags);
 			}
 
 			ImGui::End();

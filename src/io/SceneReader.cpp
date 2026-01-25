@@ -9,6 +9,7 @@
 #include <glm/gtx/quaternion.hpp>
 #include <spdlog/spdlog.h>
 #include "Material.hpp"
+#include "YamlLoadProperties.hpp"
 #include "components/Camera.hpp"
 
 #include "resources/EnvironmentMap.hpp"
@@ -98,27 +99,25 @@ namespace RtEngine {
 	}
 
 	void SceneReader::readComponents(const YAML::Node &yaml_node, std::shared_ptr<Node> &scene_node) {
+		auto update_flags = std::make_shared<UpdateFlags>();
+		std::shared_ptr<YamlLoadProperties> properties = std::make_shared<YamlLoadProperties>(yaml_node["components"]);
+
 		for (auto &comp_node: yaml_node["components"]) {
-			std::string comp_name = "";
-			YAML::Node section_node;
-			for (auto &pair: comp_node) {
-				comp_name = pair.first.as<std::string>();
-				section_node = comp_node[comp_name];
-			}
+			std::string comp_name = comp_node.first.as<std::string>();
 			if (comp_name == Transform::COMPONENT_NAME) {
-				scene_node->transform->initProperties(comp_node);
+				scene_node->transform->initProperties(properties, update_flags);
 			} else if (comp_name == MeshRenderer::COMPONENT_NAME) {
 				std::shared_ptr<MeshRenderer> mesh_component =
 						std::make_shared<MeshRenderer>(engine_context, scene_node);
-				mesh_component->initProperties(comp_node);
+				mesh_component->initProperties(properties, update_flags);
 				scene_node->addComponent(mesh_component);
 			} else if (comp_name == Rigidbody::COMPONENT_NAME) {
 				auto rb = std::make_shared<Rigidbody>(scene_node);
-				rb->initProperties(comp_node);
+				rb->initProperties(properties, update_flags);
 				scene_node->addComponent(rb);
 			} else if (comp_name == Camera::COMPONENT_NAME) {
 				auto cam = std::make_shared<Camera>(engine_context, scene_node);
-				cam->initProperties(comp_node);
+				cam->initProperties(properties, update_flags);
 				scene_node->addComponent(cam);
 			}
 		}

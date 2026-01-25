@@ -21,8 +21,7 @@ namespace RtEngine {
         void OnUpdate() override;
         void OnDestroy() override;
 
-        void definePropertySections() override;
-        void initProperties(const YAML::Node &config_node) override;
+        void initProperties(const std::shared_ptr<IProperties> &config, const UpdateFlagsHandle &update_flags) override;
 
         [[nodiscard]] glm::mat4 getView() const;
         [[nodiscard]] glm::mat4 getInverseView() const;
@@ -49,13 +48,13 @@ namespace RtEngine {
         glm::mat4 projection;
         glm::mat4 inverse_projection;
 
-        int32_t image_width = 0;
-        int32_t image_height = 0;
+        uint32_t image_width = 0;
+        uint32_t image_height = 0;
 
         std::shared_ptr<RenderTarget> render_target;
 
         float fov = 45.0;
-        int32_t is_interactive = false;
+        bool is_interactive = false;
         std::shared_ptr<Transform> transform;
 
         // ----------------------- movement -----------------------

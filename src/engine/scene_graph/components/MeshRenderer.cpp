@@ -24,23 +24,18 @@ namespace RtEngine {
 										   mesh_asset->accelerationStructure, nodeMatrix, mesh_asset->triangle_count, mesh_material->getEmissionPower()});
 	}
 
-	void MeshRenderer::definePropertySections() {
-		assert(properties != nullptr);
+	void MeshRenderer::initProperties(const std::shared_ptr<IProperties> &config,
+		const UpdateFlagsHandle &update_flags) {
 
-		auto mesh_renderer_section = std::make_shared<PropertiesSection>(COMPONENT_NAME);
-		mesh_renderer_section->addString("material_name", &material_instance_name,
-									  PERSISTENT_PROPERTY_FLAG);
-		mesh_renderer_section->addString("mesh", &mesh_asset_name, PERSISTENT_PROPERTY_FLAG);
-		properties->addPropertySection(mesh_renderer_section);
+		if (config->startChild(COMPONENT_NAME)) {
+			config->addString("mesh", &mesh_asset_name);
+			config->addString("material_name", &material_instance_name);
 
-		if (mesh_material) {
-			//properties->addPropertySection(mesh_material->getProperties(), SERIALIZABLE_PROPERTY_FLAG);
+			if (mesh_material) {
+				mesh_material->initProperties(config, update_flags);
+			}
+			config->endChild();
 		}
-	}
-
-	void MeshRenderer::initProperties(const YAML::Node &config_node) {
-		mesh_asset_name = config_node[COMPONENT_NAME]["mesh"].as<std::string>();
-		material_instance_name = config_node[COMPONENT_NAME]["material_name"].as<std::string>();
 	}
 
 } // namespace RtEngine

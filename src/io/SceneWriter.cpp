@@ -101,20 +101,6 @@ namespace RtEngine {
 		out << YAML::BeginMap;
 		out << YAML::Key << "name" << YAML::Value << node->name;
 
-		/*TransformUtil::DecomposedTransform transform =
-		TransformUtil::decomposeMatrix(node->transform->getLocalTransform()); out << YAML::Key << "translation" <<
-		YAML::Value << YAML::convert<glm::vec3>::encode(transform.translation); out << YAML::Key << "rotation" <<
-		YAML::Value << YAML::convert<glm::vec3>::encode(transform.rotation); out << YAML::Key << "scale" << YAML::Value
-		<< YAML::convert<glm::vec3>::encode(transform.scale);
-
-		std::shared_ptr<MeshRenderer> mesh_renderer = node->getComponent<MeshRenderer>();
-		if (mesh_renderer)
-		{
-			mesh_renderer->getProperties();
-			out << YAML::Key << "mesh" << YAML::Value << mesh_renderer->meshAsset->name;
-			out << YAML::Key << "material_idx" << YAML::Value << mesh_renderer->meshMaterial->material_index;
-		}*/
-
 		out << YAML::Key << "components" << YAML::Value << YAML::BeginSeq;
 		for (auto &component: node->components) {
 			writeComponent(out, component);
@@ -130,7 +116,7 @@ namespace RtEngine {
 	}
 
 	void SceneWriter::writeComponent(YAML::Emitter &out, const std::shared_ptr<Component> &component) {
-		std::shared_ptr<PropertiesManager> properties = component->getProperties();
+		/*std::shared_ptr<PropertiesManager> properties = component->getProperties();
 		std::vector<std::shared_ptr<PropertiesSection>> sections = properties->getSections(PERSISTENT_PROPERTY_FLAG);
 		assert(sections.size() <= 1);
 		if (sections.empty())
@@ -175,6 +161,6 @@ namespace RtEngine {
 		}
 		auto section = sections.at(0);
 
-		out << YAML::EndMap;
+		out << YAML::EndMap;*/
 	}
 } // namespace RtEngine

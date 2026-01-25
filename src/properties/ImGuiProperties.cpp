@@ -46,12 +46,13 @@ namespace RtEngine {
     }
 
     bool ImGuiProperties::addString(const std::string &name, std::string *var, uint32_t flags) {
-        char* buffer = new char[256];
+        /*char* buffer = new char[256];
         bool changed = ImGui::InputText(name.c_str(), buffer, 256, ImGuiInputTextFlags_EnterReturnsTrue);
         if (changed) {
             *var = changed;
         }
-        return changed;
+        return changed;*/ // TODO
+        return false;
     }
 
     bool ImGuiProperties::addVector(const std::string &name, glm::vec3 *var, uint32_t flags) {
@@ -79,8 +80,8 @@ namespace RtEngine {
                 selected = i;
             }
         }
-        bool changed = ImGui::ListBox(name.c_str(), &selected, options_c_str.data(), options_c_str.size());
-
+        ImGui::ListBox(name.c_str(), &selected, options_c_str.data(), options_c_str.size());
+        bool changed = options[selected] != *var;
         *var = options[selected];
         return changed;
     }

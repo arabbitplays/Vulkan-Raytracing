@@ -17,8 +17,7 @@ namespace RtEngine {
 		void OnUpdate() override {};
 		void OnDestroy() override {};
 
-		void definePropertySections() override;
-		void initProperties(const YAML::Node &config_node) override;
+		void initProperties(const std::shared_ptr<IProperties> &config, const UpdateFlagsHandle &update_flags) override;
 
 		std::shared_ptr<MeshAsset> mesh_asset;
 		std::shared_ptr<MaterialInstance> mesh_material;
