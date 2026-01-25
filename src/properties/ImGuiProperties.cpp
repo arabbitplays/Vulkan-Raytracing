@@ -30,7 +30,7 @@ namespace RtEngine {
     }
 
     bool ImGuiProperties::addUint(const std::string &name, uint32_t *var, uint32_t min, uint32_t max, uint32_t flags) {
-        return ImGui::SliderScalar(name.c_str(), ImGuiDataType_U32, &var, &min, &max);
+        return ImGui::SliderScalar(name.c_str(), ImGuiDataType_U32, var, &min, &max);
     }
 
     bool ImGuiProperties::addUint(const std::string &name, uint32_t *var, uint32_t flags) {

@@ -31,6 +31,8 @@ namespace RtEngine {
         createEngineContext();
         createGuiManager();
         createRunner();
+
+        setupGui();
     }
 
     void Engine::createWindow() {
@@ -44,6 +46,7 @@ namespace RtEngine {
         renderer_options->resources_dir = options->resources_dir;
         renderer_options->config_file = options->config_file;
         vulkan_renderer->init(renderer_options, window);
+        vulkan_renderer->initProperties(config_properties);
     }
 
     void Engine::createGuiManager() {
@@ -81,7 +84,11 @@ namespace RtEngine {
         }
 
         runner->initProperties(config_properties);
+    }
+
+    void Engine::setupGui() const {
         gui_manager->options_window->addSerializable(runner);
+        gui_manager->options_window->addSerializable(vulkan_renderer);
     }
 
     void Engine::mainLoop() {

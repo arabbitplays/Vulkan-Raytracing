@@ -254,7 +254,12 @@ namespace RtEngine {
 		main_deletion_queue.pushFunction([&]() { defaultMaterials["metal_rough"]->clearResources(); });
 	}
 
-	std::shared_ptr<Material> SceneAdapter::getMaterial() const { return loaded_scene->getMaterial(); }
+	std::shared_ptr<Material> SceneAdapter::getMaterial() const {
+		if (loaded_scene != nullptr) {
+			return loaded_scene->getMaterial();
+		}
+		return nullptr;
+	}
 
 	VkDescriptorSet SceneAdapter::getSceneDescriptorSet(uint32_t frame_index) const {
 		return scene_descriptor_sets[frame_index];

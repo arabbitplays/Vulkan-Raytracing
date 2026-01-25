@@ -73,7 +73,6 @@ namespace RtEngine {
 
 		void addPropertySection(const std::shared_ptr<PropertiesSection> &properties,
 								uint32_t flags = ALL_PROPERTY_FLAGS);
-		void *getPushConstants(uint32_t *size, std::shared_ptr<RenderTarget> render_target);
 		std::vector<std::shared_ptr<PropertiesSection>> getSections(uint32_t filter_flags = NONE_PROPERTY_FLAG);
 		bool serialize();
 
@@ -82,10 +81,8 @@ namespace RtEngine {
 
 	private:
 		void initSectionWithConfig(const std::shared_ptr<PropertiesSection> &properties);
-		void updatePushConstants(std::shared_ptr<RenderTarget> render_target);
 
 		std::shared_ptr<ConfigLoader> config;
-		std::vector<int32_t> push_constants;
 	};
 
 } // namespace RtEngine

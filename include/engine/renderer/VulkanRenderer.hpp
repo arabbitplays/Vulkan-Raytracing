@@ -23,11 +23,12 @@
 
 namespace RtEngine {
 
-	class VulkanRenderer {
+	class VulkanRenderer : public ISerializable {
 	public:
 		VulkanRenderer() = default;
-		virtual ~VulkanRenderer() = default;
+
 		void init(const std::shared_ptr<BaseOptions> &base_options, std::shared_ptr<Window> window);
+		void initProperties(const std::shared_ptr<IProperties> &config) override;
 
 		void loadScene(std::shared_ptr<IScene> scene);
 
@@ -62,23 +63,20 @@ namespace RtEngine {
 		std::unordered_map<std::string, std::shared_ptr<Material>> getMaterials() const;
 		std::shared_ptr<Swapchain> getSwapchain();
 
-		std::shared_ptr<PropertiesManager> getPropertiesManager();
-
 	protected:
 		std::shared_ptr<Window> window;
 
 		DeletionQueue mainDeletionQueue;
 
 		std::shared_ptr<BaseOptions> base_options;
+		uint32_t recursion_depth = 5;
+		std::vector<int32_t> push_constants{};
 
 		std::shared_ptr<VulkanContext> vulkan_context;
 		std::shared_ptr<TextureRepository> texture_repository;
 		std::shared_ptr<MeshRepository> mesh_repository;
 
 		std::vector<VkCommandBuffer> commandBuffers;
-
-		std::shared_ptr<PropertiesManager> properties_manager;
-		std::shared_ptr<PropertiesSection> renderer_properties;
 
 		std::shared_ptr<SceneAdapter> scene_adapter;
 
@@ -108,9 +106,10 @@ namespace RtEngine {
 		void presentSwapchainImage(const std::vector<VkSemaphore>& wait_semaphore, uint32_t image_index);
 
 		void recordRenderToImage(VkCommandBuffer commandBuffer, std::shared_ptr<RenderTarget> target);
-		void recordBlitToSwapchain(VkCommandBuffer commandBuffer, const std::shared_ptr<RenderTarget> &render_target, uint32_t swapchain_image_index);
 
-		virtual void initProperties();
+		void *createPushConstants(uint32_t *size, const std::shared_ptr<RenderTarget> &target);
+
+		void recordBlitToSwapchain(VkCommandBuffer commandBuffer, const std::shared_ptr<RenderTarget> &render_target, uint32_t swapchain_image_index);
 	};
 
 } // namespace RtEngine

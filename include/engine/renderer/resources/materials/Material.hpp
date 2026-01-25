@@ -10,6 +10,7 @@
 #include <glm/vec4.hpp>
 #include <vulkan/vulkan_core.h>
 
+#include "ISerializable.hpp"
 #include "MaterialInstance.hpp"
 
 namespace RtEngine {

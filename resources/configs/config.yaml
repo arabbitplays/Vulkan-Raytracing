@@ -8,3 +8,5 @@ Renderer:
   Scene: base_scene.yaml
 runner:
   scene_name: showcase
+renderer:
+  recursion_depth: 3

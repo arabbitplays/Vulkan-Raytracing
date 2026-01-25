@@ -47,6 +47,8 @@ namespace RtEngine {
 
         void createRunner();
 
+        void setupGui() const;
+
         void mainLoop();
 
         void finishFrame();

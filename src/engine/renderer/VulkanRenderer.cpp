@@ -34,7 +34,6 @@ namespace RtEngine {
 	void VulkanRenderer::init(const std::shared_ptr<BaseOptions> &base_options, std::shared_ptr<Window> window) {
 		this->base_options = base_options;
 		this->window = window;
-		properties_manager = std::make_shared<PropertiesManager>(base_options->config_file);
 
 		initWindow();
 		initVulkan();
@@ -63,9 +62,6 @@ namespace RtEngine {
 
 		vulkan_context->window = window;
 		vulkan_context->device_manager = std::make_shared<DeviceManager>(window->getHandle(), enableValidationLayers);
-
-		initProperties();
-		properties_manager->addPropertySection(renderer_properties);
 
 		vulkan_context->command_manager = std::make_shared<CommandManager>(vulkan_context->device_manager);
 		vulkan_context->resource_builder =
@@ -119,7 +115,6 @@ namespace RtEngine {
 
 	void VulkanRenderer::loadScene(std::shared_ptr<IScene> scene) {
 		scene_adapter->loadNewScene(scene);
-		properties_manager->addPropertySection(scene->getMaterial()->getProperties());
 	}
 
 	void VulkanRenderer::createCommandBuffers() {
@@ -316,7 +311,7 @@ namespace RtEngine {
 								static_cast<uint32_t>(descriptor_sets.size()), descriptor_sets.data(), 0, nullptr);
 
 		uint32_t pc_size;
-		void *pc_data = properties_manager->getPushConstants(&pc_size, target);
+		void *pc_data = createPushConstants(&pc_size, target);
 		vkCmdPushConstants(commandBuffer, pipeline.getLayoutHandle(),
 						   VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR | VK_SHADER_STAGE_RAYGEN_BIT_KHR |
 								   VK_SHADER_STAGE_MISS_BIT_KHR,
@@ -326,6 +321,22 @@ namespace RtEngine {
 		CmdTraceRaysKHR(vulkan_context->device_manager->getDevice(), commandBuffer, &raygenShaderSbtEntry,
 						&missShaderSbtEntry, &closestHitShaderSbtEntry, &callableShaderSbtEntry,
 						width, height, 1);
+	}
+
+	void* VulkanRenderer::createPushConstants(uint32_t* size, const std::shared_ptr<RenderTarget> &target) {
+		push_constants.clear();
+
+		push_constants.push_back(recursion_depth);
+		std::shared_ptr<PropertiesSection> material_props = scene_adapter->getMaterial()->getProperties();
+		for (auto &bool_option: material_props->bool_properties) {
+			push_constants.push_back(*bool_option->var);
+		}
+
+		push_constants.push_back(target->getAccumulatedFrameCount());
+		push_constants.push_back(target->getSamplesPerFrame());
+
+		*size = sizeof(uint32_t) * push_constants.size();
+		return push_constants.data();
 	}
 
 	void VulkanRenderer::recordBlitToSwapchain(VkCommandBuffer commandBuffer, const std::shared_ptr<RenderTarget> &target, const uint32_t swapchain_image_index) {
@@ -432,11 +443,16 @@ namespace RtEngine {
 		}
 	}
 
-	void VulkanRenderer::initProperties() {
-		renderer_properties = std::make_shared<PropertiesSection>(RENDERER_SECTION_NAME);
+	void VulkanRenderer::initProperties(const std::shared_ptr<IProperties> &config) {
+		if (config->startChild("renderer")) {
+			config->addUint("recursion_depth", &recursion_depth, 1, 10);
+			config->endChild();
+		}
 
-		renderer_properties->addString(RESOURCES_DIR_OPTION_NAME, &base_options->resources_dir);
-		renderer_properties->addInt(RECURSION_DEPTH_OPTION_NAME, &base_options->max_depth, 1, 5);
+		std::shared_ptr<Material> loaded_material = scene_adapter->getMaterial();
+		if (loaded_material != nullptr) {
+			// TODO call material
+		}
 	}
 
 	std::shared_ptr<VulkanContext> VulkanRenderer::getVulkanContext() {
@@ -453,10 +469,6 @@ namespace RtEngine {
 
 	std::unordered_map<std::string, std::shared_ptr<Material>> VulkanRenderer::getMaterials() const {
 		return scene_adapter->defaultMaterials;
-	}
-
-	std::shared_ptr<PropertiesManager> VulkanRenderer::getPropertiesManager() {
-		return properties_manager;
 	}
 
 	std::shared_ptr<Swapchain> VulkanRenderer::getSwapchain() {

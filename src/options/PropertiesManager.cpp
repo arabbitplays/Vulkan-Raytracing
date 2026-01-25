@@ -96,37 +96,6 @@ namespace RtEngine {
 		}
 	}
 
-	void *PropertiesManager::getPushConstants(uint32_t *size, std::shared_ptr<RenderTarget> render_target) {
-		updatePushConstants(render_target);
-		*size = sizeof(uint32_t) * push_constants.size();
-		assert(*size <= MAX_PUSH_CONSTANT_SIZE);
-		return push_constants.data();
-	}
-
-	int32_t getRecursionDepth(std::vector<std::shared_ptr<IntProperty>> &int_options) {
-		for (auto &int_option: int_options) {
-			if (int_option->name == RECURSION_DEPTH_OPTION_NAME) {
-				return *int_option->var;
-			}
-		}
-
-		return 0;
-	}
-
-	void PropertiesManager::updatePushConstants(std::shared_ptr<RenderTarget> render_target) {
-		push_constants.clear();
-		assert(property_sections.contains(MATERIAL_SECTION_NAME) && property_sections.contains(RENDERER_SECTION_NAME));
-
-		push_constants.push_back(getRecursionDepth(property_sections[RENDERER_SECTION_NAME]->int_properties));
-		std::shared_ptr<PropertiesSection> material_props = property_sections[MATERIAL_SECTION_NAME];
-		for (auto &bool_option: material_props->bool_properties) {
-			push_constants.push_back(*bool_option->var);
-		}
-
-		push_constants.push_back(render_target->getAccumulatedFrameCount());
-		push_constants.push_back(render_target->getSamplesPerFrame());
-	}
-
 	bool PropertiesManager::serialize() {
 		bool change_detected = false;
 
