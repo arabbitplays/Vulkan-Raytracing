@@ -1,10 +1,7 @@
-//
-// Created by oschdi on 18.01.26.
-//
-
 #ifndef VULKAN_RAYTRACING_WINDOW_HPP
 #define VULKAN_RAYTRACING_WINDOW_HPP
 #include "GuiWindow.hpp"
+#include <GLFW/glfw3.h>
 
 namespace RtEngine {
     class Window {

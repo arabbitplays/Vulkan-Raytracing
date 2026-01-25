@@ -2,7 +2,6 @@
 #define GUIWINDOW_HPP
 #include <deque>
 #include <functional>
-#include <PropertiesManager.hpp>
 #include <memory>
 
 #include "UpdateFlagValue.hpp"

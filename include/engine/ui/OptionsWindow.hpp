@@ -1,8 +1,7 @@
 #ifndef OPTIONSUI_HPP
 #define OPTIONSUI_HPP
 #include <GuiWindow.hpp>
-#include <PropertiesManager.hpp>
-#include <bits/shared_ptr.h>
+ #include <bits/shared_ptr.h>
 #include <glm/fwd.hpp>
 
 #include "ISerializable.hpp"

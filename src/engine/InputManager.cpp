@@ -1,5 +1,7 @@
 #include "InputManager.hpp"
 
+#include <GLFW/glfw3.h>
+
 namespace RtEngine {
     InputManager::InputManager(std::shared_ptr<Window> window) : window(window) {
         window->addKeyCallback([this](int key, int scancode, int action, int mods) {

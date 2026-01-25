@@ -28,7 +28,7 @@ namespace RtEngine {
 		std::vector<VkDescriptorSetLayout> descriptorSetLayouts{sceneLayout, materialLayout};
 		pipeline->setDescriptorSetLayouts(descriptorSetLayouts);
 
-		pipeline->addPushConstant(MAX_PUSH_CONSTANT_SIZE, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR |
+		pipeline->addPushConstant(16 * sizeof(uint32_t), VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR |
 																  VK_SHADER_STAGE_RAYGEN_BIT_KHR |
 																  VK_SHADER_STAGE_MISS_BIT_KHR);
 

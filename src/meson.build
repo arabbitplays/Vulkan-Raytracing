@@ -3,7 +3,6 @@
 subdir('engine')
 subdir('properties')
 subdir('io')
-subdir('options')
 
 src += files(
   'main.cpp',

@@ -1,6 +1,7 @@
 #ifndef VULKAN_RAYTRACING_INPUTMANAGER_HPP
 #define VULKAN_RAYTRACING_INPUTMANAGER_HPP
 #include <unordered_set>
+#include <glm/vec2.hpp>
 
 #include "Window.hpp"
 
