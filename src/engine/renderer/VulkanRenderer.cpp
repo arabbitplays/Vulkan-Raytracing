@@ -437,30 +437,6 @@ namespace RtEngine {
 
 		renderer_properties->addString(RESOURCES_DIR_OPTION_NAME, &base_options->resources_dir);
 		renderer_properties->addInt(RECURSION_DEPTH_OPTION_NAME, &base_options->max_depth, 1, 5);
-
-		initSceneSelectionProperty();
-	}
-
-	void VulkanRenderer::initSceneSelectionProperty() const
-	{
-		assert(renderer_properties != nullptr);
-		std::string scenes_dir = base_options->resources_dir + "/scenes";
-		std::vector<std::string> scenes;
-		try {
-			for (const auto &entry: std::filesystem::__cxx11::directory_iterator(scenes_dir)) {
-				scenes.push_back(entry.path().filename());
-			}
-		} catch (const std::exception &e) {
-			throw std::runtime_error("failed to load scene directory: " + std::string(e.what()));
-		}
-
-		if (scenes.empty()) {
-			throw std::runtime_error("No scenes found in scene directory " + scenes_dir + ".");
-		}
-		base_options->curr_scene_name = scenes[0];
-
-		renderer_properties->addSelection(CURR_SCENE_OPTION_NAME, &base_options->curr_scene_name,
-										  scenes);
 	}
 
 	std::shared_ptr<VulkanContext> VulkanRenderer::getVulkanContext() {

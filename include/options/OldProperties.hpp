@@ -6,12 +6,9 @@
 #include <utility>
 #include <vector>
 
-namespace RtEngine {
-#define NONE_PROPERTY_FLAG 0u
-#define SERIALIZABLE_PROPERTY_FLAG 1u
-#define PERSISTENT_PROPERTY_FLAG 2u
-#define ALL_PROPERTY_FLAGS (SERIALIZABLE_PROPERTY_FLAG | PERSISTENT_PROPERTY_FLAG)
+#include "IProperties.hpp"
 
+namespace RtEngine {
 	template<typename T>
 	struct Property {
 		Property() = default;

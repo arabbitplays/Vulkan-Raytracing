@@ -13,12 +13,18 @@
 namespace RtEngine {
     class SceneManager : public ISceneManager {
     public:
+        explicit SceneManager(const std::string &resources_dir);
+
         std::shared_ptr<Scene> getCurrentScene();
         void setScene(const std::shared_ptr<Scene> &new_scene);
         std::shared_ptr<Material> getCurrentMaterial() override;
 
+        std::string getScenePath(std::string scene_name);
+        std::vector<std::string> getSceneNames() const;
     private:
+        std::string resources_dir;
         std::shared_ptr<Scene> scene;
+        std::vector<std::string> scene_names;
     };
 } // RtEngine
 

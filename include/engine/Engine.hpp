@@ -54,7 +54,7 @@ namespace RtEngine {
 
     private:
         std::shared_ptr<EngineOptions> options;
-        std::shared_ptr<BaseOptions> renderer_options;
+        std::shared_ptr<IProperties> config_properties;
 
         std::shared_ptr<EngineContext> engine_context;
 

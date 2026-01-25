@@ -6,3 +6,5 @@ Material:
 Renderer:
   Max_Depth: 5
   Scene: base_scene.yaml
+runner:
+  scene_name: showcase

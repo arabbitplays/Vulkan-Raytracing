@@ -111,8 +111,6 @@ namespace RtEngine {
 		void recordBlitToSwapchain(VkCommandBuffer commandBuffer, const std::shared_ptr<RenderTarget> &render_target, uint32_t swapchain_image_index);
 
 		virtual void initProperties();
-		void initSceneSelectionProperty() const;
-
 	};
 
 } // namespace RtEngine

@@ -1,11 +1,12 @@
 #ifndef VULKAN_RAYTRACING_RUNNER_HPP
 #define VULKAN_RAYTRACING_RUNNER_HPP
+#include "ISerializable.hpp"
 #include "SceneManager.hpp"
 #include "SceneReader.hpp"
 #include "VulkanRenderer.hpp"
 
 namespace RtEngine {
-    class Runner {
+    class Runner : public ISerializable {
     public:
         Runner(std::shared_ptr<EngineContext> engine_context, const std::shared_ptr<GuiManager> &gui_manager, const std::shared_ptr<SceneManager> &scene_manager);
 
@@ -16,6 +17,8 @@ namespace RtEngine {
         void setUpdateFlags(uint32_t new_flags);
 
         bool isRunning() const;
+
+        void initProperties(const std::shared_ptr<IProperties> &config) override;
 
     protected:
         virtual void drawFrame(const std::shared_ptr<DrawContext> &draw_context);
@@ -28,6 +31,7 @@ namespace RtEngine {
         std::shared_ptr<DrawContext> createMainDrawContext() const;
 
         bool running = true;
+        std::string scene_name;
 
         std::shared_ptr<EngineContext> engine_context;
         std::shared_ptr<VulkanRenderer> renderer;

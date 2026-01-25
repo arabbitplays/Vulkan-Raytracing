@@ -35,6 +35,10 @@ namespace RtEngine {
     }
 
     void Runner::renderScene() {
+        if ((update_flags & SCENE_UPDATE) != 0) {
+            loadScene(scene_manager->getScenePath(scene_name));
+        }
+
         scene_manager->getCurrentScene()->update();
         std::shared_ptr<DrawContext> draw_context = createMainDrawContext();
         if (draw_context->targets.size() < 1)
@@ -105,5 +109,13 @@ namespace RtEngine {
 
     bool Runner::isRunning() const {
         return running;
+    }
+
+    void Runner::initProperties(const std::shared_ptr<IProperties>& config) {
+        config->startChild("runner");
+        if (config->addSelection("scene_name", &scene_name, scene_manager->getSceneNames())) {
+            update_flags |= SCENE_UPDATE;
+        }
+        config->endChild();
     }
 } // RtEngine

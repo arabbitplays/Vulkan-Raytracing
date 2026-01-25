@@ -10,6 +10,7 @@ namespace RtEngine {
         NO_UPDATE = 0,
         STATIC_GEOMETRY_UPDATE = 1 << 0,
         MATERIAL_UPDATE = 1 << 1,
+        SCENE_UPDATE = 1 << 2,
     };
 } // RtEngine
 

@@ -11,6 +11,7 @@
 #include "PathUtil.hpp"
 #include "RealtimeRunner.hpp"
 #include "ReferenceRunner.hpp"
+#include "YamlLoadProperties.hpp"
 
 namespace RtEngine {
     void Engine::run(CliArguments cli_args) {
@@ -22,7 +23,9 @@ namespace RtEngine {
     }
 
     void Engine::init() {
-        scene_manager = std::make_shared<SceneManager>();
+        config_properties = std::make_shared<YamlLoadProperties>(options->config_file);
+
+        scene_manager = std::make_shared<SceneManager>(options->resources_dir);
         createWindow();
         createRenderer();
         createGuiManager();
@@ -37,7 +40,7 @@ namespace RtEngine {
     void Engine::createRenderer() {
         vulkan_renderer = std::make_shared<VulkanRenderer>();
 
-        renderer_options = std::make_shared<BaseOptions>();
+        std::shared_ptr<BaseOptions> renderer_options = std::make_shared<BaseOptions>();
         renderer_options->resources_dir = options->resources_dir;
         renderer_options->config_file = options->config_file;
         vulkan_renderer->init(renderer_options, window);
@@ -93,18 +96,13 @@ namespace RtEngine {
             return;
         }
 
-
+        runner->initProperties(config_properties);
     }
 
     void Engine::mainLoop() {
         while (window->is_open() && runner->isRunning()) {
             window->pollEvents();
 
-            if (PathUtil::getFile(runner->getScenePath()) != renderer_options->curr_scene_name) {
-                std::string path = renderer_options->resources_dir + "/scenes/" +
-                           renderer_options->curr_scene_name;
-                runner->loadScene(path);
-            }
             runner->renderScene();
             finishFrame();
         }

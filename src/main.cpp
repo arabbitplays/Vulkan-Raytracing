@@ -3,11 +3,6 @@
 #include <iostream>
 
 #include "Engine.hpp"
-
-namespace RtEngine {
-	class Engine;
-}
-
 using namespace RtEngine;
 
 int main(int argc, char *argv[]) {

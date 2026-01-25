@@ -2,7 +2,7 @@
 #define PROPERTIESMANAGER_HPP
 
 #include <ConfigLoader.hpp>
-#include <Properties.hpp>
+#include <OldProperties.hpp>
 #include <cassert>
 #include <glm/vec3.hpp>
 #include <memory>
