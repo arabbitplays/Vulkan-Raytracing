@@ -1,6 +1,6 @@
 #include <HierarchyWindow.hpp>
 #include <SceneWriter.hpp>
-#include <../../../include/engine/renderer/VulkanRenderer.hpp>
+#include <../../../include/engine/renderer/RaytracingRenderer.hpp>
 #include <cstdlib>
 #include <filesystem>
 #include <PathUtil.hpp>
@@ -26,12 +26,12 @@ namespace RtEngine {
 		}
 	}
 
-	VulkanRenderer::VulkanRenderer(const std::shared_ptr<Window>& window, const std::shared_ptr<VulkanContext> &vulkan_context, const std::string &resources_dir)
+	RaytracingRenderer::RaytracingRenderer(const std::shared_ptr<Window>& window, const std::shared_ptr<VulkanContext> &vulkan_context, const std::string &resources_dir)
 		: resources_dir(resources_dir), window(window), vulkan_context(vulkan_context) {
 		init();
 	}
 
-	void VulkanRenderer::init() {
+	void RaytracingRenderer::init() {
 		initWindow();
 
 		createRepositories();
@@ -44,13 +44,13 @@ namespace RtEngine {
 		createSyncObjects();
 	}
 
-	void VulkanRenderer::initWindow() {
+	void RaytracingRenderer::initWindow() {
 		window->addResizeCallback([this](uint32_t width, uint32_t height) {
 			framebufferResized = true;
 		});
 	}
 
-	void VulkanRenderer::createRepositories() {
+	void RaytracingRenderer::createRepositories() {
 		mesh_repository = std::make_shared<MeshRepository>(vulkan_context, resources_dir);
 		texture_repository = std::make_shared<TextureRepository>(vulkan_context->resource_builder);
 
@@ -60,20 +60,20 @@ namespace RtEngine {
 		});
 	}
 
-	std::shared_ptr<RenderTarget> VulkanRenderer::createRenderTarget(uint32_t width, uint32_t height) {
+	std::shared_ptr<RenderTarget> RaytracingRenderer::createRenderTarget(uint32_t width, uint32_t height) {
 		VkExtent2D extent(width, height);
 		return std::make_shared<RenderTarget>(vulkan_context->resource_builder, extent, max_frames_in_flight);
 	}
 
-	bool VulkanRenderer::hasStencilComponent(const VkFormat format) {
+	bool RaytracingRenderer::hasStencilComponent(const VkFormat format) {
 		return format == VK_FORMAT_D32_SFLOAT_S8_UINT || format == VK_FORMAT_D24_UNORM_S8_UINT;
 	}
 
-	void VulkanRenderer::loadScene(std::shared_ptr<IScene> scene) {
+	void RaytracingRenderer::loadScene(std::shared_ptr<IScene> scene) {
 		scene_adapter->loadNewScene(scene);
 	}
 
-	void VulkanRenderer::createCommandBuffers() {
+	void RaytracingRenderer::createCommandBuffers() {
 		commandBuffers.resize(max_frames_in_flight);
 
 		VkCommandBufferAllocateInfo allocInfo{};
@@ -88,7 +88,7 @@ namespace RtEngine {
 		}
 	}
 
-	void VulkanRenderer::createSyncObjects() {
+	void RaytracingRenderer::createSyncObjects() {
 		uint32_t swapchain_image_count = vulkan_context->swapchain->images.size();
 
 		imageAvailableSemaphores.resize(max_frames_in_flight);
@@ -128,20 +128,20 @@ namespace RtEngine {
 		}
 	}
 
-	void VulkanRenderer::updateSceneRepresentation(const std::shared_ptr<DrawContext> &draw_context, UpdateFlagsHandle update_flags) {
+	void RaytracingRenderer::updateSceneRepresentation(const std::shared_ptr<DrawContext> &draw_context, UpdateFlagsHandle update_flags) {
 		scene_adapter->updateScene(draw_context, current_frame, update_flags);
 	}
 
-	void VulkanRenderer::updateRenderTarget(const std::shared_ptr<RenderTarget> &target) {
+	void RaytracingRenderer::updateRenderTarget(const std::shared_ptr<RenderTarget> &target) {
 		scene_adapter->updateRenderTarget(target);
 	}
 
-	void VulkanRenderer::waitForNextFrameStart() {
+	void RaytracingRenderer::waitForNextFrameStart() {
 		vkWaitForFences(vulkan_context->device_manager->getDevice(), 1, &inFlightFences[current_frame], VK_TRUE,
 						UINT64_MAX);
 	}
 
-	int32_t VulkanRenderer::aquireNextSwapchainImage() {
+	int32_t RaytracingRenderer::aquireNextSwapchainImage() {
 		uint32_t imageIndex;
 		VkResult result =
 				vkAcquireNextImageKHR(vulkan_context->device_manager->getDevice(), vulkan_context->swapchain->handle,
@@ -155,11 +155,11 @@ namespace RtEngine {
 		return static_cast<int32_t>(imageIndex);
 	}
 
-	void VulkanRenderer::resetCurrFrameFence() {
+	void RaytracingRenderer::resetCurrFrameFence() {
 		vkResetFences(vulkan_context->device_manager->getDevice(), 1, &inFlightFences[current_frame]);
 	}
 
-	bool VulkanRenderer::submitCommands(bool present, uint32_t swapchain_image_idx) {
+	bool RaytracingRenderer::submitCommands(bool present, uint32_t swapchain_image_idx) {
 		if (present) {
 			std::vector<VkSemaphore> waitSemaphore = {imageAvailableSemaphores[current_frame]};
 			std::vector<VkSemaphore> signalSemaphore = {renderFinishedSemaphores[swapchain_image_idx]};
@@ -175,11 +175,11 @@ namespace RtEngine {
 		return rebuild_needed;
 	}
 
-	void VulkanRenderer::nextFrame() {
+	void RaytracingRenderer::nextFrame() {
 		current_frame = (current_frame + 1) % max_frames_in_flight;
 	}
 
-	void VulkanRenderer::submitCommandBuffer(const std::vector<VkSemaphore> &wait_semaphore,
+	void RaytracingRenderer::submitCommandBuffer(const std::vector<VkSemaphore> &wait_semaphore,
 	                                         const std::vector<VkSemaphore> &signal_semaphore) {
 		VkSubmitInfo submitInfo{};
 		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -200,7 +200,7 @@ namespace RtEngine {
 		}
 	}
 
-	void VulkanRenderer::presentSwapchainImage(const std::vector<VkSemaphore>& wait_semaphore, const uint32_t image_index) {
+	void RaytracingRenderer::presentSwapchainImage(const std::vector<VkSemaphore>& wait_semaphore, const uint32_t image_index) {
 		VkPresentInfoKHR presentInfo{};
 		presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
 		presentInfo.waitSemaphoreCount = static_cast<uint32_t>(wait_semaphore.size());
@@ -219,23 +219,23 @@ namespace RtEngine {
 		}
 	}
 
-	void VulkanRenderer::waitForIdle() {
+	void RaytracingRenderer::waitForIdle() {
 		vkDeviceWaitIdle(vulkan_context->device_manager->getDevice());
 	}
 
-	VkCommandBuffer VulkanRenderer::getNewCommandBuffer() {
+	VkCommandBuffer RaytracingRenderer::getNewCommandBuffer() {
 		vkResetCommandBuffer(commandBuffers[current_frame], 0);
 		return commandBuffers[current_frame];
 	}
 
-	void VulkanRenderer::recordCommandBuffer(VkCommandBuffer commandBuffer, std::shared_ptr<RenderTarget> target, const uint32_t swapchain_image_idx, bool present) {
+	void RaytracingRenderer::recordCommandBuffer(VkCommandBuffer commandBuffer, std::shared_ptr<RenderTarget> target, const uint32_t swapchain_image_idx, bool present) {
 		recordRenderToImage(commandBuffer, target);
 		if (present) {
 			recordBlitToSwapchain(commandBuffer, target, swapchain_image_idx);
 		}
 	}
 
-	void VulkanRenderer::recordBeginCommandBuffer(VkCommandBuffer commandBuffer) {
+	void RaytracingRenderer::recordBeginCommandBuffer(VkCommandBuffer commandBuffer) {
 		VkCommandBufferBeginInfo beginInfo{};
 		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 
@@ -244,8 +244,8 @@ namespace RtEngine {
 		}
 	}
 
-	void VulkanRenderer::recordRenderToImage(VkCommandBuffer commandBuffer, std::shared_ptr<RenderTarget> target) {
-		Pipeline pipeline = *scene_adapter->getMaterial()->pipeline;
+	void RaytracingRenderer::recordRenderToImage(VkCommandBuffer commandBuffer, std::shared_ptr<RenderTarget> target) {
+		RaytracingPipeline pipeline = *scene_adapter->getMaterial()->pipeline;
 
 		const uint32_t handleSizeAligned =
 				VulkanUtil::alignedSize(DeviceManager::RAYTRACING_PROPERTIES.shaderGroupHandleSize,
@@ -289,7 +289,7 @@ namespace RtEngine {
 						width, height, 1);
 	}
 
-	void* VulkanRenderer::createPushConstants(uint32_t* size, const std::shared_ptr<RenderTarget> &target) {
+	void* RaytracingRenderer::createPushConstants(uint32_t* size, const std::shared_ptr<RenderTarget> &target) {
 		push_constants.clear();
 
 		push_constants.push_back(recursion_depth);
@@ -303,7 +303,7 @@ namespace RtEngine {
 		return push_constants.data();
 	}
 
-	void VulkanRenderer::recordBlitToSwapchain(VkCommandBuffer commandBuffer, const std::shared_ptr<RenderTarget> &target, const uint32_t swapchain_image_index) {
+	void RaytracingRenderer::recordBlitToSwapchain(VkCommandBuffer commandBuffer, const std::shared_ptr<RenderTarget> &target, const uint32_t swapchain_image_index) {
 		AllocatedImage render_target = target->getCurrentTargetImage();
 		std::shared_ptr<ResourceBuilder> resource_builder = vulkan_context->resource_builder;
 		std::shared_ptr<Swapchain> swapchain = vulkan_context->swapchain;
@@ -346,24 +346,24 @@ namespace RtEngine {
 												VK_IMAGE_LAYOUT_GENERAL);
 	}
 
-	void VulkanRenderer::recordEndCommandBuffer(VkCommandBuffer commandBuffer) {
+	void RaytracingRenderer::recordEndCommandBuffer(VkCommandBuffer commandBuffer) {
 		if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS) {
 			throw std::runtime_error("failed to record command buffer!");
 		}
 	}
 
-	void VulkanRenderer::cleanup() {
+	void RaytracingRenderer::cleanup() {
 		main_deletion_queue.flush();
 		window->destroy();
 	}
 
-	float* VulkanRenderer::downloadRenderTarget(const std::shared_ptr<RenderTarget> &target) const {
+	float* RaytracingRenderer::downloadRenderTarget(const std::shared_ptr<RenderTarget> &target) const {
 		AllocatedImage image = target->getLastTargetImage();
 		uint8_t *data = vulkan_context->resource_builder->downloadImage(image, sizeof(float));
 		return reinterpret_cast<float*>(data);
 	}
 
-	void VulkanRenderer::outputRenderingTarget(const std::shared_ptr<RenderTarget> &target, const std::string &output_path) {
+	void RaytracingRenderer::outputRenderingTarget(const std::shared_ptr<RenderTarget> &target, const std::string &output_path) {
 		QuickTimer timer("Output render target");
 
 		AllocatedImage render_target = target->getLastTargetImage();
@@ -377,7 +377,7 @@ namespace RtEngine {
 	}
 
 	// target format is R8G8B8A8_UNORM
-	uint8_t *VulkanRenderer::fixImageFormatForStorage(void *data, size_t pixel_count, VkFormat originalFormat) {
+	uint8_t *RaytracingRenderer::fixImageFormatForStorage(void *data, size_t pixel_count, VkFormat originalFormat) {
 
 		if (originalFormat == VK_FORMAT_R8G8B8A8_UNORM)
 			return static_cast<uint8_t *>(data);
@@ -407,7 +407,7 @@ namespace RtEngine {
 		}
 	}
 
-	void VulkanRenderer::initProperties(const std::shared_ptr<IProperties> &config,
+	void RaytracingRenderer::initProperties(const std::shared_ptr<IProperties> &config,
 	const UpdateFlagsHandle &update_flags) {
 		if (config->startChild("renderer")) {
 			if (config->addUint("recursion_depth", &recursion_depth, 1, 10)) {
@@ -421,23 +421,23 @@ namespace RtEngine {
 		}
 	}
 
-	std::shared_ptr<VulkanContext> VulkanRenderer::getVulkanContext() {
+	std::shared_ptr<VulkanContext> RaytracingRenderer::getVulkanContext() {
 		return vulkan_context;
 	}
 
-	std::shared_ptr<TextureRepository> VulkanRenderer::getTextureRepository() {
+	std::shared_ptr<TextureRepository> RaytracingRenderer::getTextureRepository() {
 		return texture_repository;
 	}
 
-	std::shared_ptr<MeshRepository> VulkanRenderer::getMeshRepository() {
+	std::shared_ptr<MeshRepository> RaytracingRenderer::getMeshRepository() {
 		return mesh_repository;
 	}
 
-	std::unordered_map<std::string, std::shared_ptr<Material>> VulkanRenderer::getMaterials() const {
+	std::unordered_map<std::string, std::shared_ptr<Material>> RaytracingRenderer::getMaterials() const {
 		return scene_adapter->defaultMaterials;
 	}
 
-	std::shared_ptr<Swapchain> VulkanRenderer::getSwapchain() {
+	std::shared_ptr<Swapchain> RaytracingRenderer::getSwapchain() {
 		return vulkan_context->swapchain;
 	}
 } // namespace RtEngine

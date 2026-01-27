@@ -9,7 +9,8 @@ src += files(
   'CommandManager.cpp',
   'DescriptorAllocator.cpp',
   'Swapchain.cpp',
+  'ComputeRenderer.cpp',
   'Scene.cpp',
-  'VulkanRenderer.cpp',
   'RenderTarget.cpp',
+  'RaytracingRenderer.cpp',
 )

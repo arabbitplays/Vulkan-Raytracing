@@ -6,10 +6,10 @@
 #include <vulkan/vulkan_core.h>
 
 namespace RtEngine {
-	class Pipeline {
+	class RaytracingPipeline {
 	public:
-		Pipeline() { clear(); }
-		Pipeline(std::shared_ptr<VulkanContext> context) : context(context) { clear(); }
+		RaytracingPipeline() { clear(); }
+		RaytracingPipeline(const std::shared_ptr<VulkanContext> &context) : context(context) { clear(); }
 
 		void build();
 		void createShaderBindingTables(VkPhysicalDeviceRayTracingPipelinePropertiesKHR raytracingProperties);

@@ -1,6 +1,6 @@
 #ifndef BENCHMARKRENDERER_HPP
 #define BENCHMARKRENDERER_HPP
-#include <../renderer/VulkanRenderer.hpp>
+#include <../renderer/RaytracingRenderer.hpp>
 
 #include "Runner.hpp"
 

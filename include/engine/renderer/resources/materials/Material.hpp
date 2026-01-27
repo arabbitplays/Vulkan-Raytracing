@@ -3,8 +3,8 @@
 
 #include <DeletionQueue.hpp>
 #include <DescriptorAllocator.hpp>
-#include <Pipeline.hpp>
- #include <ResourceBuilder.hpp>
+#include <../pipelines/RaytracingPipeline.hpp>
+#include <ResourceBuilder.hpp>
 #include <bits/shared_ptr.h>
 #include <glm/vec4.hpp>
 #include <vulkan/vulkan_core.h>
@@ -13,7 +13,7 @@
 #include "MaterialInstance.hpp"
 
 namespace RtEngine {
-	class Pipeline;
+	class RaytracingPipeline;
 
 	class Material : ISerializable {
 	public:
@@ -32,7 +32,7 @@ namespace RtEngine {
 
 		virtual ~Material() {};
 
-		std::shared_ptr<Pipeline> pipeline;
+		std::shared_ptr<RaytracingPipeline> pipeline;
 		VkDescriptorSetLayout materialLayout;
 		VkDescriptorSet materialDescriptorSet;
 

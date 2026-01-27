@@ -14,6 +14,7 @@ incdirs = [
     include_directories('include/engine/renderer/context'),
     include_directories('include/engine/renderer/resources'),
     include_directories('include/engine/renderer/resources/materials'),
+    include_directories('include/engine/renderer/resources/pipelines'),
     include_directories('include/engine/renderer/vulkan_scene_representation'),
     include_directories('include/engine/repositories'),
     include_directories('include/engine/runner'),

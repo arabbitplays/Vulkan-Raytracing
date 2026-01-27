@@ -1,4 +1,4 @@
-#include "Pipeline.hpp"
+#include "../../../../../include/engine/renderer/resources/pipelines/RaytracingPipeline.hpp"
 
 #include <VulkanUtil.hpp>
 #include <stdexcept>
@@ -31,7 +31,7 @@ namespace RtEngine {
 
 	// --------------------------------------------------------------------------------------------------------------------------
 
-	void Pipeline::build() {
+	void RaytracingPipeline::build() {
 		VkDevice device = context->device_manager->getDevice();
 
 		pipelineLayoutInfo.pushConstantRangeCount = static_cast<uint32_t>(pushConstants.size());
@@ -59,7 +59,7 @@ namespace RtEngine {
 		});
 	}
 
-	void Pipeline::createShaderBindingTables(VkPhysicalDeviceRayTracingPipelinePropertiesKHR raytracingProperties) {
+	void RaytracingPipeline::createShaderBindingTables(VkPhysicalDeviceRayTracingPipelinePropertiesKHR raytracingProperties) {
 		VkDevice device = context->device_manager->getDevice();
 
 		std::vector<uint32_t> rgen_indices{0};
@@ -107,7 +107,7 @@ namespace RtEngine {
 		copyHandle(hitShaderBindingTable, hit_indices, handleSizeAligned);
 	}
 
-	void Pipeline::addShaderStage(VkShaderModule shaderModule, VkShaderStageFlagBits shaderStage,
+	void RaytracingPipeline::addShaderStage(VkShaderModule shaderModule, VkShaderStageFlagBits shaderStage,
 								  VkRayTracingShaderGroupTypeKHR shaderGroup) {
 		VkPipelineShaderStageCreateInfo shaderStageInfo{};
 		shaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
@@ -132,12 +132,12 @@ namespace RtEngine {
 		shader_groups.push_back(shaderGroupInfo);
 	}
 
-	void Pipeline::setDescriptorSetLayouts(std::vector<VkDescriptorSetLayout> &descriptorSetLayouts) {
+	void RaytracingPipeline::setDescriptorSetLayouts(std::vector<VkDescriptorSetLayout> &descriptorSetLayouts) {
 		pipelineLayoutInfo.setLayoutCount = static_cast<uint32_t>(descriptorSetLayouts.size());
 		pipelineLayoutInfo.pSetLayouts = descriptorSetLayouts.data();
 	}
 
-	void Pipeline::addPushConstant(uint32_t size, VkShaderStageFlags shaderStage) {
+	void RaytracingPipeline::addPushConstant(uint32_t size, VkShaderStageFlags shaderStage) {
 		VkPushConstantRange pushConstantRange = {};
 		pushConstantRange.stageFlags = shaderStage;
 		pushConstantRange.offset = 0;
@@ -146,19 +146,19 @@ namespace RtEngine {
 		pushConstants.push_back(pushConstantRange);
 	}
 
-	void Pipeline::clear() {
+	void RaytracingPipeline::clear() {
 		pipelineLayoutInfo = {.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO};
 		shader_stages.clear();
 		shader_groups.clear();
 		pushConstants.clear();
 	}
 
-	void Pipeline::destroy() { deletionQueue.flush(); }
+	void RaytracingPipeline::destroy() { deletionQueue.flush(); }
 
-	VkPipeline Pipeline::getHandle() const { return handle; }
+	VkPipeline RaytracingPipeline::getHandle() const { return handle; }
 
-	VkPipelineLayout Pipeline::getLayoutHandle() const { return layout; }
+	VkPipelineLayout RaytracingPipeline::getLayoutHandle() const { return layout; }
 
-	uint32_t Pipeline::getGroupCount() const { return shader_groups.size(); }
+	uint32_t RaytracingPipeline::getGroupCount() const { return shader_groups.size(); }
 
 } // namespace RtEngine

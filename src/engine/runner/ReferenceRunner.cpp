@@ -147,7 +147,7 @@ namespace RtEngine {
 
 
 	/*void ReferenceRunner::initProperties() {
-		VulkanRenderer::initProperties();
+		RaytracingRenderer::initProperties();
 		renderer_properties->addInt(SAMPLE_COUNT_OPTION_NAME, &sample_count);
 	}*/
 } // namespace RtEngine

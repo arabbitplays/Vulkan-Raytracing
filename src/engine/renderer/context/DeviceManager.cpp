@@ -274,7 +274,7 @@ namespace RtEngine {
 
 		std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
 		// so no family is created multiple times if it covers multiple types
-		std::set<uint32_t> uniqueQueueFamilies = {queue_indices.graphicsFamily.value(),
+		std::set<uint32_t> uniqueQueueFamilies = {queue_indices.graphicsAndComputeFamily.value(),
 												  queue_indices.presentFamily.value()};
 
 		float queuePriority = 1.0f;
@@ -328,8 +328,9 @@ namespace RtEngine {
 
 		deletion_queue.pushFunction([&]() { vkDestroyDevice(device, nullptr); });
 
-		vkGetDeviceQueue(device, queue_indices.graphicsFamily.value(), 0, &graphics_queue);
+		vkGetDeviceQueue(device, queue_indices.graphicsAndComputeFamily.value(), 0, &graphics_queue);
 		vkGetDeviceQueue(device, queue_indices.presentFamily.value(), 0, &present_queue);
+		vkGetDeviceQueue(device, queue_indices.graphicsAndComputeFamily.value(), 0, &compute_queue);
 	}
 
 	void DeviceManager::destroy() { deletion_queue.flush(); }

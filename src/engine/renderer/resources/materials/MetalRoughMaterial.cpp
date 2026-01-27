@@ -13,7 +13,7 @@
 namespace RtEngine {
 	void MetalRoughMaterial::buildPipelines(VkDescriptorSetLayout sceneLayout) {
 		DescriptorLayoutBuilder layoutBuilder;
-		pipeline = std::make_shared<Pipeline>(vulkan_context);
+		pipeline = std::make_shared<RaytracingPipeline>(vulkan_context);
 		VkDevice device = vulkan_context->device_manager->getDevice();
 
 		layoutBuilder.addBinding(0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);

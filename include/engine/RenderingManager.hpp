@@ -3,7 +3,7 @@
 #include <memory>
 
 #include "VulkanContext.hpp"
-#include "VulkanRenderer.hpp"
+#include "RaytracingRenderer.hpp"
 
 namespace RtEngine {
     class RenderingManager {
@@ -15,7 +15,7 @@ namespace RtEngine {
         void initRendererProperties(const std::shared_ptr<IProperties> &properties, const std::shared_ptr<UpdateFlags> &update_flags);
 
         std::shared_ptr<VulkanContext> getVulkanContext() const;
-        std::shared_ptr<VulkanRenderer> getRaytracingRenderer() const;
+        std::shared_ptr<RaytracingRenderer> getRaytracingRenderer() const;
 
         void destroy();
     private:
@@ -31,7 +31,7 @@ namespace RtEngine {
         DeletionQueue deletion_queue;
         std::shared_ptr<VulkanContext> vulkan_context;
 
-        std::shared_ptr<VulkanRenderer> raytracing_renderer;
+        std::shared_ptr<RaytracingRenderer> raytracing_renderer;
     };
 } // RtEngine
 

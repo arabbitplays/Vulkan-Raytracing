@@ -51,7 +51,7 @@ namespace RtEngine {
     }
 
     void RenderingManager::createRenderer() {
-        raytracing_renderer = std::make_shared<VulkanRenderer>(window, vulkan_context, resources_dir);
+        raytracing_renderer = std::make_shared<RaytracingRenderer>(window, vulkan_context, resources_dir);
     }
 
     std::shared_ptr<VulkanContext> RenderingManager::getVulkanContext() const {
@@ -59,7 +59,7 @@ namespace RtEngine {
         return vulkan_context;
     }
 
-    std::shared_ptr<VulkanRenderer> RenderingManager::getRaytracingRenderer() const {
+    std::shared_ptr<RaytracingRenderer> RenderingManager::getRaytracingRenderer() const {
         assert(raytracing_renderer != nullptr);
         return raytracing_renderer;
     }

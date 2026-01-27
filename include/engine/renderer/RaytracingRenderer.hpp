@@ -25,9 +25,9 @@
 
 namespace RtEngine {
 
-	class VulkanRenderer : public ISerializable {
+	class RaytracingRenderer : public ISerializable {
 	public:
-		VulkanRenderer(const std::shared_ptr<Window> &window, const std::shared_ptr<VulkanContext> &vulkan_context, const std::string &resources_dir);
+		RaytracingRenderer(const std::shared_ptr<Window> &window, const std::shared_ptr<VulkanContext> &vulkan_context, const std::string &resources_dir);
 
 		void init();
 		void initProperties(const std::shared_ptr<IProperties> &config, const UpdateFlagsHandle &update_flags) override;

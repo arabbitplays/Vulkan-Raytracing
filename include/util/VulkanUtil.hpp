@@ -9,10 +9,10 @@
 
 namespace RtEngine {
 	struct QueueFamilyIndices {
-		std::optional<uint32_t> graphicsFamily;
+		std::optional<uint32_t> graphicsAndComputeFamily;
 		std::optional<uint32_t> presentFamily;
 
-		bool isComplete() const { return graphicsFamily.has_value() && presentFamily.has_value(); }
+		bool isComplete() const { return graphicsAndComputeFamily.has_value() && presentFamily.has_value(); }
 	};
 
 	class VulkanUtil {
@@ -42,8 +42,8 @@ namespace RtEngine {
 
 			int i = 0;
 			for (const auto &queueFamily: queueFamilies) {
-				if (queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT) {
-					indices.graphicsFamily = i;
+				if ((queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT) && (queueFamily.queueFlags & VK_QUEUE_COMPUTE_BIT)) {
+					indices.graphicsAndComputeFamily = i;
 				}
 
 				VkBool32 presentSupport = false;

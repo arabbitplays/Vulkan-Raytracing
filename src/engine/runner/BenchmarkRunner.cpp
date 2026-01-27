@@ -166,7 +166,7 @@ namespace RtEngine {
 	}
 
 	/*void BenchmarkRunner::initProperties() {
-		VulkanRenderer::initProperties();
+		RaytracingRenderer::initProperties();
 		renderer_properties->addInt(SAMPLE_COUNT_OPTION_NAME, &sample_count);
 		renderer_properties->addString(REFERENCE_IMAGE_PATH_OPTION_NAME, &reference_image_path);
 	}*/

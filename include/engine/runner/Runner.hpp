@@ -3,7 +3,7 @@
 #include "ISerializable.hpp"
 #include "SceneManager.hpp"
 #include "SceneReader.hpp"
-#include "VulkanRenderer.hpp"
+#include "RaytracingRenderer.hpp"
 
 namespace RtEngine {
     class Runner : public ISerializable {
@@ -34,7 +34,7 @@ namespace RtEngine {
         std::string scene_name;
 
         std::shared_ptr<EngineContext> engine_context;
-        std::shared_ptr<VulkanRenderer> renderer;
+        std::shared_ptr<RaytracingRenderer> renderer;
         std::shared_ptr<GuiRenderer> gui_manager;
 
         std::shared_ptr<SceneReader> scene_reader;

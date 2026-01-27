@@ -73,7 +73,7 @@ namespace RtEngine {
 		VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
 		VkDebugUtilsMessengerEXT debugMessenger;
 		QueueFamilyIndices queue_indices;
-		VkQueue graphics_queue, present_queue;
+		VkQueue graphics_queue, present_queue, compute_queue;
 	};
 } // namespace RtEngine
 
