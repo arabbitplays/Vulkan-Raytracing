@@ -8,20 +8,20 @@ project('Raytracing',
 
 incdirs = [
     include_directories('include'),
-    include_directories('include/builders'),
+    include_directories('include/engine'),
+    include_directories('include/engine/renderer'),
+    include_directories('include/engine/renderer/builders'),
+    include_directories('include/engine/renderer/context'),
+    include_directories('include/engine/renderer/resources'),
+    include_directories('include/engine/renderer/resources/materials'),
+    include_directories('include/engine/renderer/vulkan_scene_representation'),
+    include_directories('include/engine/repositories'),
+    include_directories('include/engine/runner'),
+    include_directories('include/engine/scene_graph'),
+    include_directories('include/engine/scene_graph/components'),
+    include_directories('include/engine/ui'),
     include_directories('include/io'),
-    include_directories('include/rendering/camera'),
-    include_directories('include/rendering/engine'),
-    include_directories('include/rendering/engine/context'),
-    include_directories('include/rendering/engine/renderer'),
-    include_directories('include/rendering/options'),
-    include_directories('include/rendering/resources'),
-    include_directories('include/rendering/resources/materials'),
-    include_directories('include/rendering/resources/repositories'),
-    include_directories('include/rendering/scene_graph'),
-    include_directories('include/rendering/scene_graph/components'),
-    include_directories('include/rendering/ui'),
-    include_directories('include/rendering'),
+    include_directories('include/properties'),
     include_directories('include/util'),
 ]
 
@@ -77,8 +77,11 @@ shader_generator = generator(
     depends: shader_generator_deps
 )
 
+run_command(py, 'scripts/generate_meson_files.py', 'src', check: true)
+
 src = []
 subdir('src')
+subdir('shaders')
 
 exe = executable(
     'renderer',

@@ -1,0 +1,9 @@
+runner:
+  scene_name: ref_scene_small_light
+renderer:
+  recursion_depth: 5
+metal_rough:
+  normal_mapping: false
+  nearest_neighbor_estimation: false
+  bsdf_importance_sampling: false
+  russian_roulette: false

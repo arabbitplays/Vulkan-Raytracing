@@ -33,3 +33,7 @@
 
 # Clion
 .idea/
+
+# Meson
+subprojects/*/
+!subprojects/*

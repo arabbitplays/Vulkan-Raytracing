@@ -1,0 +1,301 @@
+scene:
+  material_name: metal_rough
+  camera:
+    position:
+      - 0
+      - 0
+      - 10
+    view_dir:
+      - 0
+      - 0
+      - -1
+    fov: 45
+    interactive: false
+  lights:
+    point_lights:
+      []
+  meshes:
+    - path: meshes/sphere.obj
+    - path: meshes/plane.obj
+  materials:
+    - name: sphere2
+      albedo_tex: textures/rusted_iron/rusted_iron_albedo.png
+      metal_rough_ao_tex: textures/rusted_iron/rusted_iron_metal_rough_ao.png
+      eta: 1
+    - name: sphere1
+      albedo:
+        - 0.899999976
+        - 0.899999976
+        - 0.899999976
+      metallic: 0.100000001
+      roughness: 1
+      ao: 0.5
+      eta: 1
+    - name: sphere3
+      albedo:
+        - 0.899999976
+        - 0.899999976
+        - 0.899999976
+      metallic: 0.9
+      roughness: 0.1
+      ao: 0.5
+      eta: 1
+    - name: diffuse_blue
+      albedo:
+        - 0
+        - 0
+        - 1
+      metallic: 0.100000001
+      roughness: 1
+      ao: 0.5
+      eta: 1
+    - name: diffuse_red
+      albedo:
+        - 1
+        - 0
+        - 0
+      metallic: 0.100000001
+      roughness: 1
+      ao: 0.5
+      eta: 1
+    - name: diffuse_grey
+      albedo:
+        - 0.899999976
+        - 0.899999976
+        - 0.899999976
+      metallic: 0.100000001
+      roughness: 1
+      ao: 0.5
+      eta: 1
+    - name: diffuse_green
+      albedo:
+        - 0
+        - 1
+        - 0
+      metallic: 0.100000001
+      roughness: 1
+      ao: 0.5
+      eta: 1
+    - name: light
+      eta: 1
+      emission_color:
+        - 1
+        - 0.949999988
+        - 0.709999979
+      emission_power: 1
+  nodes:
+    - name: Camera
+      components:
+        Transform:
+            position:
+              - 0
+              - 0
+              - 10
+            rotation:
+              - 0
+              - 0
+              - 0
+            scale:
+              - 3
+              - 3
+              - 3
+        Camera:
+            fov: 45
+            width: 1500
+            height: 1500
+    - name: Light
+      components:
+        Transform:
+            position:
+              - 0
+              - 2.4000001
+              - 0
+            rotation:
+              - 90
+              - 0
+              - 0
+            scale:
+              - 1
+              - 1
+              - 1
+        MeshRenderer:
+            material_name: light
+            mesh: plane
+      children:
+        []
+    - name: Sphere1
+      components:
+        Transform:
+            position:
+              - -1.5
+              - 0
+              - 0
+            rotation:
+              - 0
+              - 0
+              - 0
+            scale:
+              - 0.7
+              - 0.7
+              - 0.7
+        MeshRenderer:
+            material_name: sphere1
+            mesh: sphere
+      children:
+        []
+    - name: Sphere2
+      components:
+        Transform:
+            position:
+              - 0
+              - -1
+              - 0
+            rotation:
+              - 0
+              - 0
+              - 0
+            scale:
+              - 0.7
+              - 0.7
+              - 0.7
+        MeshRenderer:
+            material_name: sphere2
+            mesh: sphere
+      children:
+        []
+    - name: Sphere3
+      components:
+        Transform:
+            position:
+              - 1.5
+              - 0
+              - 0
+            rotation:
+              - 0
+              - 0
+              - 0
+            scale:
+              - 0.7
+              - 0.7
+              - 0.7
+        MeshRenderer:
+            material_name: sphere3
+            mesh: sphere
+      children:
+        [ ]
+    - name: Room
+      components:
+        Transform:
+            position:
+              - 0
+              - 0
+              - 0
+            rotation:
+              - 0
+              - 0
+              - 0
+            scale:
+              - 1
+              - 1
+              - 1
+      children:
+        - name: Floor
+          components:
+            Transform:
+                position:
+                  - 0
+                  - -2.5
+                  - 0
+                rotation:
+                  - -90
+                  - 0
+                  - 0
+                scale:
+                  - 5
+                  - 5
+                  - 5
+            MeshRenderer:
+                material_name: diffuse_grey
+                mesh: plane
+          children:
+            []
+        - name: Ceil
+          components:
+            Transform:
+                position:
+                  - 0
+                  - 2.5
+                  - 0
+                rotation:
+                  - 90
+                  - 0
+                  - 0
+                scale:
+                  - 5
+                  - 5
+                  - 5
+            MeshRenderer:
+                material_name: diffuse_grey
+                mesh: plane
+          children:
+            []
+        - name: Left
+          components:
+            Transform:
+                position:
+                  - -2.5
+                  - 0
+                  - 0
+                rotation:
+                  - 0
+                  - 90
+                  - 0
+                scale:
+                  - 5
+                  - 5
+                  - 5
+            MeshRenderer:
+                material_name: diffuse_red
+                mesh: plane
+          children:
+            []
+        - name: Right
+          components:
+            Transform:
+                position:
+                  - 2.5
+                  - 0
+                  - 0
+                rotation:
+                  - 0
+                  - -90
+                  - 0
+                scale:
+                  - 5
+                  - 5
+                  - 5
+            MeshRenderer:
+                material_name: diffuse_green
+                mesh: plane
+          children:
+            []
+        - name: Back
+          components:
+            Transform:
+                position:
+                  - 0
+                  - 0
+                  - -2.5
+                rotation:
+                  - 0
+                  - 0
+                  - 0
+                scale:
+                  - 5
+                  - 5
+                  - 5
+            MeshRenderer:
+                material_name: diffuse_blue
+                mesh: plane
+          children:
+            []

@@ -1,9 +1,6 @@
 #include "SceneReader.hpp"
 
-#include <AccelerationStructure.hpp>
-#include <InteractiveCamera.hpp>
 #include <MeshRenderer.hpp>
-#include <MetalRoughMaterial.hpp>
 #include <Node.hpp>
 #include <QuickTimer.hpp>
 #include <Rigidbody.hpp>
@@ -11,6 +8,11 @@
 #include <YAML_glm.hpp>
 #include <glm/gtx/quaternion.hpp>
 #include <spdlog/spdlog.h>
+#include "Material.hpp"
+#include "YamlLoadProperties.hpp"
+#include "components/Camera.hpp"
+
+#include "resources/EnvironmentMap.hpp"
 
 namespace RtEngine {
 	std::shared_ptr<Scene>
@@ -25,22 +27,20 @@ namespace RtEngine {
 			auto material_name = scene_node["material_name"].as<std::string>();
 			if (!materials.contains(material_name))
 				throw std::runtime_error("Material " + material_name + " does not exist");
-			// TODO remove vulkan context from reader?
-			std::shared_ptr<Scene> scene =
-					std::make_shared<Scene>(file_path, *vulkan_context->resource_builder, materials[material_name]);
 
-			scene->camera = loadCamera(scene_node["camera"]);
+			std::shared_ptr<Scene> scene =
+					std::make_shared<Scene>(file_path, materials[material_name]);
+			scene->environment_map = std::make_shared<EnvironmentMap>(engine_context->texture_repository);
+
 			loadSceneLights(scene_node["lights"], scene);
+
+			if (scene_node["environment_map"]) {
+				scene->environment_map->loadFromYaml(scene_node["environment_map"]);
+			}
 
 			for (const auto &mesh_node: scene_node["meshes"]) {
 				std::string mesh_path = mesh_node["path"].as<std::string>();
-				runtime_context->mesh_repository->addMesh(mesh_path);
-			}
-
-			for (const auto &texture_node: scene_node["textures"]) {
-				// todo handle more types
-				TextureType type = texture_node["is_normal"].as<bool>() ? NORMAL : PARAMETER;
-				runtime_context->texture_repository->addTexture(texture_node["path"].as<std::string>(), type);
+				engine_context->mesh_repository->addMesh(mesh_path);
 			}
 
 			initializeMaterial(scene_node["materials"], materials[material_name]);
@@ -62,20 +62,6 @@ namespace RtEngine {
 		}
 	}
 
-	std::shared_ptr<Camera> SceneReader::loadCamera(const YAML::Node &camera_node) const {
-		if (camera_node["interactive"].as<bool>()) {
-			return std::make_shared<InteractiveCamera>(
-					vulkan_context->swapchain->extent.width, vulkan_context->swapchain->extent.height,
-					camera_node["fov"].as<float>(), camera_node["position"].as<glm::vec3>(),
-					camera_node["view_dir"].as<glm::vec3>());
-		} else {
-			return std::make_shared<Camera>(vulkan_context->swapchain->extent.width,
-											vulkan_context->swapchain->extent.height, camera_node["fov"].as<float>(),
-											camera_node["position"].as<glm::vec3>(),
-											camera_node["view_dir"].as<glm::vec3>());
-		}
-	}
-
 	void SceneReader::loadSceneLights(const YAML::Node &lights_node, std::shared_ptr<Scene> &scene) {
 		if (lights_node["sun"]) {
 			YAML::Node sun_node = lights_node["sun"];
@@ -91,51 +77,9 @@ namespace RtEngine {
 		}
 	}
 
-	void SceneReader::initializeMaterial(const YAML::Node &material_node, std::shared_ptr<Material> &material) {
-		runtime_context->curr_material = material;
-		if (typeid(*material) == typeid(MetalRoughMaterial)) {
-			auto metal_rough_material = dynamic_cast<MetalRoughMaterial *>(material.get());
-
-			for (const auto &material_node: material_node) {
-				MetalRoughParameters parameters{};
-
-				if (material_node["albedo"])
-					parameters.albedo = material_node["albedo"].as<glm::vec3>();
-				if (material_node["albedo_tex"])
-					parameters.albedo_tex_name = material_node["albedo_tex"].as<std::string>();
-
-				if (material_node["metallic"])
-					parameters.metallic = material_node["metallic"].as<float>();
-				if (material_node["roughness"])
-					parameters.roughness = material_node["roughness"].as<float>();
-				if (material_node["ao"])
-					parameters.ao = material_node["ao"].as<float>();
-				if (material_node["metal_rough_ao_tex"])
-					parameters.metal_rough_ao_tex_name = material_node["metal_rough_ao_tex"].as<std::string>();
-
-				if (material_node["eta"])
-					parameters.eta = material_node["eta"].as<float>();
-
-				if (material_node["normal_tex"])
-					parameters.normal_tex_name = material_node["normal_tex"].as<std::string>();
-
-				if (material_node["emission_power"]) {
-					parameters.emission_color = material_node["emission_color"].as<glm::vec3>();
-					parameters.emission_power = material_node["emission_power"].as<float>();
-				}
-
-				metal_rough_material->createInstance(parameters, true);
-			}
-		} else if (typeid(*material) == typeid(PhongMaterial)) {
-			auto phong_material = dynamic_cast<PhongMaterial *>(material.get());
-
-			for (const auto &material_node: material_node) {
-				phong_material->createInstance(
-						material_node["diffuse"].as<glm::vec3>(), material_node["specular"].as<glm::vec3>(),
-						material_node["ambient"].as<glm::vec3>(), material_node["reflection"].as<glm::vec3>(),
-						material_node["transmission"].as<glm::vec3>(), material_node["n"].as<float>(),
-						material_node["eta"].as<glm::vec3>());
-			}
+	void SceneReader::initializeMaterial(const YAML::Node &material_nodes, std::shared_ptr<Material> &material) {
+		for (const auto &material_node: material_nodes) {
+			material->loadInstance(material_node);
 		}
 	}
 
@@ -155,24 +99,26 @@ namespace RtEngine {
 	}
 
 	void SceneReader::readComponents(const YAML::Node &yaml_node, std::shared_ptr<Node> &scene_node) {
+		auto update_flags = std::make_shared<UpdateFlags>();
+		std::shared_ptr<YamlLoadProperties> properties = std::make_shared<YamlLoadProperties>(yaml_node["components"]);
+
 		for (auto &comp_node: yaml_node["components"]) {
-			std::string comp_name = "";
-			YAML::Node section_node;
-			for (auto &pair: comp_node) {
-				comp_name = pair.first.as<std::string>();
-				section_node = comp_node[comp_name];
-			}
+			std::string comp_name = comp_node.first.as<std::string>();
 			if (comp_name == Transform::COMPONENT_NAME) {
-				scene_node->transform->initProperties(comp_node);
+				scene_node->transform->initProperties(properties, update_flags);
 			} else if (comp_name == MeshRenderer::COMPONENT_NAME) {
 				std::shared_ptr<MeshRenderer> mesh_component =
-						std::make_shared<MeshRenderer>(runtime_context, scene_node);
-				mesh_component->initProperties(comp_node);
+						std::make_shared<MeshRenderer>(engine_context, scene_node);
+				mesh_component->initProperties(properties, update_flags);
 				scene_node->addComponent(mesh_component);
 			} else if (comp_name == Rigidbody::COMPONENT_NAME) {
 				auto rb = std::make_shared<Rigidbody>(scene_node);
-				rb->initProperties(comp_node);
+				rb->initProperties(properties, update_flags);
 				scene_node->addComponent(rb);
+			} else if (comp_name == Camera::COMPONENT_NAME) {
+				auto cam = std::make_shared<Camera>(engine_context, scene_node);
+				cam->initProperties(properties, update_flags);
+				scene_node->addComponent(cam);
 			}
 		}
 	}

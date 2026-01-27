@@ -1,0 +1,37 @@
+#ifndef VULKAN_RAYTRACING_IMGUIPROPERTIES_HPP
+#define VULKAN_RAYTRACING_IMGUIPROPERTIES_HPP
+#include "IProperties.hpp"
+
+namespace RtEngine {
+    class ImGuiProperties final: public IProperties {
+    public:
+        bool startChild(const std::string &name) override;
+
+        void endChild() override;
+
+        bool addBool(const std::string &name, bool *var) override;
+
+        bool addInt(const std::string &name, int32_t *var, int32_t min, int32_t max, uint32_t flags) override;
+
+        bool addInt(const std::string &name, int32_t *var, uint32_t flags) override;
+
+        bool addUint(const std::string &name, uint32_t *var, uint32_t min, uint32_t max, uint32_t flags) override;
+
+        bool addUint(const std::string &name, uint32_t *var, uint32_t flags) override;
+
+        bool addFloat(const std::string &name, float *var, float min, float max, uint32_t flags) override;
+
+        bool addFloat(const std::string &name, float *var, uint32_t flags) override;
+
+        bool addString(const std::string &name, std::string *var, uint32_t flags) override;
+
+        bool addVector(const std::string &name, glm::vec3 *var, uint32_t flags) override;
+
+        bool addVector(const std::string &name, glm::vec4 *var, uint32_t flags) override;
+
+        bool addSelection(const std::string &name, std::string *var, std::vector<std::string> selection_options,
+            uint32_t flags) override;
+    };
+} // RtEngine
+
+#endif //VULKAN_RAYTRACING_IMGUIPROPERTIES_HPP
