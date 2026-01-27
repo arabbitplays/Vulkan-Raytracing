@@ -10,8 +10,7 @@ namespace RtEngine {
 
         void build();
 
-        void addShaderStage(VkShaderModule shaderModule, VkShaderStageFlagBits shaderStage,
-                            VkRayTracingShaderGroupTypeKHR shaderGroup);
+        void setShaderStage(VkShaderModule shaderModule);
         void setDescriptorSetLayouts(std::vector<VkDescriptorSetLayout> &descriptorSetLayouts);
         void addPushConstant(uint32_t size, VkShaderStageFlags shaderStage);
 
@@ -30,7 +29,7 @@ namespace RtEngine {
 
         VkPipelineLayoutCreateInfo pipelineLayoutInfo;
         std::vector<VkPushConstantRange> pushConstants{};
-        std::vector<VkPipelineShaderStageCreateInfo> shader_stages{};
+        VkPipelineShaderStageCreateInfo shader_stage{};
     };
 } // RtEngine
 

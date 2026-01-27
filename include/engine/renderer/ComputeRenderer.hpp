@@ -2,6 +2,7 @@
 #define VULKAN_RAYTRACING_COMPUTERENDERER_HPP
 #include <memory>
 
+#include "ComputePipeline.hpp"
 #include "RenderTarget.hpp"
 #include "VulkanContext.hpp"
 
@@ -10,7 +11,15 @@ namespace RtEngine {
     public:
         ComputeRenderer(const std::shared_ptr<VulkanContext>& vulkan_context);
 
-        virtual void recordCommandBuffer(VkCommandBuffer commandBuffer, std::shared_ptr<RenderTarget> target, uint32_t swapchain_image_idx);
+        void createPipeline();
+        void recordCommandBuffer(VkCommandBuffer commandBuffer, std::shared_ptr<RenderTarget> target, uint32_t swapchain_image_idx);
+
+        void cleanup();
+    private:
+        std::shared_ptr<VulkanContext> vulkan_context;
+        std::shared_ptr<ComputePipeline> pipeline;
+
+        DeletionQueue deletion_queue;
     };
 } // RtEngine
 
