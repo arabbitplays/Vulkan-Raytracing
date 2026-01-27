@@ -39,11 +39,11 @@ namespace RtEngine {
     }
 
     void Engine::createRenderer() {
-        vulkan_renderer = std::make_shared<VulkanRenderer>(options->resources_dir);
-        vulkan_renderer->init(window);
+        rendering_manager = std::make_shared<RenderingManager>(window, options->resources_dir, true);
+        vulkan_renderer = rendering_manager->getRaytracingRenderer();
 
         auto update_flags = std::make_shared<UpdateFlags>();
-        vulkan_renderer->initProperties(config_properties, update_flags);
+        rendering_manager->initRendererProperties(config_properties, update_flags);
     }
 
     void Engine::createGuiManager() {

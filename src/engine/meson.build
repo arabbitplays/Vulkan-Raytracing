@@ -11,4 +11,5 @@ src += files(
   'Window.cpp',
   'SwapchainManager.cpp',
   'Engine.cpp',
+  'RenderingManager.cpp',
 )

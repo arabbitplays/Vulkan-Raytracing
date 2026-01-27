@@ -13,12 +13,6 @@
 
 namespace RtEngine {
 
-#ifdef NDEBUG
-	const bool enableValidationLayers = false;
-#else
-	const bool enableValidationLayers = true;
-#endif
-
 	void CmdTraceRaysKHR(VkDevice device, VkCommandBuffer commandBuffer,
 						 const VkStridedDeviceAddressRegionKHR *pRaygenShaderBindingTable,
 						 const VkStridedDeviceAddressRegionKHR *pMissShaderBindingTable,
@@ -32,14 +26,22 @@ namespace RtEngine {
 		}
 	}
 
-	VulkanRenderer::VulkanRenderer(const std::string &resources_dir) : resources_dir(resources_dir) {
+	VulkanRenderer::VulkanRenderer(const std::shared_ptr<Window>& window, const std::shared_ptr<VulkanContext> &vulkan_context, const std::string &resources_dir)
+		: resources_dir(resources_dir), window(window), vulkan_context(vulkan_context) {
+		init();
 	}
 
-	void VulkanRenderer::init(std::shared_ptr<Window> window) {
-		this->window = window;
-
+	void VulkanRenderer::init() {
 		initWindow();
-		initVulkan();
+
+		createRepositories();
+
+		scene_adapter = std::make_shared<SceneAdapter>(vulkan_context, texture_repository, max_frames_in_flight,
+													   DeviceManager::RAYTRACING_PROPERTIES);
+		main_deletion_queue.pushFunction([&]() { scene_adapter->clearResources(); });
+
+		createCommandBuffers();
+		createSyncObjects();
 	}
 
 	void VulkanRenderer::initWindow() {
@@ -48,45 +50,11 @@ namespace RtEngine {
 		});
 	}
 
-	void VulkanRenderer::initVulkan() {
-		createVulkanContext();
-		createRepositories();
-
-		scene_adapter = std::make_shared<SceneAdapter>(vulkan_context, texture_repository, max_frames_in_flight,
-													   DeviceManager::RAYTRACING_PROPERTIES);
-		mainDeletionQueue.pushFunction([&]() { scene_adapter->clearResources(); });
-
-		createCommandBuffers();
-		createSyncObjects();
-	}
-
-	void VulkanRenderer::createVulkanContext() {
-		vulkan_context = std::make_shared<VulkanContext>();
-
-		vulkan_context->window = window;
-		vulkan_context->device_manager = std::make_shared<DeviceManager>(window->getHandle(), enableValidationLayers);
-
-		vulkan_context->command_manager = std::make_shared<CommandManager>(vulkan_context->device_manager);
-		vulkan_context->resource_builder =
-				std::make_shared<ResourceBuilder>(vulkan_context->device_manager, vulkan_context->command_manager,
-												  resources_dir);
-		vulkan_context->swapchain =
-				std::make_shared<Swapchain>(vulkan_context->device_manager, window->getHandle(), vulkan_context->resource_builder);
-		vulkan_context->descriptor_allocator = createDescriptorAllocator();
-
-		mainDeletionQueue.pushFunction([&]() {
-			vulkan_context->descriptor_allocator->destroyPools(vulkan_context->device_manager->getDevice());
-			vulkan_context->swapchain->destroy();
-			vulkan_context->command_manager->destroy();
-			vulkan_context->device_manager->destroy();
-		});
-	}
-
 	void VulkanRenderer::createRepositories() {
 		mesh_repository = std::make_shared<MeshRepository>(vulkan_context, resources_dir);
 		texture_repository = std::make_shared<TextureRepository>(vulkan_context->resource_builder);
 
-		mainDeletionQueue.pushFunction([&]() {
+		main_deletion_queue.pushFunction([&]() {
 			mesh_repository->destroy();
 			texture_repository->destroy();
 		});
@@ -95,21 +63,6 @@ namespace RtEngine {
 	std::shared_ptr<RenderTarget> VulkanRenderer::createRenderTarget(uint32_t width, uint32_t height) {
 		VkExtent2D extent(width, height);
 		return std::make_shared<RenderTarget>(vulkan_context->resource_builder, extent, max_frames_in_flight);
-	}
-
-	std::shared_ptr<DescriptorAllocator> VulkanRenderer::createDescriptorAllocator() {
-		std::vector<DescriptorAllocator::PoolSizeRatio> poolRatios = {
-				{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1},
-				{VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1},
-				{VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1},
-				{VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1},
-				{VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, 1},
-		};
-
-		auto descriptorAllocator = std::make_shared<DescriptorAllocator>();
-		descriptorAllocator->init(vulkan_context->device_manager->getDevice(), 8, poolRatios);
-
-		return descriptorAllocator;
 	}
 
 	bool VulkanRenderer::hasStencilComponent(const VkFormat format) {
@@ -157,7 +110,7 @@ namespace RtEngine {
 				throw std::runtime_error("failed to create sync objects");
 			}
 
-			mainDeletionQueue.pushFunction([&, i]() {
+			main_deletion_queue.pushFunction([&, i]() {
 				vkDestroySemaphore(vulkan_context->device_manager->getDevice(), imageAvailableSemaphores[i], nullptr);
 				vkDestroyFence(vulkan_context->device_manager->getDevice(), inFlightFences[i], nullptr);
 			});
@@ -169,7 +122,7 @@ namespace RtEngine {
 				throw std::runtime_error("failed to create sync objects");
 						}
 
-			mainDeletionQueue.pushFunction([&, i]() {
+			main_deletion_queue.pushFunction([&, i]() {
 				vkDestroySemaphore(vulkan_context->device_manager->getDevice(), renderFinishedSemaphores[i], nullptr);
 			});
 		}
@@ -400,7 +353,7 @@ namespace RtEngine {
 	}
 
 	void VulkanRenderer::cleanup() {
-		mainDeletionQueue.flush();
+		main_deletion_queue.flush();
 		window->destroy();
 	}
 

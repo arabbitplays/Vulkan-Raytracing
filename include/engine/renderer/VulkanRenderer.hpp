@@ -27,9 +27,9 @@ namespace RtEngine {
 
 	class VulkanRenderer : public ISerializable {
 	public:
-		explicit VulkanRenderer(const std::string &resources_dir);
+		VulkanRenderer(const std::shared_ptr<Window> &window, const std::shared_ptr<VulkanContext> &vulkan_context, const std::string &resources_dir);
 
-		void init(std::shared_ptr<Window> window);
+		void init();
 		void initProperties(const std::shared_ptr<IProperties> &config, const UpdateFlagsHandle &update_flags) override;
 
 		void loadScene(std::shared_ptr<IScene> scene);
@@ -70,7 +70,7 @@ namespace RtEngine {
 
 		std::shared_ptr<Window> window;
 
-		DeletionQueue mainDeletionQueue;
+		DeletionQueue main_deletion_queue;
 
 		uint32_t recursion_depth = 5;
 		std::vector<int32_t> push_constants{};
@@ -94,16 +94,12 @@ namespace RtEngine {
 
 		void initWindow();
 		void initVulkan();
-		void createVulkanContext();
 		void createRepositories();
 
 		static bool hasStencilComponent(VkFormat format);
 
-		std::shared_ptr<DescriptorAllocator> createDescriptorAllocator();
 		void createCommandBuffers();
 		void createSyncObjects();
-
-		void pollSdlEvents();
 
 		void submitCommandBuffer(const std::vector<VkSemaphore> &wait_semaphore, const std::vector<VkSemaphore> &signal_semaphore);
 		void presentSwapchainImage(const std::vector<VkSemaphore>& wait_semaphore, uint32_t image_index);
