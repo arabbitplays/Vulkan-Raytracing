@@ -66,8 +66,8 @@ namespace RtEngine {
     }
 
     void Engine::createRunner() {
-        //runner = std::make_shared<ComputeRunner>(engine_context, scene_manager);
-        //return;
+        runner = std::make_shared<ComputeRunner>(engine_context, scene_manager);
+        return;
 
         if (options->runner_type == OFFLINE) {
             runner = std::make_shared<Runner>(engine_context, scene_manager);

@@ -1,4 +1,7 @@
 #version 450
+#extension GL_GOOGLE_include_directive : enable
+
+#include "../common/random.glsl"
 
 layout (binding = 0, rgba32f) uniform writeonly image2D target;
 layout (binding = 1, rgba8) uniform readonly image2D src;
@@ -6,12 +9,48 @@ layout (binding = 1, rgba8) uniform readonly image2D src;
 layout (local_size_x = 16, local_size_y = 16, local_size_z = 1) in;
 void main()
 {
+    uint line_strength = 1;
+    uint max_dist = 8;
+
+    vec3 glitch_colors[3] = vec3[](
+        vec3(208.0f / 256.0f, 86.0f / 256.0f, 87.0f / 256.0f),
+        vec3(225.0f / 256.0f, 129.0f / 256.0f, 76.0f / 256.0f),
+        vec3(6.0f / 256.0f, 96.0f / 256.0f, 87.0f / 256.0f)
+    );
+
     ivec2 pixel = ivec2(gl_GlobalInvocationID.xy);
     ivec2 size = imageSize(target);
 
     if (pixel.x >= size.x || pixel.y >= size.y)
-    return;
+        return;
+
+    uint seed = 1385743257;
+    uvec4 rng_state = uvec4(seed, seed * 2, seed * 3, seed * 4) + 5378947 * (pixel.y / line_strength);
+
+    float rand = stepAndOutputRNGFloat(rng_state);
+
+    int dist = int(round(rand * float(2 * max_dist))) - int(max_dist);
+    ivec2 new_pos = pixel + ivec2(dist, 0);
 
     vec3 c = imageLoad(src, pixel).xyz;
-    imageStore(target, pixel, vec4(vec3(1) - c, 1));
+
+    if (new_pos.x >= size.x || new_pos.y >= size.y)
+        return;
+
+    bool do_glitch = false;
+    float eps = 1e-2;
+    for (int i = 0; i < 3; i++) {
+        if (all(lessThan(abs(c - glitch_colors[i]), vec3(eps)))) {
+            do_glitch = true;
+        }
+    }
+
+    if (do_glitch) {
+        //imageStore(target, pixel, vec4(1, 0, 0 , 1));
+        imageStore(target, new_pos, vec4(c, 1));
+    } else {
+        c = imageLoad(src, new_pos).xyz;
+        imageStore(target, new_pos, vec4(c, 1));
+        //imageStore(target, pixel, vec4(0, 0, 0 , 1));
+    }
 }
