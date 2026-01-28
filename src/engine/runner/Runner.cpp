@@ -5,10 +5,10 @@
 #include "UpdateFlagValue.hpp"
 
 namespace RtEngine {
-    Runner::Runner(std::shared_ptr<EngineContext> engine_context,
-        const std::shared_ptr<GuiRenderer> &gui_renderer, const std::shared_ptr<SceneManager> &scene_manager)
-        : engine_context(engine_context), renderer(engine_context->renderer),
-        gui_manager(gui_renderer), scene_manager(scene_manager) {
+    Runner::Runner(std::shared_ptr<EngineContext> engine_context, const std::shared_ptr<SceneManager> &scene_manager)
+        : engine_context(engine_context), scene_manager(scene_manager),
+          raytracing_renderer(engine_context->rendering_manager->getRaytracingRenderer()),
+          gui_renderer(engine_context->rendering_manager->getGuiRenderer()) {
 
         scene_reader = std::make_shared<SceneReader>(engine_context);
         update_flags = std::make_shared<UpdateFlags>();
@@ -22,15 +22,15 @@ namespace RtEngine {
         assert(!scene_path.empty());
 
         std::shared_ptr<Scene> old_scene = scene_manager->getCurrentScene(); // hold until it can be safely destroyed
-        std::shared_ptr<Scene> new_scene = scene_reader->readScene(scene_path, renderer->getMaterials());
+        std::shared_ptr<Scene> new_scene = scene_reader->readScene(scene_path, raytracing_renderer->getMaterials());
         scene_manager->setScene(new_scene);
 
-        renderer->waitForIdle();
+        raytracing_renderer->waitForIdle();
         if (old_scene != nullptr) {
             old_scene->destroy();
         }
         new_scene->start();
-        renderer->loadScene(new_scene);
+        raytracing_renderer->loadScene(new_scene);
 
         SceneWriter writer;
         writer.writeScene(PathUtil::getFileName(scene_path), new_scene);
@@ -48,63 +48,6 @@ namespace RtEngine {
         drawFrame(draw_context);
     }
 
-    void Runner::drawFrame(const std::shared_ptr<DrawContext>& draw_context) {
-        renderer->waitForNextFrameStart();
-
-        const int32_t swapchain_image_idx = renderer->aquireNextSwapchainImage();
-        if (swapchain_image_idx < 0) {
-            handle_resize();
-            return;
-        }
-
-        renderer->resetCurrFrameFence();
-
-        VkCommandBuffer cmd = renderer->getNewCommandBuffer();
-        std::shared_ptr<RenderTarget> target = draw_context->targets[0]; // TODO handle multiple
-
-        prepareFrame(cmd, draw_context);
-
-        renderer->updateRenderTarget(target);
-        renderer->recordCommandBuffer(cmd, target, swapchain_image_idx, true);
-        gui_manager->recordGuiCommands(cmd, swapchain_image_idx);
-
-        finishFrame(cmd, draw_context, static_cast<uint32_t>(swapchain_image_idx), true);
-    }
-
-    void Runner::prepareFrame(VkCommandBuffer cmd, const std::shared_ptr<DrawContext> &draw_context) {
-        renderer->updateSceneRepresentation(draw_context, update_flags);
-
-        if (update_flags->checkFlag(TARGET_RESET)) {
-            for (const auto& target : draw_context->targets) {
-                target->resetAccumulatedFrames();
-            }
-        }
-        update_flags->resetFlags();
-
-        renderer->recordBeginCommandBuffer(cmd);
-    }
-
-    void Runner::finishFrame(VkCommandBuffer cmd, const std::shared_ptr<DrawContext> &draw_context, uint32_t swapchain_image_idx, bool present) const {
-        renderer->recordEndCommandBuffer(cmd);
-        if (renderer->submitCommands(present, swapchain_image_idx)) {
-            handle_resize();
-        }
-        renderer->nextFrame();
-        draw_context->nextFrame();
-    }
-
-    void Runner::handle_resize() const {
-        renderer->waitForIdle();
-        engine_context->swapchain_manager->recreate();
-        gui_manager->updateWindows();
-    }
-
-    std::shared_ptr<DrawContext> Runner::createMainDrawContext() const {
-        auto draw_context = std::make_shared<DrawContext>();
-        scene_manager->getCurrentScene()->fillDrawContext(draw_context);
-        return draw_context;
-    }
-
     void Runner::setUpdateFlags(const UpdateFlagsHandle &new_flags) const {
         update_flags->setFlags(new_flags);
     }
@@ -120,5 +63,62 @@ namespace RtEngine {
             }
             config->endChild();
         }
+    }
+
+    void Runner::drawFrame(const std::shared_ptr<DrawContext>& draw_context) {
+        raytracing_renderer->waitForNextFrameStart();
+
+        const int32_t swapchain_image_idx = raytracing_renderer->aquireNextSwapchainImage();
+        if (swapchain_image_idx < 0) {
+            handle_resize();
+            return;
+        }
+
+        raytracing_renderer->resetCurrFrameFence();
+
+        VkCommandBuffer cmd = raytracing_renderer->getNewCommandBuffer();
+        std::shared_ptr<RenderTarget> target = draw_context->targets[0]; // TODO handle multiple
+
+        prepareFrame(cmd, draw_context);
+
+        raytracing_renderer->updateRenderTarget(target);
+        raytracing_renderer->recordCommandBuffer(cmd, target, swapchain_image_idx, true);
+        gui_renderer->recordGuiCommands(cmd, swapchain_image_idx);
+
+        finishFrame(cmd, draw_context, static_cast<uint32_t>(swapchain_image_idx), true);
+    }
+
+    void Runner::prepareFrame(VkCommandBuffer cmd, const std::shared_ptr<DrawContext> &draw_context) {
+        raytracing_renderer->updateSceneRepresentation(draw_context, update_flags);
+
+        if (update_flags->checkFlag(TARGET_RESET)) {
+            for (const auto& target : draw_context->targets) {
+                target->resetAccumulatedFrames();
+            }
+        }
+        update_flags->resetFlags();
+
+        raytracing_renderer->recordBeginCommandBuffer(cmd);
+    }
+
+    void Runner::finishFrame(VkCommandBuffer cmd, const std::shared_ptr<DrawContext> &draw_context, uint32_t swapchain_image_idx, bool present) const {
+        raytracing_renderer->recordEndCommandBuffer(cmd);
+        if (raytracing_renderer->submitCommands(present, swapchain_image_idx)) {
+            handle_resize();
+        }
+        raytracing_renderer->nextFrame();
+        draw_context->nextFrame();
+    }
+
+    void Runner::handle_resize() const {
+        raytracing_renderer->waitForIdle();
+        engine_context->swapchain_manager->recreate();
+        gui_renderer->recreateFramebuffer();
+    }
+
+    std::shared_ptr<DrawContext> Runner::createMainDrawContext() const {
+        auto draw_context = std::make_shared<DrawContext>();
+        scene_manager->getCurrentScene()->fillDrawContext(draw_context);
+        return draw_context;
     }
 } // RtEngine

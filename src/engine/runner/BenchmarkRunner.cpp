@@ -11,9 +11,8 @@ namespace RtEngine {
 	constexpr std::string SAMPLE_COUNT_OPTION_NAME = "Sample_Count";
 	constexpr std::string REFERENCE_IMAGE_PATH_OPTION_NAME = "Reference_Image";
 
-	BenchmarkRunner::BenchmarkRunner(const std::shared_ptr<EngineContext> &engine_context,
-		const std::shared_ptr<GuiRenderer> &gui_manager, const std::shared_ptr<SceneManager> &scene_manager)
-			: Runner(engine_context, gui_manager, scene_manager) {
+	BenchmarkRunner::BenchmarkRunner(const std::shared_ptr<EngineContext> &engine_context, const std::shared_ptr<SceneManager> &scene_manager)
+			: Runner(engine_context, scene_manager) {
 
 		if (std::filesystem::create_directories(TMP_FOLDER)) {
 			SPDLOG_INFO("Created directory {}");
@@ -43,8 +42,8 @@ namespace RtEngine {
 
 		// render one image and then output it if output path is defined
 		if (error_calculation_sample_count == static_cast<int32_t>(target->getTotalSampleCount())) {
-			renderer->waitForIdle();
-			renderer->outputRenderingTarget(target, getTmpImagePath(error_calculation_sample_count));
+			raytracing_renderer->waitForIdle();
+			raytracing_renderer->outputRenderingTarget(target, getTmpImagePath(error_calculation_sample_count));
 
 			if (error_calculation_sample_count == final_sample_count) {
 				running = false;
@@ -59,9 +58,9 @@ namespace RtEngine {
 
 
 	void BenchmarkRunner::drawFrame(const std::shared_ptr<DrawContext> &draw_context) {
-		renderer->waitForNextFrameStart();
+		raytracing_renderer->waitForNextFrameStart();
 
-		VkCommandBuffer cmd = renderer->getNewCommandBuffer();
+		VkCommandBuffer cmd = raytracing_renderer->getNewCommandBuffer();
 		std::shared_ptr<RenderTarget> target = draw_context->targets[0];
 
 		uint32_t curr_sample_count = target->getTotalSampleCount();
@@ -69,27 +68,27 @@ namespace RtEngine {
 
 		int32_t swapchain_image_idx = 0;
 		if (present_image) {
-			swapchain_image_idx = renderer->aquireNextSwapchainImage();
+			swapchain_image_idx = raytracing_renderer->aquireNextSwapchainImage();
 			if (swapchain_image_idx < 0) {
 				handle_resize();
 				return;
 			}
 		}
 
-		renderer->resetCurrFrameFence();
+		raytracing_renderer->resetCurrFrameFence();
 
 		prepareFrame(cmd, draw_context);
 
-		renderer->updateRenderTarget(target);
-		renderer->recordCommandBuffer(cmd, target, swapchain_image_idx, present_image);
+		raytracing_renderer->updateRenderTarget(target);
+		raytracing_renderer->recordCommandBuffer(cmd, target, swapchain_image_idx, present_image);
 
 		finishFrame(cmd, draw_context, static_cast<uint32_t>(swapchain_image_idx), present_image);
 	}
 
 
 	void BenchmarkRunner::prepareFrame(VkCommandBuffer cmd, const std::shared_ptr<DrawContext> &draw_context) {
-		renderer->updateSceneRepresentation(draw_context, update_flags);
-		renderer->recordBeginCommandBuffer(cmd);
+		raytracing_renderer->updateSceneRepresentation(draw_context, update_flags);
+		raytracing_renderer->recordBeginCommandBuffer(cmd);
 		update_flags->resetFlags();
 	}
 

@@ -96,7 +96,7 @@ namespace RtEngine {
 
 	void GuiRenderer::addWindow(std::shared_ptr<GuiWindow> window) { gui_windows.push_back(window); }
 
-	void GuiRenderer::updateWindows() {
+	void GuiRenderer::recreateFramebuffer() {
 		for (auto framebuffer: frame_buffers) {
 			vkDestroyFramebuffer(context->device_manager->getDevice(), framebuffer, nullptr);
 		}
@@ -134,7 +134,7 @@ namespace RtEngine {
 		vkCmdEndRenderPass(commandBuffer);
 	}
 
-	void GuiRenderer::destroy() {
+	void GuiRenderer::cleanup() {
 		shutdownImGui();
 
 		for (auto framebuffer: frame_buffers) {

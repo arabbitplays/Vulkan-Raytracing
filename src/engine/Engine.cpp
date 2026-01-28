@@ -40,15 +40,13 @@ namespace RtEngine {
 
     void Engine::createRenderer() {
         rendering_manager = std::make_shared<RenderingManager>(window, options->resources_dir, true);
-        vulkan_renderer = rendering_manager->getRaytracingRenderer();
 
         auto update_flags = std::make_shared<UpdateFlags>();
         rendering_manager->initRendererProperties(config_properties, update_flags);
     }
 
     void Engine::createGuiManager() {
-        auto gui_renderer = std::make_shared<GuiRenderer>(vulkan_renderer->getVulkanContext());
-        gui_manager = std::make_shared<GuiManager>(scene_manager, gui_renderer);
+        gui_manager = std::make_shared<GuiManager>(scene_manager, rendering_manager->getGuiRenderer());
         gui_manager->addCallbackToAll([&] (const UpdateFlagsHandle& update_flags) {
             runner->setUpdateFlags(update_flags);
         });
@@ -57,27 +55,26 @@ namespace RtEngine {
     void Engine::createEngineContext() {
         engine_context = std::make_shared<EngineContext>();
         engine_context->window = window;
-        engine_context->renderer = vulkan_renderer;
-        engine_context->texture_repository = vulkan_renderer->getTextureRepository();
-        engine_context->mesh_repository = vulkan_renderer->getMeshRepository();
+        engine_context->rendering_manager = rendering_manager;
+        engine_context->texture_repository = rendering_manager->getRaytracingRenderer()->getTextureRepository();
+        engine_context->mesh_repository = rendering_manager->getRaytracingRenderer()->getMeshRepository();
         scene_manager = std::make_shared<SceneManager>(options->resources_dir); // this is the non interfaced version
         engine_context->scene_manager = scene_manager; // this it the version for the components providing scene information
         engine_context->input_manager = std::make_shared<InputManager>(window);
-        engine_context->swapchain_manager = std::make_shared<SwapchainManager>(vulkan_renderer->getSwapchain());
+        engine_context->swapchain_manager = std::make_shared<SwapchainManager>(rendering_manager->getVulkanContext()->swapchain);
     }
 
     void Engine::createRunner() {
-        std::shared_ptr<GuiRenderer> gui_renderer = gui_manager->getGuiRenderer();
         if (options->runner_type == OFFLINE) {
-            runner = std::make_shared<Runner>(engine_context, gui_renderer, scene_manager);
+            runner = std::make_shared<Runner>(engine_context, scene_manager);
             SPDLOG_INFO("Offline runner created");
         } else if (options->runner_type == REALTIME) {
             //vulkan_renderer = std::make_shared<RealtimeRunner>();
         } else if (options->runner_type == REFERENCE) {
-            runner = std::make_shared<ReferenceRunner>(engine_context, gui_renderer, scene_manager);
+            runner = std::make_shared<ReferenceRunner>(engine_context, scene_manager);
             SPDLOG_INFO("Reference runner created");
         } else if (options->runner_type == BENCHMARK) {
-            runner = std::make_shared<BenchmarkRunner>(engine_context, gui_renderer, scene_manager);
+            runner = std::make_shared<BenchmarkRunner>(engine_context, scene_manager);
             SPDLOG_INFO("Benchmark runner created");
         } else {
             SPDLOG_ERROR("No runner created");
@@ -91,7 +88,7 @@ namespace RtEngine {
 
     void Engine::setupGui() const {
         gui_manager->options_window->addSerializable(runner);
-        gui_manager->options_window->addSerializable(vulkan_renderer);
+        gui_manager->options_window->addSerializable(rendering_manager->getRaytracingRenderer());
     }
 
     void Engine::mainLoop() {
@@ -108,10 +105,9 @@ namespace RtEngine {
     }
 
     void Engine::cleanup() {
-        vulkan_renderer->waitForIdle();
+        rendering_manager->getRaytracingRenderer()->waitForIdle();
         scene_manager->getCurrentScene()->destroy();
-        gui_manager->destroy();
-        vulkan_renderer->cleanup();
+        rendering_manager->destroy();
     }
 
     void Engine::parseCliArguments(CliArguments cli_args) {

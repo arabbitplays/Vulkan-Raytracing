@@ -26,11 +26,10 @@ namespace RtEngine {
 	}
 
 	void ComputePipeline::setShaderStage(VkShaderModule shaderModule) {
-		VkPipelineShaderStageCreateInfo shaderStageInfo{};
-		shaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-		shaderStageInfo.stage = VK_SHADER_STAGE_COMPUTE_BIT;
-		shaderStageInfo.module = shaderModule;
-		shaderStageInfo.pName = "main";
+		shader_stage.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+		shader_stage.stage = VK_SHADER_STAGE_COMPUTE_BIT;
+		shader_stage.module = shaderModule;
+		shader_stage.pName = "main";
 	}
 
 	void ComputePipeline::setDescriptorSetLayouts(std::vector<VkDescriptorSetLayout> &descriptorSetLayouts) {

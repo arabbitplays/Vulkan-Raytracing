@@ -8,6 +8,7 @@
 #include "ISceneManager.hpp"
 #include "SwapchainManager.hpp"
 #include "RaytracingRenderer.hpp"
+#include "RenderingManager.hpp"
 
 namespace RtEngine {
 	class Material;
@@ -16,7 +17,7 @@ namespace RtEngine {
 		std::shared_ptr<Window> window;
 		std::shared_ptr<SwapchainManager> swapchain_manager;
 
-		std::shared_ptr<RaytracingRenderer> renderer;
+		std::shared_ptr<RenderingManager> rendering_manager;
 		std::shared_ptr<TextureRepository> texture_repository;
 		std::shared_ptr<MeshRepository> mesh_repository;
 

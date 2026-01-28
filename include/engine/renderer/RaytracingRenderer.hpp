@@ -27,7 +27,8 @@ namespace RtEngine {
 
 	class RaytracingRenderer : public ISerializable {
 	public:
-		RaytracingRenderer(const std::shared_ptr<Window> &window, const std::shared_ptr<VulkanContext> &vulkan_context, const std::string &resources_dir);
+		RaytracingRenderer(const std::shared_ptr<Window> &window, const std::shared_ptr<VulkanContext> &vulkan_context,
+			const std::string &resources_dir, const uint32_t max_frames_in_flight);
 
 		void init();
 		void initProperties(const std::shared_ptr<IProperties> &config, const UpdateFlagsHandle &update_flags) override;
@@ -56,14 +57,9 @@ namespace RtEngine {
 		float *downloadRenderTarget(const std::shared_ptr<RenderTarget> &target) const;
 		uint8_t *fixImageFormatForStorage(void *image_data, size_t pixel_count, VkFormat originalFormat);
 
-		std::shared_ptr<RenderTarget> createRenderTarget(uint32_t width, uint32_t height);
-
-		std::shared_ptr<VulkanContext> getVulkanContext();
-
 		std::shared_ptr<TextureRepository> getTextureRepository();
 		std::shared_ptr<MeshRepository> getMeshRepository();
 		std::unordered_map<std::string, std::shared_ptr<Material>> getMaterials() const;
-		std::shared_ptr<Swapchain> getSwapchain();
 
 	protected:
 		std::string resources_dir;
@@ -89,7 +85,7 @@ namespace RtEngine {
 
 		bool framebufferResized = false;
 
-		uint32_t max_frames_in_flight = 1;
+		uint32_t max_frames_in_flight;
 		uint32_t current_frame = 0;
 
 		void initWindow();

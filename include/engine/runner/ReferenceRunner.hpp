@@ -7,7 +7,7 @@
 namespace RtEngine {
 	class ReferenceRunner : public Runner {
 	public:
-		ReferenceRunner(const std::shared_ptr<EngineContext> &engine_context, const std::shared_ptr<GuiRenderer> &gui_renderer, const std::shared_ptr<SceneManager> &scene_manager);
+		ReferenceRunner(const std::shared_ptr<EngineContext> &engine_context, const std::shared_ptr<SceneManager> &scene_manager);
 
 		void loadScene(const std::string &scene_path) override;
 		void renderScene() override;

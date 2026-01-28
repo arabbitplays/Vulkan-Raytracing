@@ -1,5 +1,6 @@
 #include "Swapchain.hpp"
 
+#include <cassert>
 #include <VulkanUtil.hpp>
 #include <bits/shared_ptr.h>
 #include <bits/stl_algo.h>
@@ -138,10 +139,12 @@ namespace RtEngine {
 	}
 
 	void Swapchain::destroy() {
+		assert(handle != VK_NULL_HANDLE);
 		VkDevice device = device_manager->getDevice();
 		for (auto imageView: imageViews) {
 			vkDestroyImageView(device, imageView, nullptr);
 		}
 		vkDestroySwapchainKHR(device, handle, nullptr);
+		handle = VK_NULL_HANDLE;
 	}
 } // namespace RtEngine

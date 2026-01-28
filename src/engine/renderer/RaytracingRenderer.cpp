@@ -26,8 +26,9 @@ namespace RtEngine {
 		}
 	}
 
-	RaytracingRenderer::RaytracingRenderer(const std::shared_ptr<Window>& window, const std::shared_ptr<VulkanContext> &vulkan_context, const std::string &resources_dir)
-		: resources_dir(resources_dir), window(window), vulkan_context(vulkan_context) {
+	RaytracingRenderer::RaytracingRenderer(const std::shared_ptr<Window>& window, const std::shared_ptr<VulkanContext> &vulkan_context,
+		const std::string &resources_dir, const uint32_t max_frames_in_flight)
+		: resources_dir(resources_dir), window(window), vulkan_context(vulkan_context), max_frames_in_flight(max_frames_in_flight) {
 		init();
 	}
 
@@ -58,11 +59,6 @@ namespace RtEngine {
 			mesh_repository->destroy();
 			texture_repository->destroy();
 		});
-	}
-
-	std::shared_ptr<RenderTarget> RaytracingRenderer::createRenderTarget(uint32_t width, uint32_t height) {
-		VkExtent2D extent(width, height);
-		return std::make_shared<RenderTarget>(vulkan_context->resource_builder, extent, max_frames_in_flight);
 	}
 
 	bool RaytracingRenderer::hasStencilComponent(const VkFormat format) {
@@ -421,10 +417,6 @@ namespace RtEngine {
 		}
 	}
 
-	std::shared_ptr<VulkanContext> RaytracingRenderer::getVulkanContext() {
-		return vulkan_context;
-	}
-
 	std::shared_ptr<TextureRepository> RaytracingRenderer::getTextureRepository() {
 		return texture_repository;
 	}
@@ -435,9 +427,5 @@ namespace RtEngine {
 
 	std::unordered_map<std::string, std::shared_ptr<Material>> RaytracingRenderer::getMaterials() const {
 		return scene_adapter->defaultMaterials;
-	}
-
-	std::shared_ptr<Swapchain> RaytracingRenderer::getSwapchain() {
-		return vulkan_context->swapchain;
 	}
 } // namespace RtEngine

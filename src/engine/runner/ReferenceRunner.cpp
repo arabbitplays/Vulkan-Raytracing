@@ -9,9 +9,8 @@
 namespace RtEngine {
 	constexpr std::string SAMPLE_COUNT_OPTION_NAME = "Sample_Count";
 
-	ReferenceRunner::ReferenceRunner(const std::shared_ptr<EngineContext> &engine_context,
-		const std::shared_ptr<GuiRenderer> &gui_renderer, const std::shared_ptr<SceneManager> &scene_manager)
-			: Runner(engine_context, gui_renderer, scene_manager) {
+	ReferenceRunner::ReferenceRunner(const std::shared_ptr<EngineContext> &engine_context, const std::shared_ptr<SceneManager> &scene_manager)
+			: Runner(engine_context, scene_manager) {
 		final_image_count = final_sample_count / samples_per_image;
 		if (std::filesystem::create_directories(OUT_FOLDER)) {
 			SPDLOG_INFO("Created directory {}");
@@ -38,9 +37,9 @@ namespace RtEngine {
 		std::shared_ptr<RenderTarget> target = draw_context->targets[0];
 
 		if (samples_per_image == static_cast<int32_t>(target->getTotalSampleCount())) {
-			renderer->waitForIdle();
+			raytracing_renderer->waitForIdle();
 
-			float *data = renderer->downloadRenderTarget(target);
+			float *data = raytracing_renderer->downloadRenderTarget(target);
 			done_images.push_back(data);
 
 			if (done_images.size() == final_image_count) {
@@ -58,9 +57,9 @@ namespace RtEngine {
 
 
 	void ReferenceRunner::drawFrame(const std::shared_ptr<DrawContext> &draw_context) {
-		renderer->waitForNextFrameStart();
+		raytracing_renderer->waitForNextFrameStart();
 
-		VkCommandBuffer cmd = renderer->getNewCommandBuffer();
+		VkCommandBuffer cmd = raytracing_renderer->getNewCommandBuffer();
 		std::shared_ptr<RenderTarget> target = draw_context->targets[0];
 
 		uint32_t curr_sample_count = target->getTotalSampleCount();
@@ -68,7 +67,7 @@ namespace RtEngine {
 
 		int32_t swapchain_image_idx = 0;
 		if (present_image) {
-			swapchain_image_idx = renderer->aquireNextSwapchainImage();
+			swapchain_image_idx = raytracing_renderer->aquireNextSwapchainImage();
 			if (swapchain_image_idx < 0) {
 				handle_resize();
 				return;
@@ -76,12 +75,12 @@ namespace RtEngine {
 			present_sample_count *= 2;
 		}
 
-		renderer->resetCurrFrameFence();
+		raytracing_renderer->resetCurrFrameFence();
 
 		prepareFrame(cmd, draw_context);
 
-		renderer->updateRenderTarget(target);
-		renderer->recordCommandBuffer(cmd, target, swapchain_image_idx, present_image);
+		raytracing_renderer->updateRenderTarget(target);
+		raytracing_renderer->recordCommandBuffer(cmd, target, swapchain_image_idx, present_image);
 
 		finishFrame(cmd, draw_context, static_cast<uint32_t>(swapchain_image_idx), present_image);
 
@@ -102,8 +101,8 @@ namespace RtEngine {
 
 
 	void ReferenceRunner::prepareFrame(VkCommandBuffer cmd, const std::shared_ptr<DrawContext> &draw_context) {
-		renderer->updateSceneRepresentation(draw_context, update_flags);
-		renderer->recordBeginCommandBuffer(cmd);
+		raytracing_renderer->updateSceneRepresentation(draw_context, update_flags);
+		raytracing_renderer->recordBeginCommandBuffer(cmd);
 		update_flags->resetFlags();
 	}
 
@@ -118,7 +117,7 @@ namespace RtEngine {
 			merged_images.clear();
 		}
 
-		uint8_t *fixed_data = renderer->fixImageFormatForStorage(
+		uint8_t *fixed_data = raytracing_renderer->fixImageFormatForStorage(
 			done_images[0], width * height, VK_FORMAT_R32G32B32A32_SFLOAT);
 		ImageUtil::writePNG(getOutputImagePath(final_sample_count), fixed_data, width, height);
 

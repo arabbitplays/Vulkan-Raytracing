@@ -17,9 +17,9 @@ namespace RtEngine {
 		GuiRenderer(std::shared_ptr<VulkanContext> context);
 
 		void addWindow(std::shared_ptr<GuiWindow> window);
-		void updateWindows();
+		void recreateFramebuffer();
 		void recordGuiCommands(VkCommandBuffer commandBuffer, uint32_t imageIndex);
-		void destroy();
+		void cleanup();
 
 		VkRenderPass render_pass;
 		std::vector<VkFramebuffer> frame_buffers;

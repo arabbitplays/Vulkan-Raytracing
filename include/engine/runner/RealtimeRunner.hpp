@@ -9,8 +9,7 @@
 namespace RtEngine {
 	class RealtimeRunner : public Runner {
 	public:
-		RealtimeRunner(std::shared_ptr<EngineContext> engine_context,
-		const std::shared_ptr<GuiRenderer> &gui_renderer, const std::shared_ptr<SceneManager> &scene_manager) : Runner(engine_context, gui_renderer, scene_manager) {
+		RealtimeRunner(std::shared_ptr<EngineContext> engine_context, const std::shared_ptr<SceneManager> &scene_manager) : Runner(engine_context, scene_manager) {
 			//max_frames_in_flight = 2;
 		} ;
 

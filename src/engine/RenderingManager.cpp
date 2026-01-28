@@ -30,6 +30,9 @@ namespace RtEngine {
         deletion_queue.pushFunction([&]() {
             vulkan_context->descriptor_allocator->destroyPools(vulkan_context->device_manager->getDevice());
             vulkan_context->swapchain->destroy();
+            raytracing_renderer->cleanup(); // TODO i think the sync objects still have to exist for swapchain destruction to work
+            gui_renderer->cleanup();
+            glitch_renderer->cleanup();
             vulkan_context->command_manager->destroy();
             vulkan_context->device_manager->destroy();
         });
@@ -51,7 +54,9 @@ namespace RtEngine {
     }
 
     void RenderingManager::createRenderer() {
-        raytracing_renderer = std::make_shared<RaytracingRenderer>(window, vulkan_context, resources_dir);
+        raytracing_renderer = std::make_shared<RaytracingRenderer>(window, vulkan_context, resources_dir, max_frames_in_flight);
+        gui_renderer = std::make_shared<GuiRenderer>(vulkan_context);
+        glitch_renderer = std::make_shared<ComputeRenderer>(vulkan_context);
     }
 
     std::shared_ptr<VulkanContext> RenderingManager::getVulkanContext() const {
@@ -62,6 +67,21 @@ namespace RtEngine {
     std::shared_ptr<RaytracingRenderer> RenderingManager::getRaytracingRenderer() const {
         assert(raytracing_renderer != nullptr);
         return raytracing_renderer;
+    }
+
+    std::shared_ptr<GuiRenderer> RenderingManager::getGuiRenderer() const {
+        assert(gui_renderer != nullptr);
+        return gui_renderer;
+    }
+
+    std::shared_ptr<ComputeRenderer> RenderingManager::getGlitchRenderer() const {
+        assert(glitch_renderer != nullptr);
+        return glitch_renderer;
+    }
+
+    std::shared_ptr<RenderTarget> RenderingManager::createRenderTarget(uint32_t width, uint32_t height) {
+        VkExtent2D extent(width, height);
+        return std::make_shared<RenderTarget>(vulkan_context->resource_builder, extent, max_frames_in_flight);
     }
 
     void RenderingManager::destroy() {

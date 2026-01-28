@@ -15,10 +15,6 @@ namespace RtEngine {
 
         void addCallbackToAll(const std::function<void(const UpdateFlagsHandle&)>& callback) const;
 
-        std::shared_ptr<GuiRenderer> getGuiRenderer() const;
-
-        void destroy();
-
         std::shared_ptr<GuiRenderer> gui_renderer;
 
         std::shared_ptr<OptionsWindow> options_window;

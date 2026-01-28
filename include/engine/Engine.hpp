@@ -66,7 +66,6 @@ namespace RtEngine {
         std::shared_ptr<SceneManager> scene_manager;
         std::shared_ptr<GuiManager> gui_manager;
         std::shared_ptr<RenderingManager> rendering_manager;
-        std::shared_ptr<RaytracingRenderer> vulkan_renderer;
         std::shared_ptr<Runner> runner;
     };
 } // RtEngine
