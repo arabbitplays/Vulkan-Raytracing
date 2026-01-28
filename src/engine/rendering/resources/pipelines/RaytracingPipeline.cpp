@@ -1,4 +1,4 @@
-#include "../../../../../include/engine/renderer/resources/pipelines/RaytracingPipeline.hpp"
+#include "../../../../../include/engine/rendering/resources/pipelines/RaytracingPipeline.hpp"
 
 #include <VulkanUtil.hpp>
 #include <stdexcept>

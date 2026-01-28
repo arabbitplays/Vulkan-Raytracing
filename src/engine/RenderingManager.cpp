@@ -55,8 +55,10 @@ namespace RtEngine {
 
     void RenderingManager::createRenderer() {
         raytracing_renderer = std::make_shared<RaytracingRenderer>(window, vulkan_context, resources_dir, max_frames_in_flight);
+        raytracing_renderer->init();
         gui_renderer = std::make_shared<GuiRenderer>(vulkan_context);
         glitch_renderer = std::make_shared<ComputeRenderer>(vulkan_context);
+        glitch_renderer->init();
     }
 
     std::shared_ptr<VulkanContext> RenderingManager::getVulkanContext() const {
@@ -82,6 +84,21 @@ namespace RtEngine {
     std::shared_ptr<RenderTarget> RenderingManager::createRenderTarget(uint32_t width, uint32_t height) {
         VkExtent2D extent(width, height);
         return std::make_shared<RenderTarget>(vulkan_context->resource_builder, extent, max_frames_in_flight);
+    }
+
+    void RenderingManager::recordBeginCommandBuffer(VkCommandBuffer& commandBuffer) {
+        VkCommandBufferBeginInfo beginInfo{};
+        beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+
+        if (vkBeginCommandBuffer(commandBuffer, &beginInfo) != VK_SUCCESS) {
+            throw std::runtime_error("failed to begin record command buffer!");
+        }
+    }
+
+    void RenderingManager::recordEndCommandBuffer(VkCommandBuffer& commandBuffer) {
+        if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS) {
+            throw std::runtime_error("failed to record command buffer!");
+        }
     }
 
     void RenderingManager::destroy() {

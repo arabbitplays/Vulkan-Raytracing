@@ -3,14 +3,13 @@
 subdir('context')
 subdir('builders')
 subdir('resources')
+subdir('renderer')
 subdir('vulkan_scene_representation')
 
 src += files(
   'CommandManager.cpp',
   'DescriptorAllocator.cpp',
   'Swapchain.cpp',
-  'ComputeRenderer.cpp',
   'Scene.cpp',
   'RenderTarget.cpp',
-  'RaytracingRenderer.cpp',
 )

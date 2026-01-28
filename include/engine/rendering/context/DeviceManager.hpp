@@ -23,6 +23,7 @@ namespace RtEngine {
 	enum QueueType {
 		GRAPHICS,
 		PRESENT,
+		COMPUTE
 	};
 
 	class DeviceManager {

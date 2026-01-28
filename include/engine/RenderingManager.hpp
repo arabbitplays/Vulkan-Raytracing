@@ -22,6 +22,10 @@ namespace RtEngine {
 
         std::shared_ptr<RenderTarget> createRenderTarget(uint32_t width, uint32_t height);
 
+        void recordBeginCommandBuffer(VkCommandBuffer &commandBuffer);
+
+        void recordEndCommandBuffer(VkCommandBuffer &commandBuffer);
+
         void destroy();
     private:
         void createVulkanContext();

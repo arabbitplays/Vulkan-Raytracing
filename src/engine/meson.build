@@ -2,7 +2,7 @@
 
 subdir('ui')
 subdir('runner')
-subdir('renderer')
+subdir('rendering')
 subdir('scene_graph')
 subdir('repositories')
 

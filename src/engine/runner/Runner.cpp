@@ -74,8 +74,6 @@ namespace RtEngine {
             return;
         }
 
-        raytracing_renderer->resetCurrFrameFence();
-
         VkCommandBuffer cmd = raytracing_renderer->getNewCommandBuffer();
         std::shared_ptr<RenderTarget> target = draw_context->targets[0]; // TODO handle multiple
 
@@ -98,11 +96,11 @@ namespace RtEngine {
         }
         update_flags->resetFlags();
 
-        raytracing_renderer->recordBeginCommandBuffer(cmd);
+        engine_context->rendering_manager->recordBeginCommandBuffer(cmd);
     }
 
     void Runner::finishFrame(VkCommandBuffer cmd, const std::shared_ptr<DrawContext> &draw_context, uint32_t swapchain_image_idx, bool present) const {
-        raytracing_renderer->recordEndCommandBuffer(cmd);
+        engine_context->rendering_manager->recordEndCommandBuffer(cmd);
         if (raytracing_renderer->submitCommands(present, swapchain_image_idx)) {
             handle_resize();
         }

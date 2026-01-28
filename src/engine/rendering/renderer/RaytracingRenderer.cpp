@@ -1,6 +1,6 @@
 #include <HierarchyWindow.hpp>
 #include <SceneWriter.hpp>
-#include <../../../include/engine/renderer/RaytracingRenderer.hpp>
+#include <../../../include/engine/rendering/renderer/RaytracingRenderer.hpp>
 #include <cstdlib>
 #include <filesystem>
 #include <PathUtil.hpp>
@@ -28,8 +28,7 @@ namespace RtEngine {
 
 	RaytracingRenderer::RaytracingRenderer(const std::shared_ptr<Window>& window, const std::shared_ptr<VulkanContext> &vulkan_context,
 		const std::string &resources_dir, const uint32_t max_frames_in_flight)
-		: resources_dir(resources_dir), window(window), vulkan_context(vulkan_context), max_frames_in_flight(max_frames_in_flight) {
-		init();
+		: Renderer(vulkan_context, max_frames_in_flight), resources_dir(resources_dir), window(window) {
 	}
 
 	void RaytracingRenderer::init() {
@@ -39,10 +38,9 @@ namespace RtEngine {
 
 		scene_adapter = std::make_shared<SceneAdapter>(vulkan_context, texture_repository, max_frames_in_flight,
 													   DeviceManager::RAYTRACING_PROPERTIES);
-		main_deletion_queue.pushFunction([&]() { scene_adapter->clearResources(); });
+		deletion_queue.pushFunction([&]() { scene_adapter->clearResources(); });
 
-		createCommandBuffers();
-		createSyncObjects();
+		Renderer::init();
 	}
 
 	void RaytracingRenderer::initWindow() {
@@ -55,7 +53,7 @@ namespace RtEngine {
 		mesh_repository = std::make_shared<MeshRepository>(vulkan_context, resources_dir);
 		texture_repository = std::make_shared<TextureRepository>(vulkan_context->resource_builder);
 
-		main_deletion_queue.pushFunction([&]() {
+		deletion_queue.pushFunction([&]() {
 			mesh_repository->destroy();
 			texture_repository->destroy();
 		});
@@ -69,27 +67,13 @@ namespace RtEngine {
 		scene_adapter->loadNewScene(scene);
 	}
 
-	void RaytracingRenderer::createCommandBuffers() {
-		commandBuffers.resize(max_frames_in_flight);
-
-		VkCommandBufferAllocateInfo allocInfo{};
-		allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-		allocInfo.commandPool = vulkan_context->command_manager->commandPool;
-		allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-		allocInfo.commandBufferCount = (uint32_t) commandBuffers.size();
-
-		if (vkAllocateCommandBuffers(vulkan_context->device_manager->getDevice(), &allocInfo, commandBuffers.data()) !=
-			VK_SUCCESS) {
-			throw std::runtime_error("failed to allocate command bufer!");
-		}
-	}
-
 	void RaytracingRenderer::createSyncObjects() {
+		Renderer::createSyncObjects();
+
 		uint32_t swapchain_image_count = vulkan_context->swapchain->images.size();
 
 		imageAvailableSemaphores.resize(max_frames_in_flight);
 		renderFinishedSemaphores.resize(swapchain_image_count);
-		inFlightFences.resize(max_frames_in_flight);
 
 		VkSemaphoreCreateInfo semaphoreInfo{};
 		semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
@@ -100,15 +84,12 @@ namespace RtEngine {
 
 		for (size_t i = 0; i < max_frames_in_flight; i++) {
 			if (vkCreateSemaphore(vulkan_context->device_manager->getDevice(), &semaphoreInfo, nullptr,
-								  &imageAvailableSemaphores[i]) != VK_SUCCESS ||
-				vkCreateFence(vulkan_context->device_manager->getDevice(), &fenceInfo, nullptr, &inFlightFences[i]) !=
-						VK_SUCCESS) {
+								  &imageAvailableSemaphores[i]) != VK_SUCCESS) {
 				throw std::runtime_error("failed to create sync objects");
 			}
 
-			main_deletion_queue.pushFunction([&, i]() {
+			deletion_queue.pushFunction([&, i]() {
 				vkDestroySemaphore(vulkan_context->device_manager->getDevice(), imageAvailableSemaphores[i], nullptr);
-				vkDestroyFence(vulkan_context->device_manager->getDevice(), inFlightFences[i], nullptr);
 			});
 		}
 
@@ -118,7 +99,7 @@ namespace RtEngine {
 				throw std::runtime_error("failed to create sync objects");
 						}
 
-			main_deletion_queue.pushFunction([&, i]() {
+			deletion_queue.pushFunction([&, i]() {
 				vkDestroySemaphore(vulkan_context->device_manager->getDevice(), renderFinishedSemaphores[i], nullptr);
 			});
 		}
@@ -130,11 +111,6 @@ namespace RtEngine {
 
 	void RaytracingRenderer::updateRenderTarget(const std::shared_ptr<RenderTarget> &target) {
 		scene_adapter->updateRenderTarget(target);
-	}
-
-	void RaytracingRenderer::waitForNextFrameStart() {
-		vkWaitForFences(vulkan_context->device_manager->getDevice(), 1, &inFlightFences[current_frame], VK_TRUE,
-						UINT64_MAX);
 	}
 
 	int32_t RaytracingRenderer::aquireNextSwapchainImage() {
@@ -149,10 +125,6 @@ namespace RtEngine {
 			throw std::runtime_error("failed to acquire swap chain image!");
 		}
 		return static_cast<int32_t>(imageIndex);
-	}
-
-	void RaytracingRenderer::resetCurrFrameFence() {
-		vkResetFences(vulkan_context->device_manager->getDevice(), 1, &inFlightFences[current_frame]);
 	}
 
 	bool RaytracingRenderer::submitCommands(bool present, uint32_t swapchain_image_idx) {
@@ -171,10 +143,6 @@ namespace RtEngine {
 		return rebuild_needed;
 	}
 
-	void RaytracingRenderer::nextFrame() {
-		current_frame = (current_frame + 1) % max_frames_in_flight;
-	}
-
 	void RaytracingRenderer::submitCommandBuffer(const std::vector<VkSemaphore> &wait_semaphore,
 	                                         const std::vector<VkSemaphore> &signal_semaphore) {
 		VkSubmitInfo submitInfo{};
@@ -185,13 +153,13 @@ namespace RtEngine {
 		submitInfo.pWaitSemaphores = wait_semaphore.data();
 		submitInfo.pWaitDstStageMask = waitStages;
 		submitInfo.commandBufferCount = 1;
-		submitInfo.pCommandBuffers = &commandBuffers[current_frame];
+		submitInfo.pCommandBuffers = &command_buffers[current_frame];
 		submitInfo.signalSemaphoreCount = static_cast<uint32_t>(signal_semaphore.size());
 		;
 		submitInfo.pSignalSemaphores = signal_semaphore.data();
 
 		if (vkQueueSubmit(vulkan_context->device_manager->getQueue(GRAPHICS), 1, &submitInfo,
-						  inFlightFences[current_frame]) != VK_SUCCESS) {
+						  in_flight_fences[current_frame]) != VK_SUCCESS) {
 			throw std::runtime_error("failed to submit draw command buffer!");
 		}
 	}
@@ -219,24 +187,10 @@ namespace RtEngine {
 		vkDeviceWaitIdle(vulkan_context->device_manager->getDevice());
 	}
 
-	VkCommandBuffer RaytracingRenderer::getNewCommandBuffer() {
-		vkResetCommandBuffer(commandBuffers[current_frame], 0);
-		return commandBuffers[current_frame];
-	}
-
 	void RaytracingRenderer::recordCommandBuffer(VkCommandBuffer commandBuffer, std::shared_ptr<RenderTarget> target, const uint32_t swapchain_image_idx, bool present) {
 		recordRenderToImage(commandBuffer, target);
 		if (present) {
 			recordBlitToSwapchain(commandBuffer, target, swapchain_image_idx);
-		}
-	}
-
-	void RaytracingRenderer::recordBeginCommandBuffer(VkCommandBuffer commandBuffer) {
-		VkCommandBufferBeginInfo beginInfo{};
-		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-
-		if (vkBeginCommandBuffer(commandBuffer, &beginInfo) != VK_SUCCESS) {
-			throw std::runtime_error("failed to begin record command buffer!");
 		}
 	}
 
@@ -342,15 +296,8 @@ namespace RtEngine {
 												VK_IMAGE_LAYOUT_GENERAL);
 	}
 
-	void RaytracingRenderer::recordEndCommandBuffer(VkCommandBuffer commandBuffer) {
-		if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS) {
-			throw std::runtime_error("failed to record command buffer!");
-		}
-	}
-
 	void RaytracingRenderer::cleanup() {
-		main_deletion_queue.flush();
-		window->destroy();
+		deletion_queue.flush();
 	}
 
 	float* RaytracingRenderer::downloadRenderTarget(const std::shared_ptr<RenderTarget> &target) const {

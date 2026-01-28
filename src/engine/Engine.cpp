@@ -108,6 +108,8 @@ namespace RtEngine {
         rendering_manager->getRaytracingRenderer()->waitForIdle();
         scene_manager->getCurrentScene()->destroy();
         rendering_manager->destroy();
+
+        window->destroy();
     }
 
     void Engine::parseCliArguments(CliArguments cli_args) {

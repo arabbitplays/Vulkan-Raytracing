@@ -74,6 +74,8 @@ namespace RtEngine {
 				return graphics_queue;
 			case QueueType::PRESENT:
 				return present_queue;
+			case QueueType::COMPUTE:
+				return compute_queue;
 		}
 
 		throw std::runtime_error("Unknown QueueType");

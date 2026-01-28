@@ -1,7 +1,7 @@
 #ifndef BASICS_NODE_HPP
 #define BASICS_NODE_HPP
 
-#include <../renderer/resources/IRenderable.hpp>
+#include <../rendering/resources/IRenderable.hpp>
 #include <Transform.hpp>
 
 namespace RtEngine {

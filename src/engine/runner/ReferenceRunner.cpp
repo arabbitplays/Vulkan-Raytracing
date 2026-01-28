@@ -75,8 +75,6 @@ namespace RtEngine {
 			present_sample_count *= 2;
 		}
 
-		raytracing_renderer->resetCurrFrameFence();
-
 		prepareFrame(cmd, draw_context);
 
 		raytracing_renderer->updateRenderTarget(target);
@@ -102,7 +100,7 @@ namespace RtEngine {
 
 	void ReferenceRunner::prepareFrame(VkCommandBuffer cmd, const std::shared_ptr<DrawContext> &draw_context) {
 		raytracing_renderer->updateSceneRepresentation(draw_context, update_flags);
-		raytracing_renderer->recordBeginCommandBuffer(cmd);
+		engine_context->rendering_manager->recordBeginCommandBuffer(cmd);
 		update_flags->resetFlags();
 	}
 
