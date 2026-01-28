@@ -6,6 +6,7 @@
 
 #include "BenchmarkRunner.hpp"
 #include "CommandLineParser.hpp"
+#include "ComputeRunner.hpp"
 #include "HierarchyWindow.hpp"
 #include "InspectorWindow.hpp"
 #include "PathUtil.hpp"
@@ -65,6 +66,9 @@ namespace RtEngine {
     }
 
     void Engine::createRunner() {
+        //runner = std::make_shared<ComputeRunner>(engine_context, scene_manager);
+        //return;
+
         if (options->runner_type == OFFLINE) {
             runner = std::make_shared<Runner>(engine_context, scene_manager);
             SPDLOG_INFO("Offline runner created");
@@ -106,7 +110,7 @@ namespace RtEngine {
 
     void Engine::cleanup() {
         rendering_manager->getRaytracingRenderer()->waitForIdle();
-        scene_manager->getCurrentScene()->destroy();
+        scene_manager->destroy();
         rendering_manager->destroy();
 
         window->destroy();

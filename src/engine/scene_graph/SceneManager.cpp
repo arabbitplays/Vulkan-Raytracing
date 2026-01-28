@@ -44,4 +44,10 @@ namespace RtEngine {
     std::vector<std::string> SceneManager::getSceneNames() const {
         return scene_names;
     }
+
+    void SceneManager::destroy() const {
+        if (scene != nullptr) {
+            scene->destroy();
+        }
+    }
 } // RtEngine

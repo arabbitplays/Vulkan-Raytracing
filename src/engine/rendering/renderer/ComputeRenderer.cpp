@@ -32,7 +32,7 @@ namespace RtEngine {
 
         DescriptorLayoutBuilder layoutBuilder;
         initDescriptorLayout(layoutBuilder);
-        descriptor_layout = layoutBuilder.build(device, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR);
+        descriptor_layout = layoutBuilder.build(device, VK_SHADER_STAGE_COMPUTE_BIT);
         deletion_queue.pushFunction([&]() {
             vkDestroyDescriptorSetLayout(vulkan_context->device_manager->getDevice(), descriptor_layout, nullptr);
         });
@@ -54,7 +54,7 @@ namespace RtEngine {
 
     void ComputeRenderer::initDescriptorLayout(DescriptorLayoutBuilder& layout_builder) {
         layout_builder.addBinding(0, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE); // render target
-        layout_builder.addBinding(0, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE); // src image
+        layout_builder.addBinding(1, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE); // src image
     }
 
     void ComputeRenderer::recordCommandBuffer(VkCommandBuffer commandBuffer, std::shared_ptr<RenderTarget> target, uint32_t swapchain_image_idx) {
@@ -62,7 +62,7 @@ namespace RtEngine {
         vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline->getLayoutHandle(), 0, 1, &descriptor_set, 0, 0);
 
         VkExtent2D target_extent = target->getExtent();
-        vkCmdDispatch(commandBuffer, (target_extent.width + 255) / 256, (target_extent.height + 255) / 256, 1);
+        vkCmdDispatch(commandBuffer, (target_extent.width + 15) / 16, (target_extent.height + 15) / 16, 1);
     }
 
     void ComputeRenderer::submitCommandBuffer(VkCommandBuffer& command_buffer) {

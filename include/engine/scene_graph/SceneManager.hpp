@@ -21,6 +21,8 @@ namespace RtEngine {
 
         std::string getScenePath(std::string scene_name);
         std::vector<std::string> getSceneNames() const;
+
+        void destroy() const;
     private:
         std::string resources_dir;
         std::shared_ptr<Scene> scene;

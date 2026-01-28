@@ -39,9 +39,10 @@ namespace RtEngine {
 								   VkImageAspectFlags aspectFlags);
 		AllocatedImage createImage(void *data, VkExtent3D extent, VkFormat format, VkImageTiling tiling,
 								   VkImageUsageFlags usage, VkImageAspectFlags aspectFlags,
-								   VkImageLayout target_layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+								   VkImageLayout target_layout);
 		Texture loadTextureImage(std::string path, TextureType type = PARAMETER);
-		uint8_t *loadImageData(std::string path, int *width, int *height, int *channels);
+
+		AllocatedImage loadImage(std::string path, VkImageLayout layout);
 
 		uint8_t *downloadImage(AllocatedImage image, uint32_t bytes_per_channel = 1);
 
@@ -57,6 +58,8 @@ namespace RtEngine {
 		void destroyImage(AllocatedImage image);
 
 	private:
+		uint8_t *loadImageData(std::string path, int *width, int *height, int *channels);
+
 		uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
 		std::shared_ptr<DeviceManager> device_manager;
 		std::shared_ptr<CommandManager> commandManager;

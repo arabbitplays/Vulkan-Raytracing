@@ -19,6 +19,10 @@ namespace RtEngine {
             uint32_t swapchain_image_idx, bool present) const override;
 
         std::shared_ptr<ComputeRenderer> compute_renderer;
+
+        const std::string INPUT_DIR = "../resources/compute_in";
+        const std::string OUTPUT_DIR = "../resources/compute_out";
+
     };
 } // RtEngine
 

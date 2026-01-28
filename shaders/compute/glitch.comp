@@ -1,7 +1,17 @@
 #version 450
 
-layout (local_size_x = 256, local_size_y = 1, local_size_z = 1) in;
+layout (binding = 0, rgba32f) uniform writeonly image2D target;
+layout (binding = 1, rgba8) uniform readonly image2D src;
+
+layout (local_size_x = 16, local_size_y = 16, local_size_z = 1) in;
 void main()
 {
-    uint index = gl_GlobalInvocationID.x;
+    ivec2 pixel = ivec2(gl_GlobalInvocationID.xy);
+    ivec2 size = imageSize(target);
+
+    if (pixel.x >= size.x || pixel.y >= size.y)
+    return;
+
+    vec3 c = imageLoad(src, pixel).xyz;
+    imageStore(target, pixel, vec4(vec3(1) - c, 1));
 }

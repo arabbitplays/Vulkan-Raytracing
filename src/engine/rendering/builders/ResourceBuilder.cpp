@@ -221,11 +221,29 @@ namespace RtEngine {
 
 		AllocatedImage textureImage =
 				createImage(pixels, {static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight), 1}, format,
-							VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_ASPECT_COLOR_BIT);
+							VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
 		stbi_image_free(pixels);
 
 		return Texture(PathUtil::getFileName(path), type, path, textureImage);
+	}
+
+	AllocatedImage ResourceBuilder::loadImage(std::string path, VkImageLayout layout) {
+		int texWidth, texHeight, texChannels;
+		uint8_t *pixels = loadImageData(resource_path + "/" + path, &texWidth, &texHeight, &texChannels);
+
+		if (!pixels) {
+			throw std::runtime_error("failed to load texture image!");
+		}
+
+		VkFormat format = VK_FORMAT_R8G8B8A8_UNORM;
+		AllocatedImage textureImage =
+				createImage(pixels, {static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight), 1}, format,
+							VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_STORAGE_BIT, VK_IMAGE_ASPECT_COLOR_BIT, layout);
+
+		stbi_image_free(pixels);
+
+		return textureImage;
 	}
 
 	uint8_t *ResourceBuilder::loadImageData(std::string path, int *width, int *height, int *channels) {
