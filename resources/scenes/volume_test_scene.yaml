@@ -135,7 +135,7 @@ scene:
         VolumeRenderer:
           mesh: sphere
           material_name: sphere1
-          volume_name: lol
+          volume: lol
       children:
         []
     - name: Sphere2
@@ -156,7 +156,7 @@ scene:
         VolumeRenderer:
           mesh: sphere
           material_name: sphere2
-          volume_name: lol
+          volume: lol
       children:
         []
     - name: Room

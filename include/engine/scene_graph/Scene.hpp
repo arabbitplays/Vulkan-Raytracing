@@ -67,6 +67,8 @@ namespace RtEngine {
 		void destroy();
 
 		std::vector<std::shared_ptr<MeshAsset>> getMeshAssets() override;
+		std::vector<std::shared_ptr<VolumeAsset>> getVolumeAssets() override;
+
 		std::vector<std::shared_ptr<MaterialInstance>> getMaterialInstances() override;
 		void fillDrawContext(const std::shared_ptr<DrawContext> &draw_context) override;
 		std::shared_ptr<Material> getMaterial() override;
