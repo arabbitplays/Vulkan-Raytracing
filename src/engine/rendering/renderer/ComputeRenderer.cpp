@@ -62,7 +62,7 @@ namespace RtEngine {
         vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline->getLayoutHandle(), 0, 1, &descriptor_set, 0, 0);
 
         VkExtent2D target_extent = target->getExtent();
-        vkCmdDispatch(commandBuffer, (target_extent.width + 15) / 16, (target_extent.height + 15) / 16, 1);
+        vkCmdDispatch(commandBuffer, 1, (target_extent.height + 255) / 256, 1);
     }
 
     void ComputeRenderer::submitCommandBuffer(VkCommandBuffer& command_buffer) {
