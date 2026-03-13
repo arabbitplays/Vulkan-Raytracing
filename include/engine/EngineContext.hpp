@@ -7,6 +7,7 @@
 #include "InputManager.hpp"
 #include "ISceneManager.hpp"
 #include "SwapchainManager.hpp"
+#include "VolumeRepository.hpp"
 #include "VulkanRenderer.hpp"
 
 namespace RtEngine {
@@ -19,6 +20,7 @@ namespace RtEngine {
 		std::shared_ptr<VulkanRenderer> renderer;
 		std::shared_ptr<TextureRepository> texture_repository;
 		std::shared_ptr<MeshRepository> mesh_repository;
+		std::shared_ptr<VolumeRepository> volume_repository;
 
 		std::shared_ptr<ISceneManager> scene_manager;
 		std::shared_ptr<InputManager> input_manager;

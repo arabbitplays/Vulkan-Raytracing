@@ -8,6 +8,7 @@
 #include <Node.hpp>
 #include <MeshRenderer.hpp>
 
+#include "VolumeRenderer.hpp"
 #include "components/Camera.hpp"
 
 namespace RtEngine {
@@ -50,6 +51,11 @@ namespace RtEngine {
 				if (mesh_renderer && !mesh_map->contains(mesh_renderer->mesh_asset->name)) {
 					(*mesh_map)[mesh_renderer->mesh_asset->name] = mesh_renderer->mesh_asset;
 				}
+
+				std::shared_ptr<VolumeRenderer> vol_renderer = child_node->getComponent<VolumeRenderer>();
+				if (vol_renderer && !mesh_map->contains(vol_renderer->mesh_asset->name)) {
+					(*mesh_map)[vol_renderer->mesh_asset->name] = vol_renderer->mesh_asset;
+				}
 				collectMeshAssetsRecursive(child_node, mesh_map);
 			}
 		}
@@ -61,6 +67,11 @@ namespace RtEngine {
 				std::shared_ptr<MeshRenderer> mesh_renderer = child_node->getComponent<MeshRenderer>();
 				if (mesh_renderer && !material_map->contains(mesh_renderer->mesh_asset->name)) {
 					(*material_map)[mesh_renderer->mesh_material->name] = mesh_renderer->mesh_material;
+				}
+
+				std::shared_ptr<VolumeRenderer> vol_renderer = child_node->getComponent<VolumeRenderer>();
+				if (vol_renderer && !material_map->contains(vol_renderer->mesh_asset->name)) {
+					(*material_map)[vol_renderer->vol_material->name] = vol_renderer->vol_material;
 				}
 				collectMaterialInstancesRecursive(child_node, material_map);
 			}

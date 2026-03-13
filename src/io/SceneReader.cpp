@@ -9,6 +9,7 @@
 #include <glm/gtx/quaternion.hpp>
 #include <spdlog/spdlog.h>
 #include "Material.hpp"
+#include "VolumeRenderer.hpp"
 #include "YamlLoadProperties.hpp"
 #include "components/Camera.hpp"
 
@@ -111,6 +112,11 @@ namespace RtEngine {
 						std::make_shared<MeshRenderer>(engine_context, scene_node);
 				mesh_component->initProperties(properties, update_flags);
 				scene_node->addComponent(mesh_component);
+			} else if (comp_name == VolumeRenderer::COMPONENT_NAME) {
+				std::shared_ptr<VolumeRenderer> vol_component =
+						std::make_shared<VolumeRenderer>(engine_context, scene_node);
+				vol_component->initProperties(properties, update_flags);
+				scene_node->addComponent(vol_component);
 			} else if (comp_name == Rigidbody::COMPONENT_NAME) {
 				auto rb = std::make_shared<Rigidbody>(scene_node);
 				rb->initProperties(properties, update_flags);

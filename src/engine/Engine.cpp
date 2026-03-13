@@ -60,6 +60,7 @@ namespace RtEngine {
         engine_context->renderer = vulkan_renderer;
         engine_context->texture_repository = vulkan_renderer->getTextureRepository();
         engine_context->mesh_repository = vulkan_renderer->getMeshRepository();
+        engine_context->volume_repository = vulkan_renderer->getVolumeRepository();
         scene_manager = std::make_shared<SceneManager>(options->resources_dir); // this is the non interfaced version
         engine_context->scene_manager = scene_manager; // this it the version for the components providing scene information
         engine_context->input_manager = std::make_shared<InputManager>(window);

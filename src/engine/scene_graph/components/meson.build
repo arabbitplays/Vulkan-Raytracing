@@ -4,6 +4,7 @@
 src += files(
   'Rigidbody.cpp',
   'Transform.cpp',
+  'VolumeRenderer.cpp',
   'Camera.cpp',
   'MeshRenderer.cpp',
 )
