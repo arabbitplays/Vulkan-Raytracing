@@ -16,6 +16,7 @@
 #include "../../../util/QuickTimer.hpp"
 #include "../DescriptorAllocator.hpp"
 #include "SceneAdapter.hpp"
+#include "VolumeRepository.hpp"
 
 #include <VulkanContext.hpp>
 #include "DeletionQueue.hpp"
@@ -53,6 +54,7 @@ namespace RtEngine {
 
 		std::shared_ptr<TextureRepository> getTextureRepository();
 		std::shared_ptr<MeshRepository> getMeshRepository();
+		std::shared_ptr<VolumeRepository> getVolumeRepository();
 		std::unordered_map<std::string, std::shared_ptr<Material>> getMaterials() const;
 
 	protected:
@@ -65,6 +67,7 @@ namespace RtEngine {
 
 		std::shared_ptr<TextureRepository> texture_repository;
 		std::shared_ptr<MeshRepository> mesh_repository;
+		std::shared_ptr<VolumeRepository> volume_repository;
 
 		std::shared_ptr<SceneAdapter> scene_adapter;
 

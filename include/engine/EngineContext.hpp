@@ -7,8 +7,8 @@
 #include "InputManager.hpp"
 #include "ISceneManager.hpp"
 #include "SwapchainManager.hpp"
-#include "RaytracingRenderer.hpp"
 #include "RenderingManager.hpp"
+#include "VolumeRepository.hpp"
 
 namespace RtEngine {
 	class Material;
@@ -20,6 +20,7 @@ namespace RtEngine {
 		std::shared_ptr<RenderingManager> rendering_manager;
 		std::shared_ptr<TextureRepository> texture_repository;
 		std::shared_ptr<MeshRepository> mesh_repository;
+		std::shared_ptr<VolumeRepository> volume_repository;
 
 		std::shared_ptr<ISceneManager> scene_manager;
 		std::shared_ptr<InputManager> input_manager;

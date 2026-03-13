@@ -2,6 +2,7 @@
 
 
 src += files(
+  'VolumeRepository.cpp',
   'TextureRepository.cpp',
   'MeshRepository.cpp',
 )

@@ -1,6 +1,6 @@
 #include <HierarchyWindow.hpp>
 #include <SceneWriter.hpp>
-#include <../../../include/engine/rendering/renderer/RaytracingRenderer.hpp>
+#include <../../../include/engine/renderer/VulkanRenderer.hpp>
 #include <cstdlib>
 #include <filesystem>
 #include <PathUtil.hpp>
@@ -52,10 +52,12 @@ namespace RtEngine {
 	void RaytracingRenderer::createRepositories() {
 		mesh_repository = std::make_shared<MeshRepository>(vulkan_context, resources_dir);
 		texture_repository = std::make_shared<TextureRepository>(vulkan_context->resource_builder);
+		volume_repository = std::make_shared<VolumeRepository>(vulkan_context, resources_dir);
 
 		deletion_queue.pushFunction([&]() {
 			mesh_repository->destroy();
 			texture_repository->destroy();
+			volume_repository->destroy();
 		});
 	}
 
@@ -370,6 +372,10 @@ namespace RtEngine {
 
 	std::shared_ptr<MeshRepository> RaytracingRenderer::getMeshRepository() {
 		return mesh_repository;
+	}
+
+	std::shared_ptr<VolumeRepository> RaytracingRenderer::getVolumeRepository() {
+		return volume_repository;
 	}
 
 	std::unordered_map<std::string, std::shared_ptr<Material>> RaytracingRenderer::getMaterials() const {
