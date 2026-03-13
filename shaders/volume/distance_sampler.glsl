@@ -13,4 +13,8 @@ float distanceSamplingPdf(float distance, float extinction) {
     return extinction * exp(-distance * extinction);
 }
 
+float distanceSamplingGreaterThanPdf(float distance, float extinction) {
+    return exp(-distance * extinction);
+}
+
 #endif
