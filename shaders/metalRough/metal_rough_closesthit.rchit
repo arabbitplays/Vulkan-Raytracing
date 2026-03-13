@@ -69,10 +69,10 @@ void main() {
             payload.next_distance = INFINITY;
 
             float distance_traveled = gl_HitTEXT;
+            payload.beta *= transmittance(distance_traveled, extinction);
         } else {
             payload.current_volume_idx = getVolumeIdx(triangle);
             payload.next_distance = sampleDistance(extinction, payload.rng_state);
-            payload.beta *= volume.scattering * transmittance(payload.next_distance, extinction);
         }
     } else {
         vec3 albedo = texture(material_textures[material.albedo_tex_idx], uv).xyz + material.albedo;

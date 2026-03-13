@@ -15,6 +15,10 @@ VolumeInstance getVolume(Triangle triangle) {
     return volume_buffer.volumes[triangle.volume_id - 1];
 }
 
+VolumeInstance getVolume(int idx) {
+    return volume_buffer.volumes[idx];
+}
+
 int getVolumeIdx(Triangle triangle) {
     return int(triangle.volume_id) - 1;
 }

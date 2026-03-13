@@ -1,7 +1,7 @@
 runner:
   scene_name: volume_test_scene
 renderer:
-  recursion_depth: 10
+  recursion_depth: 20
 phong:
   shadows: true
   fresnel: true

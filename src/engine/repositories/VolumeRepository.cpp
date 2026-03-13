@@ -9,7 +9,7 @@ namespace RtEngine {
         auto volume = std::make_shared<VolumeAsset>();
         volume->name = name;
         volume->isHomogenous = true;
-        volume->volume_data = { 0.05, 1 };
+        volume->volume_data = { 0.01, 0.02 };
         return volume;
     }
 
