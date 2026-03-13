@@ -21,6 +21,7 @@ namespace RtEngine {
 
 		setupNewScene(loaded_scene);
 		updateGeometryResources(loaded_scene);
+		updateVolumeResources(loaded_scene);
 		updateMaterial(loaded_scene);
 	}
 
@@ -102,12 +103,16 @@ namespace RtEngine {
 		// QuickTimer timer{"Scene Update", true};
 		VkDevice device = vulkan_context->device_manager->getDevice();
 
-		if (update_flags->checkFlag(STATIC_GEOMETRY_UPDATE) || update_flags->checkFlag(MATERIAL_UPDATE))
+		if (update_flags->checkFlag(STATIC_GEOMETRY_UPDATE) || update_flags->checkFlag(MATERIAL_UPDATE) || update_flags->checkFlag(VOLUME_UPDATE))
 			vkDeviceWaitIdle(device);
 
 		if (update_flags->checkFlag(MATERIAL_UPDATE)) {
 			// !!!! This clear the descriptor set writes
 			material_manager->updateMaterialResources(loaded_scene);
+		}
+
+		if (update_flags->checkFlag(VOLUME_UPDATE)) {
+			updateVolumeResources(loaded_scene); // TODO this is the wrong place bacause it needs the scene
 		}
 
 		updateStaticGeometry(draw_context->getRenderObjects(), update_flags);
@@ -128,9 +133,14 @@ namespace RtEngine {
 
 	void SceneAdapter::updateGeometryResources(const std::shared_ptr<IScene> &scene) {
 		std::vector<std::shared_ptr<MeshAsset>> mesh_assets = scene->getMeshAssets();
-		std::vector<std::shared_ptr<VolumeAsset>> volume_assets = scene->getVolumeAssets();
-		geometry_manager->createGeometryBuffers(mesh_assets, volume_assets);
+		geometry_manager->createGeometryBuffers(mesh_assets);
 		geometry_manager->writeGeometryBuffers();
+	}
+
+	void SceneAdapter::updateVolumeResources(const std::shared_ptr<IScene> &scene) {
+		std::vector<std::shared_ptr<VolumeAsset>> volume_assets = scene->getVolumeAssets();
+		volume_manager->createVolumeBuffer(volume_assets);
+		volume_manager->writeVolumeBuffer();
 	}
 
 	// TODO split into dynamic and static

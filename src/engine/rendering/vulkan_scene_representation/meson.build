@@ -2,6 +2,7 @@
 
 
 src += files(
+  'VolumeManager.cpp',
   'InstanceManager.cpp',
   'SceneAdapter.cpp',
   'GeometryManager.cpp',

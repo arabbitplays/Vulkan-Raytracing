@@ -5,15 +5,13 @@
 
 namespace RtEngine {
 
-	void GeometryManager::createGeometryBuffers(std::vector<std::shared_ptr<MeshAsset>> &mesh_assets, std::vector<std::shared_ptr<VolumeAsset>> &volume_assets) {
+	void GeometryManager::createGeometryBuffers(std::vector<std::shared_ptr<MeshAsset>> &mesh_assets) {
 		QuickTimer timer{"Static geometry", true};
 
 		vertex_buffer = createVertexBuffer(mesh_assets);
 		index_buffer = createIndexBuffer(mesh_assets);
 		geometry_mapping_buffer = createGeometryMappingBuffer(mesh_assets);
 		createBlas(mesh_assets);
-
-		volume_buffer = createVolumeBuffer(volume_assets);
 	}
 
 	void GeometryManager::writeGeometryBuffers() const {
@@ -22,8 +20,6 @@ namespace RtEngine {
 		vulkan_context->descriptor_allocator->writeBuffer(4, index_buffer.handle, 0,
 														  VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
 		vulkan_context->descriptor_allocator->writeBuffer(5, geometry_mapping_buffer.handle, 0,
-														  VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
-		vulkan_context->descriptor_allocator->writeBuffer(8, volume_buffer.handle, 0,
 														  VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
 	}
 
@@ -101,22 +97,6 @@ namespace RtEngine {
 				geometry_datas.data(), mesh_assets.size() * sizeof(GeometryData), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
 	}
 
-	AllocatedBuffer
-	GeometryManager::createVolumeBuffer(std::vector<std::shared_ptr<VolumeAsset>> &volume_assets) const {
-		assert(!volume_assets.empty());
-
-		if (volume_buffer.handle != VK_NULL_HANDLE) {
-			vulkan_context->resource_builder->destroyBuffer(volume_buffer);
-		}
-
-		std::vector<VolumeData> volume_datas;
-		for (auto &volume_asset: volume_assets) {
-			volume_datas.push_back(volume_asset->volume_data);
-		}
-		return vulkan_context->resource_builder->stageMemoryToNewBuffer(
-				volume_datas.data(), volume_assets.size() * sizeof(VolumeData), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
-	}
-
 
 	void GeometryManager::createBlas(std::vector<std::shared_ptr<MeshAsset>> &meshes) {
 		assert(vertex_buffer.handle != VK_NULL_HANDLE && index_buffer.handle != VK_NULL_HANDLE);
@@ -153,8 +133,6 @@ namespace RtEngine {
 			vulkan_context->resource_builder->destroyBuffer(index_buffer);
 		if (geometry_mapping_buffer.handle != VK_NULL_HANDLE)
 			vulkan_context->resource_builder->destroyBuffer(geometry_mapping_buffer);
-		if (volume_buffer.handle != VK_NULL_HANDLE)
-			vulkan_context->resource_builder->destroyBuffer(volume_buffer);
 
 		for (auto& structure : blas) {
 			structure->destroy();

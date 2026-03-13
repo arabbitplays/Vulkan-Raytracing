@@ -11,10 +11,10 @@ namespace RtEngine {
 	class GeometryManager {
 	public:
 		GeometryManager() = default;
-		GeometryManager(const std::shared_ptr<VulkanContext> &vulkan_context) :
+		explicit GeometryManager(const std::shared_ptr<VulkanContext> &vulkan_context) :
 			vulkan_context(vulkan_context) {}
 
-		void createGeometryBuffers(std::vector<std::shared_ptr<MeshAsset>> &mesh_assets, std::vector<std::shared_ptr<VolumeAsset>> &volume_assets);
+		void createGeometryBuffers(std::vector<std::shared_ptr<MeshAsset>> &mesh_assets);
 		void writeGeometryBuffers() const;
 
 		void destroy();
@@ -29,7 +29,7 @@ namespace RtEngine {
 		void createBlas(std::vector<std::shared_ptr<MeshAsset>> &meshes);
 
 		std::shared_ptr<VulkanContext> vulkan_context;
-		AllocatedBuffer vertex_buffer, index_buffer, geometry_mapping_buffer, volume_buffer;
+		AllocatedBuffer vertex_buffer, index_buffer, geometry_mapping_buffer;
 		std::vector<std::shared_ptr<AccelerationStructure>> blas;
 	};
 } // namespace RtEngine
