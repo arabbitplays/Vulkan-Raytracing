@@ -9,6 +9,9 @@
 #include "../common/layout.glsl"
 #include "options.glsl"
 #include "../common/random.glsl"
+#include "../volume/layout.glsl"
+#include "../volume/distance_sampler.glsl"
+#include "../volume/transmittance_estimator.glsl"
 
 layout(binding = 0, set = 0) uniform accelerationStructureEXT topLevelAS;
 layout(binding = 1, set = 1) uniform sampler2D material_textures[64];
@@ -55,75 +58,94 @@ void main() {
 
     vec3 V = -normalize(gl_WorldRayDirectionEXT);
 
-    vec3 albedo = texture(material_textures[material.albedo_tex_idx], uv).xyz + material.albedo;
-    vec3 metal_rough_ao = texture(material_textures[material.metal_rough_ao_tex_idx], uv).xyz;
-    float metallic = metal_rough_ao.x + material.metallic;
-    float roughness = metal_rough_ao.y + material.roughness;
-    float ao = metal_rough_ao.z + material.ao;
-    float eta = material.eta;
+    if (isVolumeBoundary(triangle)) {
+        payload.next_origin = P;
 
-    // no direct light sampling or handle light that goes directly to the camera
-    if (!options.sample_light || payload.specular_bounce || (payload.depth == 0 && material.emission_power > 0)) {
-        if (dot(N, V) > 0) {
-            payload.light += payload.beta * material.emission_color * material.emission_power;
+        VolumeInstance volume = getVolume(triangle);
+        float extinction = volume.scattering + volume.absorption;
+
+        if (payload.current_volume_idx >= 0) {
+            payload.current_volume_idx = -1;
+            payload.next_distance = INFINITY;
+
+            float distance_traveled = gl_HitTEXT;
+        } else {
+            payload.current_volume_idx = getVolumeIdx(triangle);
+            payload.next_distance = sampleDistance(extinction, payload.rng_state);
+            payload.beta *= volume.scattering * transmittance(payload.next_distance, extinction);
         }
-    }
+    } else {
+        vec3 albedo = texture(material_textures[material.albedo_tex_idx], uv).xyz + material.albedo;
+        vec3 metal_rough_ao = texture(material_textures[material.metal_rough_ao_tex_idx], uv).xyz;
+        float metallic = metal_rough_ao.x + material.metallic;
+        float roughness = metal_rough_ao.y + material.roughness;
+        float ao = metal_rough_ao.z + material.ao;
+        float eta = material.eta;
 
-    if (options.sample_light) {
-        uint emitter_count = max(1, sceneData.emitter_count);
-        LightSample light_sample = sampleEmittingPrimitive(P, emitter_count);
-        vec3 L = light_sample.P - P;
-        float distance_to_light = length(L);
-        L = normalize(L);
+        // no direct light sampling or handle light that goes directly to the camera
+        if (!options.sample_light || payload.specular_bounce || (payload.depth == 0 && material.emission_power > 0)) {
+            if (dot(N, V) > 0) {
+                payload.light += payload.beta * material.emission_color * material.emission_power;
+            }
+        }
 
-        vec3 wo = normalize(transpose_tbn * V);
-        vec3 wi = normalize(transpose_tbn * L);
+        if (options.sample_light) {
+            uint emitter_count = max(1, sceneData.emitter_count);
+            LightSample light_sample = sampleEmittingPrimitive(P, emitter_count);
+            vec3 L = light_sample.P - P;
+            float distance_to_light = length(L);
+            L = normalize(L);
+
+            vec3 wo = normalize(transpose_tbn * V);
+            vec3 wi = normalize(transpose_tbn * L);
+
+            if (options.sample_bsdf) {
+                vec3 f = calcConductorBRDF(wo, wi, albedo, metallic, roughness) * max(dot(N, L), 0.0);
+                if (light_sample.light != vec3(0) && length(f) > 0.0 && unoccluded(P, L, distance_to_light)) {
+                    payload.light += payload.beta * f * light_sample.light / light_sample.pdf;
+                }
+            } else {
+                vec3 f = computeBsdf(wo, wi, albedo, metallic, roughness, eta) * abs(dot(N, L));
+                if (light_sample.light != vec3(0) && length(f) > 0.0 && unoccluded(P, L, distance_to_light)) {
+                    payload.light += payload.beta * f * light_sample.light / light_sample.pdf;
+                }
+            }
+        }
+
+        payload.next_origin = P;
+        payload.next_distance = INFINITY;
 
         if (options.sample_bsdf) {
-            vec3 f = calcConductorBRDF(wo, wi, albedo, metallic, roughness) * max(dot(N, L), 0.0);
-            if (light_sample.light != vec3(0) && length(f) > 0.0 && unoccluded(P, L, distance_to_light)) {
-                payload.light += payload.beta * f * light_sample.light / light_sample.pdf;
-            }
+            vec3 wo = normalize(transpose_tbn * V);
+
+            BsdfSample brdf_sample = sampleBsfd(wo, albedo, metallic, roughness, eta, payload.rng_state);
+
+            payload.next_direction = TBN * brdf_sample.wi;
+            payload.beta *= brdf_sample.f * abs(dot(payload.next_direction, N)) / brdf_sample.pdf;
+            payload.specular_bounce = isSpecular(brdf_sample.flags);
+            if (isTransmissive(brdf_sample.flags))
+                payload.eta_scale *= sqr(brdf_sample.eta);
         } else {
-            vec3 f = computeBsdf(wo, wi, albedo, metallic, roughness, eta) * abs(dot(N, L));
-            if (light_sample.light != vec3(0) && length(f) > 0.0 && unoccluded(P, L, distance_to_light)) {
-                payload.light += payload.beta * f * light_sample.light / light_sample.pdf;
-            }
+            //payload.next_direction = TBN * sampleCosHemisphere(payload.rng_state);
+            payload.next_direction = sampleUniformSphere(payload.rng_state);
+
+            vec3 wo = normalize(transpose_tbn * V);
+            vec3 wi = normalize(transpose_tbn * payload.next_direction);
+            //payload.beta *= calcBRDF(wo, wi, albedo, metallic, roughness) * PI;
+            payload.beta *= computeBsdf(wo, wi, albedo, metallic, roughness, eta) * abs(dot(payload.next_direction, N)) * 4 * PI;
         }
-    }
 
-    payload.next_origin = P;
-
-    if (options.sample_bsdf) {
-        vec3 wo = normalize(transpose_tbn * V);
-
-        BsdfSample brdf_sample = sampleBsfd(wo, albedo, metallic, roughness, eta, payload.rng_state);
-
-        payload.next_direction = TBN * brdf_sample.wi;
-        payload.beta *= brdf_sample.f * abs(dot(payload.next_direction, N)) / brdf_sample.pdf;
-        payload.specular_bounce = isSpecular(brdf_sample.flags);
-        if (isTransmissive(brdf_sample.flags))
-            payload.eta_scale *= sqr(brdf_sample.eta);
-    } else {
-        //payload.next_direction = TBN * sampleCosHemisphere(payload.rng_state);
-        payload.next_direction = sampleUniformSphere(payload.rng_state);
-
-        vec3 wo = normalize(transpose_tbn * V);
-        vec3 wi = normalize(transpose_tbn * payload.next_direction);
-        //payload.beta *= calcBRDF(wo, wi, albedo, metallic, roughness) * PI;
-        payload.beta *= computeBsdf(wo, wi, albedo, metallic, roughness, eta) * abs(dot(payload.next_direction, N)) * 4 * PI;
-    }
-
-    if (options.russian_roulette) {
-        vec3 rr_beta = payload.beta * payload.eta_scale;
-        float beta_max_component = max(rr_beta.x, max(rr_beta.y, rr_beta.z));
-        if (beta_max_component < 1 && payload.depth > 1) {
-            float q = max(0, 1 - beta_max_component);
-            float u = stepAndOutputRNGFloat(payload.rng_state);
-            if (u < q) {
-                payload.next_direction = vec3(0);
-            } else {
-                beta /= 1 - q;
+        if (options.russian_roulette) {
+            vec3 rr_beta = payload.beta * payload.eta_scale;
+            float beta_max_component = max(rr_beta.x, max(rr_beta.y, rr_beta.z));
+            if (beta_max_component < 1 && payload.depth > 1) {
+                float q = max(0, 1 - beta_max_component);
+                float u = stepAndOutputRNGFloat(payload.rng_state);
+                if (u < q) {
+                    payload.next_direction = vec3(0);
+                } else {
+                    beta /= 1 - q;
+                }
             }
         }
     }

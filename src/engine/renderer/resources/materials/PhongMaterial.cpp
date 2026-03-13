@@ -8,7 +8,6 @@
 #include <environment_miss.rmiss.spv.h>
 #include <phong_closesthit.rchit.spv.h>
 #include <phong_raygen.rgen.spv.h>
-#include "miss.rmiss.spv.h"
 #include "PhongInstance.hpp"
 #include "shadow_miss.rmiss.spv.h"
 

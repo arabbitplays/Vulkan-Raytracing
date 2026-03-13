@@ -19,11 +19,13 @@ layout(location = 0) rayPayloadEXT Payload payload;
 void initPayload(vec3 origin, vec3 direction) {
     payload.next_origin = origin;
     payload.next_direction = direction;
+    payload.next_distance = INFINITY;
     payload.light = vec3(0.0);
     payload.depth = 0;
     payload.beta = vec3(1.0);
     payload.eta_scale = 1;
     payload.specular_bounce = false;
+    payload.current_volume_idx = -1;
 }
 
 void main() {
@@ -58,10 +60,13 @@ void main() {
     for (int i = 0; i < options.samples_per_pixel; i++) {
         while (payload.depth < options.recursion_depth && payload.next_direction != vec3(0.0)) {
             float tmin = EPSILON;
-            float tmax = 10000.0;
+            float tmax = payload.next_distance - EPSILON;
 
             traceRayEXT(topLevelAS, gl_RayFlagsOpaqueEXT, 0xff, 0, 0, 0, payload.next_origin, tmin, payload.next_direction, tmax, 0);
-            payload.depth++;
+
+            //if (!payload.in_medium) {
+                payload.depth++;
+            //}
         }
         color += payload.light;
     }
