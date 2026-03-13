@@ -72,6 +72,8 @@ void main() {
             payload.beta *= transmittance(distance_traveled, extinction);
         } else {
             payload.current_volume_idx = getVolumeIdx(triangle);
+            //payload.light = payload.current_volume_idx == 0 ? vec3(1, 0, 0) : (payload.current_volume_idx == 1 ? vec3(0, 1, 0) : vec3(0));
+            //payload.next_direction = vec3(0);
             payload.next_distance = sampleDistance(extinction, payload.rng_state);
         }
     } else {

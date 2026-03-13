@@ -58,7 +58,7 @@ void main() {
 
     vec3 color = vec3(0);
     for (int i = 0; i < options.samples_per_pixel; i++) {
-        while (payload.depth < options.recursion_depth && payload.next_direction != vec3(0.0)) {
+        while (payload.depth < options.recursion_depth && payload.next_direction != vec3(0.0) && payload.next_distance > 0) {
             float tmin = EPSILON;
             float tmax = payload.next_distance - EPSILON;
 

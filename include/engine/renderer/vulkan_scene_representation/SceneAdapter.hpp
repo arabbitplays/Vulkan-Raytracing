@@ -11,6 +11,7 @@
 
 #include "MaterialManager.hpp"
 #include "UpdateFlagValue.hpp"
+#include "VolumeManager.hpp"
 
 namespace RtEngine {
 	class SceneAdapter {
@@ -32,11 +33,13 @@ namespace RtEngine {
 			instance_manager = std::make_shared<InstanceManager>(vulkan_context->resource_builder);
 			geometry_manager = std::make_shared<GeometryManager>(vulkan_context);
 			material_manager = std::make_shared<MaterialManager>(vulkan_context->resource_builder, texture_repository);
+			volume_manager  = std::make_shared<VolumeManager>(vulkan_context);
 
 			main_deletion_queue.pushFunction([&]() {
 				geometry_manager->destroy();
 				instance_manager->destroy();
 				material_manager->destroy();
+				volume_manager->destroy();
 			});
 
 			createSceneLayout();
@@ -72,6 +75,9 @@ namespace RtEngine {
 		void createTlas();
 
 		void updateGeometryResources(const std::shared_ptr<IScene> &scene);
+
+		void updateVolumeResources(const std::shared_ptr<IScene> &scene);
+
 		void updateStaticGeometry(std::vector<RenderObject> render_objects, UpdateFlagsHandle update_flags);
 		void updateDynamicGeometry(std::vector<RenderObject> render_objects, uint32_t update_flags);
 
@@ -94,6 +100,7 @@ namespace RtEngine {
 		std::shared_ptr<GeometryManager> geometry_manager;
 		std::shared_ptr<InstanceManager> instance_manager;
 		std::shared_ptr<MaterialManager> material_manager;
+		std::shared_ptr<VolumeManager> volume_manager;
 
 		std::shared_ptr<AccelerationStructure> top_level_acceleration_structure;
 

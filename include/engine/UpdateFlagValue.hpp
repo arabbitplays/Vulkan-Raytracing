@@ -9,6 +9,7 @@ namespace RtEngine {
         MATERIAL_UPDATE = 1 << 1,
         SCENE_UPDATE = 1 << 2,
         TARGET_RESET = 1 << 3,
+        VOLUME_UPDATE = 1 << 4,
     };
 
     class UpdateFlags {
@@ -22,7 +23,7 @@ namespace RtEngine {
                 flags |= STATIC_GEOMETRY_UPDATE | MATERIAL_UPDATE | TARGET_RESET;
             }
 
-            if (flag == STATIC_GEOMETRY_UPDATE || flag == MATERIAL_UPDATE) {
+            if (flag == STATIC_GEOMETRY_UPDATE || flag == MATERIAL_UPDATE || flag == VOLUME_UPDATE) {
                 flags |= TARGET_RESET;
             }
         }
