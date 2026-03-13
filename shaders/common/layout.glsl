@@ -1,3 +1,6 @@
+#ifndef LAYOUT
+#define LAYOUT
+
 layout(location = 0) rayPayloadInEXT Payload payload;
 
 struct Vertex {
@@ -35,9 +38,6 @@ struct VolumeInstance {
     float absorption;
     float scattering;
 };
-layout(binding = 8, set = 0) buffer VolumeBuffer {
-    VolumeInstance volumes[];
-} volume_buffer;
 
 Vertex getVertex(uint vertexOffset, uint index)
 {
@@ -68,7 +68,7 @@ uvec3 getIndices(uint index_offset, uint primitive_id) {
 struct Triangle {
     Vertex A, B, C;
     uint material_idx;
-    uint volume_idx;
+    uint volume_id;
 };
 
 Triangle getTriangle(uint32_t instance_idx, uint32_t primitive_idx) {
@@ -88,7 +88,9 @@ Triangle getTriangle(uint32_t instance_idx, uint32_t primitive_idx) {
     triangle.B = getVertex(vertex_offset, indices.y);
     triangle.C = getVertex(vertex_offset, indices.z);
     triangle.material_idx = material_index;
-    triangle.volume_idx = volume_index;
+    triangle.volume_id = volume_index;
 
     return triangle;
 }
+
+#endif

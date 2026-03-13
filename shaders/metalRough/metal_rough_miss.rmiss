@@ -7,12 +7,18 @@
 #include "../common/scene_data.glsl"
 #include "options.glsl"
 
-layout(set = 0, binding = 7) uniform sampler2D textures[6];
 
 layout(location = 0) rayPayloadInEXT Payload payload;
 
 void main() {
-    if (!options.sample_light || payload.specular_bounce || (payload.depth == 0 && sceneData.sunlightColor.w > 0)) {
-        //payload.light += payload.beta * uniformLe();
+    if (payload.current_volume_idx >= 0) {
+        payload.light = vec3(1, 0, 0);
+        payload.next_direction = vec3(0);
+    } else {
+        payload.next_direction = vec3(0);
+        if (!options.sample_light || payload.specular_bounce || (payload.depth == 0 && sceneData.sunlightColor.w > 0)) {
+            //payload.light += payload.beta * uniformLe();
+        }
     }
+
 }

@@ -1,5 +1,4 @@
 shaders = [
-    'miss/miss.rmiss',
     'miss/environment_miss.rmiss',
     'miss/shadow_miss.rmiss',
     'phong/phong_closesthit.rchit',

@@ -23,8 +23,8 @@ namespace RtEngine {
 														  VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
 		vulkan_context->descriptor_allocator->writeBuffer(5, geometry_mapping_buffer.handle, 0,
 														  VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
-		// vulkan_context->descriptor_allocator->writeBuffer(8, volume_buffer.handle, 0,
-		// 												  VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+		vulkan_context->descriptor_allocator->writeBuffer(8, volume_buffer.handle, 0,
+														  VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
 	}
 
 	AllocatedBuffer GeometryManager::createVertexBuffer(std::vector<std::shared_ptr<MeshAsset>> &mesh_assets) const {
