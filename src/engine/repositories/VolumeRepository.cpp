@@ -7,9 +7,9 @@ namespace RtEngine {
 
     std::shared_ptr<VolumeAsset> VolumeRepository::getVolume(const std::string &name) {
         auto volume = std::make_shared<VolumeAsset>();
+        volume->name = name;
         volume->isHomogenous = true;
-        volume->voxel_densities.push_back(0.2f);
-        volume->voxel_count = 1;
+        volume->volume_data = { 0.2, 0.2 };
         return volume;
     }
 

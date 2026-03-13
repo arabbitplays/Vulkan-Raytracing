@@ -54,8 +54,9 @@ namespace RtEngine {
 		layoutBuilder.addBinding(5, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER); // geometry buffer
 		layoutBuilder.addBinding(6, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER); // instance buffer
 		layoutBuilder.addBinding(7, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER); // emitting instances buffer
-		layoutBuilder.addBinding(8, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 6); // env map
-		layoutBuilder.addBinding(9, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE); // rng tex
+		layoutBuilder.addBinding(8, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER); // emitting instances buffer
+		layoutBuilder.addBinding(9, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 6); // env map
+		layoutBuilder.addBinding(10, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE); // rng tex
 
 		scene_descriptor_set_layout = layoutBuilder.build(
 				vulkan_context->device_manager->getDevice(),
@@ -119,7 +120,7 @@ namespace RtEngine {
 		vulkan_context->descriptor_allocator->writeImage(1, target->getCurrentTargetImage().imageView, VK_NULL_HANDLE,
 														 VK_IMAGE_LAYOUT_GENERAL, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
 
-		vulkan_context->descriptor_allocator->writeImage(9, target->getCurrentRngImage().imageView, VK_NULL_HANDLE, VK_IMAGE_LAYOUT_GENERAL,
+		vulkan_context->descriptor_allocator->writeImage(10, target->getCurrentRngImage().imageView, VK_NULL_HANDLE, VK_IMAGE_LAYOUT_GENERAL,
 														 VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
 
 		updateSceneDescriptorSets();
@@ -127,7 +128,8 @@ namespace RtEngine {
 
 	void SceneAdapter::updateGeometryResources(const std::shared_ptr<IScene> &scene) {
 		std::vector<std::shared_ptr<MeshAsset>> mesh_assets = scene->getMeshAssets();
-		geometry_manager->createGeometryBuffers(mesh_assets);
+		std::vector<std::shared_ptr<VolumeAsset>> volume_assets = scene->getVolumeAssets();
+		geometry_manager->createGeometryBuffers(mesh_assets, volume_assets);
 		geometry_manager->writeGeometryBuffers();
 	}
 

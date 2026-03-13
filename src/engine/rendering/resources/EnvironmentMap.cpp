@@ -21,7 +21,7 @@ namespace RtEngine {
             views.push_back(tex_repo->getDefaultTex(ENVIRONMENT)->image.imageView);
         }
 
-        descriptor_allocator->writeImages(8, views, sampler,
+        descriptor_allocator->writeImages(9, views, sampler,
                                                           VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL,
                                                           VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
     }

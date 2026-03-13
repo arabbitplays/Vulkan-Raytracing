@@ -24,7 +24,7 @@ namespace RtEngine {
 
         glm::mat4 nodeMatrix = shared_node->transform->getWorldTransform();
 
-        ctx.addRenderObject(RenderObject{InstanceMappingData{mesh_asset->geometry_id, vol_material->getMaterialIndex()},
+        ctx.addRenderObject(RenderObject{InstanceMappingData{mesh_asset->geometry_id, vol_material->getMaterialIndex(), vol_asset->volume_id},
                                            mesh_asset->accelerationStructure, nodeMatrix, mesh_asset->triangle_count, vol_material->getEmissionPower()});
     }
 

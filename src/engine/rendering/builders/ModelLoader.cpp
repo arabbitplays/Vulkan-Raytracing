@@ -18,7 +18,7 @@ namespace RtEngine {
 		meshAsset.vertex_count = meshBuffers.indices.size();
 		meshAsset.triangle_count = meshBuffers.indices.size() / 3;
 
-		meshAsset.instance_data = {};
+		meshAsset.geometry_data = {};
 		return meshAsset;
 	}
 } // namespace RtEngine

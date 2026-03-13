@@ -4,10 +4,16 @@
 #include <vector>
 
 namespace RtEngine {
+    struct VolumeData {
+        float absorption;
+        float scattering;
+    };
+
     struct VolumeAsset {
+        std::string name;
+        uint32_t volume_id;
         bool isHomogenous = true;
-        uint32_t voxel_count = 0;
-        std::vector<float> voxel_densities;
+        VolumeData volume_data;
     };
 } // RtEngine
 

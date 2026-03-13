@@ -67,6 +67,10 @@ namespace RtEngine {
 		return SceneUtil::collectMeshAssets(getRootNode());
 	}
 
+	std::vector<std::shared_ptr<VolumeAsset>> Scene::getVolumeAssets() {
+		return SceneUtil::collectVolumeAssets(getRootNode());
+	}
+
 	std::vector<std::shared_ptr<MaterialInstance>> Scene::getMaterialInstances() {
 		return  SceneUtil::collectMaterialInstances(getRootNode());
 	}

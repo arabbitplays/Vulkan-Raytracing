@@ -25,6 +25,17 @@ namespace RtEngine {
 			return mesh_assets;
 		}
 
+		static std::vector<std::shared_ptr<VolumeAsset>> collectVolumeAssets(const std::shared_ptr<Node> & root_node) {
+			auto volume_map = std::make_shared<std::unordered_map<std::string, std::shared_ptr<VolumeAsset>>>();
+			collectVolumeAssetsRecursive(root_node, volume_map);
+
+			std::vector<std::shared_ptr<VolumeAsset>> volume_assets;
+			for (auto volume_asset: *volume_map) {
+				volume_assets.push_back(volume_asset.second);
+			}
+			return volume_assets;
+		}
+
 		static std::vector<std::shared_ptr<MaterialInstance>> collectMaterialInstances(const std::shared_ptr<Node> &root_node) {
 			auto material_map = std::make_shared<std::unordered_map<std::string, std::shared_ptr<MaterialInstance>>>();
 			collectMaterialInstancesRecursive(root_node, material_map);
@@ -42,6 +53,7 @@ namespace RtEngine {
 			return *cameras;
 		}
 
+
 	private:
 		static void collectMeshAssetsRecursive(
 				const std::shared_ptr<Node> &root_node,
@@ -57,6 +69,17 @@ namespace RtEngine {
 					(*mesh_map)[vol_renderer->mesh_asset->name] = vol_renderer->mesh_asset;
 				}
 				collectMeshAssetsRecursive(child_node, mesh_map);
+			}
+		}
+
+		static void collectVolumeAssetsRecursive(const std::shared_ptr<Node> & root_node,
+				const std::shared_ptr<std::unordered_map<std::string, std::shared_ptr<VolumeAsset>>> & volume_map) {
+			for (auto child_node: root_node->children) {
+				std::shared_ptr<VolumeRenderer> vol_renderer = child_node->getComponent<VolumeRenderer>();
+				if (vol_renderer && !volume_map->contains(vol_renderer->vol_asset->name)) {
+					(*volume_map)[vol_renderer->vol_asset->name] = vol_renderer->vol_asset;
+				}
+				collectVolumeAssetsRecursive(child_node, volume_map);
 			}
 		}
 

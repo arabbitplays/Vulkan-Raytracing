@@ -8,6 +8,7 @@ namespace RtEngine {
 	struct InstanceMappingData {
 		uint32_t geometry_id;
 		uint32_t material_index;
+		uint32_t volume_id;
 	};
 
 	struct EmittingInstanceData {

@@ -22,7 +22,7 @@ namespace RtEngine {
 		uint32_t geometry_id;
 		uint32_t vertex_count = 0;
 		uint32_t triangle_count = 0;
-		GeometryData instance_data;
+		GeometryData geometry_data;
 		MeshBuffers meshBuffers;
 		std::shared_ptr<AccelerationStructure> accelerationStructure;
 	};

@@ -20,6 +20,7 @@ layout(binding = 5, set = 0) readonly buffer GeometryMappingBuffer {
 layout(binding = 6, set = 0) readonly buffer InstanceMappingBuffer {
     uint indices[];
 } instance_mapping_buffer;
+
 struct EmittingInstance {
     mat4 transform;
     uint instance_idx;
@@ -29,6 +30,14 @@ struct EmittingInstance {
 layout(binding = 7, set = 0) buffer EmittingInstanceBuffer {
     EmittingInstance instances[];
 } emitting_instance_buffer;
+
+struct VolumeInstance {
+    float absorption;
+    float scattering;
+};
+layout(binding = 8, set = 0) buffer VolumeBuffer {
+    VolumeInstance volumes[];
+} volume_buffer;
 
 Vertex getVertex(uint vertexOffset, uint index)
 {
@@ -59,13 +68,15 @@ uvec3 getIndices(uint index_offset, uint primitive_id) {
 struct Triangle {
     Vertex A, B, C;
     uint material_idx;
+    uint volume_idx;
 };
 
 Triangle getTriangle(uint32_t instance_idx, uint32_t primitive_idx) {
     uint index = instance_idx;
 
-    uint geometry_index = instance_mapping_buffer.indices[2 * index];
-    uint material_index = instance_mapping_buffer.indices[2 * index + 1];
+    uint geometry_index = instance_mapping_buffer.indices[3 * index];
+    uint material_index = instance_mapping_buffer.indices[3 * index + 1];
+    uint volume_index = instance_mapping_buffer.indices[3 * index + 2];
 
     uint vertex_offset = geometry_mapping_buffer.indices[2 * geometry_index];
     uint index_offset = geometry_mapping_buffer.indices[2 * geometry_index + 1];
@@ -77,6 +88,7 @@ Triangle getTriangle(uint32_t instance_idx, uint32_t primitive_idx) {
     triangle.B = getVertex(vertex_offset, indices.y);
     triangle.C = getVertex(vertex_offset, indices.z);
     triangle.material_idx = material_index;
+    triangle.volume_idx = volume_index;
 
     return triangle;
 }

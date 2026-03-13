@@ -1,6 +1,6 @@
 #include "math.glsl"
 
-layout(binding = 9, set = 0, rgba32ui) uniform uimage2D rng_tex;
+layout(binding = 10, set = 0, rgba32ui) uniform uimage2D rng_tex;
 
 // from https://developer.nvidia.com/gpugems/gpugems3/part-vi-gpu-computing/chapter-37-efficient-random-number-generation-and-application
 // S1, S2, S3, and M are all constants, and z is part of the
