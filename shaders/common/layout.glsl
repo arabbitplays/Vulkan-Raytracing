@@ -34,11 +34,6 @@ layout(binding = 7, set = 0) buffer EmittingInstanceBuffer {
     EmittingInstance instances[];
 } emitting_instance_buffer;
 
-struct VolumeInstance {
-    float absorption;
-    float scattering;
-};
-
 Vertex getVertex(uint vertexOffset, uint index)
 {
     uint base_index = 4 * (vertexOffset + index);

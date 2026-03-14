@@ -3,6 +3,12 @@
 
 #include "../common/layout.glsl"
 
+struct VolumeInstance {
+    float g;
+    float absorption;
+    float scattering;
+};
+
 layout(binding = 8, set = 0) buffer VolumeBuffer {
     VolumeInstance volumes[];
 } volume_buffer;

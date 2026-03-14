@@ -5,6 +5,7 @@
 
 namespace RtEngine {
     struct VolumeData {
+        float g;
         float absorption;
         float scattering;
     };
