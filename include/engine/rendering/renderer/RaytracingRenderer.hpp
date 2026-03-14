@@ -79,6 +79,10 @@ namespace RtEngine {
 		void initWindow();
 		void createRepositories();
 
+		std::shared_ptr<RenderTarget> createRenderTarget(uint32_t width, uint32_t height);
+
+		std::shared_ptr<DescriptorAllocator> createDescriptorAllocator();
+
 		static bool hasStencilComponent(VkFormat format);
 
 		void createSyncObjects() override;

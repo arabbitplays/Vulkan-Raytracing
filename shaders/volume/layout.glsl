@@ -5,13 +5,16 @@
 
 struct VolumeInstance {
     float g;
-    float absorption;
-    float scattering;
+    uint tex_idx;
+    vec2 pad;
+    vec4 bounding_box_origin;
+    vec4 bounding_box_extent;
 };
 
 layout(binding = 8, set = 0) buffer VolumeBuffer {
     VolumeInstance volumes[];
 } volume_buffer;
+layout(binding = 11, set = 0) uniform sampler3D volume_textures[16];
 
 bool isVolumeBoundary(Triangle triangle) {
     return triangle.volume_id != 0;
@@ -27,6 +30,10 @@ VolumeInstance getVolume(int idx) {
 
 int getVolumeIdx(Triangle triangle) {
     return int(triangle.volume_id) - 1;
+}
+
+vec2 getCoefficients(VolumeInstance volume, vec3 world_pos) {
+    return texture(volume_textures[volume.tex_idx], uvec3(0)).xy;
 }
 
 #endif

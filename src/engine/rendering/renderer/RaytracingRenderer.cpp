@@ -1,10 +1,6 @@
 #include <HierarchyWindow.hpp>
-#include <SceneWriter.hpp>
-#include <../../../include/engine/renderer/VulkanRenderer.hpp>
 #include <cstdlib>
 #include <filesystem>
-#include <PathUtil.hpp>
-#include <set>
 #include <RandomUtil.hpp>
 #include <glm/gtc/packing.hpp>
 
@@ -59,6 +55,26 @@ namespace RtEngine {
 			texture_repository->destroy();
 			volume_repository->destroy();
 		});
+	}
+
+	std::shared_ptr<RenderTarget> RaytracingRenderer::createRenderTarget(uint32_t width, uint32_t height) {
+		VkExtent2D extent(width, height);
+		return std::make_shared<RenderTarget>(vulkan_context->resource_builder, extent, max_frames_in_flight);
+	}
+
+	std::shared_ptr<DescriptorAllocator> RaytracingRenderer::createDescriptorAllocator() {
+		std::vector<DescriptorAllocator::PoolSizeRatio> poolRatios = {
+				{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1},
+				{VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1},
+				{VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 4},
+				{VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1},
+				{VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, 1},
+		};
+
+		auto descriptorAllocator = std::make_shared<DescriptorAllocator>();
+		descriptorAllocator->init(vulkan_context->device_manager->getDevice(), 8, poolRatios);
+
+		return descriptorAllocator;
 	}
 
 	bool RaytracingRenderer::hasStencilComponent(const VkFormat format) {

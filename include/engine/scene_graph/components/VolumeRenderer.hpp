@@ -27,6 +27,8 @@ namespace RtEngine {
         std::string mesh_asset_name;
         std::string volume_asset_name;
         std::string material_instance_name;
+
+        float absorption = 0.02f, scattering = 0.5f, g = 0.0f;
     };
 } // RtEngine
 

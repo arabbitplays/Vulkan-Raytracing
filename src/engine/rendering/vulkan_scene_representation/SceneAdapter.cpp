@@ -21,7 +21,7 @@ namespace RtEngine {
 
 		setupNewScene(loaded_scene);
 		updateGeometryResources(loaded_scene);
-		updateVolumeResources(loaded_scene);
+		// updateVolumeResources(loaded_scene);
 		updateMaterial(loaded_scene);
 	}
 
@@ -55,9 +55,10 @@ namespace RtEngine {
 		layoutBuilder.addBinding(5, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER); // geometry buffer
 		layoutBuilder.addBinding(6, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER); // instance buffer
 		layoutBuilder.addBinding(7, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER); // emitting instances buffer
-		layoutBuilder.addBinding(8, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER); // emitting instances buffer
+		layoutBuilder.addBinding(8, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER); // volume mapping buffer
 		layoutBuilder.addBinding(9, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 6); // env map
 		layoutBuilder.addBinding(10, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE); // rng tex
+		layoutBuilder.addBinding(11, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 16); // volume tex
 
 		scene_descriptor_set_layout = layoutBuilder.build(
 				vulkan_context->device_manager->getDevice(),
@@ -112,7 +113,7 @@ namespace RtEngine {
 		}
 
 		if (update_flags->checkFlag(VOLUME_UPDATE)) {
-			updateVolumeResources(loaded_scene); // TODO this is the wrong place bacause it needs the scene
+			updateVolumeResources(loaded_scene); // TODO this is the wrong place because it needs the scene
 		}
 
 		updateStaticGeometry(draw_context->getRenderObjects(), update_flags);
@@ -139,17 +140,17 @@ namespace RtEngine {
 
 	void SceneAdapter::updateVolumeResources(const std::shared_ptr<IScene> &scene) {
 		std::vector<std::shared_ptr<VolumeAsset>> volume_assets = scene->getVolumeAssets();
-		volume_manager->createVolumeBuffer(volume_assets);
-		volume_manager->writeVolumeBuffer();
+		volume_manager->createVolumeResources(volume_assets);
+		volume_manager->writeVolumeResources(defaultSamplerLinear);
 	}
 
 	// TODO split into dynamic and static
 	void SceneAdapter::updateStaticGeometry(std::vector<RenderObject> render_objects, UpdateFlagsHandle update_flags) {
-		if (update_flags->checkFlag(STATIC_GEOMETRY_UPDATE)) {
-			instance_manager->createInstanceMappingBuffer(render_objects);
-			vulkan_context->descriptor_allocator->writeBuffer(6, instance_manager->getInstanceBuffer().handle, 0,
-															  VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+		instance_manager->createInstanceMappingBuffer(render_objects);
+		vulkan_context->descriptor_allocator->writeBuffer(6, instance_manager->getInstanceBuffer().handle, 0,
+														  VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
 
+		if (update_flags->checkFlag(STATIC_GEOMETRY_UPDATE)) {
 			// TODO Only partially update tlas depending on the updated dynamic objects
 			updateTlas(render_objects);
 			vulkan_context->descriptor_allocator->writeAccelerationStructure(

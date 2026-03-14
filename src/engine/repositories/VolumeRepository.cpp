@@ -6,11 +6,7 @@ namespace RtEngine {
     }
 
     std::shared_ptr<VolumeAsset> VolumeRepository::getVolume(const std::string &name) {
-        auto volume = std::make_shared<VolumeAsset>();
-        volume->name = name;
-        volume->isHomogenous = true;
-        volume->volume_data = { 0.01, 0.02 };
-        return volume;
+        throw new std::runtime_error("Not implemented");
     }
 
     std::string VolumeRepository::addVolume(std::string path) {
