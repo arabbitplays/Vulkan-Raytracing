@@ -62,7 +62,8 @@ void main() {
         payload.next_origin = P;
 
         VolumeInstance volume = getVolume(triangle);
-        float extinction = volume.scattering + volume.absorption;
+        vec2 coefficients = getCoefficients(volume, P);
+        float extinction = coefficients.x + coefficients.y;
 
         if (payload.current_volume_idx >= 0) {
             payload.current_volume_idx = -1;
@@ -72,9 +73,10 @@ void main() {
             payload.beta *= transmittance(distance_traveled, extinction);
         } else {
             payload.current_volume_idx = getVolumeIdx(triangle);
-            //payload.light = payload.current_volume_idx == 0 ? vec3(1, 0, 0) : (payload.current_volume_idx == 1 ? vec3(0, 1, 0) : vec3(0));
-            //payload.next_direction = vec3(0);
             payload.next_distance = sampleDistance(extinction, payload.rng_state);
+
+            //payload.light = vec3(volume.g);
+            //payload.next_direction = vec3(0);
         }
     } else {
         vec3 albedo = texture(material_textures[material.albedo_tex_idx], uv).xyz + material.albedo;

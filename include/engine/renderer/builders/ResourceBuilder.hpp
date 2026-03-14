@@ -45,7 +45,7 @@ namespace RtEngine {
 
 		uint8_t *downloadImage(AllocatedImage image, uint32_t bytes_per_channel = 1);
 
-		VkImageView createImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags);
+		VkImageView createImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags, VkImageType type = VK_IMAGE_TYPE_2D);
 
 		void transitionImageLayout(VkCommandBuffer commandBuffer, VkImage image, VkPipelineStageFlags srcStage,
 								   VkPipelineStageFlags dstStage, VkAccessFlags srcAccessMask,

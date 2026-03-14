@@ -42,6 +42,7 @@ namespace RtEngine {
         }
 
         scene_manager->getCurrentScene()->update();
+
         std::shared_ptr<DrawContext> draw_context = createMainDrawContext();
         if (draw_context->targets.size() < 1)
             return;

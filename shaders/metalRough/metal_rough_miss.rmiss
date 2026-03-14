@@ -18,17 +18,19 @@ void main() {
     if (payload.current_volume_idx >= 0) {
         float traveled_distance = payload.next_distance;
         vec3 P = payload.next_origin + traveled_distance * normalize(payload.next_direction);
-        vec3 wo = payload.next_direction;
+        vec3 wo = -normalize(payload.next_direction);
 
         VolumeInstance volume = getVolume(payload.current_volume_idx);
-        float extinction = volume.scattering + volume.absorption;
+        vec2 coefficients = getCoefficients(volume, P);
+        float extinction = coefficients.x + coefficients.y;
+        float scattering = coefficients.y;
 
         PhaseFunctionSample p_sample = sampleHGPhaseFunction(wo, volume.g, payload.rng_state);
         //PhaseFunctionSample p_sample = sampleIsoPhaseFunction(wo, payload.rng_state);
 
         // This is the full version, without terms cut out for the specific phase function used
-        //payload.beta *= volume.scattering * transmittance(traveled_distance, extinction) * p_sample.p / distanceSamplingPdf(traveled_distance, extinction) / p_sample.pdf;
-        payload.beta *= volume.scattering * transmittance(traveled_distance, extinction) / distanceSamplingPdf(traveled_distance, extinction);
+        //payload.beta *= scattering * transmittance(traveled_distance, extinction) * p_sample.p / distanceSamplingPdf(traveled_distance, extinction) / p_sample.pdf;
+        payload.beta *= scattering * transmittance(traveled_distance, extinction) / distanceSamplingPdf(traveled_distance, extinction);
 
         payload.next_origin = P;
         payload.next_distance = sampleDistance(extinction, payload.rng_state);

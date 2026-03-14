@@ -33,20 +33,20 @@ vec3 sampleHenyeyGreenstein(vec3 wo, float g, uvec4 rng_state, inout float pdf) 
 
     float sinTheta = safeSqrt(1.0 - sqr(cosTheta));
     float phi = 2.0 * PI * u.y;
-    Frame wFrame = frameFromZ(wo);
+    Frame wFrame = frameFromZ(normalize(wo));
     vec3 wi = fromLocal(sphericalDirection(sinTheta, cosTheta, phi), wFrame);
 
     pdf = henyeyGreenstein(cosTheta, g);
     return wi;
 }
 
-PhaseFunctionSample sampleHGPhaseFunction(vec3 wo, float g, uvec4 rng_state) {
+PhaseFunctionSample sampleHGPhaseFunction(vec3 wo, float g, inout uvec4 rng_state) {
     float pdf;
     vec3 wi = sampleHenyeyGreenstein(wo, g, rng_state, pdf);
     return PhaseFunctionSample(pdf, wi, pdf);
 }
 
-PhaseFunctionSample sampleIsoPhaseFunction(vec3 wo, uvec4 rng_state) {
+PhaseFunctionSample sampleIsoPhaseFunction(vec3 wo, inout uvec4 rng_state) {
     float pdf;
     vec3 wi = sampleUniformSphere(rng_state);
     return PhaseFunctionSample(INV_4_PI, wi, INV_4_PI);

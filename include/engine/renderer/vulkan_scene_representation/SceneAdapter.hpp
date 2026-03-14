@@ -76,10 +76,9 @@ namespace RtEngine {
 
 		void updateGeometryResources(const std::shared_ptr<IScene> &scene);
 
-		void updateVolumeResources(const std::shared_ptr<IScene> &scene);
-
 		void updateStaticGeometry(std::vector<RenderObject> render_objects, UpdateFlagsHandle update_flags);
 		void updateDynamicGeometry(std::vector<RenderObject> render_objects, uint32_t update_flags);
+		void updateVolumeResources(const std::shared_ptr<IScene> &scene);
 
 		void updateSceneDescriptorSets();
 		void updateTlas(std::vector<RenderObject> objects) const;

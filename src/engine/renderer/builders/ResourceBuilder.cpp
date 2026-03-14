@@ -125,9 +125,11 @@ namespace RtEngine {
 		image.imageExtent = extent;
 		image.imageFormat = format;
 
+		VkImageType type = extent.depth == 1 ? VK_IMAGE_TYPE_2D : VK_IMAGE_TYPE_3D;
+
 		VkImageCreateInfo imageInfo{};
 		imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-		imageInfo.imageType = VK_IMAGE_TYPE_2D;
+		imageInfo.imageType = type;
 		imageInfo.extent = extent;
 		imageInfo.mipLevels = 1;
 		imageInfo.arrayLayers = 1;
@@ -156,7 +158,7 @@ namespace RtEngine {
 
 		vkBindImageMemory(device, image.image, image.imageMemory, 0);
 
-		image.imageView = createImageView(image.image, format, aspectFlags);
+		image.imageView = createImageView(image.image, format, aspectFlags, type);
 
 		return image;
 	}
@@ -171,6 +173,8 @@ namespace RtEngine {
 			imageSize *= 4;
 		} else if (format == VK_FORMAT_R32G32B32A32_UINT) {
 			imageSize *= 16;
+		} else if (format == VK_FORMAT_R32G32_SFLOAT) {
+			imageSize *= 8;
 		} else {
 			throw std::invalid_argument("Image format not supported!");
 		}
@@ -337,11 +341,11 @@ namespace RtEngine {
 		commandManager->endSingleTimeCommand(commandBuffer);
 	}
 
-	VkImageView ResourceBuilder::createImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags) {
+	VkImageView ResourceBuilder::createImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags, VkImageType type) {
 		VkImageViewCreateInfo createInfo{};
 		createInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
 		createInfo.image = image;
-		createInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+		createInfo.viewType = type == VK_IMAGE_TYPE_2D ? VK_IMAGE_VIEW_TYPE_2D : VK_IMAGE_VIEW_TYPE_3D;
 		createInfo.format = format;
 
 		createInfo.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;

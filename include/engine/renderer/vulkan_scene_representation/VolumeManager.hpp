@@ -12,14 +12,20 @@ namespace RtEngine {
         explicit VolumeManager(const std::shared_ptr<VulkanContext> &vulkan_context) :
             vulkan_context(vulkan_context) {}
 
-        void createVolumeBuffer(const std::vector<std::shared_ptr<VolumeAsset>> &volume_assets);
-        void writeVolumeBuffer() const;
+        void createVolumeResources(const std::vector<std::shared_ptr<VolumeAsset>> &volume_assets);
+
+        static VolumeData createVolumeData(const std::shared_ptr<VolumeAsset> &volume_asset, uint32_t texture_idx);
+
+        AllocatedImage createVolumeTexture(const std::shared_ptr<VolumeBuffers> &volume_buffers) const;
+
+        void writeVolumeResources(VkSampler sampler) const;
 
         void destroy();
 
     private:
         std::shared_ptr<VulkanContext> vulkan_context;
-        AllocatedBuffer volume_buffer;
+        AllocatedBuffer volume_mapping_buffer;
+        std::vector<AllocatedImage> volume_textures;
     };
 } // RtEngine
 
