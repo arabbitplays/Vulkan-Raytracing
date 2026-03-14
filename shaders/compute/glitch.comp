@@ -31,11 +31,12 @@ void main()
         vec3(207.0f / 256.0f, 104.0f / 256.0f, 98.0f / 256.0f),
         vec3(225.0f / 256.0f, 129.0f / 256.0f, 76.0f / 256.0f), // orange
         vec3(215.0f / 256.0f, 162.0f / 256.0f, 112.0f / 256.0f),
-        vec3(6.0f / 256.0f, 96.0f / 256.0f, 87.0f / 256.0f), // green        
+        vec3(6.0f / 256.0f, 96.0f / 256.0f, 87.0f / 256.0f), // green
         vec3(82.0f / 256.0f, 140.0f / 256.0f, 117.0f / 256.0f),
         vec3(75.0f / 256.0f, 193.0f / 256.0f, 160.0f / 256.0f), // blue
         vec3(93.0f / 256.0f, 195.0f / 256.0f, 160.0f / 256.0f)
-    );
+        //vec3(132.0f / 256.0f, 191.0f / 256.0f, 172.0f / 256.0f) // light green
+);
 
     int row = int(gl_GlobalInvocationID.y);
     ivec2 size = imageSize(target);
