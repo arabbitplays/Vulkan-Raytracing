@@ -12,6 +12,7 @@ struct Payload {
     float eta_scale; // used for russian roulette
     bool specular_bounce;
     int current_volume_idx;
+    mat4x3 volume_world_to_object;
 };
 
 #endif

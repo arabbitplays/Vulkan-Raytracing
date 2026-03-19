@@ -22,10 +22,15 @@ namespace RtEngine {
 
 	void Transform::initProperties(const std::shared_ptr<IProperties> &config, const UpdateFlagsHandle &update_flags) {
 		if (config->startChild(COMPONENT_NAME)) {
-			config->addVector("position", &decomposed_transform.translation);
-			config->addVector("rotation", &decomposed_transform.rotation);
-			config->addVector("scale", &decomposed_transform.scale);
+			bool refresh_needed = false;
+			refresh_needed |= config->addVector("position", &decomposed_transform.translation);
+			refresh_needed |= config->addVector("rotation", &decomposed_transform.rotation);
+			refresh_needed |= config->addVector("scale", &decomposed_transform.scale);
 			config->endChild();
+
+			if (refresh_needed) {
+				update_flags->setFlag(STATIC_GEOMETRY_UPDATE);
+			}
 		}
 	}
 } // namespace RtEngine

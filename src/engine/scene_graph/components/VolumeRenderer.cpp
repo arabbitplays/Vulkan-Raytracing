@@ -10,7 +10,7 @@ namespace RtEngine {
         assert(mesh_asset != nullptr);
 
         // vol_asset = context->volume_repository->getVolume(volume_asset_name);
-        vol_asset = VolumeAsset::createHomogenous(material_instance_name, absorption, scattering, g, mesh_asset);
+        vol_asset = VolumeAsset::createHomogenous(material_instance_name, absorption, scattering, g, majorant, mesh_asset);
 
         std::shared_ptr<Material> material = context->scene_manager->getCurrentMaterial();
         vol_material = material->getInstanceByName(material_instance_name);
@@ -40,11 +40,12 @@ namespace RtEngine {
             if (vol_asset) {
                 bool update_needed = false;
                 update_needed |= config->addFloat("g", &g, -1.0, 1.0);
+                update_needed |= config->addFloat("maj", &majorant, 0, 1);
                 update_needed |= config->addFloat("scattering", &scattering);
                 update_needed |= config->addFloat("absorption", &absorption);
 
                 if (update_needed) {
-                    vol_asset = VolumeAsset::createHomogenous(material_instance_name, absorption, scattering, g, mesh_asset);
+                    vol_asset = VolumeAsset::createHomogenous(material_instance_name, absorption, scattering, g, majorant, mesh_asset);
                     update_flags->setFlag(VOLUME_UPDATE);
                 }
             }

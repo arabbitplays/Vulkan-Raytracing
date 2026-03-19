@@ -35,13 +35,13 @@ void main() {
     float beta = barycentricCoords.y;
     float gamma = barycentricCoords.z;
 
-    vec3 position = alpha * A.position + beta * B.position + gamma * C.position;
-    vec3 normal = normalize(alpha * A.normal + beta * B.normal + gamma * C.normal);
+    vec3 local_position = alpha * A.position + beta * B.position + gamma * C.position;
+    vec3 local_normal = normalize(alpha * A.normal + beta * B.normal + gamma * C.normal);
     vec3 color = alpha * A.color + beta * B.color + gamma * C.color;
     vec2 uv = alpha * A.uv + beta * B.uv + gamma * C.uv;
 
-    vec3 P = vec3(gl_ObjectToWorldEXT * vec4(position, 1.0)); // transform position to world space
-    vec3 geometric_normal = normalize(vec3(normal * gl_WorldToObjectEXT)); // transform normal to world space
+    vec3 P = vec3(gl_ObjectToWorldEXT * vec4(local_position, 1.0)); // transform position to world space
+    vec3 geometric_normal = normalize(vec3(local_normal * gl_WorldToObjectEXT)); // transform normal to world space
 
     vec3 N = geometric_normal;
     vec3 tangent = normalize(alpha * A.tangent + beta * B.tangent + gamma * C.tangent);
@@ -62,20 +62,23 @@ void main() {
         payload.next_origin = P;
 
         VolumeInstance volume = getVolume(triangle);
-        vec2 coefficients = getCoefficients(volume, P);
-        float extinction = coefficients.x + coefficients.y;
+
+        if (payload.current_volume_idx < 0) { // entering a volume
+        }
 
         if (payload.current_volume_idx >= 0) {
             payload.current_volume_idx = -1;
             payload.next_distance = INFINITY;
 
             float distance_traveled = gl_HitTEXT;
-            payload.beta *= transmittance(distance_traveled, extinction);
+            payload.beta *= transmittance(distance_traveled, volume.majorant);
         } else {
             payload.current_volume_idx = getVolumeIdx(triangle);
-            payload.next_distance = sampleDistance(extinction, payload.rng_state);
+            payload.volume_world_to_object = gl_WorldToObjectEXT;
 
-            //payload.light = vec3(volume.g);
+            payload.next_distance = sampleDistance(volume.majorant, payload.rng_state);
+
+            //payload.light = vec3(volume.majorant);
             //payload.next_direction = vec3(0);
         }
     } else {

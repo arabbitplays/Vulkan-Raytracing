@@ -5,8 +5,9 @@
 
 struct VolumeInstance {
     float g;
+    float majorant; // majorant coefficient used for tracking algorithms
     uint tex_idx;
-    vec2 pad;
+    float pad;
     vec4 bounding_box_origin;
     vec4 bounding_box_extent;
 };
@@ -32,8 +33,15 @@ int getVolumeIdx(Triangle triangle) {
     return int(triangle.volume_id) - 1;
 }
 
-vec2 getCoefficients(VolumeInstance volume, vec3 world_pos) {
-    return texture(volume_textures[volume.tex_idx], uvec3(0)).xy;
+vec3 posToVolumeUV(VolumeInstance volume, vec3 world_pos, mat4x3 vol_world_to_object) {
+    vec3 obj_pos = (vol_world_to_object * vec4(world_pos, 1.0f)).xyz;
+    vec3 uv = (obj_pos - volume.bounding_box_origin.xyz) / volume.bounding_box_extent.xyz;
+    uv = clamp(uv, vec3(0), vec3(1));
+    return uv;
+}
+
+vec2 getCoefficients(VolumeInstance volume, vec3 uv) {
+    return texture(volume_textures[volume.tex_idx], uv).xy;
 }
 
 #endif
