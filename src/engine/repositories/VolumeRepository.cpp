@@ -5,43 +5,37 @@ namespace RtEngine {
         volume_builder = std::make_shared<VolumeBuilder>();
     }
 
-    std::shared_ptr<VolumeAsset> VolumeRepository::getVolume(const std::string &name) {
-        if (!volume_asset_cache.contains(name)) {
-            throw new std::runtime_error("Volume asset " + name + " isn ot loaded");
+    std::shared_ptr<Volume> VolumeRepository::getOrCreateVolume(const std::string &path) {
+        if (!volume_path_cache.contains(path)) {
+           volume_path_cache[path] = volume_builder->loadVolume(path);
         }
-        return volume_asset_cache[name];
+        return volume_path_cache[path];
     }
 
-    std::string VolumeRepository::addVolumeAsset(const fs::path &path, float absorption, float scattering, float g, const std::shared_ptr<MeshAsset> &mesh_asset) {
+    std::shared_ptr<VolumeAsset> VolumeRepository::createHeterogenousVolumeAsset(const fs::path &path, float absorption, float scattering, float g, const std::shared_ptr<MeshAsset> &mesh_asset) {
         auto volume_asset = std::make_shared<VolumeAsset>();
-        volume_asset->name = std::to_string(volume_asset_cache.size()) + "_hetero_" + path.stem().string();
+        volume_asset->name = "_hetero_" + path.stem().string(); // TODO collect Volumes not VolumeAssets
         volume_asset->absorption_scale = absorption;
         volume_asset->scattering_scale = scattering;
         volume_asset->g = g;
         volume_asset->bounding_mesh = mesh_asset;
+        volume_asset->volume = getOrCreateVolume(path);
 
-        if (!volume_path_cache.contains(path)) {
-           volume_path_cache[path] = volume_builder->loadVolume(path);
-        }
-        volume_asset->volume = volume_path_cache[path];
-
-        volume_asset_cache[volume_asset->name] = volume_asset;
-        return volume_asset->name;
+        return volume_asset;
     }
 
-    std::string VolumeRepository::addHomogenousVolumeAsset(float absorption, float scattering, float g, float majorant,
+    std::shared_ptr<VolumeAsset> VolumeRepository::createHomogenousVolumeAsset(float absorption, float scattering, float g, float majorant,
                                                            const std::shared_ptr<MeshAsset> &mesh_asset) {
 
         auto volume_asset = std::make_shared<VolumeAsset>();
-        volume_asset->name = std::to_string(volume_asset_cache.size()) + "_Homo_" + std::to_string(absorption) + "_" + std::to_string(scattering);
+        volume_asset->name = "_Homo_" + std::to_string(absorption) + "_" + std::to_string(scattering);
         volume_asset->volume = VolumeBuilder::createHomogenous();
         volume_asset->absorption_scale = absorption;
         volume_asset->scattering_scale = scattering;
         volume_asset->g = g;
         volume_asset->bounding_mesh = mesh_asset;
 
-        volume_asset_cache[volume_asset->name] = volume_asset;
-        return volume_asset->name;
+        return volume_asset;
     }
 
     void VolumeRepository::destroy() {

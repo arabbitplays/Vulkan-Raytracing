@@ -135,7 +135,10 @@ scene:
         VolumeRenderer:
           mesh: cube
           material_name: sphere1
-          volume: lol
+          volume: "../resources/volumes/smoke.vdb"
+          scattering: 500
+          absorption: 100
+          g: 0.2
       children:
         []
     - name: Room

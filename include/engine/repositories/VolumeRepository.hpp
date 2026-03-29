@@ -15,9 +15,10 @@ namespace RtEngine {
         VolumeRepository() = default;
         VolumeRepository(const std::shared_ptr<VulkanContext> &context, const std::string &resource_dir);
 
-        std::shared_ptr<VolumeAsset> getVolume(const std::string &name);
-        std::string addVolumeAsset(const fs::path &path, float absorption, float scattering, float g, const std::shared_ptr<MeshAsset> &mesh_asset);
-        std::string addHomogenousVolumeAsset(float absorption, float scattering, float g, float majorant, const std::shared_ptr<MeshAsset> &mesh_asset);
+        std::shared_ptr<Volume> getOrCreateVolume(const std::string &path);
+        std::shared_ptr<VolumeAsset> createHeterogenousVolumeAsset(const fs::path &path, float absorption, float scattering, float g, const std::shared_ptr<MeshAsset> &mesh_asset);
+        static std::shared_ptr<VolumeAsset> createHomogenousVolumeAsset(float absorption, float scattering, float g, float majorant,
+                                                           const std::shared_ptr<MeshAsset> &mesh_asset);
         void destroy();
 
     private:
@@ -25,7 +26,6 @@ namespace RtEngine {
 
         std::shared_ptr<VolumeBuilder> volume_builder;
         std::unordered_map<std::string, std::shared_ptr<Volume>> volume_path_cache;
-        std::unordered_map<std::string, std::shared_ptr<VolumeAsset>> volume_asset_cache;
     };
 } // RtEngine
 

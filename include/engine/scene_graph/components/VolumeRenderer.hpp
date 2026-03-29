@@ -24,8 +24,10 @@ namespace RtEngine {
         std::shared_ptr<MaterialInstance> vol_material;
 
     private:
+        void refreshVolumeAsset();
+
         std::string mesh_asset_name;
-        std::string volume_asset_name;
+        std::string volume_name;
         std::string material_instance_name;
 
         float absorption = 0.02f, scattering = 0.5f, g = 0.0f, majorant = 0.0f;
