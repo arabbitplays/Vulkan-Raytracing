@@ -371,7 +371,7 @@ namespace RtEngine {
 	void RaytracingRenderer::initProperties(const std::shared_ptr<IProperties> &config,
 	const UpdateFlagsHandle &update_flags) {
 		if (config->startChild("renderer")) {
-			if (config->addUint("recursion_depth", &recursion_depth, 1, 10)) {
+			if (config->addUint("recursion_depth", &recursion_depth, 1, 50)) {
 				update_flags->setFlag(TARGET_RESET);
 			}
 			config->endChild();
