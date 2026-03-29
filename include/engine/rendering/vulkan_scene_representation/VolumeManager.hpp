@@ -16,13 +16,13 @@ namespace RtEngine {
 
         static VolumeData createVolumeData(const std::shared_ptr<VolumeAsset> &volume_asset, uint32_t texture_idx);
 
-        AllocatedImage createVolumeTexture(const std::shared_ptr<VolumeBuffers> &volume_buffers) const;
-
         void writeVolumeResources(VkSampler sampler) const;
 
         void destroy();
 
     private:
+        AllocatedImage createVolumeTexture(glm::uvec3 vol_size, std::vector<glm::vec2> & coefficients) const;
+
         std::shared_ptr<VulkanContext> vulkan_context;
         AllocatedBuffer volume_mapping_buffer;
         std::vector<AllocatedImage> volume_textures;

@@ -4,9 +4,11 @@
 src += files(
   'MeshAssetBuilder.cpp',
   'AssimpModelLoader.cpp',
+  'OpenVdbVolumeLoader.cpp',
   'DescriptorLayoutBuilder.cpp',
   'ModelLoader.cpp',
   'ResourceBuilder.cpp',
   'RasterizerPipelineBuilder.cpp',
+  'VolumeBuilder.cpp',
   'RenderPassBuilder.cpp',
 )

@@ -1,5 +1,5 @@
 runner:
-  scene_name: volume_test_scene
+  scene_name: hetero_volume_test_scene
 renderer:
   recursion_depth: 20
 phong:

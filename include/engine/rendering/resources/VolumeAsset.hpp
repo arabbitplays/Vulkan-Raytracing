@@ -6,13 +6,9 @@
 #include <glm/vec3.hpp>
 
 #include "MeshAsset.hpp"
+#include "Volume.hpp"
 
 namespace RtEngine {
-    struct VolumeBuffers {
-        glm::uvec3 size;
-        std::vector<glm::vec2> coefficients; // absorption scattering
-    };
-
     struct VolumeData {
         float g;
         float majorant;
@@ -25,24 +21,23 @@ namespace RtEngine {
     struct VolumeAsset {
         std::string name;
         uint32_t volume_id;
+        std::shared_ptr<Volume> volume;
         float g;
-        float majorant;
-        std::shared_ptr<VolumeBuffers> volume_buffers;
+        float absorption_scale, scattering_scale;
         std::shared_ptr<MeshAsset> bounding_mesh;
 
-        static std::shared_ptr<VolumeAsset> createHomogenous(const std::string &name, const float absorption, const float scattering, const float g, float majorant, const std::shared_ptr<MeshAsset> &bounding_mesh) {
-            auto result = std::make_shared<VolumeAsset>();
-            result->name = name;
-            result->g = g;
-            result->majorant = scattering + absorption + majorant;
-            result->bounding_mesh = bounding_mesh;
+        std::vector<glm::vec2> getCoefficients() const {
+            std::vector<glm::vec2> coefficients;
+            coefficients.reserve(volume->size.x * volume->size.y * volume->size.z);
+            for (uint32_t i = 0; i < volume->densities.size(); i++) {
+                float density = volume->densities.at(i);
+                coefficients.emplace_back(density / volume->max_density * absorption_scale, density / volume->max_density * scattering_scale);
+            }
+            return coefficients;
+        }
 
-            result->volume_buffers = std::make_shared<VolumeBuffers>(
-                glm::uvec3(100),
-                std::vector<glm::vec2>(1000000, glm::vec2(absorption, scattering))
-            );
-
-            return result;
+        float getMajorant() {
+            return absorption_scale + scattering_scale;
         }
     };
 } // RtEngine

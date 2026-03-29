@@ -9,8 +9,12 @@ namespace RtEngine {
         mesh_asset = context->mesh_repository->getMesh(mesh_asset_name);
         assert(mesh_asset != nullptr);
 
-        // vol_asset = context->volume_repository->getVolume(volume_asset_name);
-        vol_asset = VolumeAsset::createHomogenous(material_instance_name, absorption, scattering, g, majorant, mesh_asset);
+        // std::string vol_asset_name = context->volume_repository->addHomogenousVolumeAsset(absorption, scattering, g, majorant, mesh_asset);
+        absorption = 50;
+        scattering = 100;
+        std::string vol_asset_name = context->volume_repository->addVolumeAsset("../resources/volumes/smoke.vdb", absorption, scattering, g, mesh_asset);
+
+        vol_asset = context->volume_repository->getVolume(vol_asset_name);
 
         std::shared_ptr<Material> material = context->scene_manager->getCurrentMaterial();
         vol_material = material->getInstanceByName(material_instance_name);
@@ -45,7 +49,8 @@ namespace RtEngine {
                 update_needed |= config->addFloat("absorption", &absorption);
 
                 if (update_needed) {
-                    vol_asset = VolumeAsset::createHomogenous(material_instance_name, absorption, scattering, g, majorant, mesh_asset);
+                    std::string vol_asset_name = context->volume_repository->addVolumeAsset("../resources/volumes/smoke.vdb", absorption, scattering, g, mesh_asset);
+                    vol_asset = context->volume_repository->getVolume(vol_asset_name);
                     update_flags->setFlag(VOLUME_UPDATE);
                 }
             }

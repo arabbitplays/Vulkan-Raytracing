@@ -37,8 +37,16 @@ imgui = dependency('imgui', fallback: ['imgui', 'imgui_dep'])
 stb = dependency('stb', fallback: ['stb', 'stb_dep'], default_options : ['stb_libraries=[\'stb_image\', \'stb_image_write\']'])
 spdlog = dependency('spdlog')
 assimp = dependency('assimp')
-yaml = dependency('yaml-cpp')
 openmp = dependency('openmp', required: true)
+yaml = dependency('yaml-cpp')
+
+openvdb_root = '/nix/store/2xpyf2q28vh0vp9y9h5vncxi2pjn3zny-openvdb-12.0.1-dev'
+openvdb_dep = declare_dependency(
+    include_directories: include_directories(openvdb_root + '/include'),
+    link_args: ['-L' + openvdb_root + '/lib', '-lopenvdb']
+)
+cc = meson.get_compiler('cpp')
+tbb_dep = cc.find_library('tbb', required: true)
 
 project_root = meson.current_source_dir()
 
@@ -96,6 +104,7 @@ exe = executable(
         spdlog,
         vulkan,
         assimp,
+        openvdb_dep, tbb_dep,
         yaml,
         openmp
     ],

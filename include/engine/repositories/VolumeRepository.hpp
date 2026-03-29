@@ -4,22 +4,28 @@
 
 #include "DeletionQueue.hpp"
 #include "VolumeAsset.hpp"
+#include "VolumeBuilder.hpp"
 #include "VulkanContext.hpp"
 
 namespace RtEngine {
+    namespace fs = std::filesystem;
+
     class VolumeRepository {
     public:
         VolumeRepository() = default;
         VolumeRepository(const std::shared_ptr<VulkanContext> &context, const std::string &resource_dir);
 
         std::shared_ptr<VolumeAsset> getVolume(const std::string &name);
-        std::string addVolume(std::string path);
+        std::string addVolumeAsset(const fs::path &path, float absorption, float scattering, float g, const std::shared_ptr<MeshAsset> &mesh_asset);
+        std::string addHomogenousVolumeAsset(float absorption, float scattering, float g, float majorant, const std::shared_ptr<MeshAsset> &mesh_asset);
         void destroy();
 
     private:
         DeletionQueue deletion_queue;
 
-        std::unordered_map<std::string, std::shared_ptr<VolumeAsset>> mesh_name_cache, mesh_path_cache;
+        std::shared_ptr<VolumeBuilder> volume_builder;
+        std::unordered_map<std::string, std::shared_ptr<Volume>> volume_path_cache;
+        std::unordered_map<std::string, std::shared_ptr<VolumeAsset>> volume_asset_cache;
     };
 } // RtEngine
 

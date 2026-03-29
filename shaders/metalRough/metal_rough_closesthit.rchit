@@ -71,7 +71,7 @@ void main() {
             payload.next_distance = INFINITY;
 
             float distance_traveled = gl_HitTEXT;
-            payload.beta *= transmittance(distance_traveled, volume.majorant);
+            //payload.beta *= transmittance(distance_traveled, volume.majorant);
         } else {
             payload.current_volume_idx = getVolumeIdx(triangle);
             payload.volume_world_to_object = gl_WorldToObjectEXT;

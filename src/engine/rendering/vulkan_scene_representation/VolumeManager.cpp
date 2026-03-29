@@ -16,7 +16,8 @@ namespace RtEngine {
             volume_asset->volume_id = volume_id++;
 
             const uint32_t texture_idx = volume_textures.size();
-            AllocatedImage texture = createVolumeTexture(volume_asset->volume_buffers);
+            auto coefficients = volume_asset->getCoefficients();
+            AllocatedImage texture = createVolumeTexture(volume_asset->volume->size, coefficients);
             volume_textures.push_back(texture);
 
             VolumeData data = createVolumeData(volume_asset, texture_idx);
@@ -31,7 +32,7 @@ namespace RtEngine {
         auto [origin, extent] = volume_asset->bounding_mesh->calcAABB();
         const VolumeData volume_data {
             .g = volume_asset->g,
-            .majorant = volume_asset->majorant,
+            .majorant = volume_asset->volume->max_density,
             .volume_texture_idx = texture_idx,
             .bounding_box_origin = glm::vec4(origin, 0),
             .bounding_box_extent = glm::vec4(extent, 0),
@@ -39,9 +40,9 @@ namespace RtEngine {
         return volume_data;
     }
 
-    AllocatedImage VolumeManager::createVolumeTexture(const std::shared_ptr<VolumeBuffers> &volume_buffers) const {
-        VkExtent3D extent = {volume_buffers->size.x, volume_buffers->size.y, volume_buffers->size.z };
-        return vulkan_context->resource_builder->createImage(volume_buffers->coefficients.data(), extent, VK_FORMAT_R32G32_SFLOAT, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_LAYOUT_GENERAL);
+    AllocatedImage VolumeManager::createVolumeTexture(glm::uvec3 vol_size, std::vector<glm::vec2>& coefficients) const {
+        VkExtent3D extent = {vol_size.x, vol_size.y, vol_size.z };
+        return vulkan_context->resource_builder->createImage(coefficients.data(), extent, VK_FORMAT_R32G32_SFLOAT, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_LAYOUT_GENERAL);
     }
 
     void VolumeManager::writeVolumeResources(VkSampler sampler) const {

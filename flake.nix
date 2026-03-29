@@ -41,6 +41,8 @@
         stb
         assimp
         yaml-cpp
+        openvdb
+        tbb
 
         R
         rPackages.tidyverse
