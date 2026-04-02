@@ -1,5 +1,3 @@
-layout(location = 1) rayPayloadEXT bool isShadowed;
-
 vec3 calcConductorBRDF(vec3 wo, vec3 wi, vec3 albedo, float metallic, float roughness) {
     if (!sameHemisphere(wo, wi) || effectivelySmooth(roughness, roughness)) return vec3(0);
 

@@ -1,3 +1,7 @@
+#include "../nee/shadow_payload.glsl"
+
+layout(location = 1) rayPayloadEXT ShadowPayload shadow_payload;
+
 struct LightSample {
     vec3 P;
     vec3 light;
@@ -55,15 +59,15 @@ LightSample sampleEmittingPrimitive(vec3 P, uint emitter_count) {
     return result;
 }
 
-bool unoccluded(vec3 P, vec3 L, float distance_to_light) {
+vec3 estimateTransmittance(vec3 P, vec3 L, float distance_to_light) {
     float tmin = EPSILON;
     float tmax = distance_to_light - EPSILON;
     vec3 direction = L;
     vec3 origin = P;
     uint flags = gl_RayFlagsTerminateOnFirstHitEXT | gl_RayFlagsOpaqueEXT | gl_RayFlagsSkipClosestHitShaderEXT;
-    isShadowed = true;
+    shadow_payload.transmittance = vec3(0);
 
     traceRayEXT(topLevelAS, flags, 0xff, 0, 0, 1, origin.xyz, tmin, direction.xyz, tmax, 1);
 
-    return !isShadowed;
+    return shadow_payload.transmittance;
 }

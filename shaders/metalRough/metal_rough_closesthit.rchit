@@ -106,15 +106,17 @@ void main() {
             vec3 wo = normalize(transpose_tbn * V);
             vec3 wi = normalize(transpose_tbn * L);
 
+            vec3 transmittance = estimateTransmittance(P, L, distance_to_light);
+
             if (options.sample_bsdf) {
                 vec3 f = calcConductorBRDF(wo, wi, albedo, metallic, roughness) * max(dot(N, L), 0.0);
-                if (light_sample.light != vec3(0) && length(f) > 0.0 && unoccluded(P, L, distance_to_light)) {
-                    payload.light += payload.beta * f * light_sample.light / light_sample.pdf;
+                if (light_sample.light != vec3(0) && length(f) > 0.0 && length(transmittance) > 0) {
+                    payload.light += payload.beta * transmittance * f * light_sample.light / light_sample.pdf;
                 }
             } else {
                 vec3 f = computeBsdf(wo, wi, albedo, metallic, roughness, eta) * abs(dot(N, L));
-                if (light_sample.light != vec3(0) && length(f) > 0.0 && unoccluded(P, L, distance_to_light)) {
-                    payload.light += payload.beta * f * light_sample.light / light_sample.pdf;
+                if (light_sample.light != vec3(0) && length(f) > 0.0 && length(transmittance) > 0) {
+                    payload.light += payload.beta * transmittance * f * light_sample.light / light_sample.pdf;
                 }
             }
         }

@@ -4,6 +4,7 @@
 #include <OptionsWindow.hpp>
 #include <VulkanUtil.hpp>
 #include <metal_rough_closesthit.rchit.spv.h>
+#include <shadow_clostesthit.rchit.spv.h>
 #include <metal_rough_miss.rmiss.spv.h>
 #include <metal_rough_raygen.rgen.spv.h>
 #include <shadow_miss.rmiss.spv.h>
@@ -40,6 +41,8 @@ namespace RtEngine {
 				device, oschd_shadow_miss_rmiss_spv_size(), oschd_shadow_miss_rmiss_spv());
 		VkShaderModule closestHitShaderModule = VulkanUtil::createShaderModule(
 				device, oschd_metal_rough_closesthit_rchit_spv_size(), oschd_metal_rough_closesthit_rchit_spv());
+		VkShaderModule shadow_hit_shader_module = VulkanUtil::createShaderModule(
+				device, oschd_shadow_clostesthit_rchit_spv_size(), oschd_shadow_clostesthit_rchit_spv());
 
 		pipeline->addShaderStage(raygenShaderModule, VK_SHADER_STAGE_RAYGEN_BIT_KHR,
 								 VK_RAY_TRACING_SHADER_GROUP_TYPE_GENERAL_KHR);
@@ -48,6 +51,8 @@ namespace RtEngine {
 		pipeline->addShaderStage(shadowMissShaderModule, VK_SHADER_STAGE_MISS_BIT_KHR,
 								 VK_RAY_TRACING_SHADER_GROUP_TYPE_GENERAL_KHR);
 		pipeline->addShaderStage(closestHitShaderModule, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR,
+								 VK_RAY_TRACING_SHADER_GROUP_TYPE_TRIANGLES_HIT_GROUP_KHR);
+		pipeline->addShaderStage(shadow_hit_shader_module, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR,
 								 VK_RAY_TRACING_SHADER_GROUP_TYPE_TRIANGLES_HIT_GROUP_KHR);
 
 		pipeline->build();
@@ -58,6 +63,7 @@ namespace RtEngine {
 		vkDestroyShaderModule(device, missShaderModule, nullptr);
 		vkDestroyShaderModule(device, shadowMissShaderModule, nullptr);
 		vkDestroyShaderModule(device, closestHitShaderModule, nullptr);
+		vkDestroyShaderModule(device, shadow_hit_shader_module, nullptr);
 	}
 
 	void MetalRoughMaterial::writeMaterial(AllocatedBuffer material_buffer, std::shared_ptr<MaterialTextures<>> material_textures) {
