@@ -14,6 +14,8 @@
 
 #include "options.glsl"
 
+layout(location = 0) rayPayloadInEXT Payload payload;
+
 void main() {
     if (payload.current_volume_idx >= 0) {
         float traveled_distance = payload.next_distance;

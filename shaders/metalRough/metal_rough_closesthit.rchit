@@ -16,6 +16,7 @@
 layout(binding = 0, set = 0) uniform accelerationStructureEXT topLevelAS;
 layout(binding = 1, set = 1) uniform sampler2D material_textures[64];
 
+layout(location = 0) rayPayloadInEXT Payload payload;
 
 hitAttributeEXT vec3 attribs;
 
@@ -107,6 +108,9 @@ void main() {
             vec3 wi = normalize(transpose_tbn * L);
 
             vec3 transmittance = estimateTransmittance(P, L, distance_to_light);
+            //payload.light = transmittance;
+            //payload.next_direction = vec3(0);
+            //return;
 
             if (options.sample_bsdf) {
                 vec3 f = calcConductorBRDF(wo, wi, albedo, metallic, roughness) * max(dot(N, L), 0.0);

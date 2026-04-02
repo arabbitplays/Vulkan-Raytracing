@@ -1,8 +1,6 @@
 #ifndef LAYOUT
 #define LAYOUT
 
-layout(location = 0) rayPayloadInEXT Payload payload;
-
 struct Vertex {
     vec3 position;
     vec3 normal;

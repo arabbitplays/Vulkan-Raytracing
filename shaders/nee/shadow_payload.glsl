@@ -4,6 +4,7 @@
 struct ShadowPayload {
     vec3 transmittance;
     float dist_left;
+    vec3 origin;
     vec3 direction;
     int current_volume_idx;
     mat4x3 volume_world_to_object;

@@ -11,6 +11,8 @@
 #include "../common/layout.glsl"
 #include "options.glsl"
 
+layout(location = 0) rayPayloadInEXT Payload payload;
+
 hitAttributeEXT vec3 attribs;
 
 #include "phong_lighting.glsl"

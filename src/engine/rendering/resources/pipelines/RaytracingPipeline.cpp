@@ -64,7 +64,7 @@ namespace RtEngine {
 
 		std::vector<uint32_t> rgen_indices{0};
 		std::vector<uint32_t> miss_indices{1, 2};
-		std::vector<uint32_t> hit_indices{3};
+		std::vector<uint32_t> hit_indices{3, 4};
 
 		const uint32_t handleSize = raytracingProperties.shaderGroupHandleSize;
 		const uint32_t handleAlignment = raytracingProperties.shaderGroupHandleAlignment;

@@ -64,10 +64,14 @@ vec3 estimateTransmittance(vec3 P, vec3 L, float distance_to_light) {
     float tmax = distance_to_light - EPSILON;
     vec3 direction = L;
     vec3 origin = P;
-    uint flags = gl_RayFlagsTerminateOnFirstHitEXT | gl_RayFlagsOpaqueEXT | gl_RayFlagsSkipClosestHitShaderEXT;
-    shadow_payload.transmittance = vec3(0);
+    uint flags = gl_RayFlagsOpaqueEXT;
 
-    traceRayEXT(topLevelAS, flags, 0xff, 0, 0, 1, origin.xyz, tmin, direction.xyz, tmax, 1);
+    shadow_payload.transmittance = vec3(0);
+    shadow_payload.dist_left = distance_to_light;
+    shadow_payload.origin = origin;
+    shadow_payload.direction = direction;
+
+    traceRayEXT(topLevelAS, flags, 0xff, 1, 0, 1, origin.xyz, tmin, direction.xyz, tmax, 1);
 
     return shadow_payload.transmittance;
 }
