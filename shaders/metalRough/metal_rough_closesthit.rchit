@@ -64,23 +64,14 @@ void main() {
 
         VolumeInstance volume = getVolume(triangle);
 
-        if (payload.current_volume_idx < 0) { // entering a volume
-        }
-
         if (payload.current_volume_idx >= 0) {
             payload.current_volume_idx = -1;
             payload.next_distance = INFINITY;
-
-            float distance_traveled = gl_HitTEXT;
-            //payload.beta *= transmittance(distance_traveled, volume.majorant);
         } else {
             payload.current_volume_idx = getVolumeIdx(triangle);
             payload.volume_world_to_object = gl_WorldToObjectEXT;
 
             payload.next_distance = sampleDistance(volume.majorant, payload.rng_state);
-
-            //payload.light = vec3(volume.majorant);
-            //payload.next_direction = vec3(0);
         }
     } else {
         vec3 albedo = texture(material_textures[material.albedo_tex_idx], uv).xyz + material.albedo;
@@ -107,7 +98,7 @@ void main() {
             vec3 wo = normalize(transpose_tbn * V);
             vec3 wi = normalize(transpose_tbn * L);
 
-            vec3 transmittance = estimateTransmittance(P, L, distance_to_light);
+            vec3 transmittance = estimateTransmittance(P, L, distance_to_light, payload.rng_state);
             //payload.light = transmittance;
             //payload.next_direction = vec3(0);
             //return;

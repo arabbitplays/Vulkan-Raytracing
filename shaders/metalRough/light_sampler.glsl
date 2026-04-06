@@ -59,19 +59,25 @@ LightSample sampleEmittingPrimitive(vec3 P, uint emitter_count) {
     return result;
 }
 
-vec3 estimateTransmittance(vec3 P, vec3 L, float distance_to_light) {
-    float tmin = EPSILON;
-    float tmax = distance_to_light - EPSILON;
-    vec3 direction = L;
-    vec3 origin = P;
-    uint flags = gl_RayFlagsOpaqueEXT;
+vec3 estimateTransmittance(vec3 P, vec3 L, float distance_to_light, inout uvec4 rng_state) {
 
-    shadow_payload.transmittance = vec3(0);
+    shadow_payload.rng_state = rng_state;
+    shadow_payload.transmittance = vec3(1);
     shadow_payload.dist_left = distance_to_light;
-    shadow_payload.origin = origin;
-    shadow_payload.direction = direction;
+    shadow_payload.next_distance = distance_to_light;
+    shadow_payload.next_origin = P;
+    shadow_payload.direction = normalize(L);
+    shadow_payload.current_volume_idx = -1;
 
-    traceRayEXT(topLevelAS, flags, 0xff, 1, 0, 1, origin.xyz, tmin, direction.xyz, tmax, 1);
+    while (length(shadow_payload.transmittance) > 0.0f && shadow_payload.dist_left > 0.0f) {
+        float tmin = EPSILON;
+        float tmax = shadow_payload.next_distance - EPSILON;
+        vec3 direction = shadow_payload.direction;
+        vec3 origin = shadow_payload.next_origin;
+        uint flags = gl_RayFlagsOpaqueEXT;
+        traceRayEXT(topLevelAS, flags, 0xff, 1, 0, 1, origin.xyz, tmin, direction.xyz, tmax, 1);
+    }
 
+    rng_state = shadow_payload.rng_state;
     return shadow_payload.transmittance;
 }

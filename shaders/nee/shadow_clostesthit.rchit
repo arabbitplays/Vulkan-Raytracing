@@ -10,6 +10,7 @@ layout(binding = 1, set = 1) uniform sampler2D material_textures[64];
 
 #include "./shadow_payload.glsl"
 #include "../volume/layout.glsl"
+#include "../volume/distance_sampler.glsl"
 #include "../common/constants.glsl"
 
 layout(location = 0) rayPayloadInEXT ShadowPayload payload;
@@ -19,19 +20,21 @@ hitAttributeEXT vec3 attribs;
 void main() {
     Triangle triangle = getTriangle(gl_InstanceCustomIndexEXT, gl_PrimitiveID);
     if (isVolumeBoundary(triangle)) {
-        payload.transmittance = vec3(1);
-        return;
+         VolumeInstance volume = getVolume(triangle);
+
+         payload.next_origin += gl_HitTEXT * payload.direction;
+         payload.dist_left -= gl_HitTEXT;
+
+         if (payload.current_volume_idx >= 0) {
+             payload.current_volume_idx = -1;
+             payload.next_distance = payload.dist_left;
+         } else {
+             payload.current_volume_idx = getVolumeIdx(triangle);
+             payload.volume_world_to_object = gl_WorldToObjectEXT;
+             payload.next_distance = sampleDistance(volume.majorant, payload.rng_state);
+        }
     } else {
-        return;
+        payload.dist_left = 0;
+        payload.transmittance = vec3(0);
     }
-    float distance_to_light = payload.dist_left - gl_HitTEXT;
-    float tmin = EPSILON;
-    float tmax = distance_to_light - EPSILON;
-    vec3 direction = payload.direction;
-    vec3 origin = payload.origin + gl_HitTEXT * direction;
-    uint flags = gl_RayFlagsOpaqueEXT;
-
-    payload.dist_left = distance_to_light - EPSILON;
-
-//    traceRayEXT(topLevelAS, flags, 0xff, 1, 0, 1, origin.xyz, tmin, direction.xyz, tmax, 1);
 }
