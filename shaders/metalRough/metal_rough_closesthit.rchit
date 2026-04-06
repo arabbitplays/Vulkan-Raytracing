@@ -13,7 +13,6 @@
 #include "../volume/distance_sampler.glsl"
 #include "../volume/transmittance_estimator.glsl"
 
-layout(binding = 0, set = 0) uniform accelerationStructureEXT topLevelAS;
 layout(binding = 1, set = 1) uniform sampler2D material_textures[64];
 
 layout(location = 0) rayPayloadInEXT Payload payload;
@@ -90,7 +89,7 @@ void main() {
 
         if (options.sample_light) {
             uint emitter_count = max(1, sceneData.emitter_count);
-            LightSample light_sample = sampleEmittingPrimitive(P, emitter_count);
+            LightSample light_sample = sampleEmittingPrimitive(P, emitter_count, payload.rng_state);
             vec3 L = light_sample.P - P;
             float distance_to_light = length(L);
             L = normalize(L);

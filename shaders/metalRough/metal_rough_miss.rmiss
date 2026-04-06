@@ -7,6 +7,8 @@
 #include "../common/scene_data.glsl"
 #include "../common/random.glsl"
 
+#include "./light_sampler.glsl"
+
 #include "../volume/layout.glsl"
 #include "../volume/distance_sampler.glsl"
 #include "../volume/transmittance_estimator.glsl"
@@ -34,12 +36,28 @@ void main() {
         float rand = stepAndOutputRNGFloat(payload.rng_state);
         float p_continue = null_scattering / volume.majorant;
         if (rand > p_continue) {
+            if (options.sample_light) {
+                uint emitter_count = max(1, sceneData.emitter_count);
+                LightSample light_sample = sampleEmittingPrimitive(P, emitter_count, payload.rng_state);
+                vec3 L = light_sample.P - P;
+                float distance_to_light = length(L);
+                L = normalize(L);
+
+                float sampled_dist = sampleDistance(volume.majorant, payload.rng_state);
+                vec3 transmittance = estimateTransmittance(P, L, distance_to_light, payload.current_volume_idx, sampled_dist, payload.rng_state);
+                float phase = henyeyGreenstein(wo, L, volume.g);
+                if (light_sample.light != vec3(0) && phase > 0.0 && length(transmittance) > 0) {
+                    payload.light += scattering * payload.beta * transmittance * phase * light_sample.light / light_sample.pdf;
+                }
+            }
+
             PhaseFunctionSample p_sample = sampleHGPhaseFunction(wo, volume.g, payload.rng_state);
             //PhaseFunctionSample p_sample = sampleIsoPhaseFunction(wo, payload.rng_state);
 
             payload.beta *= scattering / (absorption + scattering);
             payload.next_direction = p_sample.wi;
         }
+
 
         // This is the full version, without terms cut out for the specific phase function used
         //payload.beta *= scattering * transmittance(traveled_distance, extinction) * p_sample.p / distanceSamplingPdf(traveled_distance, extinction) / p_sample.pdf;

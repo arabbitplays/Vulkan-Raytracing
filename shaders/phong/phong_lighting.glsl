@@ -10,7 +10,6 @@ struct Material {
     vec3 eta;
 };
 
-layout(binding = 0, set = 0) uniform accelerationStructureEXT topLevelAS;
 
 layout(location = 1) rayPayloadEXT bool isShadowed;
 

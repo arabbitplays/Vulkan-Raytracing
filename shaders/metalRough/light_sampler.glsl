@@ -1,6 +1,5 @@
-#include "../nee/shadow_payload.glsl"
-
-layout(location = 1) rayPayloadEXT ShadowPayload shadow_payload;
+#include "../common/layout.glsl"
+#include "./trowbridge_reitz_distribution.glsl"
 
 struct LightSample {
     vec3 P;
@@ -8,21 +7,21 @@ struct LightSample {
     float pdf;
 };
 
-LightSample sampleEmittingPrimitive(vec3 P, uint emitter_count) {
-    float u = stepAndOutputRNGFloat(payload.rng_state);
+LightSample sampleEmittingPrimitive(vec3 P, uint emitter_count, inout uvec4 rng_state) {
+    float u = stepAndOutputRNGFloat(rng_state);
     uint emitting_instance_idx = min(uint(u * emitter_count), uint(emitter_count - 1u));
     float pmf_light = 1.0 / emitter_count;
 
     EmittingInstance emitting_instance = emitting_instance_buffer.instances[emitting_instance_idx];
 
-    u = stepAndOutputRNGFloat(payload.rng_state);
+    u = stepAndOutputRNGFloat(rng_state);
     uint primitive_idx = uint(min(u * emitting_instance.primitive_count, emitting_instance.primitive_count - 1));
     float pmf_primitive = 1.0 / emitting_instance.primitive_count;
 
     Triangle triangle = getTriangle(emitting_instance.instance_idx, primitive_idx);
 
-    u = stepAndOutputRNGFloat(payload.rng_state);
-    float v = stepAndOutputRNGFloat(payload.rng_state);
+    u = stepAndOutputRNGFloat(rng_state);
+    float v = stepAndOutputRNGFloat(rng_state);
     if (u + v > 1.0) {
         u = 1 - u;
         v = 1 - v;
@@ -57,27 +56,4 @@ LightSample sampleEmittingPrimitive(vec3 P, uint emitter_count) {
     result.pdf = pmf_light * pmf_primitive * pdf;
 
     return result;
-}
-
-vec3 estimateTransmittance(vec3 P, vec3 L, float distance_to_light, inout uvec4 rng_state) {
-
-    shadow_payload.rng_state = rng_state;
-    shadow_payload.transmittance = vec3(1);
-    shadow_payload.dist_left = distance_to_light;
-    shadow_payload.next_distance = distance_to_light;
-    shadow_payload.next_origin = P;
-    shadow_payload.direction = normalize(L);
-    shadow_payload.current_volume_idx = -1;
-
-    while (length(shadow_payload.transmittance) > 0.0f && shadow_payload.dist_left > 0.0f) {
-        float tmin = EPSILON;
-        float tmax = shadow_payload.next_distance - EPSILON;
-        vec3 direction = shadow_payload.direction;
-        vec3 origin = shadow_payload.next_origin;
-        uint flags = gl_RayFlagsOpaqueEXT;
-        traceRayEXT(topLevelAS, flags, 0xff, 1, 0, 1, origin.xyz, tmin, direction.xyz, tmax, 1);
-    }
-
-    rng_state = shadow_payload.rng_state;
-    return shadow_payload.transmittance;
 }

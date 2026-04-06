@@ -1,3 +1,6 @@
+#ifndef TROWBRIDGE_REITZ_DISTRIBUTION
+#define TROWBRIDGE_REITZ_DISTRIBUTION
+
 #include "../common/constants.glsl"
 
 struct Material {
@@ -81,3 +84,5 @@ vec3 fresnelSchlick(float cosTheta, vec3 albedo, float metallic) {
 bool effectivelySmooth(float alpha_x, float alpha_y) {
     return max(alpha_x, alpha_y) < 1E-3;
 }
+
+#endif

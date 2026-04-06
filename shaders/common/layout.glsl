@@ -1,5 +1,5 @@
-#ifndef LAYOUT
-#define LAYOUT
+#ifndef LAYOUT_GLSL
+#define LAYOUT_GLSL
 
 struct Vertex {
     vec3 position;
@@ -8,6 +8,8 @@ struct Vertex {
     vec3 color;
     vec2 uv;
 };
+
+layout(binding = 0, set = 0) uniform accelerationStructureEXT topLevelAS;
 
 layout(binding = 3, set = 0) readonly buffer VertexBuffer {
     vec4[] data;
