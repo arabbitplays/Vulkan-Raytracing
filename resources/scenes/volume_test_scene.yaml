@@ -135,7 +135,7 @@ scene:
         VolumeRenderer:
           mesh: sphere
           material_name: sphere1
-          scattering: 0.5
+          scattering: 1
           absorption: 0.2
           g: 0
       children:
@@ -158,8 +158,8 @@ scene:
         VolumeRenderer:
           mesh: sphere
           material_name: sphere2
-          scattering: 0.5
-          absorption: 0.2
+          scattering: 0.3
+          absorption: 0.1
           g: 0
       children:
         []
