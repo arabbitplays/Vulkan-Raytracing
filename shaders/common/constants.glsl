@@ -1,2 +1,5 @@
+#ifndef CONSTANTS_GLSL
+#define CONSTANTS_GLSL
 #define EPSILON 0.005
 #define INFINITY 10000.0
+#endif // CONSTANTS_GLSL

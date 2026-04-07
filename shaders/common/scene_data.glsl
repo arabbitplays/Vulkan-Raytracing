@@ -1,3 +1,5 @@
+#ifndef SCENE_DATA_GLSL
+#define SCENE_DATA_GLSL
 layout(binding = 2, set = 0) uniform SceneData {
     mat4 inv_view;
     mat4 inv_proj;
@@ -10,3 +12,5 @@ layout(binding = 2, set = 0) uniform SceneData {
     uint emitter_count;
 
 } sceneData;
+
+#endif // SCENE_DATA_GLSL

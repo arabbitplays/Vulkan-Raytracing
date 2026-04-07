@@ -1,3 +1,5 @@
+#ifndef OPTIONS_GLSL
+#define OPTIONS_GLSL
 layout(push_constant) uniform PushConstants {
     int recursion_depth;
     bool normal_mapping;
@@ -7,3 +9,4 @@ layout(push_constant) uniform PushConstants {
     uint curr_sample_count;
     uint samples_per_pixel;
 } options;
+#endif // OPTIONS_GLSL

@@ -1,3 +1,5 @@
+#ifndef LIGHT_SAMPLER_GLSL
+#define LIGHT_SAMPLER_GLSL
 #include "../common/layout.glsl"
 #include "./trowbridge_reitz_distribution.glsl"
 
@@ -57,3 +59,4 @@ LightSample sampleEmittingPrimitive(vec3 P, uint emitter_count, inout uvec4 rng_
 
     return result;
 }
+#endif // LIGHT_SAMPLER_GLSL

@@ -1,3 +1,5 @@
+#ifndef DIELECTRIC_BSDF_GLSL
+#define DIELECTRIC_BSDF_GLSL
 float fresnel_dielectric(float cos_theta_i, float eta) {
     cos_theta_i = clamp(cos_theta_i, -1, 1);
     if (cos_theta_i < 0) {
@@ -141,3 +143,4 @@ BsdfSample sampleDielectricBsdf(vec3 wo, float roughness, float eta, inout uvec4
         return result;
     }
 }
+#endif // DIELECTRIC_BSDF_GLSL

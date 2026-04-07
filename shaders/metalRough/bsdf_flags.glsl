@@ -1,3 +1,5 @@
+#ifndef BSDF_FLAGS_GLSL
+#define BSDF_FLAGS_GLSL
 const int BSDF_FLAG_UNSET = 0;
 const int BSDF_FLAG_REFLECTION = 1 << 0;
 const int BSDF_FLAG_TRANSMISSION = 1 << 1;
@@ -37,3 +39,5 @@ bool isSpecular(int flags) {
 bool isNonSpecular(int flags) {
     return (flags & (BSDF_FLAG_DIFFUSE | BSDF_FLAG_GLOSSY)) != 0;
 }
+
+#endif // BSDF_FLAGS_GLSL

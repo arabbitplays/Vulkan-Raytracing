@@ -1,3 +1,5 @@
+#ifndef CONDUCTOR_BRDF_GLSL
+#define CONDUCTOR_BRDF_GLSL
 vec3 calcConductorBRDF(vec3 wo, vec3 wi, vec3 albedo, float metallic, float roughness) {
     if (!sameHemisphere(wo, wi) || effectivelySmooth(roughness, roughness)) return vec3(0);
 
@@ -53,3 +55,4 @@ BsdfSample sampleConductorBrdf(vec3 wo, vec3 albedo, float metallic, float rough
 
     return result;
 }
+#endif // CONDUCTOR_BRDF_GLSL

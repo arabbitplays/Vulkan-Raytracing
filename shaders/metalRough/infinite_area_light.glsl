@@ -1,3 +1,5 @@
+#ifndef INFINITE_AREA_LIGHT_GLSL
+#define INFINITE_AREA_LIGHT_GLSL
 #include "../common/random.glsl"
 #include "../common/constants.glsl"
 #include "light_sampler.glsl"
@@ -13,3 +15,4 @@ LightSample uniformSampleLi() {
     result.pdf = 4 * PI;
     return result;
 }
+#endif // INFINITE_AREA_LIGHT_GLSL

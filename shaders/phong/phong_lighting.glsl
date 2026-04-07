@@ -1,3 +1,5 @@
+#ifndef PHONG_LIGHTING_GLSL
+#define PHONG_LIGHTING_GLSL
 #define EPSILON 0.005
 
 struct Material {
@@ -137,3 +139,4 @@ void handleTransmissiveMaterial(vec3 P, vec3 N, vec3 V, Material material, int d
         handleTransmissiveMaterialSingleIOR(P, N, V, mean_eta, material, depth);
     }
 }
+#endif // PHONG_LIGHTING_GLSL

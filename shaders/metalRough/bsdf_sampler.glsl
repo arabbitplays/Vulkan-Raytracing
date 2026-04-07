@@ -1,3 +1,5 @@
+#ifndef BSDF_SAMPLER_GLSL
+#define BSDF_SAMPLER_GLSL
 #include "bsdf_flags.glsl"
 
 struct BsdfSample {
@@ -27,3 +29,4 @@ BsdfSample sampleBsfd(vec3 wo, vec3 albedo, float metallic, float roughness, flo
         return sampleConductorBrdf(wo, albedo, metallic, roughness, rngState);
     }
 }
+#endif // BSDF_SAMPLER_GLSL

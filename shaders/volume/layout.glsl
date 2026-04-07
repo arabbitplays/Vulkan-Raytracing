@@ -1,5 +1,5 @@
-#ifndef VOLUME_LAYOUT
-#define VOLUME_LAYOUT
+#ifndef VOLUME_LAYOUT_GLSL
+#define VOLUME_LAYOUT_GLSL
 
 #include "../common/layout.glsl"
 
