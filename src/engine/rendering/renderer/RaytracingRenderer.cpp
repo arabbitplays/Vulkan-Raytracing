@@ -328,7 +328,7 @@ namespace RtEngine {
 		QuickTimer timer("Output render target");
 
 		AllocatedImage render_target = target->getLastTargetImage();
-		uint8_t *data = vulkan_context->resource_builder->downloadImage(render_target, sizeof(uint32_t));
+		uint8_t *data = vulkan_context->resource_builder->downloadImage(render_target, sizeof(float));
 		uint8_t *fixed_data = fixImageFormatForStorage(
 				data, render_target.imageExtent.width * render_target.imageExtent.height, render_target.imageFormat);
 

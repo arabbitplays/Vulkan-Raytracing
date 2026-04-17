@@ -36,10 +36,10 @@ namespace RtEngine {
 		void destroyBuffer(AllocatedBuffer buffer);
 
 		AllocatedImage createImage(VkExtent3D extent, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage,
-								   VkImageAspectFlags aspectFlags);
+		                           VkImageAspectFlags aspectFlags, VkImageType type = VK_IMAGE_TYPE_2D);
 		AllocatedImage createImage(void *data, VkExtent3D extent, VkFormat format, VkImageTiling tiling,
 								   VkImageUsageFlags usage, VkImageAspectFlags aspectFlags,
-								   VkImageLayout target_layout);
+								   VkImageLayout target_layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VkImageType type = VK_IMAGE_TYPE_2D);
 		Texture loadTextureImage(std::string path, TextureType type = PARAMETER);
 
 		AllocatedImage loadImage(std::string path, VkImageLayout layout);

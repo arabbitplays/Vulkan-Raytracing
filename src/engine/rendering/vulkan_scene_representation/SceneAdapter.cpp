@@ -21,7 +21,7 @@ namespace RtEngine {
 
 		setupNewScene(loaded_scene);
 		updateGeometryResources(loaded_scene);
-		// updateVolumeResources(loaded_scene);
+		updateVolumeResources(loaded_scene);
 		updateMaterial(loaded_scene);
 	}
 

@@ -33,7 +33,7 @@ namespace RtEngine {
         raytracing_renderer->loadScene(new_scene);
 
         SceneWriter writer;
-        writer.writeScene(PathUtil::getFileName(scene_path), new_scene);
+        //writer.writeScene(PathUtil::getFileName(scene_path), new_scene);
     }
 
     void Runner::renderScene() {

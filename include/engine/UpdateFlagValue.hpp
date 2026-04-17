@@ -20,7 +20,7 @@ namespace RtEngine {
             flags |= flag;
 
             if (flag == SCENE_UPDATE) {
-                flags |= STATIC_GEOMETRY_UPDATE | MATERIAL_UPDATE | VOLUME_UPDATE | TARGET_RESET;
+                flags |= STATIC_GEOMETRY_UPDATE | MATERIAL_UPDATE | TARGET_RESET;
             }
 
             if (flag == STATIC_GEOMETRY_UPDATE || flag == MATERIAL_UPDATE || flag == VOLUME_UPDATE) {

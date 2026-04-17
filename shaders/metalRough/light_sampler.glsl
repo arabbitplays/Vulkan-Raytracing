@@ -48,7 +48,7 @@ LightSample sampleEmittingPrimitive(vec3 P, uint emitter_count, inout uvec4 rng_
     float NdotL = dot(normalize(L), N);
     if (NdotL > 0.001) {
         li = material.emission_color * material.emission_power;
-        // convert probability to solid angle??
+        // convert probability to solid angle
         pdf = pdf * dot(L, L) / abs(NdotL);
     }
 

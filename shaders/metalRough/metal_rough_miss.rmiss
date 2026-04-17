@@ -36,11 +36,11 @@ void main() {
         float rand = stepAndOutputRNGFloat(payload.rng_state);
         float p_continue = null_scattering / volume.majorant;
         if (rand > p_continue) {
-            float event_rand = stepAndOutputRNGFloat(payload.rng_state);
-            if (event_rand < absorption / (scattering + absorption)) {
-                payload.next_direction = vec3(0);
-                return;
-            }
+            //float event_rand = stepAndOutputRNGFloat(payload.rng_state);
+            //if (event_rand < absorption / (scattering + absorption)) {
+            //    payload.next_direction = vec3(0);
+            //    return;
+            //}
 
             if (options.sample_light) {
                 uint emitter_count = max(1, sceneData.emitter_count);

@@ -123,11 +123,6 @@ namespace RtEngine {
 		done_images.clear(); // every pointer is now invalid anyway
 	}
 
-	std::string ReferenceRunner::getTmpImagePath(uint32_t image_idx, uint32_t samples) {
-		std::string scene_name = PathUtil::getFileName(scene_manager->getCurrentScene()->path);
-		return std::format("{}/{}_{}_{}.png", TMP_FOLDER, samples, scene_name, image_idx);
-	}
-
 	std::string ReferenceRunner::getOutputImagePath(uint32_t samples) {
 		std::string scene_name = PathUtil::getFileName(scene_manager->getCurrentScene()->path);
 		return std::format("{}/{}_{}.png", OUT_FOLDER, samples, scene_name);

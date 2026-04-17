@@ -31,13 +31,15 @@ namespace RtEngine {
             coefficients.reserve(volume->size.x * volume->size.y * volume->size.z);
             for (uint32_t i = 0; i < volume->densities.size(); i++) {
                 float density = volume->densities.at(i);
-                coefficients.emplace_back(density / volume->max_density * absorption_scale, density / volume->max_density * scattering_scale);
+                coefficients.emplace_back(density / volume->max_density * absorption_scale,
+                                          density / volume->max_density * scattering_scale);
             }
             return coefficients;
         }
 
-        float getMajorant() {
-            return absorption_scale + scattering_scale;
+        float getMajorant() const {
+            return scattering_scale + absorption_scale;
+            // because densities get scaled down this is not max_density * (scattering_scale + absorption_scale)
         }
     };
 } // RtEngine

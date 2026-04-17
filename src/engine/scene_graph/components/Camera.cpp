@@ -19,6 +19,7 @@ namespace RtEngine {
 				image_height = new_height;
 				if (render_target != nullptr) {
 					render_target->recreate(VkExtent2D{static_cast<uint32_t>(image_width), static_cast<uint32_t>(image_height)});
+					SPDLOG_DEBUG("Recreating render target to size ({} {})", image_width, image_height);
 				}
 			});
 		}

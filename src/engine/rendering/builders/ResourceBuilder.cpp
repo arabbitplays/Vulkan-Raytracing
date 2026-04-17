@@ -118,14 +118,12 @@ namespace RtEngine {
 	}
 
 	AllocatedImage ResourceBuilder::createImage(VkExtent3D extent, VkFormat format, VkImageTiling tiling,
-												VkImageUsageFlags usage, VkImageAspectFlags aspectFlags) {
+												VkImageUsageFlags usage, VkImageAspectFlags aspectFlags, VkImageType type) {
 		VkDevice device = device_manager->getDevice();
 
 		AllocatedImage image{};
 		image.imageExtent = extent;
 		image.imageFormat = format;
-
-		VkImageType type = extent.depth == 1 ? VK_IMAGE_TYPE_2D : VK_IMAGE_TYPE_3D;
 
 		VkImageCreateInfo imageInfo{};
 		imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
@@ -165,7 +163,7 @@ namespace RtEngine {
 
 	AllocatedImage ResourceBuilder::createImage(void *data, VkExtent3D extent, VkFormat format, VkImageTiling tiling,
 												VkImageUsageFlags usage, VkImageAspectFlags aspectFlags,
-												VkImageLayout target_layout) {
+												VkImageLayout target_layout, VkImageType type) {
 		VkDeviceSize imageSize = extent.width * extent.height * extent.depth;
 		if (format == VK_FORMAT_R8G8B8_SRGB) {
 			imageSize *= 3;
@@ -190,7 +188,7 @@ namespace RtEngine {
 		vkUnmapMemory(device, stagingBuffer.bufferMemory);
 
 		AllocatedImage image =
-				createImage(extent, format, tiling, VK_BUFFER_USAGE_2_TRANSFER_DST_BIT_KHR | usage, aspectFlags);
+				createImage(extent, format, tiling, VK_BUFFER_USAGE_2_TRANSFER_DST_BIT_KHR | usage, aspectFlags, type);
 
 		transitionImageLayout(image.image, VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
 							  VK_ACCESS_NONE, VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED,
@@ -273,7 +271,7 @@ namespace RtEngine {
 
 		VkDevice device = device_manager->getDevice();
 		void *mapped_data;
-		auto *imageData = new uint8_t[buffer_size * bytes_per_channel];
+		auto *imageData = new uint8_t[buffer_size];
 		vkMapMemory(device, staging_buffer.bufferMemory, 0, buffer_size, 0, &mapped_data);
 		memcpy(imageData, mapped_data, buffer_size);
 		vkUnmapMemory(device, staging_buffer.bufferMemory);

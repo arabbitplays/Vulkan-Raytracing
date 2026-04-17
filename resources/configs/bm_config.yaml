@@ -1,7 +1,7 @@
 runner:
-  scene_name: ref_scene_small_light
+  scene_name: ref_scene_homo_volume
 renderer:
-  recursion_depth: 5
+  recursion_depth: 20
 metal_rough:
   normal_mapping: false
   nearest_neighbor_estimation: true

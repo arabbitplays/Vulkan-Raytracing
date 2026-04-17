@@ -33,7 +33,11 @@ namespace RtEngine {
 		std::shared_ptr<DrawContext> draw_context;
 
 		uint32_t error_calculation_sample_count = 1;
-		uint32_t final_sample_count = 1 << 12;
+		uint32_t final_sample_count = 1 << 10;
+
+		uint32_t expected_ref_sample_count = 1 << 15;
+
+		std::vector<float*> done_images;
 	};
 
 } // namespace RtEngine
