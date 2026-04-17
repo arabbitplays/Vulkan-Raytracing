@@ -31,6 +31,7 @@ void main() {
              payload.current_volume_idx = getVolumeIdx(triangle);
              payload.volume_world_to_object = gl_WorldToObjectEXT;
              payload.next_distance = sampleDistance(volume.majorant, payload.rng_state);
+             // TODO check if you need a pdf here again
         }
     } else {
         payload.dist_left = 0;

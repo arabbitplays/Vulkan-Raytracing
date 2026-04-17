@@ -60,7 +60,7 @@ void main() {
             PhaseFunctionSample p_sample = sampleHGPhaseFunction(wo, volume.g, payload.rng_state);
             //PhaseFunctionSample p_sample = sampleIsoPhaseFunction(wo, payload.rng_state);
 
-            payload.beta *= scattering / (absorption + scattering);
+            payload.beta *= scattering / (absorption + scattering); // TODO try to remove this when stopping for absorption
             payload.next_direction = p_sample.wi;
         }
 

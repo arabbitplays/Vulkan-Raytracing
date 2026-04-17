@@ -36,7 +36,7 @@ vec3 sampleHenyeyGreenstein(vec3 wo, float g, uvec4 rng_state, inout float pdf) 
     Frame wFrame = frameFromZ(normalize(wo));
     vec3 wi = fromLocal(sphericalDirection(sinTheta, cosTheta, phi), wFrame);
 
-    pdf = henyeyGreenstein(cosTheta, g);
+    pdf = henyeyGreenstein(cosTheta, g); // TODO does dot(wo, wi) also work
     return wi;
 }
 
