@@ -15,6 +15,11 @@ namespace RtEngine
     };
 
     void RenderTarget::createImages(uint32_t image_count) {
+        createTargetImages(image_count);
+        createRngTextures(image_count);
+    }
+
+    void RenderTarget::createTargetImages(uint32_t image_count) {
         render_targets.resize(image_count);
         for (uint32_t i = 0; i < image_count; i++) {
             render_targets[i] = resource_builder->createImage(
@@ -27,8 +32,21 @@ namespace RtEngine
                     VK_ACCESS_NONE, VK_ACCESS_NONE, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
         }
 
-        std::vector<uint32_t> pixels(image_extent.width * image_extent.height * 4);
+        diff_targets.resize(image_count);
+        for (uint32_t i = 0; i < image_count; i++) {
+            diff_targets[i] = resource_builder->createImage(
+                VkExtent3D{image_extent.width, image_extent.height, 1}, VK_FORMAT_R32G32B32A32_SFLOAT,
+                VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_STORAGE_BIT,
+                VK_IMAGE_ASPECT_COLOR_BIT);
 
+            resource_builder->transitionImageLayout(
+                    diff_targets[i].image, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
+                    VK_ACCESS_NONE, VK_ACCESS_NONE, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
+        }
+    }
+
+    void RenderTarget::createRngTextures(uint32_t image_count) {
+        std::vector<uint32_t> pixels(image_extent.width * image_extent.height * 4);
         for (uint32_t i = 0; i < image_extent.width * image_extent.height * 4; i++) {
             pixels[i] = RandomUtil::generateInt();
         }
@@ -55,6 +73,10 @@ namespace RtEngine
     AllocatedImage RenderTarget::getCurrentTargetImage() const
     {
         return render_targets[current_image];
+    }
+
+    AllocatedImage RenderTarget::getCurrentDiffImage() const {
+        return diff_targets[current_image];
     }
 
     AllocatedImage RenderTarget::getLastTargetImage() const {
@@ -97,12 +119,21 @@ namespace RtEngine
         return samples_per_frame;
     }
 
-    void RenderTarget::setSamplesPerFrame(uint32_t new_samples_per_frame) {
+    uint32_t RenderTarget::getDiffSamplesPerFrame() const {
+        return diff_samples_per_frame;
+    }
+
+    void RenderTarget::setSamplesPerFrame(uint32_t new_samples_per_frame, uint32_t new_diff_samples_per_frame) {
         samples_per_frame = new_samples_per_frame;
+        diff_samples_per_frame = new_diff_samples_per_frame;
     }
 
     void RenderTarget::destroy() const {
         for (auto &image: render_targets) {
+            resource_builder->destroyImage(image);
+        }
+
+        for (auto &image: diff_targets) {
             resource_builder->destroyImage(image);
         }
 

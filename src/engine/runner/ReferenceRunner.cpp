@@ -25,7 +25,7 @@ namespace RtEngine {
 
 		assert(draw_context->targets.size() == 1);
 		std::shared_ptr<RenderTarget> target = draw_context->targets[0];
-		target->setSamplesPerFrame(8);
+		target->setSamplesPerFrame(8, 0);
 
 		stopwatch.reset();
 	}

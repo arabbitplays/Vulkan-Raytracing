@@ -6,7 +6,10 @@ layout(push_constant) uniform PushConstants {
     bool sample_light;
     bool sample_bsdf;
     bool russian_roulette;
-    uint curr_sample_count;
+    uint accumulated_frame_count;
     uint samples_per_pixel;
+    uint diff_samples_per_pixel;
+    bool do_mlmc;
+    uint mlmc_method;
 } options;
 #endif // OPTIONS_GLSL

@@ -8,6 +8,6 @@ phong:
   dispersion: true
 metal_rough:
   normal_mapping: false
-  nearest_neighbor_estimation: true
+  nearest_neighbor_estimation: false
   bsdf_importance_sampling: false
   russian_roulette: false

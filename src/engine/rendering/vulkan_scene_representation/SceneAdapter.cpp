@@ -59,6 +59,7 @@ namespace RtEngine {
 		layoutBuilder.addBinding(9, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 6); // env map
 		layoutBuilder.addBinding(10, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE); // rng tex
 		layoutBuilder.addBinding(11, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 16); // volume tex
+		layoutBuilder.addBinding(12, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE); // diff image
 
 		scene_descriptor_set_layout = layoutBuilder.build(
 				vulkan_context->device_manager->getDevice(),
@@ -124,6 +125,8 @@ namespace RtEngine {
 
 	void SceneAdapter::updateRenderTarget(const std::shared_ptr<RenderTarget> target) {
 		vulkan_context->descriptor_allocator->writeImage(1, target->getCurrentTargetImage().imageView, VK_NULL_HANDLE,
+														 VK_IMAGE_LAYOUT_GENERAL, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
+		vulkan_context->descriptor_allocator->writeImage(12, target->getCurrentDiffImage().imageView, VK_NULL_HANDLE,
 														 VK_IMAGE_LAYOUT_GENERAL, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
 
 		vulkan_context->descriptor_allocator->writeImage(10, target->getCurrentRngImage().imageView, VK_NULL_HANDLE, VK_IMAGE_LAYOUT_GENERAL,

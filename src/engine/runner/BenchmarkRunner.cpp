@@ -31,7 +31,7 @@ namespace RtEngine {
 
         assert(draw_context->targets.size() == 1);
         std::shared_ptr<RenderTarget> target = draw_context->targets[0];
-        target->setSamplesPerFrame(1);
+        target->setSamplesPerFrame(1, 1); // TODO do something sensical here
     }
 
     void BenchmarkRunner::renderScene() {

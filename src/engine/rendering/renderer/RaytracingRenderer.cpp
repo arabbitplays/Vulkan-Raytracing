@@ -266,6 +266,10 @@ namespace RtEngine {
 
 		push_constants.push_back(target->getAccumulatedFrameCount());
 		push_constants.push_back(target->getSamplesPerFrame());
+		push_constants.push_back(target->getDiffSamplesPerFrame());
+
+		push_constants.push_back(true);
+		push_constants.push_back(0);
 
 		*size = sizeof(uint32_t) * push_constants.size();
 		return push_constants.data();

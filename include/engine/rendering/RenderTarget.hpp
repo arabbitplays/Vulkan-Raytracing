@@ -17,7 +17,7 @@ namespace RtEngine
         explicit RenderTarget(const std::shared_ptr<ResourceBuilder>& resource_builder, VkExtent2D image_extent, uint32_t max_frames_in_flight);
 
         AllocatedImage getCurrentTargetImage() const;
-
+        AllocatedImage getCurrentDiffImage() const;
         AllocatedImage getLastTargetImage() const;
 
         AllocatedImage getCurrentRngImage() const;
@@ -32,13 +32,18 @@ namespace RtEngine
         uint32_t getTotalSampleCount() const;
 
         uint32_t getSamplesPerFrame() const;
-        void setSamplesPerFrame(uint32_t new_samples_per_frame);
+        uint32_t getDiffSamplesPerFrame() const;
+        void setSamplesPerFrame(uint32_t new_samples_per_frame, uint32_t new_diff_samples_per_frame);
 
         void recreate(VkExtent2D new_image_extent);
 
         void destroy() const;
+
+
     private:
         void createImages(uint32_t image_count);
+        void createTargetImages(uint32_t image_count);
+        void createRngTextures(uint32_t image_count);
 
         std::shared_ptr<ResourceBuilder> resource_builder;
 
@@ -46,10 +51,12 @@ namespace RtEngine
 
         uint32_t current_image = 0;
         std::vector<AllocatedImage> render_targets;
+        std::vector<AllocatedImage> diff_targets;
         std::vector<AllocatedImage> rng_textures;
 
         uint32_t accumulated_frame_count = 0;
         uint32_t samples_per_frame = 8;
+        uint32_t diff_samples_per_frame = 1;
     };
 }
 
