@@ -44,7 +44,7 @@ namespace RtEngine {
         scene_manager->getCurrentScene()->update();
 
         std::shared_ptr<DrawContext> draw_context = createMainDrawContext();
-        if (draw_context->targets.size() < 1)
+        if (draw_context->target_repositories.size() < 1)
             return;
         drawFrame(draw_context);
     }
@@ -76,12 +76,12 @@ namespace RtEngine {
         }
 
         VkCommandBuffer cmd = raytracing_renderer->getNewCommandBuffer();
-        std::shared_ptr<RenderTarget> target = draw_context->targets[0]; // TODO handle multiple
+        std::shared_ptr<RenderTargetRepository> target_repository = draw_context->target_repositories[0]; // TODO handle multiple
 
         prepareFrame(cmd, draw_context);
 
-        raytracing_renderer->writeRenderTarget(target);
-        raytracing_renderer->recordCommandBuffer(cmd, target, swapchain_image_idx, true);
+        raytracing_renderer->writeRenderTarget(target_repository);
+        raytracing_renderer->recordCommandBuffer(cmd, target_repository, swapchain_image_idx, true);
         gui_renderer->recordGuiCommands(cmd, swapchain_image_idx);
 
         finishFrame(cmd, draw_context, static_cast<uint32_t>(swapchain_image_idx), true);
@@ -91,7 +91,7 @@ namespace RtEngine {
         raytracing_renderer->writeResources(draw_context, update_flags);
 
         if (update_flags->checkFlag(TARGET_RESET)) {
-            for (const auto& target : draw_context->targets) {
+            for (const auto& target : draw_context->target_repositories) {
                 target->resetAccumulatedFrames();
             }
         }

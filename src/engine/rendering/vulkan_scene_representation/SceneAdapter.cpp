@@ -9,6 +9,7 @@
 
 #include "PhongMaterial.hpp"
 #include "UpdateFlagValue.hpp"
+#include "targets/RenderTargetKeys.hpp"
 
 namespace RtEngine {
 
@@ -123,13 +124,13 @@ namespace RtEngine {
 		updateSceneDescriptorSets();
 	}
 
-	void SceneAdapter::updateRenderTarget(const std::shared_ptr<RenderTarget> target) {
-		vulkan_context->descriptor_allocator->writeImage(1, target->getCurrentTargetImage().imageView, VK_NULL_HANDLE,
+	void SceneAdapter::updateRenderTarget(const std::shared_ptr<RenderTargetRepository> &target_repository) {
+		vulkan_context->descriptor_allocator->writeImage(1, target_repository->getCurrRenderTargetImage(MAIN_TARGET).imageView, VK_NULL_HANDLE,
 														 VK_IMAGE_LAYOUT_GENERAL, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
-		vulkan_context->descriptor_allocator->writeImage(12, target->getCurrentDiffImage().imageView, VK_NULL_HANDLE,
+		vulkan_context->descriptor_allocator->writeImage(12, target_repository->getCurrRenderTargetImage(DIFF_TARGET).imageView, VK_NULL_HANDLE,
 														 VK_IMAGE_LAYOUT_GENERAL, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
 
-		vulkan_context->descriptor_allocator->writeImage(10, target->getCurrentRngImage().imageView, VK_NULL_HANDLE, VK_IMAGE_LAYOUT_GENERAL,
+		vulkan_context->descriptor_allocator->writeImage(10, target_repository->getCurrRenderTargetImage(RNG_TARGET).imageView, VK_NULL_HANDLE, VK_IMAGE_LAYOUT_GENERAL,
 														 VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
 
 		updateSceneDescriptorSets();

@@ -11,7 +11,7 @@
 #include <GuiRenderer.hpp>
 #include <GuiWindow.hpp>
 #include <memory>
-#include <RenderTarget.hpp>
+#include <../targets/RenderTargetRepository.hpp>
 #include <../rendering/vulkan_scene_representation/SceneAdapter.hpp>
 #include "../../../util/QuickTimer.hpp"
 #include "../DescriptorAllocator.hpp"
@@ -40,18 +40,18 @@ namespace RtEngine {
 		void loadScene(std::shared_ptr<IScene> scene);
 
 		void writeResources(const std::shared_ptr<DrawContext> &draw_context, UpdateFlagsHandle update_flags) override;
-		void writeRenderTarget(const std::shared_ptr<RenderTarget> &target) override;
+		void writeRenderTarget(const std::shared_ptr<RenderTargetRepository> &target) override;
 
 		void waitForIdle();
 
 		int32_t aquireNextSwapchainImage();
-		virtual void recordCommandBuffer(VkCommandBuffer commandBuffer, std::shared_ptr<RenderTarget> target, uint32_t swapchain_image_idx, bool present);
+		virtual void recordCommandBuffer(VkCommandBuffer commandBuffer, std::shared_ptr<RenderTargetRepository> target, uint32_t swapchain_image_idx, bool present);
 		bool submitCommands(bool present, uint32_t swapchain_image_idx);
 
 		void cleanup();
 
-		void outputRenderingTarget(const std::shared_ptr<RenderTarget> &target, const std::string &output_path);
-		float *downloadRenderTarget(const std::shared_ptr<RenderTarget> &target) const;
+		void outputRenderingTarget(const std::shared_ptr<RenderTargetRepository> &target, const std::string &output_path);
+		float *downloadRenderTarget(const std::shared_ptr<RenderTargetRepository> &target) const;
 		uint8_t *fixImageFormatForStorage(void *image_data, size_t pixel_count, VkFormat originalFormat);
 
 		std::shared_ptr<TextureRepository> getTextureRepository();
@@ -88,7 +88,7 @@ namespace RtEngine {
 		void initWindow();
 		void createRepositories();
 
-		std::shared_ptr<RenderTarget> createRenderTarget(uint32_t width, uint32_t height);
+		std::shared_ptr<RenderTargetRepository> createRenderTarget(uint32_t width, uint32_t height);
 
 		std::shared_ptr<DescriptorAllocator> createDescriptorAllocator();
 
@@ -99,9 +99,9 @@ namespace RtEngine {
 		void submitCommandBuffer(const std::vector<VkSemaphore> &wait_semaphore, const std::vector<VkSemaphore> &signal_semaphore);
 		void presentSwapchainImage(const std::vector<VkSemaphore>& wait_semaphore, uint32_t image_index);
 
-		void recordRenderToImage(VkCommandBuffer commandBuffer, std::shared_ptr<RenderTarget> target);
+		void recordRenderToImage(VkCommandBuffer commandBuffer, std::shared_ptr<RenderTargetRepository> target);
 
-		void *createPushConstants(uint32_t *size, const std::shared_ptr<RenderTarget> &target);
+		void *createPushConstants(uint32_t *size, const std::shared_ptr<RenderTargetRepository> &target);
 
 		void recordBlitToSwapchain(VkCommandBuffer commandBuffer, const AllocatedImage &render_target, uint32_t swapchain_image_index);
 	};

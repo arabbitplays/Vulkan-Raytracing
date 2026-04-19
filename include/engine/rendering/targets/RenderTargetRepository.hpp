@@ -1,7 +1,3 @@
-//
-// Created by oschdi on 6/6/25.
-//
-
 #ifndef RENDERTARGET_HPP
 #define RENDERTARGET_HPP
 #include <memory>
@@ -9,18 +5,24 @@
 #include <Texture.hpp>
 #include <vector>
 
+#include "RenderTarget.hpp"
+#include "RenderTargetType.hpp"
+
 namespace RtEngine
 {
-    class RenderTarget {
-    public:
-        RenderTarget() = default;
-        explicit RenderTarget(const std::shared_ptr<ResourceBuilder>& resource_builder, VkExtent2D image_extent, uint32_t max_frames_in_flight);
 
-        AllocatedImage getCurrentTargetImage() const;
-        AllocatedImage getCurrentDiffImage() const;
+
+    class RenderTargetRepository {
+    public:
+        RenderTargetRepository() = default;
+        explicit RenderTargetRepository(const std::shared_ptr<ResourceBuilder>& resource_builder, VkExtent2D image_extent, uint32_t max_frames_in_flight);
+
+        void addRenderTarget(std::string key, RenderTargetType type);
+
         AllocatedImage getLastTargetImage() const;
 
-        AllocatedImage getCurrentRngImage() const;
+        AllocatedImage getCurrRenderTargetImage(std::string key) const;
+
         void nextImage();
 
         VkExtent2D getExtent() const;
@@ -35,24 +37,24 @@ namespace RtEngine
         uint32_t getDiffSamplesPerFrame() const;
         void setSamplesPerFrame(uint32_t new_samples_per_frame, uint32_t new_diff_samples_per_frame);
 
+        void destroy();
+
         void recreate(VkExtent2D new_image_extent);
 
         void destroy() const;
 
 
     private:
-        void createImages(uint32_t image_count);
-        void createTargetImages(uint32_t image_count);
-        void createRngTextures(uint32_t image_count);
+        void init();
 
         std::shared_ptr<ResourceBuilder> resource_builder;
 
+        uint32_t max_frames_in_flight;
         VkExtent2D image_extent;
 
-        uint32_t current_image = 0;
-        std::vector<AllocatedImage> render_targets;
-        std::vector<AllocatedImage> diff_targets;
-        std::vector<AllocatedImage> rng_textures;
+        uint32_t current_image_idx = 0;
+
+        std::unordered_map<std::string, std::shared_ptr<RenderTarget>> render_targets{};
 
         uint32_t accumulated_frame_count = 0;
         uint32_t samples_per_frame = 8;

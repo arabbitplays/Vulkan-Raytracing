@@ -3,14 +3,16 @@
 #include <filesystem>
 #include <glitch.comp.spv.h>
 
+#include "targets/RenderTargetKeys.hpp"
+
 namespace RtEngine {
     GlitchRenderer::GlitchRenderer(const std::shared_ptr<VulkanContext> &vulkan_context,
                                    const uint32_t max_frames_in_flight) : ComputeRenderer(
         vulkan_context, max_frames_in_flight) {
     }
 
-    void GlitchRenderer::writeRenderTarget(const std::shared_ptr<RenderTarget> &target) {
-        vulkan_context->descriptor_allocator->writeImage(0, target->getCurrentTargetImage().imageView, VK_NULL_HANDLE,
+    void GlitchRenderer::writeRenderTarget(const std::shared_ptr<RenderTargetRepository> &target) {
+        vulkan_context->descriptor_allocator->writeImage(0, target->getCurrRenderTargetImage(MAIN_TARGET).imageView, VK_NULL_HANDLE,
                                                          VK_IMAGE_LAYOUT_GENERAL, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
 
         vulkan_context->descriptor_allocator->updateSet(vulkan_context->device_manager->getDevice(), descriptor_set);
@@ -46,7 +48,7 @@ namespace RtEngine {
         layout_builder.addBinding(1, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE); // src image
     }
 
-    void GlitchRenderer::recordDispatch(VkCommandBuffer command_buffer, std::shared_ptr<RenderTarget> &target) {
+    void GlitchRenderer::recordDispatch(VkCommandBuffer command_buffer, std::shared_ptr<RenderTargetRepository> &target) {
         VkExtent2D target_extent = target->getExtent();
         vkCmdDispatch(command_buffer, 1, (target_extent.height + 255) / 256, 1);
     }

@@ -29,7 +29,7 @@ namespace RtEngine {
         [[nodiscard]] glm::mat4 getInverseProjection() const;
         [[nodiscard]] glm::vec3 getPosition() const;
 
-        std::shared_ptr<RenderTarget> getRenderTarget();
+        std::shared_ptr<RenderTargetRepository> getRenderTargetRepository();
 
     protected:
         static constexpr float MOVE_SPEED = 0.2f;
@@ -51,7 +51,7 @@ namespace RtEngine {
         uint32_t image_width = 0;
         uint32_t image_height = 0;
 
-        std::shared_ptr<RenderTarget> render_target;
+        std::shared_ptr<RenderTargetRepository> render_target;
 
         float fov = 45.0;
         bool is_interactive = false, follow_window = false;

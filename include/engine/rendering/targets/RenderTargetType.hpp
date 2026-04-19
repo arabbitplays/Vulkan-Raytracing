@@ -1,0 +1,11 @@
+#ifndef VULKAN_RAYTRACING_RENDERTARGETTYPE_HPP
+#define VULKAN_RAYTRACING_RENDERTARGETTYPE_HPP
+
+namespace RtEngine {
+    enum RenderTargetType {
+        RAYTRACE,
+        RNG,
+    };
+} // RtEngine
+
+#endif //VULKAN_RAYTRACING_RENDERTARGETTYPE_HPP

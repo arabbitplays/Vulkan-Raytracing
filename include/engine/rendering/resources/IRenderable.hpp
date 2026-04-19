@@ -1,5 +1,5 @@
 #include <AccelerationStructure.hpp>
-#include <RenderTarget.hpp>
+#include <../targets/RenderTargetRepository.hpp>
 
 #ifndef BASICS_IRENDERABLE_HPP
 #define BASICS_IRENDERABLE_HPP
@@ -27,11 +27,11 @@ namespace RtEngine {
 	};
 
 	struct DrawContext {
-		std::vector<std::shared_ptr<RenderTarget>> targets;
+		std::vector<std::shared_ptr<RenderTargetRepository>> target_repositories;
 
 		void nextFrame()
 		{
-			for (const auto& target : targets) {
+			for (const auto& target : target_repositories) {
 				target->nextImage();
 				target->incrementAccumulatedFrameCount();
 			}

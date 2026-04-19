@@ -5,7 +5,7 @@
 #include "ComputePipeline.hpp"
 #include "DescriptorLayoutBuilder.hpp"
 #include "../Renderer.hpp"
-#include "../../RenderTarget.hpp"
+#include "../../targets/RenderTargetRepository.hpp"
 #include "VulkanContext.hpp"
 
 namespace RtEngine {
@@ -15,10 +15,10 @@ namespace RtEngine {
 
         void init() override;
 
-        void writeRenderTarget(const std::shared_ptr<RenderTarget> &target) override = 0;
+        void writeRenderTarget(const std::shared_ptr<RenderTargetRepository> &target) override = 0;
         void writeResources(const std::shared_ptr<DrawContext> &draw_context, UpdateFlagsHandle update_flags) override = 0;
 
-        void recordCommandBuffer(VkCommandBuffer commandBuffer, std::shared_ptr<RenderTarget> target, uint32_t swapchain_image_idx);
+        void recordCommandBuffer(VkCommandBuffer commandBuffer, std::shared_ptr<RenderTargetRepository> target, uint32_t swapchain_image_idx);
         void submitCommandBuffer(VkCommandBuffer &command_buffer);
 
         void cleanup();
@@ -27,7 +27,7 @@ namespace RtEngine {
         virtual void initDescriptorLayout(DescriptorLayoutBuilder &layout_builder) = 0;
         virtual VkShaderModule createShaderModule() = 0;
 
-        virtual void recordDispatch(VkCommandBuffer command_buffer, std::shared_ptr<RenderTarget> &target) = 0;
+        virtual void recordDispatch(VkCommandBuffer command_buffer, std::shared_ptr<RenderTargetRepository> &target) = 0;
 
         std::shared_ptr<ComputePipeline> pipeline;
         VkDescriptorSetLayout descriptor_layout;

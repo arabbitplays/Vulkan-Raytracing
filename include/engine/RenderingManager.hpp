@@ -19,11 +19,10 @@ namespace RtEngine {
         std::shared_ptr<RaytracingRenderer> getRaytracingRenderer() const;
         std::shared_ptr<GuiRenderer> getGuiRenderer() const;
 
-        std::shared_ptr<RenderTarget> createRenderTarget(uint32_t width, uint32_t height);
+        std::shared_ptr<RenderTargetRepository> createRenderTarget(uint32_t width, uint32_t height);
 
-        void recordBeginCommandBuffer(VkCommandBuffer &commandBuffer);
-
-        void recordEndCommandBuffer(VkCommandBuffer &commandBuffer);
+        static void recordBeginCommandBuffer(const VkCommandBuffer &commandBuffer);
+        static void recordEndCommandBuffer(const VkCommandBuffer &commandBuffer);
 
         void destroy();
     private:

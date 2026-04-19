@@ -10,7 +10,6 @@ namespace RtEngine {
         createRenderer();
     }
 
-
     void RenderingManager::initRendererProperties(const std::shared_ptr<IProperties> &properties, const std::shared_ptr<UpdateFlags> &update_flags) {
         raytracing_renderer->initProperties(properties, update_flags);
     }
@@ -44,7 +43,7 @@ namespace RtEngine {
         std::vector<DescriptorAllocator::PoolSizeRatio> poolRatios = {
             {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1},
             {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1},
-            {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1},
+            {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 4},
             {VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1},
             {VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, 1},
     };
@@ -76,12 +75,12 @@ namespace RtEngine {
         return gui_renderer;
     }
 
-    std::shared_ptr<RenderTarget> RenderingManager::createRenderTarget(uint32_t width, uint32_t height) {
+    std::shared_ptr<RenderTargetRepository> RenderingManager::createRenderTarget(uint32_t width, uint32_t height) {
         VkExtent2D extent(width, height);
-        return std::make_shared<RenderTarget>(vulkan_context->resource_builder, extent, max_frames_in_flight);
+        return std::make_shared<RenderTargetRepository>(vulkan_context->resource_builder, extent, max_frames_in_flight);
     }
 
-    void RenderingManager::recordBeginCommandBuffer(VkCommandBuffer& commandBuffer) {
+    void RenderingManager::recordBeginCommandBuffer(const VkCommandBuffer& commandBuffer) {
         VkCommandBufferBeginInfo beginInfo{};
         beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 
@@ -90,7 +89,7 @@ namespace RtEngine {
         }
     }
 
-    void RenderingManager::recordEndCommandBuffer(VkCommandBuffer& commandBuffer) {
+    void RenderingManager::recordEndCommandBuffer(const VkCommandBuffer& commandBuffer) {
         if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS) {
             throw std::runtime_error("failed to record command buffer!");
         }

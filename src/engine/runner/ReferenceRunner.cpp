@@ -23,9 +23,9 @@ namespace RtEngine {
 		scene_manager->getCurrentScene()->update();
 		draw_context = createMainDrawContext();
 
-		assert(draw_context->targets.size() == 1);
-		std::shared_ptr<RenderTarget> target = draw_context->targets[0];
-		target->setSamplesPerFrame(8, 0);
+		assert(draw_context->target_repositories.size() == 1);
+		std::shared_ptr<RenderTargetRepository> target_repository = draw_context->target_repositories[0];
+		target_repository->setSamplesPerFrame(8, 0);
 
 		stopwatch.reset();
 	}
@@ -34,19 +34,19 @@ namespace RtEngine {
 		if (update_flags->checkFlag(SCENE_UPDATE)) {
 			loadScene(scene_manager->getScenePath(scene_name));
 		}
-		std::shared_ptr<RenderTarget> target = draw_context->targets[0];
+		std::shared_ptr<RenderTargetRepository> target_repository = draw_context->target_repositories[0];
 
-		if (samples_per_image == static_cast<int32_t>(target->getTotalSampleCount())) {
+		if (samples_per_image == static_cast<int32_t>(target_repository->getTotalSampleCount())) {
 			raytracing_renderer->waitForIdle();
 
-			float *data = raytracing_renderer->downloadRenderTarget(target);
+			float *data = raytracing_renderer->downloadRenderTarget(target_repository);
 			done_images.push_back(data);
 
 			if (done_images.size() == final_image_count) {
 				running = false;
-				mergeImages(target->getExtent().width, target->getExtent().height);
+				mergeImages(target_repository->getExtent().width, target_repository->getExtent().height);
 			} else {
-				target->resetAccumulatedFrames();
+				target_repository->resetAccumulatedFrames();
 				present_sample_count = 8;
 			}
 			return;
@@ -60,9 +60,10 @@ namespace RtEngine {
 		raytracing_renderer->waitForNextFrameStart();
 
 		VkCommandBuffer cmd = raytracing_renderer->getNewCommandBuffer();
-		std::shared_ptr<RenderTarget> target = draw_context->targets[0];
 
-		uint32_t curr_sample_count = target->getTotalSampleCount();
+		std::shared_ptr<RenderTargetRepository> target_repository = draw_context->target_repositories[0];
+
+		uint32_t curr_sample_count = target_repository->getTotalSampleCount();
 		bool present_image = present_sample_count <= curr_sample_count;
 
 		int32_t swapchain_image_idx = 0;
@@ -77,8 +78,8 @@ namespace RtEngine {
 
 		prepareFrame(cmd, draw_context);
 
-		raytracing_renderer->writeRenderTarget(target);
-		raytracing_renderer->recordCommandBuffer(cmd, target, swapchain_image_idx, present_image);
+		raytracing_renderer->writeRenderTarget(target_repository);
+		raytracing_renderer->recordCommandBuffer(cmd, target_repository, swapchain_image_idx, present_image);
 
 		finishFrame(cmd, draw_context, static_cast<uint32_t>(swapchain_image_idx), present_image);
 

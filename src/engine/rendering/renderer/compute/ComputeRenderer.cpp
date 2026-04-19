@@ -40,7 +40,7 @@ namespace RtEngine {
     }
 
 
-    void ComputeRenderer::recordCommandBuffer(VkCommandBuffer commandBuffer, std::shared_ptr<RenderTarget> target, uint32_t swapchain_image_idx) {
+    void ComputeRenderer::recordCommandBuffer(VkCommandBuffer commandBuffer, std::shared_ptr<RenderTargetRepository> target, uint32_t swapchain_image_idx) {
         vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline->getHandle());
         vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline->getLayoutHandle(), 0, 1, &descriptor_set, 0, 0);
         recordDispatch(commandBuffer, target);

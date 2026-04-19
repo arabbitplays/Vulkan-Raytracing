@@ -29,7 +29,7 @@ namespace RtEngine {
     }
 
     void Camera::OnRender(DrawContext &ctx) {
-        ctx.targets.push_back(render_target);
+        ctx.target_repositories.push_back(render_target);
     }
 
     void Camera::OnUpdate() {
@@ -157,7 +157,7 @@ namespace RtEngine {
 
 	glm::vec3 Camera::getPosition() const { return transform->decomposed_transform.translation; }
 
-	std::shared_ptr<RenderTarget> Camera::getRenderTarget() {
+	std::shared_ptr<RenderTargetRepository> Camera::getRenderTargetRepository() {
     	return render_target;
 	}
 

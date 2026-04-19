@@ -118,7 +118,7 @@ namespace RtEngine {
 	}
 
 	AllocatedImage ResourceBuilder::createImage(VkExtent3D extent, VkFormat format, VkImageTiling tiling,
-												VkImageUsageFlags usage, VkImageAspectFlags aspectFlags, VkImageType type) {
+												VkImageUsageFlags usage, VkImageAspectFlags aspectFlags, VkImageLayout target_layout, VkImageType type) {
 		VkDevice device = device_manager->getDevice();
 
 		AllocatedImage image{};
@@ -158,6 +158,12 @@ namespace RtEngine {
 
 		image.imageView = createImageView(image.image, format, aspectFlags, type);
 
+		if (target_layout != VK_IMAGE_LAYOUT_UNDEFINED) {
+            transitionImageLayout(
+                image.image, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
+                VK_ACCESS_NONE, VK_ACCESS_NONE, VK_IMAGE_LAYOUT_UNDEFINED, target_layout);
+		}
+
 		return image;
 	}
 
@@ -188,7 +194,7 @@ namespace RtEngine {
 		vkUnmapMemory(device, stagingBuffer.bufferMemory);
 
 		AllocatedImage image =
-				createImage(extent, format, tiling, VK_BUFFER_USAGE_2_TRANSFER_DST_BIT_KHR | usage, aspectFlags, type);
+				createImage(extent, format, tiling, VK_BUFFER_USAGE_2_TRANSFER_DST_BIT_KHR | usage, aspectFlags, target_layout, type);
 
 		transitionImageLayout(image.image, VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
 							  VK_ACCESS_NONE, VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED,

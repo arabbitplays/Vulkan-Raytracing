@@ -50,7 +50,7 @@ namespace RtEngine {
 		void loadNewScene(const std::shared_ptr<IScene> &new_scene);
 
 		void updateScene(const std::shared_ptr<DrawContext> &draw_context, uint32_t current_frame, UpdateFlagsHandle update_flags);
-		void updateRenderTarget(std::shared_ptr<RenderTarget> target);
+		void updateRenderTarget(const std::shared_ptr<RenderTargetRepository> &target_repository);
 
 		void clearResources();
 

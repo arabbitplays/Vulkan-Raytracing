@@ -6,6 +6,7 @@
 
 #include "ImageUtil.hpp"
 #include "UpdateFlagValue.hpp"
+#include "targets/RenderTargetKeys.hpp"
 
 namespace RtEngine {
 
@@ -58,9 +59,9 @@ namespace RtEngine {
 		});
 	}
 
-	std::shared_ptr<RenderTarget> RaytracingRenderer::createRenderTarget(uint32_t width, uint32_t height) {
+	std::shared_ptr<RenderTargetRepository> RaytracingRenderer::createRenderTarget(uint32_t width, uint32_t height) {
 		VkExtent2D extent(width, height);
-		return std::make_shared<RenderTarget>(vulkan_context->resource_builder, extent, max_frames_in_flight);
+		return std::make_shared<RenderTargetRepository>(vulkan_context->resource_builder, extent, max_frames_in_flight);
 	}
 
 	std::shared_ptr<DescriptorAllocator> RaytracingRenderer::createDescriptorAllocator() {
@@ -128,7 +129,7 @@ namespace RtEngine {
 		scene_adapter->updateScene(draw_context, current_frame, update_flags);
 	}
 
-	void RaytracingRenderer::writeRenderTarget(const std::shared_ptr<RenderTarget> &target) {
+	void RaytracingRenderer::writeRenderTarget(const std::shared_ptr<RenderTargetRepository> &target) {
 		scene_adapter->updateRenderTarget(target);
 	}
 
@@ -206,24 +207,21 @@ namespace RtEngine {
 		vkDeviceWaitIdle(vulkan_context->device_manager->getDevice());
 	}
 
-	AllocatedImage getPresentTarget(std::shared_ptr<RenderTarget> &target, MlmcPresentMode present_mode) {
+	AllocatedImage getPresentTarget(std::shared_ptr<RenderTargetRepository> &target_repository, MlmcPresentMode present_mode) {
         switch (present_mode) {
             case UNBIASED:
-                return target->getCurrentTargetImage();
-                break;
+                return target_repository->getCurrRenderTargetImage(MAIN_TARGET);
             case BIASED:
-                return target->getCurrentTargetImage();
-                break;
+                return target_repository->getCurrRenderTargetImage(MAIN_TARGET);
             case DIFF:
-                return target->getCurrentDiffImage();
-                break;
+                return target_repository->getCurrRenderTargetImage(DIFF_TARGET);
             case COMBINED:
-                return target->getCurrentTargetImage();
+                return target_repository->getCurrRenderTargetImage(MAIN_TARGET);
                 break;
         }
     }
 
-    void RaytracingRenderer::recordCommandBuffer(VkCommandBuffer commandBuffer, std::shared_ptr<RenderTarget> target,
+    void RaytracingRenderer::recordCommandBuffer(VkCommandBuffer commandBuffer, std::shared_ptr<RenderTargetRepository> target,
                                              const uint32_t swapchain_image_idx, bool present) {
         recordRenderToImage(commandBuffer, target);
         if (present) {
@@ -232,7 +230,7 @@ namespace RtEngine {
         }
     }
 
-	void RaytracingRenderer::recordRenderToImage(VkCommandBuffer commandBuffer, std::shared_ptr<RenderTarget> target) {
+	void RaytracingRenderer::recordRenderToImage(VkCommandBuffer commandBuffer, std::shared_ptr<RenderTargetRepository> target) {
 		RaytracingPipeline pipeline = *scene_adapter->getMaterial()->pipeline;
 
         const uint32_t handleSizeAligned =
@@ -277,7 +275,7 @@ namespace RtEngine {
                         width, height, 1);
     }
 
-	void* RaytracingRenderer::createPushConstants(uint32_t* size, const std::shared_ptr<RenderTarget> &target) {
+	void* RaytracingRenderer::createPushConstants(uint32_t* size, const std::shared_ptr<RenderTargetRepository> &target) {
 		push_constants.clear();
 
         push_constants.push_back(recursion_depth);
@@ -346,13 +344,13 @@ namespace RtEngine {
 		deletion_queue.flush();
 	}
 
-	float* RaytracingRenderer::downloadRenderTarget(const std::shared_ptr<RenderTarget> &target) const {
+	float* RaytracingRenderer::downloadRenderTarget(const std::shared_ptr<RenderTargetRepository> &target) const {
 		AllocatedImage image = target->getLastTargetImage();
 		uint8_t *data = vulkan_context->resource_builder->downloadImage(image, sizeof(float));
 		return reinterpret_cast<float*>(data);
 	}
 
-	void RaytracingRenderer::outputRenderingTarget(const std::shared_ptr<RenderTarget> &target, const std::string &output_path) {
+	void RaytracingRenderer::outputRenderingTarget(const std::shared_ptr<RenderTargetRepository> &target, const std::string &output_path) {
 		QuickTimer timer("Output render target");
 
         AllocatedImage render_target = target->getLastTargetImage();
@@ -415,7 +413,7 @@ namespace RtEngine {
                 target_reset = true;
             }
 
-            target_reset |= config->addUint("biased_path_length", &mlmc_biased_path_length, 1, 100);
+            target_reset |= config->addUint("biased_path_length", &mlmc_biased_path_length, 1, 10);
             config->endChild();
         }
 
