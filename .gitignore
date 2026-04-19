@@ -37,3 +37,4 @@
 # Meson
 subprojects/*/
 !subprojects/*
+src/**/meson.build
