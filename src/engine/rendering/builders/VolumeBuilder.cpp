@@ -1,4 +1,5 @@
-#include "../../../../include/engine/renderer/builders/VolumeBuilder.hpp"
+
+#include "VolumeBuilder.hpp"
 
 #include "OpenVdbVolumeLoader.hpp"
 

@@ -31,14 +31,14 @@ vec3 unbiasedEstimator(uint sample_count) {
 
 vec3 biasedEstimator(uint sample_count, uint mlmc_method) {
     if (mlmc_method == 0) {
-        return pathLengthMlmc(sample_count);
+        return pathLengthMlmc(sample_count, options.biased_path_length);
     }
     return vec3(1, 0, 0);
 }
 
 vec3 diffEstimator(uint sample_count, uint mlmc_method) {
     if (mlmc_method == 0) {
-        return pathLengthDiffMlmc(sample_count);
+        return pathLengthDiffMlmc(sample_count, options.biased_path_length, options.recursion_depth);
     }
     return vec3(1, 0, 0);
 }

@@ -92,7 +92,7 @@ namespace RtEngine {
 		bool reset_required = false;
 		if (config->startChild(name)) {
 			reset_required |= config->addBool("normal_mapping", &normal_mapping);
-			reset_required |= config->addBool("nearest_neighbor_estimation", &sample_lights);
+			reset_required |= config->addBool("next_event_estimation", &sample_lights);
 			reset_required |= config->addBool("bsdf_importance_sampling", &sample_bsdf);
 			reset_required |= config->addBool("russian_roulette", &russian_roulette);
 			config->endChild();

@@ -11,5 +11,6 @@ layout(push_constant) uniform PushConstants {
     uint diff_samples_per_pixel;
     bool do_mlmc;
     uint mlmc_method;
+    uint biased_path_length;
 } options;
 #endif // OPTIONS_GLSL

@@ -23,7 +23,9 @@
 #include "MeshRepository.hpp"
 #include "Renderer.hpp"
 #include "UpdateFlagValue.hpp"
-#include "../../Window.hpp"
+#include "../Window.hpp"
+#include "renderer/mlmc/MlmcMode.hpp"
+#include "renderer/mlmc/MlmcPresentMode.hpp"
 
 namespace RtEngine {
 
@@ -63,6 +65,13 @@ namespace RtEngine {
 		std::shared_ptr<Window> window;
 
 		uint32_t recursion_depth = 5;
+		MlmcMode mlmc_mode = PATH_LENGTH;
+		std::string mlmc_mode_str = "path length";
+		MlmcPresentMode mlmc_present_mode = COMBINED;
+		std::string mlmc_present_mode_str = "combined";
+
+		uint32_t mlmc_biased_path_length = 2;
+
 		std::vector<int32_t> push_constants{};
 
 		std::shared_ptr<TextureRepository> texture_repository;
@@ -94,7 +103,7 @@ namespace RtEngine {
 
 		void *createPushConstants(uint32_t *size, const std::shared_ptr<RenderTarget> &target);
 
-		void recordBlitToSwapchain(VkCommandBuffer commandBuffer, const std::shared_ptr<RenderTarget> &render_target, uint32_t swapchain_image_index);
+		void recordBlitToSwapchain(VkCommandBuffer commandBuffer, const AllocatedImage &render_target, uint32_t swapchain_image_index);
 	};
 
 } // namespace RtEngine
