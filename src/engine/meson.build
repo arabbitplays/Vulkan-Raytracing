@@ -2,7 +2,7 @@
 
 subdir('ui')
 subdir('runner')
-subdir('renderer')
+subdir('rendering')
 subdir('scene_graph')
 subdir('repositories')
 
@@ -11,4 +11,5 @@ src += files(
   'Window.cpp',
   'SwapchainManager.cpp',
   'Engine.cpp',
+  'RenderingManager.cpp',
 )

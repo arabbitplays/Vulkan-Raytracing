@@ -80,7 +80,7 @@ namespace RtEngine {
 		initInfo.Instance = device_manager->getInstance();
 		initInfo.PhysicalDevice = device_manager->getPhysicalDevice();
 		initInfo.Device = device_manager->getDevice();
-		initInfo.QueueFamily = device_manager->getQueueIndices().graphicsFamily.value();
+		initInfo.QueueFamily = device_manager->getQueueIndices().graphicsAndComputeFamily.value();
 		initInfo.Queue = device_manager->getQueue(GRAPHICS);
 		initInfo.PipelineCache = VK_NULL_HANDLE;
 		initInfo.DescriptorPool = descriptor_pool;
@@ -96,7 +96,7 @@ namespace RtEngine {
 
 	void GuiRenderer::addWindow(std::shared_ptr<GuiWindow> window) { gui_windows.push_back(window); }
 
-	void GuiRenderer::updateWindows() {
+	void GuiRenderer::recreateFramebuffer() {
 		for (auto framebuffer: frame_buffers) {
 			vkDestroyFramebuffer(context->device_manager->getDevice(), framebuffer, nullptr);
 		}
@@ -134,7 +134,7 @@ namespace RtEngine {
 		vkCmdEndRenderPass(commandBuffer);
 	}
 
-	void GuiRenderer::destroy() {
+	void GuiRenderer::cleanup() {
 		shutdownImGui();
 
 		for (auto framebuffer: frame_buffers) {

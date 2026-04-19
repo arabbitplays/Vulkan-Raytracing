@@ -3,8 +3,9 @@
 #include <memory>
 
 #include "GuiManager.hpp"
+#include "RenderingManager.hpp"
 #include "Runner.hpp"
-#include "VulkanRenderer.hpp"
+#include "RaytracingRenderer.hpp"
 
 namespace RtEngine {
     enum RunnerType {
@@ -64,7 +65,7 @@ namespace RtEngine {
         std::shared_ptr<Window> window;
         std::shared_ptr<SceneManager> scene_manager;
         std::shared_ptr<GuiManager> gui_manager;
-        std::shared_ptr<VulkanRenderer> vulkan_renderer;
+        std::shared_ptr<RenderingManager> rendering_manager;
         std::shared_ptr<Runner> runner;
     };
 } // RtEngine

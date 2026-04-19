@@ -17,12 +17,4 @@ namespace RtEngine {
         inspector_window->addCallback(callback);
         hierarchy_window->addCallback(callback);
     }
-
-    std::shared_ptr<GuiRenderer> GuiManager::getGuiRenderer() const {
-        return gui_renderer;
-    }
-
-    void GuiManager::destroy() {
-        gui_renderer->destroy();
-    }
 }

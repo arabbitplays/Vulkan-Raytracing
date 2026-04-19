@@ -15,7 +15,7 @@
 namespace RtEngine {
     class TextureRepository {
     public:
-        TextureRepository(std::shared_ptr<ResourceBuilder> resource_builder) : resource_builder(resource_builder) {
+        TextureRepository(const std::shared_ptr<ResourceBuilder> &resource_builder) : resource_builder(resource_builder) {
             initDefaultTextures();
         }
 
@@ -44,14 +44,14 @@ namespace RtEngine {
                     "def_prop", PARAMETER, "",
                     resource_builder->createImage((void *) &black, VkExtent3D{1, 1, 1}, VK_FORMAT_R8G8B8A8_SRGB,
                                                   VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_SAMPLED_BIT,
-                                                  VK_IMAGE_ASPECT_COLOR_BIT));
+                                                  VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL));
 
             uint32_t blue = glm::packUnorm4x8(glm::vec4(0.5f, 0.5f, 1, 0));
             default_normal_tex = std::make_shared<Texture>(
                     "def_normal", NORMAL, "",
                     resource_builder->createImage((void *) &blue, VkExtent3D{1, 1, 1}, VK_FORMAT_R8G8B8A8_UNORM,
                                                   VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_SAMPLED_BIT,
-                                                  VK_IMAGE_ASPECT_COLOR_BIT));
+                                                  VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL));
 
             // checkerboard image
             const uint32_t magenta = glm::packUnorm4x8(glm::vec4(1, 0, 1, 1));
@@ -65,7 +65,7 @@ namespace RtEngine {
                     "error", NORMAL, "",
                     resource_builder->createImage(
                     pixels.data(), VkExtent3D{16, 16, 1}, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL,
-                    VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_ASPECT_COLOR_BIT));
+                    VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL));
 
             addTexture(default_tex);
             addTexture(default_normal_tex);
