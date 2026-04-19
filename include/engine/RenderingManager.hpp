@@ -18,6 +18,7 @@ namespace RtEngine {
         std::shared_ptr<VulkanContext> getVulkanContext() const;
         std::shared_ptr<RaytracingRenderer> getRaytracingRenderer() const;
         std::shared_ptr<GuiRenderer> getGuiRenderer() const;
+        std::vector<std::shared_ptr<Renderer>> getRendererStack() const;
 
         std::shared_ptr<RenderTargetRepository> createRenderTarget(uint32_t width, uint32_t height);
 
@@ -41,7 +42,7 @@ namespace RtEngine {
 
         std::shared_ptr<RaytracingRenderer> raytracing_renderer;
         std::shared_ptr<GuiRenderer> gui_renderer;
-        std::shared_ptr<ComputeRenderer> glitch_renderer;
+        std::vector<std::shared_ptr<ComputeRenderer>> compute_renderers{};
     };
 } // RtEngine
 

@@ -3,8 +3,9 @@
 
 namespace RtEngine {
     enum RenderTargetType {
-        RAYTRACE,
-        RNG,
+        RAYTRACE_TARGET,
+        COMPUTE_TARGET,
+        RNG_TARGET,
     };
 } // RtEngine
 

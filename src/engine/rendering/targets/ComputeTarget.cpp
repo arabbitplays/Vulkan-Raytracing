@@ -1,7 +1,7 @@
-#include "targets/RaytracingTarget.hpp"
+#include "targets/ComputeTarget.hpp"
 
 namespace RtEngine {
-    void RaytracingTarget::createTargetImages(VkExtent2D image_extent) {
+    void ComputeTarget::createTargetImages(VkExtent2D image_extent) {
         target_images.resize(max_frames_in_flight);
         for (uint32_t i = 0; i < max_frames_in_flight; i++) {
             target_images[i] = resource_builder->createImage(

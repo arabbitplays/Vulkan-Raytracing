@@ -5,6 +5,8 @@
 namespace RtEngine {
     class RenderTarget {
     public:
+        virtual ~RenderTarget() = default;
+
         RenderTarget(const std::shared_ptr<ResourceBuilder> &resource_builder, uint32_t max_frames_in_flight);
 
         virtual void createTargetImages(VkExtent2D image_extent) = 0;

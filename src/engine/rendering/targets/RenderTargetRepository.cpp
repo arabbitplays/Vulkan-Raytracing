@@ -3,7 +3,9 @@
 #include <assert.h>
 #include <RandomUtil.hpp>
 
+#include "targets/ComputeTarget.hpp"
 #include "targets/RaytracingTarget.hpp"
+#include "targets/RenderTargetKeys.hpp"
 #include "targets/RngTarget.hpp"
 
 namespace RtEngine {
@@ -16,10 +18,13 @@ namespace RtEngine {
     void RenderTargetRepository::addRenderTarget(std::string key, RenderTargetType type) {
         std::shared_ptr<RenderTarget> render_target;
         switch (type) {
-            case RAYTRACE:
+            case RAYTRACE_TARGET:
                 render_target = std::make_shared<RaytracingTarget>(resource_builder, max_frames_in_flight);
                 break;
-            case RNG:
+            case COMPUTE_TARGET:
+                render_target = std::make_shared<ComputeTarget>(resource_builder, max_frames_in_flight);
+                break;
+            case RNG_TARGET:
                 render_target = std::make_shared<RngTarget>(resource_builder, max_frames_in_flight);
                 break;
         }
@@ -28,9 +33,10 @@ namespace RtEngine {
     };
 
     void RenderTargetRepository::init() {
-        addRenderTarget("main", RAYTRACE);
-        addRenderTarget("rng", RNG);
-        addRenderTarget("diff", RAYTRACE);
+        addRenderTarget(MAIN_TARGET_KEY, RAYTRACE_TARGET);
+        addRenderTarget(RNG_TARGET_KEY, RNG_TARGET);
+        addRenderTarget(DIFF_TARGET_KEY, RAYTRACE_TARGET);
+        addRenderTarget(MLMC_TARGET_KEY, COMPUTE_TARGET);
     }
 
     void RenderTargetRepository::recreate(const VkExtent2D new_image_extent) {

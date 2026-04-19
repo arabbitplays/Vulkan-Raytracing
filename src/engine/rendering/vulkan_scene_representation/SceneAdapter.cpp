@@ -125,12 +125,12 @@ namespace RtEngine {
 	}
 
 	void SceneAdapter::updateRenderTarget(const std::shared_ptr<RenderTargetRepository> &target_repository) {
-		vulkan_context->descriptor_allocator->writeImage(1, target_repository->getCurrRenderTargetImage(MAIN_TARGET).imageView, VK_NULL_HANDLE,
+		vulkan_context->descriptor_allocator->writeImage(1, target_repository->getCurrRenderTargetImage(MAIN_TARGET_KEY).imageView, VK_NULL_HANDLE,
 														 VK_IMAGE_LAYOUT_GENERAL, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
-		vulkan_context->descriptor_allocator->writeImage(12, target_repository->getCurrRenderTargetImage(DIFF_TARGET).imageView, VK_NULL_HANDLE,
+		vulkan_context->descriptor_allocator->writeImage(12, target_repository->getCurrRenderTargetImage(DIFF_TARGET_KEY).imageView, VK_NULL_HANDLE,
 														 VK_IMAGE_LAYOUT_GENERAL, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
 
-		vulkan_context->descriptor_allocator->writeImage(10, target_repository->getCurrRenderTargetImage(RNG_TARGET).imageView, VK_NULL_HANDLE, VK_IMAGE_LAYOUT_GENERAL,
+		vulkan_context->descriptor_allocator->writeImage(10, target_repository->getCurrRenderTargetImage(RNG_TARGET_KEY).imageView, VK_NULL_HANDLE, VK_IMAGE_LAYOUT_GENERAL,
 														 VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
 
 		updateSceneDescriptorSets();

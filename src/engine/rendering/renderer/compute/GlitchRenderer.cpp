@@ -12,7 +12,7 @@ namespace RtEngine {
     }
 
     void GlitchRenderer::writeRenderTarget(const std::shared_ptr<RenderTargetRepository> &target) {
-        vulkan_context->descriptor_allocator->writeImage(0, target->getCurrRenderTargetImage(MAIN_TARGET).imageView, VK_NULL_HANDLE,
+        vulkan_context->descriptor_allocator->writeImage(0, target->getCurrRenderTargetImage(MAIN_TARGET_KEY).imageView, VK_NULL_HANDLE,
                                                          VK_IMAGE_LAYOUT_GENERAL, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
 
         vulkan_context->descriptor_allocator->updateSet(vulkan_context->device_manager->getDevice(), descriptor_set);

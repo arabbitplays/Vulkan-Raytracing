@@ -1,6 +1,7 @@
 #include "../../include/engine/RenderingManager.hpp"
 
 #include "compute/GlitchRenderer.hpp"
+#include "compute/MlmcRenderer.hpp"
 
 namespace RtEngine {
     RenderingManager::RenderingManager(const std::shared_ptr<Window> &window, std::string resources_dir, const bool enable_validation_layer)
@@ -33,7 +34,9 @@ namespace RtEngine {
             vulkan_context->swapchain->destroy();
             raytracing_renderer->cleanup(); // TODO i think the sync objects still have to exist for swapchain destruction to work
             gui_renderer->cleanup();
-            glitch_renderer->cleanup();
+            for (const auto& renderer : compute_renderers) {
+                renderer->cleanup();
+            }
             vulkan_context->command_manager->destroy();
             vulkan_context->device_manager->destroy();
         });
@@ -58,6 +61,10 @@ namespace RtEngine {
         raytracing_renderer = std::make_shared<RaytracingRenderer>(window, vulkan_context, resources_dir, max_frames_in_flight);
         raytracing_renderer->init();
         gui_renderer = std::make_shared<GuiRenderer>(vulkan_context);
+        compute_renderers.push_back(std::make_shared<MlmcRenderer>(vulkan_context, max_frames_in_flight));
+        for (const auto &renderer : compute_renderers) {
+            renderer->init();
+        }
     }
 
     std::shared_ptr<VulkanContext> RenderingManager::getVulkanContext() const {
@@ -73,6 +80,15 @@ namespace RtEngine {
     std::shared_ptr<GuiRenderer> RenderingManager::getGuiRenderer() const {
         assert(gui_renderer != nullptr);
         return gui_renderer;
+    }
+
+    std::vector<std::shared_ptr<Renderer>> RenderingManager::getRendererStack() const {
+        std::vector<std::shared_ptr<Renderer>> result{};
+        result.push_back(raytracing_renderer);
+        for (const auto &renderer : compute_renderers) {
+            result.push_back(renderer);
+        }
+        return result;
     }
 
     std::shared_ptr<RenderTargetRepository> RenderingManager::createRenderTarget(uint32_t width, uint32_t height) {

@@ -24,6 +24,12 @@ namespace RtEngine {
         virtual void drawFrame(const std::shared_ptr<DrawContext> &draw_context);
 
         virtual void prepareFrame(VkCommandBuffer cmd, const std::shared_ptr<DrawContext> &draw_context);
+
+        void writeRenderTargets(const std::shared_ptr<RenderTargetRepository> &target_repository);
+
+        void recordRenderingCommands(VkCommandBuffer cmd, std::shared_ptr<RenderTargetRepository> target_repository,
+                                     uint32_t swapchain_image_idx, bool present);
+
         virtual void finishFrame(VkCommandBuffer cmd, const std::shared_ptr<DrawContext> &draw_context, uint32_t swapchain_image_idx, bool present) const;
 
         void handle_resize() const;

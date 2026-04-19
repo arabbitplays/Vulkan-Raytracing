@@ -5,7 +5,9 @@
 namespace RtEngine {
     class RaytracingTarget : public RenderTarget {
     public:
-        RaytracingTarget(const std::shared_ptr<ResourceBuilder> &resource_builder, uint32_t max_frames_in_flight);
+        RaytracingTarget(const std::shared_ptr<ResourceBuilder> &resource_builder, uint32_t max_frames_in_flight)
+            : RenderTarget(resource_builder, max_frames_in_flight) {
+        }
 
         void createTargetImages(VkExtent2D image_extent) override;
     };

@@ -80,8 +80,8 @@ namespace RtEngine {
 
         prepareFrame(cmd, draw_context);
 
-        raytracing_renderer->writeRenderTarget(target_repository);
-        raytracing_renderer->recordCommandBuffer(cmd, target_repository, swapchain_image_idx, true);
+        writeRenderTargets(target_repository);
+        recordRenderingCommands(cmd, target_repository, swapchain_image_idx, true);
         gui_renderer->recordGuiCommands(cmd, swapchain_image_idx);
 
         finishFrame(cmd, draw_context, static_cast<uint32_t>(swapchain_image_idx), true);
@@ -98,6 +98,28 @@ namespace RtEngine {
         update_flags->resetFlags();
 
         engine_context->rendering_manager->recordBeginCommandBuffer(cmd);
+    }
+
+    void Runner::writeRenderTargets(const std::shared_ptr<RenderTargetRepository> &target_repository) {
+        auto renderers = engine_context->rendering_manager->getRendererStack();
+        for (const auto& renderer : renderers) {
+            renderer->writeRenderTarget(target_repository);
+        }
+    }
+
+    void Runner::recordRenderingCommands(VkCommandBuffer cmd, std::shared_ptr<RenderTargetRepository> target_repository, uint32_t swapchain_image_idx, bool present) {
+        auto renderers = engine_context->rendering_manager->getRendererStack();
+        for (const auto& renderer : renderers) {
+            // TODO pull the swapchain present out of the rt renderer and unify the recordCmdBuffer interface
+            auto rt_renderer = std::dynamic_pointer_cast<RaytracingRenderer>(renderer);
+            if (rt_renderer) {
+                rt_renderer->recordCommandBuffer(cmd, target_repository, swapchain_image_idx, present);
+            }
+            auto comp_renderer = std::dynamic_pointer_cast<ComputeRenderer>(renderer);
+            if (comp_renderer) {
+                comp_renderer->recordCommandBuffer(cmd, target_repository, swapchain_image_idx);
+            }
+        }
     }
 
     void Runner::finishFrame(VkCommandBuffer cmd, const std::shared_ptr<DrawContext> &draw_context, uint32_t swapchain_image_idx, bool present) const {

@@ -210,13 +210,13 @@ namespace RtEngine {
 	AllocatedImage getPresentTarget(std::shared_ptr<RenderTargetRepository> &target_repository, MlmcPresentMode present_mode) {
         switch (present_mode) {
             case UNBIASED:
-                return target_repository->getCurrRenderTargetImage(MAIN_TARGET);
+                return target_repository->getCurrRenderTargetImage(MAIN_TARGET_KEY);
             case BIASED:
-                return target_repository->getCurrRenderTargetImage(MAIN_TARGET);
+                return target_repository->getCurrRenderTargetImage(MAIN_TARGET_KEY);
             case DIFF:
-                return target_repository->getCurrRenderTargetImage(DIFF_TARGET);
+                return target_repository->getCurrRenderTargetImage(DIFF_TARGET_KEY);
             case COMBINED:
-                return target_repository->getCurrRenderTargetImage(MAIN_TARGET);
+                return target_repository->getCurrRenderTargetImage(MLMC_TARGET_KEY);
                 break;
         }
     }
