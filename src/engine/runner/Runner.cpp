@@ -79,7 +79,7 @@ namespace RtEngine {
 
         prepareFrame(cmd, draw_context);
 
-        raytracing_renderer->updateRenderTarget(target);
+        raytracing_renderer->writeRenderTarget(target);
         raytracing_renderer->recordCommandBuffer(cmd, target, swapchain_image_idx, true);
         gui_renderer->recordGuiCommands(cmd, swapchain_image_idx);
 
@@ -87,7 +87,7 @@ namespace RtEngine {
     }
 
     void Runner::prepareFrame(VkCommandBuffer cmd, const std::shared_ptr<DrawContext> &draw_context) {
-        raytracing_renderer->updateSceneRepresentation(draw_context, update_flags);
+        raytracing_renderer->writeResources(draw_context, update_flags);
 
         if (update_flags->checkFlag(TARGET_RESET)) {
             for (const auto& target : draw_context->targets) {

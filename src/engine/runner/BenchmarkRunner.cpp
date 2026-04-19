@@ -77,7 +77,7 @@ namespace RtEngine {
 
 		prepareFrame(cmd, draw_context);
 
-		raytracing_renderer->updateRenderTarget(target);
+		raytracing_renderer->writeRenderTarget(target);
 		raytracing_renderer->recordCommandBuffer(cmd, target, swapchain_image_idx, present_image);
 
 		finishFrame(cmd, draw_context, static_cast<uint32_t>(swapchain_image_idx), present_image);
@@ -85,7 +85,7 @@ namespace RtEngine {
 
 
 	void BenchmarkRunner::prepareFrame(VkCommandBuffer cmd, const std::shared_ptr<DrawContext> &draw_context) {
-		raytracing_renderer->updateSceneRepresentation(draw_context, update_flags);
+		raytracing_renderer->writeResources(draw_context, update_flags);
 		engine_context->rendering_manager->recordBeginCommandBuffer(cmd);
 		update_flags->resetFlags();
 	}

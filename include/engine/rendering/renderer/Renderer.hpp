@@ -1,9 +1,6 @@
-//
-// Created by oschdi on 28.01.26.
-//
-
 #ifndef VULKAN_RAYTRACING_RENDERER_HPP
 #define VULKAN_RAYTRACING_RENDERER_HPP
+#include "IRenderable.hpp"
 #include "RenderTarget.hpp"
 #include "VulkanContext.hpp"
 
@@ -14,7 +11,9 @@ namespace RtEngine {
 
         virtual void init();
 
-        virtual void updateRenderTarget(const std::shared_ptr<RenderTarget> &target) = 0;
+
+		virtual void writeResources(const std::shared_ptr<DrawContext> &draw_context, UpdateFlagsHandle update_flags) = 0;
+        virtual void writeRenderTarget(const std::shared_ptr<RenderTarget> &target) = 0;
 
         void waitForNextFrameStart();
 

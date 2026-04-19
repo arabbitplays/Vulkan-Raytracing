@@ -2,7 +2,7 @@
 #define VULKAN_RAYTRACING_RENDERINGMANAGER_HPP
 #include <memory>
 
-#include "ComputeRenderer.hpp"
+#include "rendering/renderer/compute/ComputeRenderer.hpp"
 #include "VulkanContext.hpp"
 #include "RaytracingRenderer.hpp"
 
@@ -18,7 +18,6 @@ namespace RtEngine {
         std::shared_ptr<VulkanContext> getVulkanContext() const;
         std::shared_ptr<RaytracingRenderer> getRaytracingRenderer() const;
         std::shared_ptr<GuiRenderer> getGuiRenderer() const;
-        std::shared_ptr<ComputeRenderer> getGlitchRenderer() const;
 
         std::shared_ptr<RenderTarget> createRenderTarget(uint32_t width, uint32_t height);
 

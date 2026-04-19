@@ -4,7 +4,6 @@
 src += files(
   'ReferenceRunner.cpp',
   'BenchmarkRunner.cpp',
-  'ComputeRunner.cpp',
   'RealtimeRunner.cpp',
   'Runner.cpp',
 )

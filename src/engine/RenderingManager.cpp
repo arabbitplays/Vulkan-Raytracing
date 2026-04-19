@@ -1,5 +1,7 @@
 #include "../../include/engine/RenderingManager.hpp"
 
+#include "compute/GlitchRenderer.hpp"
+
 namespace RtEngine {
     RenderingManager::RenderingManager(const std::shared_ptr<Window> &window, std::string resources_dir, const bool enable_validation_layer)
         : window(window), validation_layers_enabled(enable_validation_layer), resources_dir(resources_dir) {
@@ -57,8 +59,6 @@ namespace RtEngine {
         raytracing_renderer = std::make_shared<RaytracingRenderer>(window, vulkan_context, resources_dir, max_frames_in_flight);
         raytracing_renderer->init();
         gui_renderer = std::make_shared<GuiRenderer>(vulkan_context);
-        glitch_renderer = std::make_shared<ComputeRenderer>(vulkan_context);
-        glitch_renderer->init();
     }
 
     std::shared_ptr<VulkanContext> RenderingManager::getVulkanContext() const {
@@ -74,11 +74,6 @@ namespace RtEngine {
     std::shared_ptr<GuiRenderer> RenderingManager::getGuiRenderer() const {
         assert(gui_renderer != nullptr);
         return gui_renderer;
-    }
-
-    std::shared_ptr<ComputeRenderer> RenderingManager::getGlitchRenderer() const {
-        assert(glitch_renderer != nullptr);
-        return glitch_renderer;
     }
 
     std::shared_ptr<RenderTarget> RenderingManager::createRenderTarget(uint32_t width, uint32_t height) {

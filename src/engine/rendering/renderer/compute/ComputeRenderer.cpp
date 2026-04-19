@@ -1,4 +1,4 @@
-#include "../../../../include/engine/rendering/renderer/ComputeRenderer.hpp"
+#include "compute/ComputeRenderer.hpp"
 
 #include <glitch.comp.spv.h>
 
@@ -7,23 +7,11 @@
 namespace RtEngine {
     ComputeRenderer::ComputeRenderer(const std::shared_ptr<VulkanContext> &vulkan_context, const uint32_t max_frames_in_flight)
         : Renderer(vulkan_context, max_frames_in_flight) {
+    }
+
+    void ComputeRenderer::init() {
+        Renderer::init();
         createPipeline();
-    }
-
-    void ComputeRenderer::updateRenderTarget(const std::shared_ptr<RenderTarget> &target) {
-        vulkan_context->descriptor_allocator->writeImage(0, target->getCurrentTargetImage().imageView, VK_NULL_HANDLE,
-                                                         VK_IMAGE_LAYOUT_GENERAL, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
-
-        vulkan_context->descriptor_allocator->updateSet(vulkan_context->device_manager->getDevice(), descriptor_set);
-        vulkan_context->descriptor_allocator->clearWrites();
-    }
-
-    void ComputeRenderer::updateResources(const AllocatedImage &src_image) {
-        vulkan_context->descriptor_allocator->writeImage(1, src_image.imageView, VK_NULL_HANDLE,
-                                                                 VK_IMAGE_LAYOUT_GENERAL, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
-
-        vulkan_context->descriptor_allocator->updateSet(vulkan_context->device_manager->getDevice(), descriptor_set);
-        vulkan_context->descriptor_allocator->clearWrites();
     }
 
     void ComputeRenderer::createPipeline() {
@@ -41,8 +29,7 @@ namespace RtEngine {
         std::vector<VkDescriptorSetLayout> descriptorSetLayouts{descriptor_layout};
         pipeline->setDescriptorSetLayouts(descriptorSetLayouts);
 
-        VkShaderModule compute_shader_module = VulkanUtil::createShaderModule(
-                device, oschd_glitch_comp_spv_size(), oschd_glitch_comp_spv());
+        VkShaderModule compute_shader_module = createShaderModule();
         pipeline->setShaderStage(compute_shader_module);
 
         pipeline->build();
@@ -52,17 +39,11 @@ namespace RtEngine {
         vkDestroyShaderModule(device, compute_shader_module, nullptr);
     }
 
-    void ComputeRenderer::initDescriptorLayout(DescriptorLayoutBuilder& layout_builder) {
-        layout_builder.addBinding(0, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE); // render target
-        layout_builder.addBinding(1, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE); // src image
-    }
 
     void ComputeRenderer::recordCommandBuffer(VkCommandBuffer commandBuffer, std::shared_ptr<RenderTarget> target, uint32_t swapchain_image_idx) {
         vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline->getHandle());
         vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline->getLayoutHandle(), 0, 1, &descriptor_set, 0, 0);
-
-        VkExtent2D target_extent = target->getExtent();
-        vkCmdDispatch(commandBuffer, 1, (target_extent.height + 255) / 256, 1);
+        recordDispatch(commandBuffer, target);
     }
 
     void ComputeRenderer::submitCommandBuffer(VkCommandBuffer& command_buffer) {

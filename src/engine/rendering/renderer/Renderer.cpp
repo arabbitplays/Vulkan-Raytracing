@@ -1,7 +1,3 @@
-//
-// Created by oschdi on 28.01.26.
-//
-
 #include "../../../../include/engine/rendering/renderer/Renderer.hpp"
 
 #include "MeshAsset.hpp"

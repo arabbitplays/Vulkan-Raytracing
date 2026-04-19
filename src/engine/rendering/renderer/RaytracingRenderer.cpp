@@ -105,11 +105,11 @@ namespace RtEngine {
 		}
 	}
 
-	void RaytracingRenderer::updateSceneRepresentation(const std::shared_ptr<DrawContext> &draw_context, UpdateFlagsHandle update_flags) {
+	void RaytracingRenderer::writeResources(const std::shared_ptr<DrawContext> &draw_context, UpdateFlagsHandle update_flags) {
 		scene_adapter->updateScene(draw_context, current_frame, update_flags);
 	}
 
-	void RaytracingRenderer::updateRenderTarget(const std::shared_ptr<RenderTarget> &target) {
+	void RaytracingRenderer::writeRenderTarget(const std::shared_ptr<RenderTarget> &target) {
 		scene_adapter->updateRenderTarget(target);
 	}
 
