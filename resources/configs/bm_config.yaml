@@ -2,8 +2,12 @@ runner:
   scene_name: ref_scene_homo_volume
 renderer:
   recursion_depth: 20
+mlmc:
+  mlmc_mode: "path length"
+  mlmc_present_mode: "combined"
+  biased_path_length: 5
 metal_rough:
   normal_mapping: false
-  next_event_estimation: true
+  next_event_estimation: false
   bsdf_importance_sampling: false
   russian_roulette: false

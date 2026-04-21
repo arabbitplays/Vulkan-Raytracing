@@ -2,6 +2,8 @@ runner:
   scene_name: ref_scene_homo_volume
 renderer:
   recursion_depth: 20
+mlmc:
+  mlmc_present_mode: "unbiased"
 metal_rough:
   normal_mapping: false
   next_event_estimation: false
