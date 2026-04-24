@@ -33,7 +33,11 @@ namespace RtEngine {
 		{
 			for (const auto& target : target_repositories) {
 				target->nextImage();
-				target->incrementAccumulatedFrameCount();
+				if (target->getSamplesPerFrame() != 0)
+					target->incrementAccumulatedFrameCount();
+				if (target->getDiffSamplesPerFrame() != 0) {
+					target->incrementAccumulatedDiffFrameCount();
+				}
 			}
 		}
 

@@ -19,17 +19,19 @@ namespace RtEngine
 
         void addRenderTarget(std::string key, RenderTargetType type);
 
-        AllocatedImage getLastTargetImage() const;
-
         AllocatedImage getCurrRenderTargetImage(std::string key) const;
+        AllocatedImage getLastRenderTargetImage(std::string key) const;
 
         void nextImage();
 
         VkExtent2D getExtent() const;
 
         uint32_t getAccumulatedFrameCount() const;
+        uint32_t getAccumulatedDiffFrameCount() const;
+
         void resetAccumulatedFrames();
         void incrementAccumulatedFrameCount();
+        void incrementAccumulatedDiffFrameCount();
 
         uint32_t getTotalSampleCount() const;
 
@@ -40,9 +42,6 @@ namespace RtEngine
         void destroy();
 
         void recreate(VkExtent2D new_image_extent);
-
-        void destroy() const;
-
 
     private:
         void init();
@@ -57,6 +56,7 @@ namespace RtEngine
         std::unordered_map<std::string, std::shared_ptr<RenderTarget>> render_targets{};
 
         uint32_t accumulated_frame_count = 0;
+        uint32_t accumulated_diff_frame_count = 0;
         uint32_t samples_per_frame = 8;
         uint32_t diff_samples_per_frame = 1;
     };

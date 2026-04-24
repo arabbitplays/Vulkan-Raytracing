@@ -47,9 +47,9 @@ namespace RtEngine {
         resetAccumulatedFrames();
     }
 
-    AllocatedImage RenderTargetRepository::getLastTargetImage() const {
+    AllocatedImage RenderTargetRepository::getLastRenderTargetImage(std::string key) const {
         uint32_t idx = current_image_idx != 0 ? current_image_idx - 1 : max_frames_in_flight - 1;
-        return render_targets.at("main")->getImage(idx);
+        return render_targets.at(key)->getImage(idx);
     }
 
     AllocatedImage RenderTargetRepository::getCurrRenderTargetImage(std::string key) const {
@@ -69,12 +69,21 @@ namespace RtEngine {
         return accumulated_frame_count;
     }
 
+    uint32_t RenderTargetRepository::getAccumulatedDiffFrameCount() const {
+        return accumulated_diff_frame_count;
+    }
+
     void RenderTargetRepository::resetAccumulatedFrames() {
         accumulated_frame_count = 0;
+        accumulated_diff_frame_count = 0;
     }
 
     void RenderTargetRepository::incrementAccumulatedFrameCount() {
         accumulated_frame_count++;
+    }
+
+    void RenderTargetRepository::incrementAccumulatedDiffFrameCount() {
+        accumulated_diff_frame_count++;
     }
 
     uint32_t RenderTargetRepository::getTotalSampleCount() const {

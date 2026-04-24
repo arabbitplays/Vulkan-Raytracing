@@ -61,7 +61,7 @@ namespace RtEngine {
         raytracing_renderer = std::make_shared<RaytracingRenderer>(window, vulkan_context, resources_dir, max_frames_in_flight);
         raytracing_renderer->init();
         gui_renderer = std::make_shared<GuiRenderer>(vulkan_context);
-        compute_renderers.push_back(std::make_shared<MlmcRenderer>(vulkan_context, max_frames_in_flight));
+        //compute_renderers.push_back(std::make_shared<MlmcRenderer>(vulkan_context, max_frames_in_flight));
         for (const auto &renderer : compute_renderers) {
             renderer->init();
         }

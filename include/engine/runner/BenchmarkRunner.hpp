@@ -12,17 +12,22 @@ namespace RtEngine {
 		void loadScene(const std::string &scene_path) override;
 		void renderScene() override;
 		void drawFrame(const std::shared_ptr<DrawContext> &draw_context) override;
-		//void initProperties() override;
+
+		void resetForNextRound(std::shared_ptr<RenderTargetRepository> target_repository);
+
+		void initProperties(const std::shared_ptr<IProperties> &config, const UpdateFlagsHandle &update_flags) override;
 
 	private:
 		void prepareFrame(VkCommandBuffer cmd, const std::shared_ptr<DrawContext> &draw_context) override;
 
-		std::string getTmpImagePath(uint32_t samples);
+		std::string getTmpImagePath(uint32_t biased_samples, uint32_t diff_samples);
 		std::string getOutputFilePath();
 		std::string getRefFilePath();
 		void clearTmpfolder();
 
-		void outputBenchmarkDataToCsv();
+		void calculateErrors();
+
+		void outputErrorsToCsv();
 
 		float calculateMSE(uint8_t *ref_data, uint8_t *data, uint32_t size);
 
@@ -32,12 +37,21 @@ namespace RtEngine {
 
 		std::shared_ptr<DrawContext> draw_context;
 
-		uint32_t error_calculation_sample_count = 1;
-		uint32_t final_sample_count = 1 << 10;
+		uint32_t error_calculation_frame_count = 1;
 
 		uint32_t expected_ref_sample_count = 1 << 15;
 
-		std::vector<float*> done_images;
+		uint32_t final_biased_sample_count = 1 << 10;
+		uint32_t final_diff_sample_count = 1 << 10;
+		uint32_t averaging_rounds = 1;
+		uint32_t done_rounds = 0;
+
+		uint32_t biased_sample_count = 0;
+		uint32_t diff_sample_count = 0;
+
+		bool calculating_mlmc_diff = false;
+
+		std::unordered_map<uint32_t, float> mse_averages{};
 	};
 
 } // namespace RtEngine

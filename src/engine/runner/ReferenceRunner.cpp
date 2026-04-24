@@ -6,6 +6,8 @@
 #include "PathUtil.hpp"
 #include <format>
 
+#include "targets/RenderTargetKeys.hpp"
+
 namespace RtEngine {
 	constexpr std::string SAMPLE_COUNT_OPTION_NAME = "Sample_Count";
 
@@ -39,7 +41,7 @@ namespace RtEngine {
 		if (samples_per_image == static_cast<int32_t>(target_repository->getTotalSampleCount())) {
 			raytracing_renderer->waitForIdle();
 
-			float *data = raytracing_renderer->downloadRenderTarget(target_repository);
+			float *data = raytracing_renderer->downloadRenderTarget(target_repository, MAIN_TARGET_KEY);
 			done_images.push_back(data);
 
 			if (done_images.size() == final_image_count) {

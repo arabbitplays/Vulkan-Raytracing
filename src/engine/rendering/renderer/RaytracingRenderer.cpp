@@ -283,6 +283,7 @@ namespace RtEngine {
         material->getPushConstantValues(push_constants);
 
         push_constants.push_back(target->getAccumulatedFrameCount());
+        push_constants.push_back(target->getAccumulatedDiffFrameCount());
         push_constants.push_back(target->getSamplesPerFrame());
         push_constants.push_back(target->getDiffSamplesPerFrame());
 
@@ -344,16 +345,16 @@ namespace RtEngine {
 		deletion_queue.flush();
 	}
 
-	float* RaytracingRenderer::downloadRenderTarget(const std::shared_ptr<RenderTargetRepository> &target) const {
-		AllocatedImage image = target->getLastTargetImage();
+	float* RaytracingRenderer::downloadRenderTarget(const std::shared_ptr<RenderTargetRepository> &target, std::string target_key) const {
+		AllocatedImage image = target->getLastRenderTargetImage(target_key);
 		uint8_t *data = vulkan_context->resource_builder->downloadImage(image, sizeof(float));
 		return reinterpret_cast<float*>(data);
 	}
 
-	void RaytracingRenderer::outputRenderingTarget(const std::shared_ptr<RenderTargetRepository> &target, const std::string &output_path) {
+	void RaytracingRenderer::outputRenderingTarget(const std::shared_ptr<RenderTargetRepository> &target, std::string target_key, const std::string &output_path) {
 		QuickTimer timer("Output render target");
 
-        AllocatedImage render_target = target->getLastTargetImage();
+        AllocatedImage render_target = target->getLastRenderTargetImage(target_key);
         uint8_t *data = vulkan_context->resource_builder->downloadImage(render_target, sizeof(float));
         uint8_t *fixed_data = fixImageFormatForStorage(
             data, render_target.imageExtent.width * render_target.imageExtent.height, render_target.imageFormat);
