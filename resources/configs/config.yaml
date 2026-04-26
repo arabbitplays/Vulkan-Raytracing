@@ -1,5 +1,5 @@
 runner:
-  scene_name: volume_test_scene
+  scene_name: cloud_scene
 renderer:
   recursion_depth: 20
 mlmc:

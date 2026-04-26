@@ -1,6 +1,16 @@
 scene:
   material_name: metal_rough
   lights:
+    sun:
+      direction:
+        - 0
+        - -1
+        - 0
+      color:
+        - 1
+        - 1
+        - 1
+      intensity: 0.5
     point_lights:
       []
   meshes:

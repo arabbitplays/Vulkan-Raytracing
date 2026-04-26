@@ -8,6 +8,7 @@
 #include "../common/random.glsl"
 
 #include "./light_sampler.glsl"
+#include "./infinite_area_light.glsl"
 
 #include "../volume/layout.glsl"
 #include "../volume/distance_sampler.glsl"
@@ -73,9 +74,11 @@ void main() {
         payload.next_origin = P;
         payload.next_distance = sampleDistance(volume.majorant, payload.rng_state);
     } else {
+        //float alignment = dot(normalize(payload.next_direction), -normalize(sceneData.sunlightDirection.xyz));
+        float alignment = 1;
         payload.next_direction = vec3(0);
         if (!options.sample_light || payload.specular_bounce || (payload.depth == 0 && sceneData.sunlightColor.w > 0)) {
-            //payload.light += payload.beta * uniformLe();
+            payload.light += payload.beta * alignment * uniformLe();
         }
     }
 
