@@ -11,6 +11,9 @@ namespace RtEngine {
 
 		void loadScene(const std::string &scene_path) override;
 		void renderScene() override;
+
+		void finishRound();
+
 		void drawFrame(const std::shared_ptr<DrawContext> &draw_context) override;
 
 		void resetForNextRound(std::shared_ptr<RenderTargetRepository> target_repository);
@@ -37,9 +40,11 @@ namespace RtEngine {
 
 		std::shared_ptr<DrawContext> draw_context;
 
-		uint32_t error_calculation_frame_count = 1;
-
 		uint32_t expected_ref_sample_count = 1 << 15;
+
+		std::string benchmark_name = "";
+
+		uint32_t error_calculation_frame_count = 1;
 
 		uint32_t final_biased_sample_count = 1 << 10;
 		uint32_t final_diff_sample_count = 1 << 10;

@@ -42,27 +42,20 @@ namespace RtEngine {
         }
         std::shared_ptr<RenderTargetRepository> target_repository = draw_context->target_repositories[0];
 
+        std::string target_to_output = raytracing_renderer->getMlmcPresentMode() == UNBIASED
+                                           ? MAIN_TARGET_KEY
+                                           : MLMC_TARGET_KEY;
+
         if (calculating_mlmc_diff) {
             if (error_calculation_frame_count == diff_sample_count) {
                 raytracing_renderer->waitForIdle();
 
                 raytracing_renderer->outputRenderingTarget(target_repository,
-                                                           MLMC_TARGET_KEY, getTmpImagePath(
+                                                           target_to_output, getTmpImagePath(
                                                                final_biased_sample_count, diff_sample_count));
 
                 if (diff_sample_count == final_diff_sample_count) {
-                    calculateErrors();
-                    done_rounds++;
-
-                    if (done_rounds == averaging_rounds) {
-                        running = false;
-                        outputErrorsToCsv();
-                    } else {
-                        resetForNextRound(target_repository);
-                        SPDLOG_INFO("------------------------------------------------------------------------------");
-                        SPDLOG_INFO("{} / {} rounds finished!", done_rounds, averaging_rounds);
-                        SPDLOG_INFO("------------------------------------------------------------------------------");
-                    }
+                    finishRound();
                 } else {
                     error_calculation_frame_count *= 2;
                 }
@@ -72,12 +65,16 @@ namespace RtEngine {
                 raytracing_renderer->waitForIdle();
 
                 raytracing_renderer->outputRenderingTarget(target_repository,
-                                                           MLMC_TARGET_KEY, getTmpImagePath(biased_sample_count, 0));
+                                                           target_to_output, getTmpImagePath(biased_sample_count, 0));
 
                 if (biased_sample_count == final_biased_sample_count) {
-                    error_calculation_frame_count = 1;
-                    calculating_mlmc_diff = true;
-                    target_repository->setSamplesPerFrame(0, 1);
+                    if (final_diff_sample_count == 0) {
+                        finishRound();
+                    } else {
+                        error_calculation_frame_count = 1;
+                        calculating_mlmc_diff = true;
+                        target_repository->setSamplesPerFrame(0, 1);
+                    }
                 } else {
                     error_calculation_frame_count *= 2;
                 }
@@ -93,6 +90,22 @@ namespace RtEngine {
         }
     }
 
+    void BenchmarkRunner::finishRound() {
+        std::shared_ptr<RenderTargetRepository> target_repository = draw_context->target_repositories[0];
+
+        calculateErrors();
+        done_rounds++;
+
+        if (done_rounds == averaging_rounds) {
+            running = false;
+            outputErrorsToCsv();
+        } else {
+            resetForNextRound(target_repository);
+            SPDLOG_INFO("------------------------------------------------------------------------------");
+            SPDLOG_INFO("{} / {} rounds finished!", done_rounds, averaging_rounds);
+            SPDLOG_INFO("------------------------------------------------------------------------------");
+        }
+    }
 
     void BenchmarkRunner::drawFrame(const std::shared_ptr<DrawContext> &draw_context) {
         raytracing_renderer->waitForNextFrameStart();
@@ -132,6 +145,7 @@ namespace RtEngine {
         biased_sample_count = 0;
         error_calculation_frame_count = 1;
         calculating_mlmc_diff = false;
+        target_repository->setSamplesPerFrame(1, 0);
         target_repository->resetAccumulatedFrames();
     }
 
@@ -142,7 +156,7 @@ namespace RtEngine {
 
     std::string BenchmarkRunner::getOutputFilePath() {
         std::string scene_name = PathUtil::getFileName(scene_manager->getCurrentScene()->path);
-        return std::format("{}/bm_out.csv", OUT_FOLDER, scene_name);
+        return std::format("{}/{}_{}_bm_out.csv", OUT_FOLDER, scene_name, benchmark_name);
     }
 
     std::string BenchmarkRunner::getRefFilePath() {
@@ -208,7 +222,7 @@ namespace RtEngine {
         std::ofstream out(output_path);
         if (!out)
             throw std::runtime_error("Failed to open CSV file");
-        out << "samples,mse\n";
+        out << "name,samples,mse\n";
 
         std::vector<uint32_t> keys;
         keys.reserve(mse_averages.size());
@@ -220,7 +234,7 @@ namespace RtEngine {
         std::sort(keys.begin(), keys.end());
 
         for (const auto &key: keys) {
-            out << std::format("{},{}\n", key, mse_averages[key]);
+            out << std::format("{},{},{}\n", benchmark_name, key, mse_averages[key]);
         }
         SPDLOG_INFO("Saved benchmark data to {}!", output_path);
     }
@@ -255,6 +269,7 @@ namespace RtEngine {
         Runner::initProperties(config, update_flags);
 
         if (config->startChild("benchmark")) {
+            config->addString("name", &benchmark_name);
             config->addUint("biased_samples", &final_biased_sample_count);
             config->addUint("diff_samples", &final_diff_sample_count);
             config->addUint("averaging_rounds", &averaging_rounds);

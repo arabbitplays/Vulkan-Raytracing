@@ -442,4 +442,8 @@ namespace RtEngine {
 	std::unordered_map<std::string, std::shared_ptr<Material>> RaytracingRenderer::getMaterials() const {
 		return scene_adapter->defaultMaterials;
 	}
+
+	MlmcPresentMode RaytracingRenderer::getMlmcPresentMode() {
+		return mlmc_present_mode;
+	}
 } // namespace RtEngine

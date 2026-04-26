@@ -59,6 +59,8 @@ namespace RtEngine {
 		std::shared_ptr<VolumeRepository> getVolumeRepository();
 		std::unordered_map<std::string, std::shared_ptr<Material>> getMaterials() const;
 
+		MlmcPresentMode getMlmcPresentMode();
+
 	protected:
 		std::string resources_dir;
 

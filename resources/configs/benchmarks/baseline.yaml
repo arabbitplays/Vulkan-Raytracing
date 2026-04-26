@@ -1,0 +1,16 @@
+runner:
+  scene_name: ref_scene_homo_volume
+benchmark:
+  name: "baseline"
+  biased_samples: 1024
+  diff_samples: 0
+  averaging_rounds: 10
+renderer:
+  recursion_depth: 20
+mlmc:
+  mlmc_present_mode: "unbiased"
+metal_rough:
+  normal_mapping: false
+  next_event_estimation: false
+  bsdf_importance_sampling: false
+  russian_roulette: false
