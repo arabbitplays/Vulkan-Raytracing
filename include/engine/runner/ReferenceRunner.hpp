@@ -29,7 +29,7 @@ namespace RtEngine {
 
 		spdlog::stopwatch stopwatch;
 		uint32_t present_sample_count = 8;
-		int32_t final_sample_count = 1 << 15;
+		int32_t final_sample_count = 1 << 18;
 		int32_t samples_per_image = 1 << 12;
 		// int32_t samples_per_image = 32;
 		// int32_t final_sample_count = 256;

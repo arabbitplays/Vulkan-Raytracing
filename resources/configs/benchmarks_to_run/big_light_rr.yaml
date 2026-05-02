@@ -1,5 +1,11 @@
 runner:
   scene_name: ref_scene_big_light
+benchmark:
+  name: "rr"
+  expected_ref_samples: 262144
+  biased_samples: 1024
+  diff_samples: 0
+  averaging_rounds: 1
 renderer:
   recursion_depth: 20
 mlmc:
@@ -8,4 +14,4 @@ metal_rough:
   normal_mapping: false
   next_event_estimation: false
   bsdf_importance_sampling: false
-  russian_roulette: false
+  russian_roulette: true

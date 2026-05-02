@@ -40,7 +40,7 @@ namespace RtEngine {
 
 		std::shared_ptr<DrawContext> draw_context;
 
-		uint32_t expected_ref_sample_count = 1 << 15;
+		uint32_t expected_ref_sample_count = 1 << 18;
 
 		std::string benchmark_name = "";
 

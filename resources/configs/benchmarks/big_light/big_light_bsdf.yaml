@@ -1,7 +1,8 @@
 runner:
-  scene_name: ref_scene_homo_volume
+  scene_name: ref_scene_big_light
 benchmark:
-  name: "baseline"
+  name: "bsdf"
+  expected_ref_samples: 262144
   biased_samples: 1024
   diff_samples: 0
   averaging_rounds: 1
@@ -12,5 +13,5 @@ mlmc:
 metal_rough:
   normal_mapping: false
   next_event_estimation: false
-  bsdf_importance_sampling: false
+  bsdf_importance_sampling: true
   russian_roulette: false

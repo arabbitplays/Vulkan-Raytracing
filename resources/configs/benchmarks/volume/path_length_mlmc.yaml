@@ -2,9 +2,10 @@ runner:
   scene_name: ref_scene_homo_volume
 benchmark:
   name: "path_length_mlmc"
+  expected_ref_samples: 32768
   biased_samples: 1024
   diff_samples: 512
-  averaging_rounds: 1
+  averaging_rounds: 10
 renderer:
   recursion_depth: 20
 mlmc:

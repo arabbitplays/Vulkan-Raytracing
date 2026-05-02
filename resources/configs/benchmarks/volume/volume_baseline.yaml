@@ -1,16 +1,15 @@
 runner:
   scene_name: ref_scene_homo_volume
 benchmark:
-  name: "path_length_mlmc"
+  name: "baseline"
+  expected_ref_samples: 32768
   biased_samples: 1024
-  diff_samples: 512
-  averaging_rounds: 10
+  diff_samples: 0
+  averaging_rounds: 1
 renderer:
   recursion_depth: 20
 mlmc:
-  mlmc_mode: "path length"
-  mlmc_present_mode: "combined"
-  biased_path_length: 2
+  mlmc_present_mode: "unbiased"
 metal_rough:
   normal_mapping: false
   next_event_estimation: false

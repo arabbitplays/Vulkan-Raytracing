@@ -270,6 +270,7 @@ namespace RtEngine {
 
         if (config->startChild("benchmark")) {
             config->addString("name", &benchmark_name);
+            config->addUint("expected_ref_samples", &expected_ref_sample_count);
             config->addUint("biased_samples", &final_biased_sample_count);
             config->addUint("diff_samples", &final_diff_sample_count);
             config->addUint("averaging_rounds", &averaging_rounds);
