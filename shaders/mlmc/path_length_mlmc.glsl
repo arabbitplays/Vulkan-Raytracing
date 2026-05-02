@@ -18,14 +18,16 @@ vec3 pathLengthMlmc(uint sample_count, uint biased_path_length) {
 vec3 pathLengthDiffMlmc(uint sample_count, uint biased_path_length, uint unbiased_path_length) {
     ViewRay view_ray = generateViewRay(vec2(gl_LaunchIDEXT.xy), vec2(gl_LaunchSizeEXT.xy), sceneData.inv_view, sceneData.inv_proj, payload.rng_state);
     initPayload(view_ray.origin, view_ray.direction);
+    initPath();
+
 
     vec3 diff = vec3(0);
     for (int i = 0; i < sample_count; i++) {
-        while (payload.depth < biased_path_length && payload.next_direction != vec3(0.0) && payload.next_distance > 0) {
+        while (payload.depth < biased_path_length && payload.next_segment.dir != vec3(0.0) && payload.next_segment.dist > 0) {
             continuePath();
         }
         vec3 biased_color = payload.light;
-        while (payload.depth < unbiased_path_length && payload.next_direction != vec3(0.0) && payload.next_distance > 0) {
+        while (payload.depth < unbiased_path_length && payload.next_segment.dir != vec3(0.0) && payload.next_segment.dist > 0) {
             continuePath();
         }
         diff += payload.light - biased_color;

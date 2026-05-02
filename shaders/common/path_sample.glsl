@@ -9,29 +9,57 @@ layout(binding = 0, set = 0) uniform accelerationStructureEXT topLevelAS;
 
 layout(location = 0) rayPayloadEXT Payload payload;
 
+#define MAX_PATH_LENGTH 32
+struct Path {
+    uint len;
+    vec3 beta;
+    vec3 light;
+    PathVertex vertices[MAX_PATH_LENGTH];
+    SampledSegment segments[MAX_PATH_LENGTH];
+};
+Path path;
+
 void initPayload(vec3 origin, vec3 direction) {
-    payload.next_origin = origin;
-    payload.next_direction = direction;
-    payload.next_distance = INFINITY;
+    payload.next_vertex.P = origin;
+    payload.next_vertex.volume_idx = -1;
+    payload.next_segment.dir = direction;
+    payload.next_segment.dist = INFINITY;
     payload.light = vec3(0.0);
     payload.depth = 0;
     payload.beta = vec3(1.0);
     payload.eta_scale = 1;
     payload.specular_bounce = false;
-    payload.current_volume_idx = -1;
+}
+
+void initPath() {
+    path.len = 0;
+    path.beta = vec3(1.0);
+    path.light = vec3(0.0);
+}
+
+void addVertexToPath(PathVertex vertex, SampledSegment segment) {
+    if (path.len == MAX_PATH_LENGTH)
+        return;
+    path.vertices[path.len] = vertex;
+    path.segments[path.len] = segment;
+    path.len++;
 }
 
 void continuePath() {
     float tmin = EPSILON;
-    float tmax = payload.next_distance - EPSILON;
+    float tmax = payload.next_segment.dist - EPSILON;
 
-    traceRayEXT(topLevelAS, gl_RayFlagsOpaqueEXT, 0xff, 0, 0, 0, payload.next_origin, tmin, payload.next_direction, tmax, 0);
+    traceRayEXT(topLevelAS, gl_RayFlagsOpaqueEXT, 0xff, 0, 0, 0, payload.next_vertex.P, tmin, payload.next_segment.dir, tmax, 0);
+    path.light += path.beta * payload.light;
+    //path.beta *= payload.next_segment.brdf / payload.next_segment.pdf;
+    addVertexToPath(payload.next_vertex, payload.next_segment);
 
     payload.depth++;
 }
 
 vec3 takeSample(uint max_depth) {
-    while (payload.depth < max_depth && payload.next_direction != vec3(0.0) && payload.next_distance > 0) {
+    initPath();
+    while (payload.depth < max_depth && payload.next_segment.dir != vec3(0.0) && payload.next_segment.dist > 0 && length(payload.beta) > 0) {
         continuePath();
     }
     return payload.light;

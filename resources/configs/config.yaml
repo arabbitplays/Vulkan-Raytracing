@@ -4,7 +4,7 @@ renderer:
   recursion_depth: 20
 mlmc:
   mlmc_mode: "path length"
-  mlmc_present_mode: "combined"
+  mlmc_present_mode: "unbiased"
   biased_path_length: 5
 phong:
   shadows: true

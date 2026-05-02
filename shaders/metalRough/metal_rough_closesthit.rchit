@@ -38,6 +38,9 @@ PathVertex createPathVertex() {
 
     vertex.material_idx = triangle.material_idx;
     vertex.volume_idx = getVolumeIdx(triangle);
+    if (vertex.volume_idx >= 0) {
+        vertex.volume_world_to_object = gl_WorldToObjectEXT;
+    }
 
     const vec3 barycentricCoords = vec3(1.0f - attribs.x - attribs.y, attribs.x, attribs.y);
     float alpha = barycentricCoords.x;
@@ -71,21 +74,9 @@ PathVertex createPathVertex() {
     return vertex;
 }
 
-struct EvaluatedVertex {
-    vec3 light;
-    vec3 beta;
-};
-
-struct SampledDirection {
-    vec3 dir;
-    float dist;
-    float pdf;
-    vec3 brdf;
-};
-
-SampledDirection sampleNextDirection(PathVertex vertex, bool sample_bsdf, inout uvec4 rng_state) {
-    SampledDirection sampled_dir;
-    sampled_dir.dist = INFINITY;
+SampledSegment sampleNextSegment(PathVertex vertex, bool sample_bsdf, inout uvec4 rng_state) {
+    SampledSegment sampled_segment;
+    sampled_segment.dist = INFINITY;
 
     mat3 TBN = getTBN(vertex.geom_N, vertex.T);
     mat3 transpose_tbn = transpose(TBN);
@@ -103,97 +94,110 @@ SampledDirection sampleNextDirection(PathVertex vertex, bool sample_bsdf, inout 
 
         BsdfSample brdf_sample = sampleBsfd(wo, albedo, metallic, roughness, eta, rng_state);
 
-        sampled_dir.dir = TBN * brdf_sample.wi;
-        sampled_dir.brdf = brdf_sample.f * abs(dot(sampled_dir.dir, vertex.N));
-        sampled_dir.pdf = brdf_sample.pdf;
+        sampled_segment.dir = TBN * brdf_sample.wi;
+        sampled_segment.brdf = brdf_sample.f * abs(dot(sampled_segment.dir, vertex.N));
+        sampled_segment.pdf = brdf_sample.pdf;
         payload.specular_bounce = isSpecular(brdf_sample.flags);
         if (isTransmissive(brdf_sample.flags))
             payload.eta_scale *= sqr(brdf_sample.eta);
     } else {
         //payload.next_direction = TBN * sampleCosHemisphere(payload.rng_state);
-        sampled_dir.dir = sampleUniformSphere(rng_state);
+        sampled_segment.dir = sampleUniformSphere(rng_state);
 
         vec3 wo = normalize(transpose_tbn * vertex.V);
-        vec3 wi = normalize(transpose_tbn * sampled_dir.dir);
+        vec3 wi = normalize(transpose_tbn * sampled_segment.dir);
         //payload.beta *= calcBRDF(wo, wi, albedo, metallic, roughness) * PI;
-        sampled_dir.brdf = computeBsdf(wo, wi, albedo, metallic, roughness, eta) * abs(dot(sampled_dir.dir, vertex.N));
-        sampled_dir.pdf = 1.0f / (4.0f * PI);
+        sampled_segment.brdf = computeBsdf(wo, wi, albedo, metallic, roughness, eta) * abs(dot(sampled_segment.dir, vertex.N));
+        sampled_segment.pdf = 1.0f / (4.0f * PI);
     }
 
-    return sampled_dir;
+    return sampled_segment;
+}
+
+EvaluatedMaterial evaluateVertexMaterial(PathVertex vertex) {
+    EvaluatedMaterial result;
+    Material material = getMaterial(vertex.material_idx);
+    result.emission_color = material.emission_color;
+    result.emission_power = material.emission_power;
+    result.albedo = texture(material_textures[material.albedo_tex_idx], vertex.uv).xyz + material.albedo;
+    vec3 metal_rough_ao = texture(material_textures[material.metal_rough_ao_tex_idx], vertex.uv).xyz;
+    result.metallic = metal_rough_ao.x + material.metallic;
+    result.roughness = metal_rough_ao.y + material.roughness;
+    result.ao = metal_rough_ao.z + material.ao;
+    result.eta = material.eta;
+    return result;
+}
+
+struct EvaluationPayload {
+    vec3 light;
+    vec3 beta;
+};
+
+void evaluateVertex(PathVertex vertex, inout EvaluationPayload payload, bool sample_bsdf, bool sample_light, bool consider_emission, inout uvec4 rng_state) {
+    EvaluatedMaterial material = evaluateVertexMaterial(vertex);
+
+    // no direct light sampling or handle light that goes directly to the camera
+    if (consider_emission && dot(vertex.N, vertex.V) > 0) {
+        payload.light += payload.beta * material.emission_color * material.emission_power;
+    }
+
+    if (sample_light) {
+        mat3 TBN = getTBN(vertex.geom_N, vertex.T);
+        mat3 transpose_tbn = transpose(TBN);
+
+        uint emitter_count = max(1, sceneData.emitter_count);
+        LightSample light_sample = sampleEmittingPrimitive(vertex.P, emitter_count, rng_state);
+        vec3 L = light_sample.P - vertex.P;
+        float distance_to_light = length(L);
+        L = normalize(L);
+
+        vec3 wo = normalize(transpose_tbn * vertex.V);
+        vec3 wi = normalize(transpose_tbn * L);
+
+        vec3 transmittance = estimateTransmittance(vertex.P, L, distance_to_light, rng_state);
+
+        if (sample_bsdf) {
+            vec3 f = calcConductorBRDF(wo, wi, material.albedo, material.metallic, material.roughness) * max(dot(vertex.N, L), 0.0);
+            if (light_sample.light != vec3(0) && length(f) > 0.0 && length(transmittance) > 0) {
+                payload.light += payload.beta * transmittance * f * light_sample.light / light_sample.pdf;
+            }
+        } else {
+            vec3 f = computeBsdf(wo, wi, material.albedo, material.metallic, material.roughness, material.eta) * abs(dot(vertex.N, L));
+            if (light_sample.light != vec3(0) && length(f) > 0.0 && length(transmittance) > 0) {
+                payload.light += payload.beta * transmittance * f * light_sample.light / light_sample.pdf;
+            }
+        }
+    }
 }
 
 void main() {
     PathVertex vertex = createPathVertex();
-    payload.next_vertex = vertex;
-
-    mat3 TBN = getTBN(vertex.geom_N, vertex.T);
-    mat3 transpose_tbn = transpose(TBN);
 
     if (isVolumeBoundary(vertex.volume_idx)) {
-        payload.next_origin = vertex.P;
-
+        vertex.valid = false;
         VolumeInstance volume = getVolume(vertex.volume_idx);
 
-        if (payload.current_volume_idx >= 0) {
-            payload.current_volume_idx = -1;
-            payload.next_distance = INFINITY;
+        if (payload.next_vertex.volume_idx >= 0) {
+            vertex.volume_idx = -1;
+            payload.next_segment.dist = INFINITY;
         } else {
-            payload.current_volume_idx = vertex.volume_idx;
-            payload.volume_world_to_object = gl_WorldToObjectEXT;
-
-            payload.next_distance = sampleDistance(volume.majorant, payload.rng_state);
+            payload.next_segment.dist = sampleDistance(volume.majorant, payload.rng_state);
         }
     } else {
-        Material material = getMaterial(vertex.material_idx);
-        vec3 albedo = texture(material_textures[material.albedo_tex_idx], vertex.uv).xyz + material.albedo;
-        vec3 metal_rough_ao = texture(material_textures[material.metal_rough_ao_tex_idx], vertex.uv).xyz;
-        float metallic = metal_rough_ao.x + material.metallic;
-        float roughness = metal_rough_ao.y + material.roughness;
-        float ao = metal_rough_ao.z + material.ao;
-        float eta = material.eta;
+        vertex.valid = true;
+        EvaluatedMaterial material = evaluateVertexMaterial(vertex);
 
         // no direct light sampling or handle light that goes directly to the camera
-        if (!options.sample_light || payload.specular_bounce || (payload.depth == 0 && material.emission_power > 0)) {
-            if (dot(vertex.N, vertex.V) > 0) {
-                payload.light += payload.beta * material.emission_color * material.emission_power;
-            }
-        }
+        bool consider_emission = !options.sample_light || payload.specular_bounce || (payload.depth == 0 && material.emission_power > 0);
+        EvaluationPayload eval_payload;
+        eval_payload.light = payload.light;
+        eval_payload.beta = payload.beta;
+        evaluateVertex(vertex, eval_payload, options.sample_bsdf, options.sample_light, consider_emission, payload.rng_state);
+        payload.beta = eval_payload.beta;
+        payload.light = eval_payload.light;
 
-        if (options.sample_light) {
-            uint emitter_count = max(1, sceneData.emitter_count);
-            LightSample light_sample = sampleEmittingPrimitive(vertex.P, emitter_count, payload.rng_state);
-            vec3 L = light_sample.P - vertex.P;
-            float distance_to_light = length(L);
-            L = normalize(L);
-
-            vec3 wo = normalize(transpose_tbn * vertex.V);
-            vec3 wi = normalize(transpose_tbn * L);
-
-            vec3 transmittance = estimateTransmittance(vertex.P, L, distance_to_light, payload.rng_state);
-            //payload.light = transmittance;
-            //payload.next_direction = vec3(0);
-            //return;
-
-            if (options.sample_bsdf) {
-                vec3 f = calcConductorBRDF(wo, wi, albedo, metallic, roughness) * max(dot(vertex.N, L), 0.0);
-                if (light_sample.light != vec3(0) && length(f) > 0.0 && length(transmittance) > 0) {
-                    payload.light += payload.beta * transmittance * f * light_sample.light / light_sample.pdf;
-                }
-            } else {
-                vec3 f = computeBsdf(wo, wi, albedo, metallic, roughness, eta) * abs(dot(vertex.N, L));
-                if (light_sample.light != vec3(0) && length(f) > 0.0 && length(transmittance) > 0) {
-                    payload.light += payload.beta * transmittance * f * light_sample.light / light_sample.pdf;
-                }
-            }
-        }
-
-        payload.next_origin = vertex.P;
-
-        SampledDirection sampled_dir = sampleNextDirection(vertex, options.sample_bsdf, payload.rng_state);
-        payload.next_direction = sampled_dir.dir;
-        payload.next_distance = sampled_dir.dist;
-        payload.beta *= sampled_dir.brdf / sampled_dir.pdf;
+        payload.next_segment = sampleNextSegment(vertex, options.sample_bsdf, payload.rng_state);
+        payload.beta *= payload.next_segment.brdf / payload.next_segment.pdf;
 
         if (options.russian_roulette) {
             vec3 rr_beta = payload.beta * payload.eta_scale;
@@ -202,11 +206,13 @@ void main() {
                 float q = max(0, 1 - beta_max_component);
                 float u = stepAndOutputRNGFloat(payload.rng_state);
                 if (u < q) {
-                    payload.next_direction = vec3(0);
+                    payload.beta = vec3(0);
                 } else {
                     payload.beta /= 1 - q;
                 }
             }
         }
     }
+
+    payload.next_vertex = vertex;
 }
