@@ -4,7 +4,7 @@ benchmark:
   name: "baseline"
   biased_samples: 1024
   diff_samples: 0
-  averaging_rounds: 10
+  averaging_rounds: 1
 renderer:
   recursion_depth: 20
 mlmc:

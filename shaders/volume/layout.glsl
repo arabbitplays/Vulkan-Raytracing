@@ -17,20 +17,24 @@ layout(binding = 8, set = 0) buffer VolumeBuffer {
 } volume_buffer;
 layout(binding = 11, set = 0) uniform sampler3D volume_textures[16];
 
-bool isVolumeBoundary(Triangle triangle) {
-    return triangle.volume_id != 0;
-}
-
-VolumeInstance getVolume(Triangle triangle) {
-    return volume_buffer.volumes[triangle.volume_id - 1];
+int getVolumeIdx(Triangle triangle) {
+    return int(triangle.volume_id) - 1;
 }
 
 VolumeInstance getVolume(int idx) {
     return volume_buffer.volumes[idx];
 }
 
-int getVolumeIdx(Triangle triangle) {
-    return int(triangle.volume_id) - 1;
+bool isVolumeBoundary(int volume_idx) {
+    return volume_idx >= 0;
+}
+
+VolumeInstance getVolume(Triangle triangle) {
+    return getVolume(getVolumeIdx(triangle));
+}
+
+bool isVolumeBoundary(Triangle triangle) {
+    return isVolumeBoundary(getVolumeIdx(triangle));
 }
 
 vec3 posToVolumeUV(VolumeInstance volume, vec3 world_pos, mat4x3 vol_world_to_object) {
