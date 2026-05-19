@@ -233,10 +233,16 @@ namespace RtEngine {
 
         std::sort(keys.begin(), keys.end());
 
+        int hacky_skip_count = 2;
         for (const auto &key: keys) {
+            if (hacky_skip_count > 0)
+            {
+                hacky_skip_count--;
+                continue;
+            }
             out << std::format("{},{},{}\n", benchmark_name, key, mse_averages[key]);
         }
-        SPDLOG_INFO("Saved benchmark data to {}!", output_path);
+        SPDLOG_INFO("Saved benchmark data to {}!", output_path);;
     }
 
     void BenchmarkRunner::clearTmpfolder() {

@@ -2,7 +2,7 @@ runner:
   scene_name: ref_scene_homo_volume
 benchmark:
   name: "baseline"
-  expected_ref_samples: 32768
+  expected_ref_samples: 262144
   biased_samples: 1024
   diff_samples: 0
   averaging_rounds: 1
