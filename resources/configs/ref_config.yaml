@@ -1,7 +1,7 @@
 runner:
-  scene_name: ref_scene_hetero_volume
+  scene_name: ref_scene_cloud
 renderer:
-  recursion_depth: 100
+  recursion_depth: 200
 mlmc:
   mlmc_present_mode: "unbiased"
 metal_rough:

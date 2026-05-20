@@ -1,5 +1,5 @@
 runner:
-  scene_name: cloud_scene
+  scene_name: ref_scene_cloud
 benchmark:
   name: "nee"
   expected_ref_samples: 262144
