@@ -18,6 +18,14 @@ struct EvaluatedMaterial {
     float eta;
 };
 
+struct EvaluatedVolume {
+    float scattering;
+    float absorption;
+    float null_scattering;
+    float majorant;
+    float g;
+};
+
 struct PathVertex {
     vec3 P;
     vec3 geom_N;

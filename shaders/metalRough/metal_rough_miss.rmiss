@@ -57,8 +57,7 @@ void main() {
                 float distance_to_light = length(L);
                 L = normalize(L);
 
-                float sampled_dist = sampleDistance(volume.majorant, payload.rng_state);
-                vec3 transmittance = estimateTransmittance(vertex.P, L, distance_to_light, vertex.volume_idx, sampled_dist, payload.rng_state);
+                vec3 transmittance = estimateTransmittance(vertex.P, L, distance_to_light, vertex.volume_idx, payload.rng_state);
                 float phase = henyeyGreenstein(vertex.V, L, volume.g);
                 if (light_sample.light != vec3(0) && phase > 0.0 && length(transmittance) > 0) {
                     payload.light += scattering * payload.beta * transmittance * phase * light_sample.light / light_sample.pdf;

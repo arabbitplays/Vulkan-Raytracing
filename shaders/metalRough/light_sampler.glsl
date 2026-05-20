@@ -1,7 +1,7 @@
 #ifndef LIGHT_SAMPLER_GLSL
 #define LIGHT_SAMPLER_GLSL
 #include "../common/layout.glsl"
-#include "./trowbridge_reitz_distribution.glsl"
+#include "./material.glsl"
 
 struct LightSample {
     vec3 P;

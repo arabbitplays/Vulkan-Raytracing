@@ -12,29 +12,57 @@ layout(binding = 1, set = 1) uniform sampler2D material_textures[64];
 #include "../volume/distance_sampler.glsl"
 #include "../common/constants.glsl"
 
+#include "../metalRough/vertex_evaluator.glsl"
+
 layout(location = 0) rayPayloadInEXT ShadowPayload payload;
 
 hitAttributeEXT vec3 attribs;
 
+vec3 ratioTracking(vec3 origin, vec3 dir, int volume_idx, inout uvec4 rng_state) {
+    float dist_to_boundary = gl_HitTEXT;
+    float max_tracking_dist = min(dist_to_boundary, payload.dist_to_light);
+    float tracked_dist = 0;
+
+    VolumeInstance volumeInstance = getVolume(volume_idx);
+    vec3 transmittance = vec3(1);
+
+    while (true) {
+        float sampled_dist = sampleDistance(volumeInstance.majorant, rng_state);
+        tracked_dist += sampled_dist;
+
+        if (tracked_dist >= max_tracking_dist) {
+            break;
+        }
+
+        vec3 curr_pos = origin + tracked_dist * dir;
+        EvaluatedVolume volume = evaluateVolumeAtPos(volumeInstance, curr_pos, gl_WorldToObjectEXT);
+
+        transmittance *= (1.0 - (volume.scattering + volume.absorption) / volume.majorant);
+    }
+
+    return transmittance;
+}
+
 void main() {
     Triangle triangle = getTriangle(gl_InstanceCustomIndexEXT, gl_PrimitiveID);
-    if (isVolumeBoundary(triangle)) {
-         VolumeInstance volume = getVolume(triangle);
-
-         payload.next_origin += gl_HitTEXT * payload.direction;
-         payload.dist_left -= gl_HitTEXT;
-
-         if (payload.current_volume_idx >= 0) {
-             payload.current_volume_idx = -1;
-             payload.next_distance = payload.dist_left;
-         } else {
-             payload.current_volume_idx = getVolumeIdx(triangle);
-             payload.volume_world_to_object = gl_WorldToObjectEXT;
-             payload.next_distance = sampleDistance(volume.majorant, payload.rng_state);
-             // TODO check if you need a pdf here again
-        }
-    } else {
-        payload.dist_left = 0;
+    if (!isVolumeBoundary(triangle)) {
+        payload.dist_to_light = 0;
         payload.transmittance = vec3(0);
+        return;
+    }
+
+    VolumeInstance volume = getVolume(triangle);
+
+    vec3 tracking_origin = payload.next_origin;
+    bool is_inside_volume = payload.current_volume_idx >= 0;
+
+    payload.next_origin += gl_HitTEXT * payload.direction;
+    payload.dist_to_light -= gl_HitTEXT;
+
+    if (is_inside_volume) {
+        payload.transmittance *= ratioTracking(tracking_origin, normalize(payload.direction), payload.current_volume_idx, payload.rng_state);
+        payload.current_volume_idx = -1;
+    } else {
+        payload.current_volume_idx = getVolumeIdx(triangle);
     }
 }

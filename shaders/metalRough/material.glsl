@@ -1,5 +1,5 @@
-#ifndef TROWBRIDGE_REITZ_DISTRIBUTION_GLSL
-#define TROWBRIDGE_REITZ_DISTRIBUTION_GLSL
+#ifndef MATERIAL_GLSL
+#define MATERIAL_GLSL
 
 #include "../common/constants.glsl"
 

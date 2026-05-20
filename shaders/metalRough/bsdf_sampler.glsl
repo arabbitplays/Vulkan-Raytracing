@@ -10,7 +10,7 @@ struct BsdfSample {
     float eta; // used for russian roulette
 };
 
-#include "trowbridge_reitz_distribution.glsl"
+#include "material.glsl"
 #include "conductor_brdf.glsl"
 #include "dielectric_bsdf.glsl"
 
