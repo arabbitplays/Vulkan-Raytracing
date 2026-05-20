@@ -39,7 +39,7 @@ namespace RtEngine {
         }
 
         float getMajorant() const {
-            return scattering_scale + absorption_scale + bonus_majorant;
+            return scattering_scale + absorption_scale + bonus_majorant + 2;
             // because densities get scaled down this is not max_density * (scattering_scale + absorption_scale)
         }
     };
