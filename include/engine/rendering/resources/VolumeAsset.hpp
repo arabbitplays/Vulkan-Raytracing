@@ -24,6 +24,7 @@ namespace RtEngine {
         std::shared_ptr<Volume> volume;
         float g;
         float absorption_scale, scattering_scale;
+        float bonus_majorant = 0;
         std::shared_ptr<MeshAsset> bounding_mesh;
 
         std::vector<glm::vec2> getCoefficients() const {
@@ -38,7 +39,7 @@ namespace RtEngine {
         }
 
         float getMajorant() const {
-            return scattering_scale + absorption_scale;
+            return scattering_scale + absorption_scale + bonus_majorant;
             // because densities get scaled down this is not max_density * (scattering_scale + absorption_scale)
         }
     };
