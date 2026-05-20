@@ -47,11 +47,8 @@ void addVertexToPath(PathVertex vertex, SampledSegment segment) {
 
 void continuePath() {
     float tmin = EPSILON;
-    float tmax = payload.next_segment.dist - EPSILON;
 
-    traceRayEXT(topLevelAS, gl_RayFlagsOpaqueEXT, 0xff, 0, 0, 0, payload.next_vertex.P, tmin, payload.next_segment.dir, tmax, 0);
-    path.light += path.beta * payload.light;
-    //path.beta *= payload.next_segment.brdf / payload.next_segment.pdf;
+    traceRayEXT(topLevelAS, gl_RayFlagsOpaqueEXT, 0xff, 0, 0, 0, payload.next_vertex.P, tmin, payload.next_segment.dir, INFINITY, 0);
     addVertexToPath(payload.next_vertex, payload.next_segment);
 
     payload.depth++;

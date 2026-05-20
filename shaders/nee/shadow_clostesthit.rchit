@@ -4,9 +4,6 @@
 #extension GL_EXT_nonuniform_qualifier : enable
 #extension GL_EXT_shader_explicit_arithmetic_types : enable
 
-
-layout(binding = 1, set = 1) uniform sampler2D material_textures[64];
-
 #include "./shadow_payload.glsl"
 #include "../volume/layout.glsl"
 #include "../volume/distance_sampler.glsl"

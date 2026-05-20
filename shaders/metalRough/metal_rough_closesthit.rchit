@@ -7,13 +7,15 @@
 #include "../common/payload.glsl"
 #include "../common/scene_data.glsl"
 #include "../common/layout.glsl"
-#include "options.glsl"
 #include "../common/random.glsl"
+
+#include "options.glsl"
+#include "vertex_evaluator.glsl"
+
 #include "../volume/layout.glsl"
 #include "../volume/distance_sampler.glsl"
 #include "../volume/transmittance_estimator.glsl"
-
-layout(binding = 1, set = 1) uniform sampler2D material_textures[64];
+#include "../volume/phase_function.glsl"
 
 layout(location = 0) rayPayloadInEXT Payload payload;
 
@@ -28,8 +30,14 @@ mat3 getTBN(vec3 geom_N, vec3 T) {
     return mat3(T, bitangent, geom_N);
 }
 
-PathVertex createPathVertex() {
+PathVertex createNewPathVertex() {
     PathVertex vertex;
+    vertex.volume_idx = -1;
+    return vertex;
+}
+
+PathVertex createSurfaceVertex() {
+    PathVertex vertex = createNewPathVertex();
 
     Triangle triangle = getTriangle(gl_InstanceCustomIndexEXT, gl_PrimitiveID);
     Vertex A = triangle.A;
@@ -114,18 +122,37 @@ SampledSegment sampleNextSegment(PathVertex vertex, bool sample_bsdf, inout uvec
     return sampled_segment;
 }
 
-EvaluatedMaterial evaluateVertexMaterial(PathVertex vertex) {
-    EvaluatedMaterial result;
-    Material material = getMaterial(vertex.material_idx);
-    result.emission_color = material.emission_color;
-    result.emission_power = material.emission_power;
-    result.albedo = texture(material_textures[material.albedo_tex_idx], vertex.uv).xyz + material.albedo;
-    vec3 metal_rough_ao = texture(material_textures[material.metal_rough_ao_tex_idx], vertex.uv).xyz;
-    result.metallic = metal_rough_ao.x + material.metallic;
-    result.roughness = metal_rough_ao.y + material.roughness;
-    result.ao = metal_rough_ao.z + material.ao;
-    result.eta = material.eta;
-    return result;
+PathVertex createVolumeBorderVertex(bool entering) {
+    PathVertex vertex = createNewPathVertex();
+
+    Triangle triangle = getTriangle(gl_InstanceCustomIndexEXT, gl_PrimitiveID);
+    Vertex A = triangle.A;
+    Vertex B = triangle.B;
+    Vertex C = triangle.C;
+
+    const vec3 barycentricCoords = vec3(1.0f - attribs.x - attribs.y, attribs.x, attribs.y);
+    float alpha = barycentricCoords.x;
+    float beta = barycentricCoords.y;
+    float gamma = barycentricCoords.z;
+
+    vec3 local_position = alpha * A.position + beta * B.position + gamma * C.position;
+    vertex.P = vec3(gl_ObjectToWorldEXT * vec4(local_position, 1.0));
+    vertex.V = -normalize(gl_WorldRayDirectionEXT);
+
+    vertex.volume_idx = entering ? getVolumeIdx(triangle) : -1;
+
+    return vertex;
+}
+
+PathVertex createVolumeVertex(vec3 pos, int volume_idx) {
+    PathVertex vertex = createNewPathVertex();
+
+    vertex.P = pos;
+    vertex.V = -normalize(gl_WorldRayDirectionEXT);
+
+    vertex.volume_idx = volume_idx;
+
+    return vertex;
 }
 
 struct EvaluationPayload {
@@ -170,21 +197,93 @@ void evaluateVertex(PathVertex vertex, inout EvaluationPayload payload, bool sam
     }
 }
 
-void main() {
-    PathVertex vertex = createPathVertex();
+void evaluateVolumeVertex(PathVertex vertex) {
+    if (options.sample_light) {
+        // TODO make this more efficient
+        VolumeInstance volume_instance = getVolume(vertex.volume_idx);
+        EvaluatedVolume volume = evaluateVolumeAtPos(volume_instance, vertex.P, gl_WorldToObjectEXT);
 
-    if (isVolumeBoundary(vertex.volume_idx)) {
-        vertex.valid = false;
-        VolumeInstance volume = getVolume(vertex.volume_idx);
+        uint emitter_count = max(1, sceneData.emitter_count);
+        LightSample light_sample = sampleEmittingPrimitive(vertex.P, emitter_count, payload.rng_state);
+        vec3 L = light_sample.P - vertex.P;
+        float distance_to_light = length(L);
+        L = normalize(L);
 
-        if (payload.next_vertex.volume_idx >= 0) {
-            vertex.volume_idx = -1;
-            payload.next_segment.dist = INFINITY;
+        vec3 transmittance = estimateTransmittance(vertex.P, L, distance_to_light, vertex.volume_idx, payload.rng_state);
+        float phase = henyeyGreenstein(vertex.V, L, volume.g);
+        if (light_sample.light != vec3(0) && phase > 0.0 && length(transmittance) > 0) {
+            payload.light += volume.scattering * payload.beta * transmittance * phase * light_sample.light / light_sample.pdf;
+        }
+    }
+}
+
+PathVertex deltaTracking(vec3 origin, vec3 dir, int volume_idx, inout uvec4 rng_state) {
+    float dist_to_boundary = gl_HitTEXT;
+    float tracked_dist = 0;
+
+    VolumeInstance volume_instance = getVolume(volume_idx);
+
+    while (true) {
+        float sampled_dist = sampleDistance(volume_instance.majorant, rng_state);
+        tracked_dist += sampled_dist;
+
+        if (tracked_dist >= dist_to_boundary) {
+            break;
+        }
+
+        vec3 curr_pos = origin + tracked_dist * dir;
+        EvaluatedVolume volume = evaluateVolumeAtPos(volume_instance, curr_pos, gl_WorldToObjectEXT);
+
+        float p_real = (volume.absorption + volume.scattering) / volume.majorant;
+        float rand = stepAndOutputRNGFloat(rng_state);
+
+        if (rand < p_real) {
+            // scatter interaction
+            PhaseFunctionSample p_sample = sampleHGPhaseFunction(-dir, volume.g, payload.rng_state);
+            //PhaseFunctionSample p_sample = sampleIsoPhaseFunction(wo, payload.rng_state);
+
+            // This is the full version, without terms cut out for the specific phase function used
+            //payload.beta *= scattering * transmittance(traveled_distance, extinction) * p_sample.p / distanceSamplingPdf(traveled_distance, extinction) / p_sample.pdf;
+            // This is the version working for homogenous volumes (transmittance and distancePDF can also be cut)
+            //payload.beta *= scattering * transmittance(traveled_distance, volume.majorant) / distanceSamplingPdf(traveled_distance, volume.majorant);
+
+            payload.beta *= 1.0 / (volume.absorption + volume.scattering);
+            payload.next_segment.dir = p_sample.wi;
+
+            PathVertex vertex = createVolumeVertex(curr_pos, volume_idx);
+            evaluateVolumeVertex(vertex);
+            payload.beta *= volume.scattering;
+            return vertex;
         } else {
-            payload.next_segment.dist = sampleDistance(volume.majorant, payload.rng_state);
+            continue;
+        }
+    }
+
+    if (tracked_dist >= dist_to_boundary) {
+        // exit volume
+        return createVolumeBorderVertex(false);
+    }
+}
+
+void main() {
+    PathVertex vertex;
+
+    SampledSegment last_segment = payload.next_segment;
+    PathVertex last_vertex = payload.next_vertex;
+
+    Triangle triangle = getTriangle(gl_InstanceCustomIndexEXT, gl_PrimitiveID);
+
+    if (isVolumeBoundary(triangle)) {
+        if (last_vertex.volume_idx >= 0) {
+            // exiting volume or scattering inside
+            vertex = deltaTracking(last_vertex.P, normalize(gl_WorldRayDirectionEXT), getVolumeIdx(triangle), payload.rng_state);
+        } else {
+            // entering volume
+            vertex = createVolumeBorderVertex(true);
         }
     } else {
-        vertex.valid = true;
+        vertex = createSurfaceVertex();
+
         EvaluatedMaterial material = evaluateVertexMaterial(vertex);
 
         // no direct light sampling or handle light that goes directly to the camera

@@ -21,6 +21,9 @@ layout(binding = 0, set = 1) readonly buffer MaterialBuffer {
     Material[] data;
 } material_buffer;
 
+layout(binding = 1, set = 1) uniform sampler2D material_textures[64];
+
+
 Material getMaterial(uint material_id) {
     return material_buffer.data[material_id];
 }
