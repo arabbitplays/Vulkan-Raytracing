@@ -5,6 +5,7 @@ scene:
       []
   meshes:
     - path: meshes/sphere.obj
+    - path: meshes/cube.obj
     - path: meshes/plane.obj
   materials:
     - name: light
@@ -49,19 +50,6 @@ scene:
       metallic: 0.100000001
       roughness: 1
       ao: 0.5
-      eta: 1
-    - name: sphere1
-      albedo:
-        - 0.899999976
-        - 0.899999976
-        - 0.899999976
-      metallic: 0.100000001
-      roughness: 1
-      ao: 0.5
-      eta: 1
-    - name: sphere2
-      albedo_tex: textures/rusted_iron/rusted_iron_albedo.png
-      metal_rough_ao_tex: textures/rusted_iron/rusted_iron_metal_rough_ao.png
       eta: 1
   nodes:
     - name: Camera
@@ -117,30 +105,30 @@ scene:
             Emission Power: 1
       children:
         []
-    - name: Sphere1
+    - name: Cube
       components:
         Transform:
           position:
             - -1
-            - 0
+            - -1
             - 0
           rotation:
             - 0
-            - 0
+            - 30
             - 0
           scale:
-            - 1
-            - 1
-            - 1
+            - 1.5
+            - 1.5
+            - 1.5
         VolumeRenderer:
-          mesh: sphere
-          material_name: sphere1
+          mesh: cube
+          material_name: diffuse_grey
           scattering: 1
           absorption: 0.2
           g: 0
       children:
         []
-    - name: Sphere2
+    - name: Sphere
       components:
         Transform:
           position:
@@ -157,7 +145,7 @@ scene:
             - 1
         VolumeRenderer:
           mesh: sphere
-          material_name: sphere2
+          material_name: diffuse_grey
           scattering: 0.3
           absorption: 0.1
           g: 0

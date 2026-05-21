@@ -33,6 +33,7 @@ mat3 getTBN(vec3 geom_N, vec3 T) {
 PathVertex createNewPathVertex() {
     PathVertex vertex;
     vertex.volume_idx = -1;
+    vertex.is_valid = true;
     return vertex;
 }
 
@@ -124,6 +125,8 @@ SampledSegment sampleNextSegment(PathVertex vertex, bool sample_bsdf, inout uvec
 
 PathVertex createVolumeBorderVertex(bool entering) {
     PathVertex vertex = createNewPathVertex();
+
+    vertex.is_valid = false;
 
     Triangle triangle = getTriangle(gl_InstanceCustomIndexEXT, gl_PrimitiveID);
     Vertex A = triangle.A;

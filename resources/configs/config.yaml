@@ -12,6 +12,6 @@ phong:
   dispersion: true
 metal_rough:
   normal_mapping: false
-  next_event_estimation: false
+  next_event_estimation: true
   bsdf_importance_sampling: false
   russian_roulette: false

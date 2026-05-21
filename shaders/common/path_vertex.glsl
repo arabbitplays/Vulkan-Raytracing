@@ -36,7 +36,7 @@ struct PathVertex {
     uint material_idx;
     int volume_idx;
     mat4x3 volume_world_to_object;
-    bool valid;
+    bool is_valid;
 };
 
 #endif

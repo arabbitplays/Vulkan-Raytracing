@@ -57,7 +57,7 @@ namespace RtEngine
 
         uint32_t accumulated_frame_count = 0;
         uint32_t accumulated_diff_frame_count = 0;
-        uint32_t samples_per_frame = 8;
+        uint32_t samples_per_frame = 4;
         uint32_t diff_samples_per_frame = 1;
     };
 }

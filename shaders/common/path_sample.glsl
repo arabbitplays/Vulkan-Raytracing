@@ -51,7 +51,9 @@ void continuePath() {
     traceRayEXT(topLevelAS, gl_RayFlagsOpaqueEXT, 0xff, 0, 0, 0, payload.next_vertex.P, tmin, payload.next_segment.dir, INFINITY, 0);
     addVertexToPath(payload.next_vertex, payload.next_segment);
 
-    payload.depth++;
+    if (payload.next_vertex.is_valid) {
+        payload.depth++;
+    }
 }
 
 vec3 takeSample(uint max_depth) {
