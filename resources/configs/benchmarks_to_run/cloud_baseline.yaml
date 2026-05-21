@@ -7,7 +7,7 @@ benchmark:
   diff_samples: 0
   averaging_rounds: 1
 renderer:
-  recursion_depth: 50
+  recursion_depth: 20
 mlmc:
   mlmc_present_mode: "unbiased"
 metal_rough:
