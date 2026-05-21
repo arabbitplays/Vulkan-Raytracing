@@ -22,8 +22,9 @@ Path path;
 void initPayload(vec3 origin, vec3 direction) {
     payload.next_vertex.P = origin;
     payload.next_vertex.volume_idx = -1;
-    payload.next_segment.dir = direction;
-    payload.next_segment.dist = INFINITY;
+    payload.next_segment.pre_eval_beta = vec3(1);
+    payload.next_segment.post_eval_beta = vec3(1);
+    payload.next_dir = direction;
     payload.light = vec3(0.0);
     payload.depth = 0;
     payload.beta = vec3(1.0);
@@ -48,7 +49,7 @@ void addVertexToPath(PathVertex vertex, SampledSegment segment) {
 void continuePath() {
     float tmin = EPSILON;
 
-    traceRayEXT(topLevelAS, gl_RayFlagsOpaqueEXT, 0xff, 0, 0, 0, payload.next_vertex.P, tmin, payload.next_segment.dir, INFINITY, 0);
+    traceRayEXT(topLevelAS, gl_RayFlagsOpaqueEXT, 0xff, 0, 0, 0, payload.next_vertex.P, tmin, payload.next_dir, INFINITY, 0);
     addVertexToPath(payload.next_vertex, payload.next_segment);
 
     if (payload.next_vertex.is_valid) {
@@ -58,7 +59,7 @@ void continuePath() {
 
 vec3 takeSample(uint max_depth) {
     initPath();
-    while (payload.depth < max_depth && payload.next_segment.dir != vec3(0.0) && payload.next_segment.dist > 0 && length(payload.beta) > 0) {
+    while (payload.depth < max_depth && payload.next_dir != vec3(0.0) && length(payload.beta) > 0) {
         continuePath();
     }
     return payload.light;

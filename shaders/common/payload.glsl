@@ -9,6 +9,7 @@ struct Payload {
     uvec4 rng_state;
     PathVertex next_vertex;
     SampledSegment next_segment;
+    vec3 next_dir;
     vec3 beta;
     float eta_scale; // used for russian roulette
     bool specular_bounce;

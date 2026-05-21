@@ -2,10 +2,8 @@
 #define PATH_VERTEX_GLSL
 
 struct SampledSegment {
-    vec3 dir;
-    float dist;
-    float pdf;
-    vec3 brdf;
+    vec3 pre_eval_beta;
+    vec3 post_eval_beta;
 };
 
 struct EvaluatedMaterial {
@@ -35,7 +33,7 @@ struct PathVertex {
     vec2 uv;
     uint material_idx;
     int volume_idx;
-    mat4x3 volume_world_to_object;
+    vec3 local_volume_pos;
     bool is_valid;
 };
 

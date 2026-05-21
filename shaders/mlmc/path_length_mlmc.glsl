@@ -23,11 +23,11 @@ vec3 pathLengthDiffMlmc(uint sample_count, uint biased_path_length, uint unbiase
 
     vec3 diff = vec3(0);
     for (int i = 0; i < sample_count; i++) {
-        while (payload.depth < biased_path_length && payload.next_segment.dir != vec3(0.0) && payload.next_segment.dist > 0) {
+        while (payload.depth < biased_path_length && payload.next_dir != vec3(0.0) && length(payload.beta) > 0) {
             continuePath();
         }
         vec3 biased_color = payload.light;
-        while (payload.depth < unbiased_path_length && payload.next_segment.dir != vec3(0.0) && payload.next_segment.dist > 0) {
+        while (payload.depth < unbiased_path_length && payload.next_dir != vec3(0.0) && length(payload.beta) > 0) {
             continuePath();
         }
         diff += payload.light - biased_color;

@@ -37,8 +37,7 @@ bool isVolumeBoundary(Triangle triangle) {
     return isVolumeBoundary(getVolumeIdx(triangle));
 }
 
-vec3 posToVolumeUV(VolumeInstance volume, vec3 world_pos, mat4x3 vol_world_to_object) {
-    vec3 obj_pos = (vol_world_to_object * vec4(world_pos, 1.0f)).xyz;
+vec3 posToVolumeUV(VolumeInstance volume, vec3 obj_pos) {
     vec3 uv = (obj_pos - volume.bounding_box_origin.xyz) / volume.bounding_box_extent.xyz;
     uv = clamp(uv, vec3(0), vec3(1));
     return uv;
