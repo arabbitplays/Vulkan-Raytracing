@@ -1,0 +1,19 @@
+runner:
+  scene_name: ref_scene_hetero_volume
+benchmark:
+  name: "pl_mlmc_hetero"
+  expected_ref_samples: 262144
+  biased_samples: 1024
+  diff_samples: 512
+  averaging_rounds: 1
+renderer:
+  recursion_depth: 50
+mlmc:
+  mlmc_mode: "path length"
+  mlmc_present_mode: "combined"
+  biased_path_length: 3
+metal_rough:
+  normal_mapping: false
+  next_event_estimation: true
+  bsdf_importance_sampling: false
+  russian_roulette: false
