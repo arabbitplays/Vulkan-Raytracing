@@ -123,8 +123,14 @@ scene:
         VolumeRenderer:
           mesh: cube
           material_name: diffuse_grey
-          scattering: 1
-          absorption: 0.2
+          scattering:
+            - 1
+            - 1
+            - 1
+          absorption:
+            - 0
+            - 0.2
+            - 0
           g: 0
       children:
         []
@@ -146,8 +152,14 @@ scene:
         VolumeRenderer:
           mesh: sphere
           material_name: diffuse_grey
-          scattering: 0.3
-          absorption: 0.1
+          scattering:
+            - 0.3
+            - 0
+            - 0
+          absorption:
+            - 0.1
+            - 0.1
+            - 0.1
           g: 0
       children:
         []

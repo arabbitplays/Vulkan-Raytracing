@@ -46,7 +46,7 @@ namespace RtEngine {
         std::vector<DescriptorAllocator::PoolSizeRatio> poolRatios = {
             {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1},
             {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1},
-            {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 4},
+            {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 6},
             {VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1},
             {VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, 1},
     };

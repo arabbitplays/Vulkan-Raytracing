@@ -31,11 +31,12 @@ namespace RtEngine {
         void destroy();
 
     private:
-        AllocatedImage createVolumeTexture(glm::uvec3 vol_size, std::vector<glm::vec2> &coefficients) const;
+        AllocatedImage createVolumeTexture(glm::uvec3 vol_size, std::shared_ptr<std::vector<glm::vec4>> coefficients) const;
 
         std::shared_ptr<VulkanContext> vulkan_context;
         AllocatedBuffer volume_mapping_buffer;
-        std::vector<AllocatedImage> volume_textures;
+        std::vector<AllocatedImage> scattering_textures;
+        std::vector<AllocatedImage> absorption_textures;
 
         AllocatedImage default_volume_texture;
     };

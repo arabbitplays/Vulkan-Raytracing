@@ -195,7 +195,7 @@ PathVertex deltaTracking(vec3 origin, vec3 dir, int volume_idx, inout uvec4 rng_
         vec3 obj_pos = (gl_WorldToObjectEXT * vec4(curr_pos, 1.0f)).xyz;
         EvaluatedVolume volume = evaluateVolumeAtLocalPos(volume_instance, obj_pos);
 
-        float p_real = (volume.absorption + volume.scattering) / volume.majorant;
+        float p_real = (volume.absorption.x + volume.scattering.x) / volume.majorant;
         float rand = stepAndOutputRNGFloat(rng_state);
 
         if (rand < p_real) {

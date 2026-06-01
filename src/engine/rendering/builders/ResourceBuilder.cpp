@@ -179,6 +179,8 @@ namespace RtEngine {
 			imageSize *= 16;
 		} else if (format == VK_FORMAT_R32G32_SFLOAT) {
 			imageSize *= 8;
+		} else if (format == VK_FORMAT_R32G32B32A32_SFLOAT) {
+			imageSize *= 16;
 		} else {
 			throw std::invalid_argument("Image format not supported!");
 		}

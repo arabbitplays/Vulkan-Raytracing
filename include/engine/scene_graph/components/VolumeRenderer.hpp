@@ -30,7 +30,9 @@ namespace RtEngine {
         std::string volume_name;
         std::string material_instance_name;
 
-        float absorption = 0.02f, scattering = 0.5f, g = 0.0f, majorant = 0.0f;
+        glm::vec3 absorption = glm::vec3(0.02f), scattering = glm::vec3(0.5f);
+        float g = 0.0f;
+        float majorant = 0.0f;
     };
 } // RtEngine
 
