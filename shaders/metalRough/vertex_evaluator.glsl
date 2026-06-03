@@ -32,6 +32,10 @@ EvaluatedMaterial evaluateVertexMaterial(PathVertex vertex) {
     return result;
 }
 
+float getSimilarityRelationPhaseFunction(float scattering_reduction_factor, float old_g) {
+    return 1.0 - (1.0 - old_g) / scattering_reduction_factor;
+}
+
 EvaluatedVolume evaluateVolumeAtLocalPos(VolumeInstance volume, vec3 obj_pos) {
     EvaluatedVolume result;
 
@@ -40,7 +44,7 @@ EvaluatedVolume evaluateVolumeAtLocalPos(VolumeInstance volume, vec3 obj_pos) {
     result.absorption = getAbsorption(volume, vol_uv);
     result.scattering = getScattering(volume, vol_uv);
     result.majorant = volume.majorant;
-    result.g = volume.g;
+    result.g = getSimilarityRelationPhaseFunction(options.similarity_relations_factor, volume.g);
 
     return result;
 }
