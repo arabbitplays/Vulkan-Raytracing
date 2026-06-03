@@ -12,7 +12,7 @@ namespace RtEngine {
         return volume_path_cache[path];
     }
 
-    std::shared_ptr<VolumeAsset> VolumeRepository::createHeterogenousVolumeAsset(const fs::path &path, float absorption, float scattering, float g, const std::shared_ptr<MeshAsset> &mesh_asset) {
+    std::shared_ptr<VolumeAsset> VolumeRepository::createHeterogenousVolumeAsset(const fs::path &path, glm::vec3 absorption, glm::vec3 scattering, float g, const std::shared_ptr<MeshAsset> &mesh_asset) {
         auto volume_asset = std::make_shared<VolumeAsset>();
         volume_asset->name = "_hetero_" + path.stem().string(); // TODO collect Volumes not VolumeAssets
         volume_asset->absorption_scale = absorption;
@@ -24,11 +24,11 @@ namespace RtEngine {
         return volume_asset;
     }
 
-    std::shared_ptr<VolumeAsset> VolumeRepository::createHomogenousVolumeAsset(float absorption, float scattering, float g, float majorant,
+    std::shared_ptr<VolumeAsset> VolumeRepository::createHomogenousVolumeAsset(glm::vec3 absorption, glm::vec3 scattering, float g, float majorant,
                                                            const std::shared_ptr<MeshAsset> &mesh_asset) {
 
         auto volume_asset = std::make_shared<VolumeAsset>();
-        volume_asset->name = "_Homo_" + std::to_string(absorption) + "_" + std::to_string(scattering);
+        volume_asset->name = "_Homo_" + std::to_string(absorption.x) + "_" + std::to_string(scattering.x); // TODO eww what is this
         volume_asset->volume = VolumeBuilder::createHomogenous();
         volume_asset->absorption_scale = absorption;
         volume_asset->scattering_scale = scattering;

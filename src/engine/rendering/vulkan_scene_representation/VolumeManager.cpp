@@ -1,5 +1,23 @@
 #include "VolumeManager.hpp"
 
+#include "AccelerationStructure.hpp"
+#include "AccelerationStructure.hpp"
+#include "AccelerationStructure.hpp"
+#include "AccelerationStructure.hpp"
+#include "AccelerationStructure.hpp"
+#include "AccelerationStructure.hpp"
+#include "AccelerationStructure.hpp"
+#include "AccelerationStructure.hpp"
+#include "AccelerationStructure.hpp"
+#include "AccelerationStructure.hpp"
+#include "AccelerationStructure.hpp"
+#include "AccelerationStructure.hpp"
+#include "AccelerationStructure.hpp"
+#include "AccelerationStructure.hpp"
+#include "AccelerationStructure.hpp"
+#include "AccelerationStructure.hpp"
+#include "AccelerationStructure.hpp"
+#include "AccelerationStructure.hpp"
 #include "QuickTimer.hpp"
 #include "spdlog/spdlog.h"
 
@@ -14,10 +32,11 @@ namespace RtEngine {
         for (auto &volume_asset: volume_assets) {
             volume_asset->volume_id = volume_id++;
 
-            const uint32_t texture_idx = volume_textures.size();
-            auto coefficients = volume_asset->getCoefficients();
-            AllocatedImage texture = createVolumeTexture(volume_asset->volume->size, coefficients);
-            volume_textures.push_back(texture);
+            const uint32_t texture_idx = scattering_textures.size();
+            AllocatedImage scattering_texture = createVolumeTexture(volume_asset->volume->size, volume_asset->getScatteringCoefficients());
+            scattering_textures.push_back(scattering_texture);
+            AllocatedImage absorption_texture = createVolumeTexture(volume_asset->volume->size, volume_asset->getAbsorptionCoefficients());
+            absorption_textures.push_back(absorption_texture);
 
             VolumeData data = createVolumeData(volume_asset, texture_idx);
             volume_datas.push_back(data);
@@ -43,9 +62,9 @@ namespace RtEngine {
         return volume_data;
     }
 
-    AllocatedImage VolumeManager::createVolumeTexture(glm::uvec3 vol_size, std::vector<glm::vec2> &coefficients) const {
+    AllocatedImage VolumeManager::createVolumeTexture(glm::uvec3 vol_size, std::shared_ptr<std::vector<glm::vec4>> coefficients) const {
         VkExtent3D extent = {vol_size.x, vol_size.y, vol_size.z};
-        return vulkan_context->resource_builder->createImage(coefficients.data(), extent, VK_FORMAT_R32G32_SFLOAT,
+        return vulkan_context->resource_builder->createImage(coefficients->data(), extent, VK_FORMAT_R32G32B32A32_SFLOAT,
                                                              VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_SAMPLED_BIT,
                                                              VK_IMAGE_ASPECT_COLOR_BIT,
                                                              VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
@@ -55,16 +74,24 @@ namespace RtEngine {
     void VolumeManager::writeVolumeResources(VkSampler sampler) const {
         vulkan_context->descriptor_allocator->writeBuffer(8, volume_mapping_buffer.handle, 0,
                                                           VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
-        std::vector<VkImageView> image_views = {};
-        image_views.reserve(16);
-        for (auto &texture: volume_textures) {
-            image_views.push_back(texture.imageView);
+        assert(scattering_textures.size() == absorption_textures.size());
+        std::vector<VkImageView> scattering_views = {};
+        std::vector<VkImageView> absorption_views = {};
+        scattering_views.reserve(16);
+        absorption_views.reserve(16);
+        for (uint32_t i = 0; i < scattering_textures.size(); i++) {
+            scattering_views.push_back(scattering_textures[i].imageView);
+            absorption_views.push_back(absorption_textures[i].imageView);
         }
 
-        for (uint32_t i = volume_textures.size(); i < 16; i++) {
-            image_views.push_back(default_volume_texture.imageView);
+        for (uint32_t i = scattering_views.size(); i < 16; i++) {
+            scattering_views.push_back(default_volume_texture.imageView);
+            absorption_views.push_back(default_volume_texture.imageView);
         }
-        vulkan_context->descriptor_allocator->writeImages(11, image_views, sampler,
+        vulkan_context->descriptor_allocator->writeImages(11, scattering_views, sampler,
+                                                          VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                                                          VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+        vulkan_context->descriptor_allocator->writeImages(12, absorption_views, sampler,
                                                           VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
                                                           VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
     }
@@ -72,10 +99,16 @@ namespace RtEngine {
     void VolumeManager::reset() {
         if (volume_mapping_buffer.handle != VK_NULL_HANDLE)
             vulkan_context->resource_builder->destroyBuffer(volume_mapping_buffer);
-        for (auto &texture: volume_textures) {
+
+        for (auto &texture: scattering_textures) {
             vulkan_context->resource_builder->destroyImage(texture);
         }
-        volume_textures.clear();
+        scattering_textures.clear();
+
+        for (auto &texture: absorption_textures) {
+            vulkan_context->resource_builder->destroyImage(texture);
+        }
+        absorption_textures.clear();
     }
 
     void VolumeManager::destroy() {

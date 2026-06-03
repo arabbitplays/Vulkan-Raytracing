@@ -124,8 +124,14 @@ scene:
         VolumeRenderer:
           mesh: cube
           material_name: diffuse_grey
-          scattering: 1.5
-          absorption: 0.2
+          scattering:
+            - 1.5
+            - 1.5
+            - 1.5
+          absorption:
+            - 0.2
+            - 0.2
+            - 0.2
           majorant: 2
           g: 0
       children:
@@ -149,8 +155,14 @@ scene:
           mesh: cube
           material_name: diffuse_grey
           volume: "../resources/volumes/smoke.vdb"
-          scattering: 10
-          absorption: 1
+          scattering:
+            - 10
+            - 10
+            - 10
+          absorption:
+            - 1
+            - 1
+            - 1
           g: 0
       children:
         []

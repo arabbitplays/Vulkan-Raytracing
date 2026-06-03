@@ -70,6 +70,8 @@ scene:
         Camera:
           fov: 45
           interactive: false
+          width: 1500
+          height: 1500
       children:
         []
     - name: Light
@@ -124,14 +126,14 @@ scene:
           mesh: cube
           material_name: diffuse_grey
           scattering:
+            - 0.8
             - 1
-            - 1
-            - 1
+            - 0.8
           absorption:
-            - 0
-            - 0.2
-            - 0
-          g: 0
+            - 0.1
+            - 0.1
+            - 1
+          g: 0.2
       children:
         []
     - name: Sphere
@@ -153,14 +155,14 @@ scene:
           mesh: sphere
           material_name: diffuse_grey
           scattering:
+            - 0.5
+            - 0
             - 0.3
-            - 0
-            - 0
           absorption:
+            - 0
             - 0.1
             - 0.1
-            - 0.1
-          g: 0
+          g: -0.1
       children:
         []
     - name: Room

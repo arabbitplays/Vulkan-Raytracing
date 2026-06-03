@@ -1,5 +1,5 @@
 runner:
-  scene_name: ref_scene_hetero_volume
+  scene_name: ref_scene_cloud
 renderer:
   recursion_depth: 200
 mlmc:

@@ -15,7 +15,8 @@ struct VolumeInstance {
 layout(binding = 8, set = 0) buffer VolumeBuffer {
     VolumeInstance volumes[];
 } volume_buffer;
-layout(binding = 11, set = 0) uniform sampler3D volume_textures[16];
+layout(binding = 11, set = 0) uniform sampler3D scattering_textures[16];
+layout(binding = 12, set = 0) uniform sampler3D absorption_textures[16];
 
 int getVolumeIdx(Triangle triangle) {
     return int(triangle.volume_id) - 1;
@@ -43,8 +44,12 @@ vec3 posToVolumeUV(VolumeInstance volume, vec3 obj_pos) {
     return uv;
 }
 
-vec2 getCoefficients(VolumeInstance volume, vec3 uv) {
-    return texture(volume_textures[volume.tex_idx], uv).xy;
+vec3 getScattering(VolumeInstance volume, vec3 uv) {
+    return texture(scattering_textures[volume.tex_idx], uv).xyz;
+}
+
+vec3 getAbsorption(VolumeInstance volume, vec3 uv) {
+    return texture(absorption_textures[volume.tex_idx], uv).xyz;
 }
 
 #endif

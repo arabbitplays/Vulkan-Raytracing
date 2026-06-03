@@ -17,9 +17,8 @@ struct EvaluatedMaterial {
 };
 
 struct EvaluatedVolume {
-    float scattering;
-    float absorption;
-    float null_scattering;
+    vec3 scattering;
+    vec3 absorption;
     float majorant;
     float g;
 };

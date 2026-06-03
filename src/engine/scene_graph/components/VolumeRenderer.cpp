@@ -41,8 +41,8 @@ namespace RtEngine {
             bool update_needed = false;
             update_needed |= config->addFloat("g", &g, -1.0, 1.0);
             update_needed |= config->addFloat("maj", &majorant, 0, 1);
-            update_needed |= config->addFloat("scattering", &scattering);
-            update_needed |= config->addFloat("absorption", &absorption);
+            update_needed |= config->addVector("scattering", &scattering);
+            update_needed |= config->addVector("absorption", &absorption);
 
             if (update_needed && mesh_asset) {
                 refreshVolumeAsset();

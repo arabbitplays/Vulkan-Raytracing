@@ -136,8 +136,14 @@ scene:
           mesh: cube
           material_name: sphere1
           volume: "../resources/volumes/smoke.vdb"
-          scattering: 10
-          absorption: 1
+          scattering:
+            - 10
+            - 10
+            - 10
+          absorption:
+            - 1
+            - 1
+            - 1
           g: 0.2
       children:
         []

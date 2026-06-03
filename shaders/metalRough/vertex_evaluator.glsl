@@ -36,11 +36,9 @@ EvaluatedVolume evaluateVolumeAtLocalPos(VolumeInstance volume, vec3 obj_pos) {
     EvaluatedVolume result;
 
     vec3 vol_uv = posToVolumeUV(volume, obj_pos);
-    vec2 coefficients = getCoefficients(volume, vol_uv);
 
-    result.absorption = coefficients.x;
-    result.scattering = coefficients.y;
-    result.null_scattering = volume.majorant - result.absorption - result.scattering;
+    result.absorption = getAbsorption(volume, vol_uv);
+    result.scattering = getScattering(volume, vol_uv);
     result.majorant = volume.majorant;
     result.g = volume.g;
 

@@ -146,8 +146,14 @@ scene:
           mesh: cube
           material_name: sphere1
           volume: "../resources/volumes/cloud.vdb"
-          scattering: 0.8
-          absorption: 1
+          scattering:
+            - 0.8
+            - 0.8
+            - 0.8
+          absorption:
+            - 0.2
+            - 0.6
+            - 0.2
           g: 0.4
       children:
         []

@@ -30,6 +30,7 @@
             # select Python packages here
             pillow
             numpy
+            pyyaml
         ]))
       ];
 

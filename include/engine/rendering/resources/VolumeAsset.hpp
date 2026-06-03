@@ -18,28 +18,45 @@ namespace RtEngine {
         glm::vec4 bounding_box_extent;
     };
 
-    struct VolumeAsset {
+    struct VolumeAsset
+    {
         std::string name;
         uint32_t volume_id;
         std::shared_ptr<Volume> volume;
         float g;
-        float absorption_scale, scattering_scale;
+        glm::vec3 absorption_scale, scattering_scale;
         float bonus_majorant = 0;
         std::shared_ptr<MeshAsset> bounding_mesh;
 
-        std::vector<glm::vec2> getCoefficients() const {
-            std::vector<glm::vec2> coefficients;
-            coefficients.reserve(volume->size.x * volume->size.y * volume->size.z);
+        std::shared_ptr<std::vector<glm::vec4>> getScatteringCoefficients() const {
+            auto coefficients = std::make_shared<std::vector<glm::vec4>>();
+            coefficients->reserve(volume->size.x * volume->size.y * volume->size.z);
             for (uint32_t i = 0; i < volume->densities.size(); i++) {
                 float density = volume->densities.at(i);
-                coefficients.emplace_back(density / volume->max_density * absorption_scale,
-                                          density / volume->max_density * scattering_scale);
+                coefficients->emplace_back(density / volume->max_density * scattering_scale.x,
+                    density / volume->max_density * scattering_scale.y,
+                    density / volume->max_density * scattering_scale.z,
+                    0);
+            }
+            return coefficients;
+        }
+
+        std::shared_ptr<std::vector<glm::vec4>> getAbsorptionCoefficients() const {
+            auto coefficients = std::make_shared<std::vector<glm::vec4>>();
+            coefficients->reserve(volume->size.x * volume->size.y * volume->size.z);
+            for (uint32_t i = 0; i < volume->densities.size(); i++) {
+                float density = volume->densities.at(i);
+                coefficients->emplace_back(density / volume->max_density * absorption_scale.x,
+                    density / volume->max_density * absorption_scale.y,
+                    density / volume->max_density * absorption_scale.z,
+                    0);
             }
             return coefficients;
         }
 
         float getMajorant() const {
-            return scattering_scale + absorption_scale + bonus_majorant;
+            glm::vec3 extinction = scattering_scale + absorption_scale;
+            return std::max(extinction.x, std::max(extinction.y, extinction.z)) + bonus_majorant;
             // because densities get scaled down this is not max_density * (scattering_scale + absorption_scale)
         }
     };
