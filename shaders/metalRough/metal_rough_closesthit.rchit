@@ -237,10 +237,10 @@ PathVertex deltaTracking(vec3 origin, vec3 dir, int volume_idx, inout uvec4 rng_
             PathVertex vertex = createVolumeVertex(curr_pos, volume_idx);
 
             delta_tracking_pdf *= 1.0 / (sampled_scattering + sampled_absorption);
-            SampledSegment segment = sampleVolumeSegment(dir, volume, delta_tracking_pdf, payload.rng_state);
+            SampledSegment segment = sampleVolumeSegment(dir, volume, delta_tracking_pdf, rng_state);
 
             payload.beta *= segment.pre_eval_beta;
-            payload.light += payload.beta * evaluateVolumeVertex(vertex, payload.rng_state);
+            payload.light += payload.beta * evaluateVolumeVertex(vertex, rng_state);
             payload.beta *= segment.post_eval_beta;
 
             payload.next_segment = segment;

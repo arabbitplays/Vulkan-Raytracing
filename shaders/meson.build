@@ -8,7 +8,6 @@ shaders = [
     'nee/shadow_clostesthit.rchit',
     'nee/shadow_miss.rmiss',
     'compute/glitch.comp',
-    'mlmc/combine.comp',
 ]
 
 foreach s : shaders
