@@ -1,17 +1,17 @@
 runner:
-  scene_name: ref_scene_cloud
+  scene_name: [[SCENE_NAME]]
 benchmark:
-  name: "nee"
-  expected_ref_samples: 262144
+  name: "[[NAME]]"
+  expected_ref_samples: [[EXPECTED_SAMPLES]]
   biased_samples: 1024
   diff_samples: 0
-  averaging_rounds: 1
+  averaging_rounds: [[AVERAGING_ROUNDS]]
 renderer:
-  recursion_depth: 50
+  recursion_depth: [[RECURSION_DEPTH]]
 mlmc:
   mlmc_present_mode: "unbiased"
 metal_rough:
   normal_mapping: false
   next_event_estimation: true
   bsdf_importance_sampling: false
-  russian_roulette: false
+  russian_roulette: true
