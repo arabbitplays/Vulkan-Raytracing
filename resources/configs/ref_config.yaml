@@ -1,5 +1,5 @@
 runner:
-  scene_name: ref_scene_cloud
+  scene_name: ref_scene_homo_volume
 renderer:
   recursion_depth: 200
 mlmc:
@@ -7,5 +7,5 @@ mlmc:
 metal_rough:
   normal_mapping: false
   next_event_estimation: false
-  bsdf_importance_sampling: false
+  bsdf_importance_sampling: true
   russian_roulette: false

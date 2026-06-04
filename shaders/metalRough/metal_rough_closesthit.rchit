@@ -161,18 +161,23 @@ SampledSegment sampleNextSegment(PathVertex vertex, bool sample_bsdf, inout uvec
 SampledSegment sampleVolumeSegment(vec3 dir, EvaluatedVolume volume, vec3 delta_tracking_pdf, inout uvec4 rng_state) {
     SampledSegment segment = createNewSegment();
 
-    PhaseFunctionSample p_sample = sampleHGPhaseFunction(-dir, volume.g, rng_state);
-    //PhaseFunctionSample p_sample = sampleIsoPhaseFunction(wo, payload.rng_state);
+    if (options.sample_bsdf) {
+        PhaseFunctionSample hg_sample = sampleHGPhaseFunction(-dir, volume.g, rng_state);
+        payload.next_dir = hg_sample.wi;
+        segment.post_eval_beta = volume.scattering * hg_sample.p / hg_sample.pdf;
+    } else {
+        PhaseFunctionSample iso_sample = sampleIsoPhaseFunction(-dir, payload.rng_state);
+        payload.next_dir = iso_sample.wi;
+        float phase = henyeyGreenstein(-dir, iso_sample.wi, volume.g);
+        segment.post_eval_beta *= volume.scattering * phase / iso_sample.pdf;
+    }
+
+    segment.pre_eval_beta *= delta_tracking_pdf;
 
     // This is the full version, without terms cut out for the specific phase function used
     //payload.beta *= scattering * transmittance(traveled_distance, extinction) * p_sample.p / distanceSamplingPdf(traveled_distance, extinction) / p_sample.pdf;
     // This is the version working for homogenous volumes (transmittance and distancePDF can also be cut)
     //payload.beta *= scattering * transmittance(traveled_distance, volume.majorant) / distanceSamplingPdf(traveled_distance, volume.majorant);
-
-    payload.next_dir = p_sample.wi;
-
-    segment.pre_eval_beta *= delta_tracking_pdf;
-    segment.post_eval_beta *= volume.scattering;
 
     return segment;
 }

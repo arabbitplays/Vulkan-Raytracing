@@ -145,7 +145,7 @@ scene:
             - 0.2
             - 0.2
             - 0.2
-          g: 0
+          g: 0.4
       children:
         []
     - name: Sphere2
