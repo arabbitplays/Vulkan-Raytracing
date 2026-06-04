@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 def henyey_greenstein(mu, g):
-    return (1 - g**2) / (1 + g**2 - 2*g*mu)**1.5
+    return (1 / (4 * np.pi)) * (1 - g**2) / (1 + g**2 - 2*g*mu)**1.5
 
 def evaluate_boxcar(x, c):
     k = len(c)
@@ -13,7 +13,7 @@ def evaluate_boxcar(x, c):
     # clamp edge case (x == 1)
     idx = np.clip(idx, 0, k - 1)
 
-    return 4 * np.pi * c[idx]
+    return c[idx]
 
 def plotPhaseAndReconstruction(c, g):
     mu = np.linspace(-1, 1, 500)

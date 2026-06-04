@@ -11,6 +11,7 @@
 
 #include "../volume/layout.glsl"
 #include "../volume/phase_function.glsl"
+#include "../volume/altered_phase_function.glsl"
 #include "../volume/transmittance_estimator.glsl"
 
 mat3 getTBN(vec3 geom_N, vec3 T) {
@@ -32,10 +33,6 @@ EvaluatedMaterial evaluateVertexMaterial(PathVertex vertex) {
     return result;
 }
 
-float getSimilarityRelationPhaseFunction(float scattering_reduction_factor, float old_g) {
-    return 1.0 - (1.0 - old_g) / scattering_reduction_factor;
-}
-
 EvaluatedVolume evaluateVolumeAtLocalPos(VolumeInstance volume, vec3 obj_pos) {
     EvaluatedVolume result;
 
@@ -44,7 +41,7 @@ EvaluatedVolume evaluateVolumeAtLocalPos(VolumeInstance volume, vec3 obj_pos) {
     result.absorption = getAbsorption(volume, vol_uv);
     result.scattering = getScattering(volume, vol_uv);
     result.majorant = volume.majorant;
-    result.g = getSimilarityRelationPhaseFunction(options.similarity_relations_factor, volume.g);
+    result.g = volume.g;
 
     return result;
 }
@@ -105,7 +102,13 @@ vec3 evaluateVolumeVertex(PathVertex vertex, inout uvec4 rng_state) {
         L = normalize(L);
 
         vec3 transmittance = estimateTransmittance(vertex.P, L, distance_to_light, vertex.volume_idx, rng_state);
-        float phase = henyeyGreenstein(vertex.V, L, volume.g);
+
+        float phase = 0;
+        if (options.similarity_relations_factor < 1.0) {
+            phase = evaluateAlteredPhaseFunction(vertex.V, L, volume.g, options.similarity_relations_factor);
+        } else {
+            phase = henyeyGreenstein(vertex.V, L, volume.g);
+        }
         if (light_sample.light != vec3(0) && phase > 0.0 && length(transmittance) > 0) {
             return volume.scattering * transmittance * phase * light_sample.light / light_sample.pdf;
         }

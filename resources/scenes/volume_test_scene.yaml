@@ -131,7 +131,7 @@ scene:
             - 0
             - 0.2
             - 0
-          g: 0
+          g: 0.4
       children:
         []
     - name: Sphere

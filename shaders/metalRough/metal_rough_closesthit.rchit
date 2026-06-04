@@ -16,6 +16,7 @@
 #include "../volume/distance_sampler.glsl"
 #include "../volume/transmittance_estimator.glsl"
 #include "../volume/phase_function.glsl"
+#include "../volume/altered_phase_function.glsl"
 
 layout(location = 0) rayPayloadInEXT Payload payload;
 
@@ -160,11 +161,20 @@ SampledSegment sampleNextSegment(PathVertex vertex, bool sample_bsdf, inout uvec
 
 SampledSegment sampleVolumeSegment(vec3 dir, EvaluatedVolume volume, vec3 delta_tracking_pdf, inout uvec4 rng_state) {
     SampledSegment segment = createNewSegment();
+    segment.pre_eval_beta *= delta_tracking_pdf;
+
+    if (options.similarity_relations_factor < 1.0) {
+        PhaseFunctionSample iso_sample = sampleIsoPhaseFunction(-dir, payload.rng_state);
+        payload.next_dir = iso_sample.wi;
+        float phase = evaluateAlteredPhaseFunction(-dir, iso_sample.wi, volume.g, options.similarity_relations_factor);
+        segment.post_eval_beta *= volume.scattering * phase / iso_sample.pdf;
+        return segment;
+    }
 
     if (options.sample_bsdf) {
         PhaseFunctionSample hg_sample = sampleHGPhaseFunction(-dir, volume.g, rng_state);
         payload.next_dir = hg_sample.wi;
-        segment.post_eval_beta = volume.scattering * hg_sample.p / hg_sample.pdf;
+        segment.post_eval_beta *= volume.scattering * hg_sample.p / hg_sample.pdf;
     } else {
         PhaseFunctionSample iso_sample = sampleIsoPhaseFunction(-dir, payload.rng_state);
         payload.next_dir = iso_sample.wi;
@@ -172,7 +182,6 @@ SampledSegment sampleVolumeSegment(vec3 dir, EvaluatedVolume volume, vec3 delta_
         segment.post_eval_beta *= volume.scattering * phase / iso_sample.pdf;
     }
 
-    segment.pre_eval_beta *= delta_tracking_pdf;
 
     // This is the full version, without terms cut out for the specific phase function used
     //payload.beta *= scattering * transmittance(traveled_distance, extinction) * p_sample.p / distanceSamplingPdf(traveled_distance, extinction) / p_sample.pdf;

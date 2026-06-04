@@ -59,15 +59,19 @@ def altered_approx_phase_moments(g, N, alpha):
 def alter_moment(moment, alpha):
     return 1 - (1 - moment) / alpha
 
+def to_glsl_array(a, name="A"):
+    vals = ", ".join(f"{x:.6g}" for x in np.ravel(a))
+    return f"float {name}[{len(np.ravel(a))}] = float[]({vals});"
+
 k = 360
 N = 4
-g = 0.7
-alpha = 0.7
+g = 0.4
+alpha = 0.5
 
 G = moments_matrix(N, k)
-f = altered_phase_moments(g, N, alpha)
+#f = altered_phase_moments(g, N, alpha)
 #f = altered_approx_phase_moments(g, N, alpha)
-#f = phase_moments(g, N)
+f = phase_moments(g, N)
 #f = legendre_moments(henyey_greenstein, g, N)
 
 if not check_existance(f):
@@ -75,3 +79,5 @@ if not check_existance(f):
 else:
     c = solve_qp(G, f, k)
     plotPhaseAndReconstruction(c, g)
+    print(sum(c))
+    print(to_glsl_array(c))
