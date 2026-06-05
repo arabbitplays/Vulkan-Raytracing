@@ -69,6 +69,14 @@ namespace RtEngine {
     void Runner::drawFrame(const std::shared_ptr<DrawContext>& draw_context) {
         raytracing_renderer->waitForNextFrameStart();
 
+        if (last_time_point.has_value())
+        {
+            const auto dur = duration_cast<std::chrono::microseconds>(clock::now() - last_time_point.value()).count();
+            moving_frame_time_average = moving_average_alpha * dur + (1.0f - moving_average_alpha) * moving_frame_time_average;
+        }
+        last_time_point = clock::now();
+        spdlog::debug("Average frame time: {} ms", moving_frame_time_average / 1000.0f);
+
         const int32_t swapchain_image_idx = raytracing_renderer->aquireNextSwapchainImage();
         if (swapchain_image_idx < 0) {
             handle_resize();
@@ -91,6 +99,7 @@ namespace RtEngine {
         raytracing_renderer->writeResources(draw_context, update_flags);
 
         if (update_flags->checkFlag(TARGET_RESET)) {
+            last_time_point.reset();
             for (const auto& target : draw_context->target_repositories) {
                 target->resetAccumulatedFrames();
             }
