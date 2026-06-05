@@ -4,26 +4,31 @@
 #include <string>
 #include <vector>
 
-enum MlmcMode {
+enum MlmcMethod {
     PATH_LENGTH,
+    SIMILARITY,
 };
 
-class MlmcModeConverter {
+class MlmcMethodConverter {
 public:
     static std::vector<std::string> getSelectionStrings() {
         return {
             "path length",
+            "similarity",
         };
     }
 
-    static MlmcMode fromString(const std::string &mode_string) {
+    static MlmcMethod fromString(const std::string &mode_string) {
         if (mode_string == "path length") {
             return PATH_LENGTH;
         }
-        throw std::invalid_argument("Invalid MLMC mode string");
+        if (mode_string == "similarity") {
+            return SIMILARITY;
+        }
+        throw std::invalid_argument("Invalid MLMC method string");
     }
 
-    static uint32_t toIndex(MlmcMode mode) {
+    static uint32_t toIndex(MlmcMethod mode) {
         return static_cast<uint32_t>(mode);
     }
 };

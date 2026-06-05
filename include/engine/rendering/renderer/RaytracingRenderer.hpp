@@ -24,7 +24,7 @@
 #include "Renderer.hpp"
 #include "UpdateFlagValue.hpp"
 #include "../Window.hpp"
-#include "renderer/mlmc/MlmcMode.hpp"
+#include "renderer/mlmc/MlmcMethod.hpp"
 #include "renderer/mlmc/MlmcPresentMode.hpp"
 
 namespace RtEngine {
@@ -67,7 +67,7 @@ namespace RtEngine {
 		std::shared_ptr<Window> window;
 
 		uint32_t recursion_depth = 5;
-		MlmcMode mlmc_mode = PATH_LENGTH;
+		MlmcMethod mlmc_mode = PATH_LENGTH;
 		std::string mlmc_mode_str = "path length";
 		MlmcPresentMode mlmc_present_mode = COMBINED;
 		std::string mlmc_present_mode_str = "combined";

@@ -163,7 +163,7 @@ SampledSegment sampleVolumeSegment(vec3 dir, EvaluatedVolume volume, vec3 delta_
     SampledSegment segment = createNewSegment();
     segment.pre_eval_beta *= delta_tracking_pdf;
 
-    if (options.similarity_relation) {
+    if (payload.similarity_relation) {
         PhaseFunctionSample iso_sample = sampleIsoPhaseFunction(-dir, payload.rng_state);
         payload.next_dir = iso_sample.wi;
         float phase = evaluateAlteredPhaseFunction(-dir, iso_sample.wi, volume.g);
@@ -237,7 +237,7 @@ PathVertex deltaTracking(vec3 origin, vec3 dir, int volume_idx, inout uvec4 rng_
         vec3 curr_pos = origin + tracked_dist * dir;
 
         vec3 obj_pos = (gl_WorldToObjectEXT * vec4(curr_pos, 1.0f)).xyz;
-        EvaluatedVolume volume = evaluateVolumeAtLocalPos(volume_instance, obj_pos);
+        EvaluatedVolume volume = evaluateVolumeAtLocalPos(volume_instance, payload.similarity_relation, obj_pos);
 
         vec2 sampled_channel = sampleChannel(volume, rng_state);
         float sampled_scattering = sampled_channel.x;
@@ -254,7 +254,7 @@ PathVertex deltaTracking(vec3 origin, vec3 dir, int volume_idx, inout uvec4 rng_
             SampledSegment segment = sampleVolumeSegment(dir, volume, delta_tracking_pdf, rng_state);
 
             payload.beta *= segment.pre_eval_beta;
-            payload.light += payload.beta * evaluateVolumeVertex(vertex, rng_state);
+            payload.light += payload.beta * evaluateVolumeVertex(vertex, payload.similarity_relation, rng_state);
             payload.beta *= segment.post_eval_beta;
 
             payload.next_segment = segment;
@@ -294,7 +294,7 @@ void main() {
 
         // no direct light sampling or handle light that goes directly to the camera
         bool consider_emission = !options.sample_light || payload.specular_bounce || (payload.depth == 0 && material.emission_power > 0);
-        payload.light += payload.beta * evaluateSurfaceVertex(vertex, options.sample_bsdf, options.sample_light, consider_emission, payload.rng_state);
+        payload.light += payload.beta * evaluateSurfaceVertex(vertex, options.sample_bsdf, options.sample_light, consider_emission, payload.similarity_relation, payload.rng_state);
 
         payload.next_segment = sampleNextSegment(vertex, options.sample_bsdf, payload.rng_state);
         payload.beta *= payload.next_segment.post_eval_beta;

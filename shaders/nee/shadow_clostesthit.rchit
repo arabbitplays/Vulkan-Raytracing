@@ -33,7 +33,7 @@ vec3 ratioTracking(vec3 origin, vec3 dir, int volume_idx, inout uvec4 rng_state)
 
         vec3 curr_pos = origin + tracked_dist * dir;
         vec3 obj_pos = (gl_WorldToObjectEXT * vec4(curr_pos, 1.0f)).xyz;
-        EvaluatedVolume volume = evaluateVolumeAtLocalPos(volumeInstance, obj_pos);
+        EvaluatedVolume volume = evaluateVolumeAtLocalPos(volumeInstance, payload.similarity_relation, obj_pos);
 
         transmittance *= (1.0 - (volume.scattering + volume.absorption) / volume.majorant);
     }

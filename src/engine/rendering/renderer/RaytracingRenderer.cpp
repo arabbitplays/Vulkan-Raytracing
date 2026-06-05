@@ -288,7 +288,7 @@ namespace RtEngine {
         push_constants.push_back(target->getDiffSamplesPerFrame());
 
         push_constants.push_back(mlmc_present_mode != UNBIASED);
-        push_constants.push_back(MlmcModeConverter::toIndex(mlmc_mode));
+        push_constants.push_back(MlmcMethodConverter::toIndex(mlmc_mode));
 
         push_constants.push_back(mlmc_biased_path_length);
 
@@ -404,8 +404,8 @@ namespace RtEngine {
         }
 
         if (config->startChild("mlmc")) {
-            if (config->addSelection("mlmc_mode", &mlmc_mode_str, MlmcModeConverter::getSelectionStrings())) {
-                mlmc_mode = MlmcModeConverter::fromString(mlmc_mode_str);
+            if (config->addSelection("mlmc_mode", &mlmc_mode_str, MlmcMethodConverter::getSelectionStrings())) {
+                mlmc_mode = MlmcMethodConverter::fromString(mlmc_mode_str);
                 target_reset = true;
             }
 
