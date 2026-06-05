@@ -6,7 +6,7 @@ layout(push_constant) uniform PushConstants {
     bool sample_light;
     bool sample_bsdf;
     bool russian_roulette;
-    float similarity_relations_factor;
+    bool similarity_relation;
     uint accumulated_frame_count;
     uint accumulated_diff_frame_count;
     uint samples_per_pixel;

@@ -16,24 +16,15 @@ def int_legendre(n, a, b):
 def legendre_moments(f, g, N):
     # Gauss-Legendre quadrature points/weights
     x, w = leggauss(200)
+    fx = f(x, g)
 
     moments = np.zeros(N + 1)
 
     for n in range(N + 1):
         Pn = Legendre.basis(n)(x)
-        moments[n] = np.sum(w * f(x, g) * Pn)
+        moments[n] = 2 * np.pi * np.sum(w * fx * Pn)
 
-    return moments
-
-def monomial_moments(f, g, N):
-    x, w = leggauss(200)
-
-    moments = np.zeros(N + 1)
-
-    for n in range(N + 1):
-        moments[n] = np.sum(w * f(x, g) * x**n)
-
-    return moments
+    return moments / moments[0] # enforce f_0 = 1
 
 def basis_moment(i, n, k):
     a = -1 + (2 * i - 2) / k
@@ -47,37 +38,40 @@ def moments_matrix(N, k):
             G[i, j] = basis_moment(j + 1, i, k)
     return G
 
-def phase_moments(g, N):
-    return g ** np.arange(N + 1)
-
 def altered_phase_moments(g, N, alpha):
-    return alter_moment(phase_moments(g, N), alpha)
+    return alter_moments(legendre_moments(henyey_greenstein, g, N), alpha)
 
-def altered_approx_phase_moments(g, N, alpha):
-    return alter_moment(legendre_moments(henyey_greenstein, g, N), alpha)
-
-def alter_moment(moment, alpha):
-    return 1 - (1 - moment) / alpha
+def alter_moments(moments, alpha):
+    altered = 1 - (1 - np.asarray(moments, dtype=float)) / alpha;
+    altered[0] = 1.0
+    return altered
 
 def to_glsl_array(a, name="A"):
     vals = ", ".join(f"{x:.6g}" for x in np.ravel(a))
     return f"float {name}[{len(np.ravel(a))}] = float[]({vals});"
 
 k = 360
-N = 4
+N = 1
 g = 0.4
-alpha = 0.5
+alpha = 0.7
 
-G = moments_matrix(N, k)
-#f = altered_phase_moments(g, N, alpha)
-#f = altered_approx_phase_moments(g, N, alpha)
-f = phase_moments(g, N)
+f = altered_phase_moments(g, N, alpha)
 #f = legendre_moments(henyey_greenstein, g, N)
 
-if not check_existance(f):
-    print("Reconstruction does not exist")
-else:
-    c = solve_qp(G, f, k)
-    plotPhaseAndReconstruction(c, g)
-    print(sum(c))
-    print(to_glsl_array(c))
+n = 1
+while check_existance(f[0:n + 2]) and n < N:
+    n = n + 1
+
+f = f[0:n+1]
+
+print("Found solution for N = " + str(n))
+
+G = moments_matrix(n, k)
+
+print(G.shape)
+print(f.shape)
+
+c = solve_qp(G, f, k)
+plotPhaseAndReconstruction(c, g)
+
+print(to_glsl_array(c))

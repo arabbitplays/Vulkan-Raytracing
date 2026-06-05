@@ -163,10 +163,10 @@ SampledSegment sampleVolumeSegment(vec3 dir, EvaluatedVolume volume, vec3 delta_
     SampledSegment segment = createNewSegment();
     segment.pre_eval_beta *= delta_tracking_pdf;
 
-    if (options.similarity_relations_factor < 1.0) {
+    if (options.similarity_relation) {
         PhaseFunctionSample iso_sample = sampleIsoPhaseFunction(-dir, payload.rng_state);
         payload.next_dir = iso_sample.wi;
-        float phase = evaluateAlteredPhaseFunction(-dir, iso_sample.wi, volume.g, options.similarity_relations_factor);
+        float phase = evaluateAlteredPhaseFunction(-dir, iso_sample.wi, volume.g);
         segment.post_eval_beta *= volume.scattering * phase / iso_sample.pdf;
         return segment;
     }

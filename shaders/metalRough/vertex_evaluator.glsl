@@ -38,8 +38,13 @@ EvaluatedVolume evaluateVolumeAtLocalPos(VolumeInstance volume, vec3 obj_pos) {
 
     vec3 vol_uv = posToVolumeUV(volume, obj_pos);
 
+    float alpha = 1.0;
+    if (options.similarity_relation) {
+        alpha = getSimilarityRelationsAlpha(volume.g);
+    }
+
     result.absorption = getAbsorption(volume, vol_uv);
-    result.scattering = getScattering(volume, vol_uv);
+    result.scattering = alpha * getScattering(volume, vol_uv);
     result.majorant = volume.majorant;
     result.g = volume.g;
 
@@ -104,8 +109,8 @@ vec3 evaluateVolumeVertex(PathVertex vertex, inout uvec4 rng_state) {
         vec3 transmittance = estimateTransmittance(vertex.P, L, distance_to_light, vertex.volume_idx, rng_state);
 
         float phase = 0;
-        if (options.similarity_relations_factor < 1.0) {
-            phase = evaluateAlteredPhaseFunction(vertex.V, L, volume.g, options.similarity_relations_factor);
+        if (options.similarity_relation) {
+            phase = evaluateAlteredPhaseFunction(vertex.V, L, volume.g);
         } else {
             phase = henyeyGreenstein(vertex.V, L, volume.g);
         }
