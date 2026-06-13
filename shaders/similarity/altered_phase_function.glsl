@@ -7,7 +7,7 @@
 
 #include "altered_phase_coefficients.glsl"
 
-const float INV_NUM_COEFFS_HALF = 2.0 / float(NUM_COEFFS); // cosTheta bin width
+const float COS_THETA_BIN_WIDTH = 2.0 / float(NUM_COEFFS);
 
 int findBestIndex(float g) {
     int bestIdx = 0;
@@ -26,15 +26,27 @@ int findBestIndex(float g) {
     return bestIdx;
 }
 
-float getSimilarityRelationsAlpha(float g) {
-    return ALPHAS[findBestIndex(g)];
+// (g, alpha) lookup: minimum L1 distance over both keys, used when the
+// caller has an explicit alpha (multiple tables can share the same g).
+int findBestIndex(float g, float alpha) {
+    int bestIdx = 0;
+    float bestDist = abs(g - G_KEYS[0]) + abs(alpha - ALPHAS[0]);
+
+    for (int i = 1; i < NUM_KEYS; ++i)
+    {
+        float dist = abs(g - G_KEYS[i]) + abs(alpha - ALPHAS[i]);
+
+        if (dist < bestDist)
+        {
+            bestDist = dist;
+            bestIdx = i;
+        }
+    }
+    return bestIdx;
 }
 
-// Reads a single tabulated coefficient without copying the whole table.
-float fetchPhaseCoefficient(int tableIdx, int i) {
-    if (tableIdx == 0) return COEFFS_0[i];
-    if (tableIdx == 1) return COEFFS_1[i];
-    return COEFFS_2[i];
+float getSimilarityRelationsAlpha(float g) {
+    return ALPHAS[findBestIndex(g)];
 }
 
 int cosThetaToBin(float cosTheta) {
@@ -42,17 +54,22 @@ int cosThetaToBin(float cosTheta) {
     return clamp(idx, 0, NUM_COEFFS - 1);
 }
 
-float evaluateAlteredPhaseFunction(vec3 wo, vec3 wi, float g) {
+float evaluateAlteredPhaseFunction(vec3 wo, vec3 wi, float g, float alpha) {
     int idx = cosThetaToBin(-dot(wo, wi));
-    return fetchPhaseCoefficient(findBestIndex(g), idx);
+    return fetchPhaseCoefficient(findBestIndex(g, alpha), idx);
+}
+
+float evaluateAlteredPhaseFunction(vec3 wo, vec3 wi, float g) {
+    int idx = findBestIndex(g);
+    return evaluateAlteredPhaseFunction(wo, wi, g, ALPHAS[idx]);
 }
 
 // Importance-samples the tabulated phase function via CDF inversion.
 // wo is the direction toward the previous vertex (e.g. -ray_dir); the
 // sampled wi follows the same convention as evaluateAlteredPhaseFunction,
 // i.e. the scattering cosine is -dot(wo, wi).
-PhaseFunctionSample sampleAlteredPhaseFunction(vec3 wo, float g, inout uvec4 rng_state) {
-    int tableIdx = findBestIndex(g);
+PhaseFunctionSample sampleAlteredPhaseFunction(vec3 wo, float g, float alpha, inout uvec4 rng_state) {
+    int tableIdx = findBestIndex(g, alpha);
 
     float total = 0.0;
     for (int i = 0; i < NUM_COEFFS; ++i) {
@@ -67,7 +84,7 @@ PhaseFunctionSample sampleAlteredPhaseFunction(vec3 wo, float g, inout uvec4 rng
     float selectedC = fetchPhaseCoefficient(tableIdx, NUM_COEFFS - 1);
     for (int i = 0; i < NUM_COEFFS; ++i) {
         float c = fetchPhaseCoefficient(tableIdx, i);
-        if (accum + c >= target) {
+        if (accum + c > target) {
             selectedIdx = i;
             selectedC = c;
             break;
@@ -76,7 +93,7 @@ PhaseFunctionSample sampleAlteredPhaseFunction(vec3 wo, float g, inout uvec4 rng
     }
 
     float frac = selectedC > 0.0 ? clamp((target - accum) / selectedC, 0.0, 1.0) : 0.5;
-    float cosTheta = clamp(-1.0 + (float(selectedIdx) + frac) * INV_NUM_COEFFS_HALF, -1.0, 1.0);
+    float cosTheta = clamp(-1.0 + (float(selectedIdx) + frac) * COS_THETA_BIN_WIDTH, -1.0, 1.0);
     float sinTheta = safeSqrt(1.0 - sqr(cosTheta));
     float phi = 2.0 * PI * stepAndOutputRNGFloat(rng_state);
 
@@ -85,8 +102,13 @@ PhaseFunctionSample sampleAlteredPhaseFunction(vec3 wo, float g, inout uvec4 rng
     vec3 wi = fromLocal(sphericalDirection(sinTheta, cosTheta, phi), wFrame);
 
     // CDF-inversion pdf over solid angle: c / (total * dCosTheta * 2*PI).
-    float pdf = selectedC / max(total * INV_NUM_COEFFS_HALF * 2.0 * PI, 1e-30);
+    float pdf = selectedC / max(total * COS_THETA_BIN_WIDTH * 2.0 * PI, 1e-30);
     return PhaseFunctionSample(selectedC, wi, pdf);
+}
+
+PhaseFunctionSample sampleAlteredPhaseFunction(vec3 wo, float g, inout uvec4 rng_state) {
+    int idx = findBestIndex(g);
+    return sampleAlteredPhaseFunction(wo, g, ALPHAS[idx], rng_state);
 }
 
 #endif
