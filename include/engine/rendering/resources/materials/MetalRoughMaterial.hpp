@@ -31,7 +31,7 @@ namespace RtEngine {
 
 	private:
 
-		bool normal_mapping = false, sample_lights = false, sample_bsdf = false, russian_roulette = false;
+		bool normal_mapping = false, sample_lights = false, sample_bsdf = false, russian_roulette = false, similarity_relation = false;
 
 		VkSampler sampler;
 	};

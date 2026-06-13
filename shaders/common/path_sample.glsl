@@ -4,6 +4,7 @@
 #include "../common/random.glsl"
 #include "../common/constants.glsl"
 #include "../common/payload.glsl"
+#include "./options.glsl"
 
 layout(binding = 0, set = 0) uniform accelerationStructureEXT topLevelAS;
 
@@ -30,6 +31,7 @@ void initPayload(vec3 origin, vec3 direction) {
     payload.beta = vec3(1.0);
     payload.eta_scale = 1;
     payload.specular_bounce = false;
+    payload.similarity_relation = options.similarity_relation;
 }
 
 void initPath() {

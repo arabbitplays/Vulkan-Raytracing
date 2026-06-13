@@ -16,6 +16,7 @@
 #include "../volume/distance_sampler.glsl"
 #include "../volume/transmittance_estimator.glsl"
 #include "../volume/phase_function.glsl"
+#include "../volume/altered_phase_function.glsl"
 
 layout(location = 0) rayPayloadInEXT Payload payload;
 
@@ -160,19 +161,33 @@ SampledSegment sampleNextSegment(PathVertex vertex, bool sample_bsdf, inout uvec
 
 SampledSegment sampleVolumeSegment(vec3 dir, EvaluatedVolume volume, vec3 delta_tracking_pdf, inout uvec4 rng_state) {
     SampledSegment segment = createNewSegment();
+    segment.pre_eval_beta *= delta_tracking_pdf;
+    payload.specular_bounce = false;
 
-    PhaseFunctionSample p_sample = sampleHGPhaseFunction(-dir, volume.g, rng_state);
-    //PhaseFunctionSample p_sample = sampleIsoPhaseFunction(wo, payload.rng_state);
+    if (payload.similarity_relation) {
+        PhaseFunctionSample iso_sample = sampleIsoPhaseFunction(-dir, rng_state);
+        payload.next_dir = iso_sample.wi;
+        float phase = evaluateAlteredPhaseFunction(-dir, iso_sample.wi, volume.g);
+        segment.post_eval_beta *= volume.scattering * phase / iso_sample.pdf;
+        return segment;
+    }
+
+    if (options.sample_bsdf) {
+        PhaseFunctionSample hg_sample = sampleHGPhaseFunction(-dir, volume.g, rng_state);
+        payload.next_dir = hg_sample.wi;
+        segment.post_eval_beta *= volume.scattering * hg_sample.p / hg_sample.pdf;
+    } else {
+        PhaseFunctionSample iso_sample = sampleIsoPhaseFunction(-dir, rng_state);
+        payload.next_dir = iso_sample.wi;
+        float phase = henyeyGreenstein(-dir, iso_sample.wi, volume.g);
+        segment.post_eval_beta *= volume.scattering * phase / iso_sample.pdf;
+    }
+
 
     // This is the full version, without terms cut out for the specific phase function used
     //payload.beta *= scattering * transmittance(traveled_distance, extinction) * p_sample.p / distanceSamplingPdf(traveled_distance, extinction) / p_sample.pdf;
     // This is the version working for homogenous volumes (transmittance and distancePDF can also be cut)
     //payload.beta *= scattering * transmittance(traveled_distance, volume.majorant) / distanceSamplingPdf(traveled_distance, volume.majorant);
-
-    payload.next_dir = p_sample.wi;
-
-    segment.pre_eval_beta *= delta_tracking_pdf;
-    segment.post_eval_beta *= volume.scattering;
 
     return segment;
 }
@@ -223,7 +238,7 @@ PathVertex deltaTracking(vec3 origin, vec3 dir, int volume_idx, inout uvec4 rng_
         vec3 curr_pos = origin + tracked_dist * dir;
 
         vec3 obj_pos = (gl_WorldToObjectEXT * vec4(curr_pos, 1.0f)).xyz;
-        EvaluatedVolume volume = evaluateVolumeAtLocalPos(volume_instance, obj_pos);
+        EvaluatedVolume volume = evaluateVolumeAtLocalPos(volume_instance, payload.similarity_relation, obj_pos);
 
         vec2 sampled_channel = sampleChannel(volume, rng_state);
         float sampled_scattering = sampled_channel.x;
@@ -233,28 +248,33 @@ PathVertex deltaTracking(vec3 origin, vec3 dir, int volume_idx, inout uvec4 rng_
         float p_real = (sampled_scattering + sampled_absorption) / volume.majorant;
         float rand = stepAndOutputRNGFloat(rng_state);
 
-        if (rand < p_real) {
+    if (rand < p_real) {
             PathVertex vertex = createVolumeVertex(curr_pos, volume_idx);
 
             delta_tracking_pdf *= 1.0 / (sampled_scattering + sampled_absorption);
-            SampledSegment segment = sampleVolumeSegment(dir, volume, delta_tracking_pdf, payload.rng_state);
+            SampledSegment segment = sampleVolumeSegment(dir, volume, delta_tracking_pdf, rng_state);
 
             payload.beta *= segment.pre_eval_beta;
-            payload.light += payload.beta * evaluateVolumeVertex(vertex, payload.rng_state);
+            payload.light += payload.beta * evaluateVolumeVertex(vertex, payload.similarity_relation, rng_state);
             payload.beta *= segment.post_eval_beta;
 
             payload.next_segment = segment;
             return vertex;
         } else {
-            delta_tracking_pdf *= null_collision / (volume.majorant * (1 - p_real));
+            float p_unreal = max(0.0001f, (1 - p_real));
+            delta_tracking_pdf *= null_collision / (volume.majorant * p_unreal);
             continue;
         }
     }
 
     if (tracked_dist >= dist_to_boundary) {
         // exit volume
+        payload.beta *= delta_tracking_pdf;
         return createVolumeBorderVertex(false);
     }
+
+    // should not be reachable
+     return createVolumeBorderVertex(false);
 }
 
 void main() {
@@ -280,7 +300,7 @@ void main() {
 
         // no direct light sampling or handle light that goes directly to the camera
         bool consider_emission = !options.sample_light || payload.specular_bounce || (payload.depth == 0 && material.emission_power > 0);
-        payload.light += payload.beta * evaluateSurfaceVertex(vertex, options.sample_bsdf, options.sample_light, consider_emission, payload.rng_state);
+        payload.light += payload.beta * evaluateSurfaceVertex(vertex, options.sample_bsdf, options.sample_light, consider_emission, payload.similarity_relation, payload.rng_state);
 
         payload.next_segment = sampleNextSegment(vertex, options.sample_bsdf, payload.rng_state);
         payload.beta *= payload.next_segment.post_eval_beta;

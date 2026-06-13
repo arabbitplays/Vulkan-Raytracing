@@ -7,6 +7,7 @@
 
 namespace RtEngine {
     class Runner : public ISerializable {
+		using clock = std::chrono::high_resolution_clock;
     public:
         Runner(std::shared_ptr<EngineContext> engine_context, const std::shared_ptr<SceneManager> &scene_manager);
 
@@ -47,6 +48,10 @@ namespace RtEngine {
         std::shared_ptr<SceneManager> scene_manager;
 
         UpdateFlagsHandle update_flags;
+
+		std::optional<clock::time_point> last_time_point;
+        double moving_frame_time_average = 0;
+        float moving_average_alpha = 0.1f;
     };
 } // RtEngine
 

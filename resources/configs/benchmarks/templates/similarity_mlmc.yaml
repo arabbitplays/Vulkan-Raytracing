@@ -9,9 +9,8 @@ benchmark:
 renderer:
   recursion_depth: [[RECURSION_DEPTH]]
 mlmc:
-  mlmc_mode: "path length"
+  mlmc_mode: "similarity"
   mlmc_present_mode: "combined"
-  biased_path_length: 3
 metal_rough:
   normal_mapping: false
   next_event_estimation: false

@@ -13,5 +13,5 @@ mlmc:
 metal_rough:
   normal_mapping: false
   next_event_estimation: false
-  bsdf_importance_sampling: false
+  bsdf_importance_sampling: true
   russian_roulette: false

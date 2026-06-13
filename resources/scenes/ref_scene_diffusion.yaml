@@ -1,0 +1,107 @@
+scene:
+  material_name: metal_rough
+  lights:
+    sun:
+      direction:
+        - 0
+        - -1
+        - 0
+      color:
+        - 1
+        - 1
+        - 1
+      intensity: 0
+    point_lights:
+      []
+  meshes:
+    - path: meshes/cube.obj
+    - path: meshes/plane.obj
+  materials:
+    - name: light
+      eta: 1
+      emission_color:
+        - 1
+        - 0.949999988
+        - 0.709999979
+      emission_power: 50
+    - name: diffuse_grey
+      albedo:
+        - 0.899999976
+        - 0.899999976
+        - 0.899999976
+      metallic: 0.100000001
+      roughness: 1
+      ao: 0.5
+      eta: 1
+  nodes:
+    - name: Camera
+      components:
+        Transform:
+          position:
+            - 0
+            - 2
+            - 0
+          rotation:
+            - -90
+            - 0
+            - 0
+          scale:
+            - 3
+            - 3
+            - 3
+        Camera:
+          fov: 60
+          width: 1500
+          height: 1500
+          interactive: false
+      children:
+        []
+    - name: Light
+      components:
+        Transform:
+          position:
+            - 0
+            - 0.2
+            - 0
+          rotation:
+            - 90
+            - 0
+            - 0
+          scale:
+            - 0.05
+            - 0.05
+            - 1
+        MeshRenderer:
+          mesh: plane
+          material_name: light
+      children:
+        []
+    - name: Cube1
+      components:
+        Transform:
+          position:
+            - 0
+            - -15
+            - 0
+          rotation:
+            - 0
+            - 0
+            - 0
+          scale:
+            - 30
+            - 30
+            - 30
+        VolumeRenderer:
+          mesh: cube
+          material_name: diffuse_grey
+          scattering:
+            - 0.74
+            - 0.88
+            - 1.01
+          absorption:
+            - 0.032
+            - 0.17
+            - 0.48
+          g: 0
+      children:
+        []

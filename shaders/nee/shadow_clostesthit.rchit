@@ -33,7 +33,7 @@ vec3 ratioTracking(vec3 origin, vec3 dir, int volume_idx, inout uvec4 rng_state)
 
         vec3 curr_pos = origin + tracked_dist * dir;
         vec3 obj_pos = (gl_WorldToObjectEXT * vec4(curr_pos, 1.0f)).xyz;
-        EvaluatedVolume volume = evaluateVolumeAtLocalPos(volumeInstance, obj_pos);
+        EvaluatedVolume volume = evaluateVolumeAtLocalPos(volumeInstance, payload.similarity_relation, obj_pos);
 
         transmittance *= (1.0 - (volume.scattering + volume.absorption) / volume.majorant);
     }
@@ -54,13 +54,14 @@ void main() {
     vec3 tracking_origin = payload.next_origin;
     bool is_inside_volume = payload.current_volume_idx >= 0;
 
-    payload.next_origin += gl_HitTEXT * payload.direction;
-    payload.dist_to_light -= gl_HitTEXT;
-
     if (is_inside_volume) {
         payload.transmittance *= ratioTracking(tracking_origin, normalize(payload.direction), payload.current_volume_idx, payload.rng_state);
         payload.current_volume_idx = -1;
     } else {
         payload.current_volume_idx = getVolumeIdx(triangle);
     }
+
+    payload.next_origin += gl_HitTEXT * payload.direction;
+    payload.dist_to_light -= gl_HitTEXT;
+
 }

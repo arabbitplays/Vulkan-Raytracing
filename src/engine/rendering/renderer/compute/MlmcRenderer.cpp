@@ -1,7 +1,6 @@
 #include "compute/MlmcRenderer.hpp"
 
 #include "targets/RenderTargetKeys.hpp"
-#include <combine.comp.spv.h>
 
 namespace RtEngine {
     void MlmcRenderer::writeRenderTarget(const std::shared_ptr<RenderTargetRepository> &target) {
@@ -34,8 +33,9 @@ namespace RtEngine {
 
 
     VkShaderModule MlmcRenderer::createShaderModule() {
-        return VulkanUtil::createShaderModule(
-            vulkan_context->device_manager->getDevice(), oschd_combine_comp_spv_size(), oschd_combine_comp_spv());
+        throw new std::runtime_error("Not implemented");
+        //return VulkanUtil::createShaderModule(
+        //vulkan_context->device_manager->getDevice(), oschd_combine_comp_spv_size(), oschd_combine_comp_spv());
     }
 
 }

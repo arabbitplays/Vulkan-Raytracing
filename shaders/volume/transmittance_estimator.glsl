@@ -10,15 +10,16 @@ float transmittance(float distance, float extinction) {
     return exp(-extinction * distance);
 }
 
-vec3 estimateTransmittance(vec3 P, vec3 L, float distance_to_light, int volume_idx, inout uvec4 rng_state) {
+vec3 estimateTransmittance(vec3 P, vec3 L, float distance_to_light, int volume_idx, bool use_similarity_relation, inout uvec4 rng_state) {
     shadow_payload.rng_state = rng_state;
     shadow_payload.transmittance = vec3(1);
     shadow_payload.dist_to_light = distance_to_light;
     shadow_payload.next_origin = P;
     shadow_payload.direction = normalize(L);
     shadow_payload.current_volume_idx = volume_idx;
+    shadow_payload.similarity_relation = use_similarity_relation;
 
-    while (length(shadow_payload.transmittance) > 0.0f && shadow_payload.dist_to_light > 0.0f) {
+    while (length(shadow_payload.transmittance) > 0.0f && shadow_payload.dist_to_light > EPSILON) {
         float tmin = EPSILON;
         float tmax = shadow_payload.dist_to_light - EPSILON;
         vec3 direction = shadow_payload.direction;
@@ -31,8 +32,8 @@ vec3 estimateTransmittance(vec3 P, vec3 L, float distance_to_light, int volume_i
     return shadow_payload.transmittance;
 }
 
-vec3 estimateTransmittance(vec3 P, vec3 L, float distance_to_light, inout uvec4 rng_state) {
-    return estimateTransmittance(P, L, distance_to_light, -1, rng_state);
+vec3 estimateTransmittance(vec3 P, vec3 L, float distance_to_light, bool use_similarity_relation, inout uvec4 rng_state) {
+    return estimateTransmittance(P, L, distance_to_light, -1, use_similarity_relation, rng_state);
 }
 
 #endif

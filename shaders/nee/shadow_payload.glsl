@@ -8,6 +8,7 @@ struct ShadowPayload {
     vec3 next_origin;
     vec3 direction;
     int current_volume_idx;
+    bool similarity_relation;
 };
 
 #endif

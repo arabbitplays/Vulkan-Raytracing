@@ -46,7 +46,7 @@ Vertex getVertex(uint vertexOffset, uint index)
     v.position = A.xyz;
     v.normal = vec3(A.w, B.x, B.y);
     v.tangent = vec3(B.zw, C.x);
-    v.color = vec3(C.yz, D.x);
+    v.color = vec3(C.zw, D.x);
     v.uv = D.yz;
 
     return v;
