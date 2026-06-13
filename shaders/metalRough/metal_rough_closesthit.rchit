@@ -162,9 +162,10 @@ SampledSegment sampleNextSegment(PathVertex vertex, bool sample_bsdf, inout uvec
 SampledSegment sampleVolumeSegment(vec3 dir, EvaluatedVolume volume, vec3 delta_tracking_pdf, inout uvec4 rng_state) {
     SampledSegment segment = createNewSegment();
     segment.pre_eval_beta *= delta_tracking_pdf;
+    payload.specular_bounce = false;
 
     if (payload.similarity_relation) {
-        PhaseFunctionSample iso_sample = sampleIsoPhaseFunction(-dir, payload.rng_state);
+        PhaseFunctionSample iso_sample = sampleIsoPhaseFunction(-dir, rng_state);
         payload.next_dir = iso_sample.wi;
         float phase = evaluateAlteredPhaseFunction(-dir, iso_sample.wi, volume.g);
         segment.post_eval_beta *= volume.scattering * phase / iso_sample.pdf;
@@ -176,7 +177,7 @@ SampledSegment sampleVolumeSegment(vec3 dir, EvaluatedVolume volume, vec3 delta_
         payload.next_dir = hg_sample.wi;
         segment.post_eval_beta *= volume.scattering * hg_sample.p / hg_sample.pdf;
     } else {
-        PhaseFunctionSample iso_sample = sampleIsoPhaseFunction(-dir, payload.rng_state);
+        PhaseFunctionSample iso_sample = sampleIsoPhaseFunction(-dir, rng_state);
         payload.next_dir = iso_sample.wi;
         float phase = henyeyGreenstein(-dir, iso_sample.wi, volume.g);
         segment.post_eval_beta *= volume.scattering * phase / iso_sample.pdf;
@@ -247,7 +248,7 @@ PathVertex deltaTracking(vec3 origin, vec3 dir, int volume_idx, inout uvec4 rng_
         float p_real = (sampled_scattering + sampled_absorption) / volume.majorant;
         float rand = stepAndOutputRNGFloat(rng_state);
 
-        if (rand < p_real) {
+    if (rand < p_real) {
             PathVertex vertex = createVolumeVertex(curr_pos, volume_idx);
 
             delta_tracking_pdf *= 1.0 / (sampled_scattering + sampled_absorption);
@@ -260,15 +261,20 @@ PathVertex deltaTracking(vec3 origin, vec3 dir, int volume_idx, inout uvec4 rng_
             payload.next_segment = segment;
             return vertex;
         } else {
-            delta_tracking_pdf *= null_collision / (volume.majorant * (1 - p_real));
+            float p_unreal = max(0.0001f, (1 - p_real));
+            delta_tracking_pdf *= null_collision / (volume.majorant * p_unreal);
             continue;
         }
     }
 
     if (tracked_dist >= dist_to_boundary) {
         // exit volume
+        payload.beta *= delta_tracking_pdf;
         return createVolumeBorderVertex(false);
     }
+
+    // should not be reachable
+     return createVolumeBorderVertex(false);
 }
 
 void main() {

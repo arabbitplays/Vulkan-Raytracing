@@ -54,13 +54,14 @@ void main() {
     vec3 tracking_origin = payload.next_origin;
     bool is_inside_volume = payload.current_volume_idx >= 0;
 
-    payload.next_origin += gl_HitTEXT * payload.direction;
-    payload.dist_to_light -= gl_HitTEXT;
-
     if (is_inside_volume) {
         payload.transmittance *= ratioTracking(tracking_origin, normalize(payload.direction), payload.current_volume_idx, payload.rng_state);
         payload.current_volume_idx = -1;
     } else {
         payload.current_volume_idx = getVolumeIdx(triangle);
     }
+
+    payload.next_origin += gl_HitTEXT * payload.direction;
+    payload.dist_to_light -= gl_HitTEXT;
+
 }

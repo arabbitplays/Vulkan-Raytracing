@@ -20,7 +20,7 @@ float henyeyGreenstein(vec3 wo, vec3 wi, float g) {
     return henyeyGreenstein(dot(wo, wi), g);
 }
 
-vec3 sampleHenyeyGreenstein(vec3 wo, float g, uvec4 rng_state, inout float pdf) {
+vec3 sampleHenyeyGreenstein(vec3 wo, float g, inout uvec4 rng_state, inout float pdf) {
     vec2 u = vec2(stepAndOutputRNGFloat(rng_state), stepAndOutputRNGFloat(rng_state));
 
     float g2 = sqr(g);
