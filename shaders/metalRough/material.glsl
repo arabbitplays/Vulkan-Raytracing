@@ -71,7 +71,7 @@ vec3 sampleWm(vec3 w, float alpha_x, float alpha_y, inout uvec4 rngState) {
     float pz = sqrt(max(0, 1 - lengthSquared(p)));
     vec3 nh = p.x * t1 + p.y * t2 + pz * wh;
 
-    return normalize(vec3(alpha_x * nh.x, alpha_x * nh.y, max(1.0E-6, nh.z)));
+    return normalize(vec3(alpha_x * nh.x, alpha_y * nh.y, max(1.0E-6, nh.z)));
 }
 
 float normalDistributionPDF(vec3 w, vec3 wm, float alpha_x, float alpha_y) {
