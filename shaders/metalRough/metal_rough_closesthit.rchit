@@ -165,10 +165,16 @@ SampledSegment sampleVolumeSegment(vec3 dir, EvaluatedVolume volume, vec3 delta_
     payload.specular_bounce = false;
 
     if (payload.similarity_relation) {
-        PhaseFunctionSample iso_sample = sampleIsoPhaseFunction(-dir, rng_state);
-        payload.next_dir = iso_sample.wi;
-        float phase = evaluateAlteredPhaseFunction(-dir, iso_sample.wi, volume.g);
-        segment.post_eval_beta *= volume.scattering * phase / iso_sample.pdf;
+        if (options.sample_bsdf) {
+            PhaseFunctionSample alt_sample = sampleAlteredPhaseFunction(-dir, volume.g, rng_state);
+            payload.next_dir = alt_sample.wi;
+            segment.post_eval_beta *= volume.scattering * alt_sample.p / alt_sample.pdf;
+        } else {
+            PhaseFunctionSample iso_sample = sampleIsoPhaseFunction(-dir, rng_state);
+            payload.next_dir = iso_sample.wi;
+            float phase = evaluateAlteredPhaseFunction(-dir, iso_sample.wi, volume.g);
+            segment.post_eval_beta *= volume.scattering * phase / iso_sample.pdf;
+        }
         return segment;
     }
 
