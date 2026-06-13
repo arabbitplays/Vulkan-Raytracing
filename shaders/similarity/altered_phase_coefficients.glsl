@@ -1,13 +1,8 @@
-#ifndef ALTERED_PHASE_FUNCTION_GLSL
-#define ALTERED_PHASE_FUNCTION_GLSL
-
-#include "../common/math.glsl"
-#include "../common/random.glsl"
-#include "phase_function.glsl"
+#ifndef ALTERED_PHASE_COEFFICIENTS
+#define ALTERED_PHASE_COEFFICIENTS
 
 const int NUM_KEYS = 3;
 const int NUM_COEFFS = 360;
-const float INV_NUM_COEFFS_HALF = 2.0 / float(NUM_COEFFS); // cosTheta bin width
 
 const float G_KEYS[NUM_KEYS] = float[](
     0.0,
@@ -29,85 +24,5 @@ const float COEFFS_1[NUM_COEFFS] = float[](0.17353, 0.169937, 0.166345, 0.162753
 
 // alpha = 0.7, N = 3
 const float COEFFS_2[NUM_COEFFS] = float[](0.000117275, 0.000217886, 0.000318489, 0.000419056, 0.000519541, 0.000619912, 0.000721088, 0.000823992, 0.00092955, 0.00103868, 0.0011523, 0.00127128, 0.0013965, 0.00152878, 0.00166895, 0.00181777, 0.001976, 0.00214433, 0.00232346, 0.00251403, 0.00271667, 0.00293196, 0.00316048, 0.00340276, 0.00365931, 0.00393061, 0.00421711, 0.00451926, 0.00483744, 0.00517204, 0.00552341, 0.00589188, 0.00627774, 0.0066813, 0.00710279, 0.00754246, 0.00800053, 0.00847718, 0.00897259, 0.00948691, 0.0100203, 0.0105728, 0.0111445, 0.0117356, 0.012346, 0.0129759, 0.0136251, 0.0142938, 0.014982, 0.0156895, 0.0164164, 0.0171627, 0.0179282, 0.0187128, 0.0195166, 0.0203393, 0.021181, 0.0220413, 0.0229202, 0.0238176, 0.0247332, 0.025667, 0.0266186, 0.0275879, 0.0285747, 0.0295788, 0.0305998, 0.0316377, 0.032692, 0.0337625, 0.034849, 0.0359512, 0.0370687, 0.0382012, 0.0393484, 0.04051, 0.0416857, 0.042875, 0.0440776, 0.0452933, 0.0465215, 0.0477619, 0.0490141, 0.0502778, 0.0515525, 0.0528378, 0.0541333, 0.0554386, 0.0567533, 0.0580769, 0.059409, 0.0607491, 0.0620969, 0.0634518, 0.0648134, 0.0661812, 0.0675549, 0.0689339, 0.0703178, 0.071706, 0.0730982, 0.0744938, 0.0758925, 0.0772936, 0.0786967, 0.0801014, 0.0815072, 0.0829136, 0.08432, 0.0857261, 0.0871314, 0.0885353, 0.0899374, 0.0913372, 0.0927342, 0.094128, 0.0955181, 0.0969039, 0.0982851, 0.0996611, 0.101031, 0.102396, 0.103753, 0.105104, 0.106447, 0.107783, 0.10911, 0.110428, 0.111736, 0.113035, 0.114324, 0.115602, 0.11687, 0.118125, 0.119369, 0.120601, 0.121819, 0.123025, 0.124217, 0.125395, 0.126558, 0.127707, 0.128841, 0.129959, 0.131062, 0.132148, 0.133217, 0.13427, 0.135305, 0.136323, 0.137322, 0.138303, 0.139266, 0.14021, 0.141134, 0.142039, 0.142923, 0.143788, 0.144632, 0.145456, 0.146258, 0.147039, 0.147799, 0.148537, 0.149253, 0.149946, 0.150618, 0.151266, 0.151892, 0.152494, 0.153074, 0.15363, 0.154162, 0.154671, 0.155155, 0.155616, 0.156052, 0.156464, 0.156851, 0.157214, 0.157552, 0.157865, 0.158154, 0.158417, 0.158655, 0.158869, 0.159057, 0.159219, 0.159357, 0.159469, 0.159556, 0.159618, 0.159654, 0.159665, 0.15965, 0.159611, 0.159546, 0.159455, 0.15934, 0.159199, 0.159034, 0.158843, 0.158628, 0.158387, 0.158122, 0.157832, 0.157518, 0.157179, 0.156816, 0.156429, 0.156018, 0.155583, 0.155125, 0.154643, 0.154137, 0.153609, 0.153057, 0.152483, 0.151886, 0.151267, 0.150626, 0.149963, 0.149278, 0.148572, 0.147845, 0.147097, 0.146328, 0.145539, 0.144729, 0.1439, 0.143052, 0.142184, 0.141298, 0.140393, 0.139469, 0.138528, 0.137569, 0.136592, 0.135599, 0.134589, 0.133563, 0.132521, 0.131463, 0.13039, 0.129303, 0.128201, 0.127084, 0.125955, 0.124811, 0.123655, 0.122487, 0.121306, 0.120113, 0.118909, 0.117695, 0.116469, 0.115234, 0.113989, 0.112734, 0.111471, 0.110199, 0.108919, 0.107632, 0.106337, 0.105036, 0.103728, 0.102415, 0.101096, 0.0997717, 0.098443, 0.0971101, 0.0957734, 0.0944333, 0.0930904, 0.0917449, 0.0903974, 0.0890483, 0.0876979, 0.0863467, 0.0849951, 0.0836435, 0.0822924, 0.0809421, 0.079593, 0.0782456, 0.0769003, 0.0755574, 0.0742173, 0.0728804, 0.0715472, 0.0702179, 0.0688929, 0.0675726, 0.0662575, 0.0649477, 0.0636437, 0.0623458, 0.0610544, 0.0597697, 0.0584921, 0.0572219, 0.0559595, 0.054705, 0.0534587, 0.0522211, 0.0509923, 0.0497725, 0.0485621, 0.0473612, 0.0461701, 0.0449891, 0.0438182, 0.0426578, 0.041508, 0.0403689, 0.0392407, 0.0381236, 0.0370176, 0.035923, 0.0348398, 0.0337681, 0.0327079, 0.0316594, 0.0306226, 0.0295975, 0.0285841, 0.0275824, 0.0265925, 0.0256142, 0.0246475, 0.0236924, 0.0227487, 0.0218164, 0.0208954, 0.0199855, 0.0190865, 0.0181983, 0.0173206, 0.0164533, 0.0155961, 0.0147488, 0.013911, 0.0130825, 0.012263, 0.011452, 0.0106492, 0.00985418, 0.00906659, 0.00828593, 0.00751173, 0.0067435, 0.00598072, 0.00522283, 0.00446925, 0.00371938, 0.0029726, 0.00222826, 0.00148568, 0.000744203, 3.21215e-06);
-
-int findBestIndex(float g) {
-    int bestIdx = 0;
-    float bestDist = abs(g - G_KEYS[0]);
-
-    for (int i = 1; i < NUM_KEYS; ++i)
-    {
-        float dist = abs(g - G_KEYS[i]);
-
-        if (dist < bestDist)
-        {
-            bestDist = dist;
-            bestIdx = i;
-        }
-    }
-    return bestIdx;
-}
-
-float getSimilarityRelationsAlpha(float g) {
-    return ALPHAS[findBestIndex(g)];
-}
-
-// Reads a single tabulated coefficient without copying the whole table.
-float fetchPhaseCoefficient(int tableIdx, int i) {
-    if (tableIdx == 0) return COEFFS_0[i];
-    if (tableIdx == 1) return COEFFS_1[i];
-    return COEFFS_2[i];
-}
-
-int cosThetaToBin(float cosTheta) {
-    int idx = int((cosTheta + 1.0) * float(NUM_COEFFS) * 0.5);
-    return clamp(idx, 0, NUM_COEFFS - 1);
-}
-
-float evaluateAlteredPhaseFunction(vec3 wo, vec3 wi, float g) {
-    int idx = cosThetaToBin(-dot(wo, wi));
-    return fetchPhaseCoefficient(findBestIndex(g), idx);
-}
-
-// Importance-samples the tabulated phase function via CDF inversion.
-// wo is the direction toward the previous vertex (e.g. -ray_dir); the
-// sampled wi follows the same convention as evaluateAlteredPhaseFunction,
-// i.e. the scattering cosine is -dot(wo, wi).
-PhaseFunctionSample sampleAlteredPhaseFunction(vec3 wo, float g, inout uvec4 rng_state) {
-    int tableIdx = findBestIndex(g);
-
-    float total = 0.0;
-    for (int i = 0; i < NUM_COEFFS; ++i) {
-        total += fetchPhaseCoefficient(tableIdx, i);
-    }
-
-    float u = stepAndOutputRNGFloat(rng_state);
-    float target = u * total;
-
-    float accum = 0.0;
-    int selectedIdx = NUM_COEFFS - 1;
-    float selectedC = fetchPhaseCoefficient(tableIdx, NUM_COEFFS - 1);
-    for (int i = 0; i < NUM_COEFFS; ++i) {
-        float c = fetchPhaseCoefficient(tableIdx, i);
-        if (accum + c >= target) {
-            selectedIdx = i;
-            selectedC = c;
-            break;
-        }
-        accum += c;
-    }
-
-    float frac = selectedC > 0.0 ? clamp((target - accum) / selectedC, 0.0, 1.0) : 0.5;
-    float cosTheta = clamp(-1.0 + (float(selectedIdx) + frac) * INV_NUM_COEFFS_HALF, -1.0, 1.0);
-    float sinTheta = safeSqrt(1.0 - sqr(cosTheta));
-    float phi = 2.0 * PI * stepAndOutputRNGFloat(rng_state);
-
-    // Build the frame around -wo so that -dot(wo, wi) == cosTheta.
-    Frame wFrame = frameFromZ(normalize(-wo));
-    vec3 wi = fromLocal(sphericalDirection(sinTheta, cosTheta, phi), wFrame);
-
-    // CDF-inversion pdf over solid angle: c / (total * dCosTheta * 2*PI).
-    float pdf = selectedC / max(total * INV_NUM_COEFFS_HALF * 2.0 * PI, 1e-30);
-    return PhaseFunctionSample(selectedC, wi, pdf);
-}
 
 #endif

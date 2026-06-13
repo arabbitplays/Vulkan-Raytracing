@@ -16,7 +16,7 @@
 #include "../volume/distance_sampler.glsl"
 #include "../volume/transmittance_estimator.glsl"
 #include "../volume/phase_function.glsl"
-#include "../volume/altered_phase_function.glsl"
+#include "../similarity/altered_phase_function.glsl"
 
 layout(location = 0) rayPayloadInEXT Payload payload;
 

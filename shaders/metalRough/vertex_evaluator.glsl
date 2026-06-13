@@ -11,7 +11,7 @@
 
 #include "../volume/layout.glsl"
 #include "../volume/phase_function.glsl"
-#include "../volume/altered_phase_function.glsl"
+#include "../similarity/altered_phase_function.glsl"
 #include "../volume/transmittance_estimator.glsl"
 
 mat3 getTBN(vec3 geom_N, vec3 T) {
