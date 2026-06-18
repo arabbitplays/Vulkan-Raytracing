@@ -96,6 +96,7 @@ namespace RtEngine {
 			reset_required |= config->addBool("bsdf_importance_sampling", &sample_bsdf);
 			reset_required |= config->addBool("russian_roulette", &russian_roulette);
 			reset_required |= config->addBool("similarity_relation", &similarity_relation);
+			reset_required |= config->addBool("debug_depth", &debug_depth);
 			config->endChild();
 		}
 
@@ -110,6 +111,7 @@ namespace RtEngine {
 		push_constants.push_back(static_cast<int32_t>(sample_bsdf));
 		push_constants.push_back(static_cast<int32_t>(russian_roulette));
 		push_constants.push_back(static_cast<int32_t>(similarity_relation));
+		push_constants.push_back(static_cast<int32_t>(debug_depth));
 	}
 
 	void MetalRoughMaterial::reset() {

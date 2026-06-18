@@ -7,10 +7,14 @@ layout(push_constant) uniform PushConstants {
     bool sample_bsdf;
     bool russian_roulette;
     bool similarity_relation;
+
+    bool debug_depth;
+
     uint accumulated_frame_count;
     uint accumulated_diff_frame_count;
     uint samples_per_pixel;
     uint diff_samples_per_pixel;
+
     bool do_mlmc;
     uint mlmc_method;
     uint biased_path_length;

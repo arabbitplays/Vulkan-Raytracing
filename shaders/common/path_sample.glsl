@@ -4,6 +4,7 @@
 #include "../common/random.glsl"
 #include "../common/constants.glsl"
 #include "../common/payload.glsl"
+#include "../common/debug.glsl"
 #include "./options.glsl"
 
 layout(binding = 0, set = 0) uniform accelerationStructureEXT topLevelAS;
@@ -63,6 +64,10 @@ vec3 takeSample(uint max_depth) {
     initPath();
     while (payload.depth < max_depth && payload.next_dir != vec3(0.0) && length(payload.beta) > 0) {
         continuePath();
+    }
+
+    if (options.debug_depth) {
+        return getDepthDebugColor(payload.depth);
     }
     return payload.light;
 }
