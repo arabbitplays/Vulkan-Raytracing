@@ -80,8 +80,7 @@ namespace RtEngine {
 		std::shared_ptr<MaterialInstance> instance = std::make_shared<MetalRoughInstance>("", tex_repo);
 		instance->loadResources(yaml_node);
 		if (instances.contains(instance->name)) {
-			SPDLOG_WARN("Material instance with name {} already exists!", instance->name);
-			return instances[instance->name];
+			SPDLOG_WARN("Material instance with name {} already exists (but will be overwritten)!", instance->name);
 		}
 
 		instances[instance->name] = instance;
