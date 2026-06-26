@@ -55,6 +55,7 @@ namespace RtEngine {
                                                                final_biased_sample_count, diff_sample_count));
 
                 if (diff_sample_count == final_diff_sample_count) {
+                    SPDLOG_INFO("Average biased frame time: {} ms, average diff frame time: {} ms", mean_biased_frame_time / 1000.0f, mean_diff_frame_time / 1000.0f);
                     finishRound();
                 } else {
                     error_calculation_frame_count *= 2;
@@ -109,6 +110,19 @@ namespace RtEngine {
 
     void BenchmarkRunner::drawFrame(const std::shared_ptr<DrawContext> &draw_context) {
         raytracing_renderer->waitForNextFrameStart();
+
+        if (last_time_point.has_value())
+        {
+            const auto dur = duration_cast<std::chrono::microseconds>(clock::now() - last_time_point.value()).count();
+            if (calculating_mlmc_diff && diff_sample_count > 0)
+            {
+                mean_diff_frame_time += dur / final_diff_sample_count;
+            } else if (biased_sample_count > 0)
+            {
+                mean_biased_frame_time += dur / final_biased_sample_count;
+            }
+        }
+        last_time_point = clock::now();
 
         VkCommandBuffer cmd = raytracing_renderer->getNewCommandBuffer();
         std::shared_ptr<RenderTargetRepository> target_repository = draw_context->target_repositories[0];

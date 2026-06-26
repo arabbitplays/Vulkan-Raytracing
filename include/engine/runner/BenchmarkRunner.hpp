@@ -57,6 +57,9 @@ namespace RtEngine {
 		bool calculating_mlmc_diff = false;
 
 		std::unordered_map<uint32_t, float> mse_averages{};
+
+		double mean_biased_frame_time = 0;
+		double mean_diff_frame_time = 0;
 	};
 
 } // namespace RtEngine
