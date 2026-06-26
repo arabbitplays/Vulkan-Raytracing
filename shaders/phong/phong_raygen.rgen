@@ -3,7 +3,7 @@
 #extension GL_GOOGLE_include_directive : enable
 #extension GL_EXT_shader_explicit_arithmetic_types : enable
 
-#include "../common/payload.glsl"
+#include "payload.glsl"
 #include "../common/scene_data.glsl"
 
 layout(binding = 0, set = 0) uniform accelerationStructureEXT topLevelAS;

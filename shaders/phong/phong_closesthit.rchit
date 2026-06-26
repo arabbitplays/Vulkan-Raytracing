@@ -6,7 +6,7 @@
 
 #define MAX_RECURSION_DEPTH 4
 
-#include "../common/payload.glsl"
+#include "payload.glsl"
 #include "../common/scene_data.glsl"
 #include "../common/layout.glsl"
 #include "options.glsl"

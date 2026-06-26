@@ -8,7 +8,7 @@ vec3 similarityMlmc(uint sample_count, uint unbiased_path_length) {
     for (int i = 0; i < sample_count; i++) {
         ViewRay view_ray = generateViewRay(vec2(gl_LaunchIDEXT.xy), vec2(gl_LaunchSizeEXT.xy), sceneData.inv_view, sceneData.inv_proj, payload.rng_state);
         initPayload(view_ray.origin, view_ray.direction);
-        payload.similarity_relation = true;
+        payload.sampling_options.similarity_relation = true;
 
         color += takeSample(unbiased_path_length);
     }
@@ -23,12 +23,12 @@ vec3 similarityDiffMlmc(uint sample_count, uint unbiased_path_length) {
 
         uvec4 rng = payload.rng_state;
         initPayload(view_ray.origin, view_ray.direction);
-        payload.similarity_relation = true;
+        payload.sampling_options.similarity_relation = true;
         vec3 biased_color = takeSample(unbiased_path_length);
 
         payload.rng_state = rng;
         initPayload(view_ray.origin, view_ray.direction);
-        payload.similarity_relation = false;
+        payload.sampling_options.similarity_relation = false;
         vec3 unbiased_color = takeSample(unbiased_path_length);
         diff += unbiased_color - biased_color;
     }

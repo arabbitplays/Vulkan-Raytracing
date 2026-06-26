@@ -4,7 +4,7 @@
 #extension GL_EXT_nonuniform_qualifier : enable
 #extension GL_EXT_shader_explicit_arithmetic_types : enable
 
-#include "../common/payload.glsl"
+#include "payload.glsl"
 #include "../common/scene_data.glsl"
 #include "../common/layout.glsl"
 #include "../common/random.glsl"
@@ -157,9 +157,8 @@ SampledSegment sampleNextSegment(PathVertex vertex, bool sample_bsdf, out bool s
 SampledSegment sampleVolumeSegment(vec3 dir, EvaluatedVolume volume, vec3 delta_tracking_pdf, inout uvec4 rng_state) {
     SampledSegment segment = createNewSegment();
     segment.pre_eval_beta *= delta_tracking_pdf;
-    payload.specular_bounce = false;
 
-    if (payload.similarity_relation) {
+    if (payload.sampling_options.similarity_relation) {
         if (options.sample_bsdf) {
             PhaseFunctionSample alt_sample = sampleAlteredPhaseFunction(-dir, volume.g, rng_state);
             payload.next_dir = alt_sample.wi;
@@ -239,7 +238,7 @@ PathVertex deltaTracking(vec3 origin, vec3 dir, int volume_idx, inout uvec4 rng_
         vec3 curr_pos = origin + tracked_dist * dir;
 
         vec3 obj_pos = (gl_WorldToObjectEXT * vec4(curr_pos, 1.0f)).xyz;
-        EvaluatedVolume volume = evaluateVolumeAtLocalPos(volume_instance, payload.similarity_relation, obj_pos);
+        EvaluatedVolume volume = evaluateVolumeAtLocalPos(volume_instance, payload.sampling_options.similarity_relation, obj_pos);
 
         vec2 sampled_channel = sampleChannel(volume, rng_state);
         float sampled_scattering = sampled_channel.x;
@@ -254,14 +253,6 @@ PathVertex deltaTracking(vec3 origin, vec3 dir, int volume_idx, inout uvec4 rng_
 
             delta_tracking_pdf *= 1.0 / (sampled_scattering + sampled_absorption);
             SampledSegment segment = sampleVolumeSegment(dir, volume, delta_tracking_pdf, rng_state);
-
-            EvaluationOptions eval_options = getUserOptions();
-            EvaluationContext context;
-
-            payload.beta *= segment.pre_eval_beta;
-            payload.light += payload.beta * evaluateVertex(vertex, eval_options, context, rng_state);
-            payload.beta *= segment.post_eval_beta;
-
             payload.next_segment = segment;
             return vertex;
         } else {
@@ -275,7 +266,6 @@ PathVertex deltaTracking(vec3 origin, vec3 dir, int volume_idx, inout uvec4 rng_
         // exit volume
         SampledSegment segment = createNewSegment();
         segment.pre_eval_beta *= delta_tracking_pdf;
-        payload.beta *= segment.pre_eval_beta;
         payload.next_segment = segment;
         return createVolumeBorderVertex(false);
     }
@@ -306,31 +296,9 @@ void main() {
 
         EvaluatedMaterial material = evaluateVertexMaterial(vertex);
 
-        EvaluationOptions eval_options = getUserOptions();
-        EvaluationContext context;
-        context.depth = payload.depth;
-        context.specular_bounce = payload.specular_bounce;
-        payload.light += payload.beta * evaluateVertex(vertex, eval_options, context, payload.rng_state);
-
         bool specular_bounce = false;
         payload.next_segment = sampleNextSegment(vertex, options.sample_bsdf, specular_bounce, payload.rng_state);
-        payload.beta *= payload.next_segment.post_eval_beta;
         vertex.is_specular = specular_bounce;
-
-        if (options.russian_roulette) {
-            vec3 rr_beta = payload.beta * payload.eta_scale;
-            float beta_max_component = max(rr_beta.x, max(rr_beta.y, rr_beta.z));
-            if (beta_max_component < 1 && payload.depth > 1) {
-                float q = max(0, 1 - beta_max_component);
-                float u = stepAndOutputRNGFloat(payload.rng_state);
-                if (u < q) {
-                    payload.beta = vec3(0);
-                } else {
-                    payload.beta /= 1 - q;
-                    payload.next_segment.post_eval_beta /= 1 - q;
-                }
-            }
-        }
     }
 
     payload.next_vertex = vertex;
