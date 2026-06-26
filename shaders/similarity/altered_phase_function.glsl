@@ -5,7 +5,10 @@
 #include "../common/random.glsl"
 #include "../volume/phase_function.glsl"
 
-#include "altered_phase_coefficients.glsl"
+// Phase-function tables live in an SSBO populated at startup; see
+// scripts/similarity_relations/build_similarity_buffer.pl for the source of
+// this header and the matching .bin file.
+#include "altered_phase_buffer.glsl"
 
 const float COS_THETA_BIN_WIDTH = 2.0 / float(NUM_COEFFS);
 
@@ -70,27 +73,27 @@ float evaluateAlteredPhaseFunction(vec3 wo, vec3 wi, float g) {
 // i.e. the scattering cosine is -dot(wo, wi).
 PhaseFunctionSample sampleAlteredPhaseFunction(vec3 wo, float g, float alpha, inout uvec4 rng_state) {
     int tableIdx = findBestIndex(g, alpha);
+    int base = tableIdx * NUM_COEFFS;
 
-    float total = 0.0;
-    for (int i = 0; i < NUM_COEFFS; ++i) {
-        total += fetchPhaseCoefficient(tableIdx, i);
-    }
-
+    float total = similarity_buf.totals[tableIdx];
     float u = stepAndOutputRNGFloat(rng_state);
     float target = u * total;
 
-    float accum = 0.0;
-    int selectedIdx = NUM_COEFFS - 1;
-    float selectedC = fetchPhaseCoefficient(tableIdx, NUM_COEFFS - 1);
-    for (int i = 0; i < NUM_COEFFS; ++i) {
-        float c = fetchPhaseCoefficient(tableIdx, i);
-        if (accum + c > target) {
-            selectedIdx = i;
-            selectedC = c;
-            break;
+    // Binary search the inclusive CDF for the smallest index whose prefix sum >= target.
+    int lo = 0;
+    int hi = NUM_COEFFS - 1;
+    while (lo < hi) {
+        int mid = (lo + hi) >> 1;
+        if (similarity_buf.cdf[base + mid] >= target) {
+            hi = mid;
+        } else {
+            lo = mid + 1;
         }
-        accum += c;
     }
+    int selectedIdx = lo;
+    float prevCdf = selectedIdx > 0 ? similarity_buf.cdf[base + selectedIdx - 1] : 0.0;
+    float selectedC = similarity_buf.cdf[base + selectedIdx] - prevCdf;
+    float accum = prevCdf;
 
     float frac = selectedC > 0.0 ? clamp((target - accum) / selectedC, 0.0, 1.0) : 0.5;
     float cosTheta = clamp(-1.0 + (float(selectedIdx) + frac) * COS_THETA_BIN_WIDTH, -1.0, 1.0);

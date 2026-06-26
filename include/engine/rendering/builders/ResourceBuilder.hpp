@@ -57,6 +57,8 @@ namespace RtEngine {
 
 		void destroyImage(AllocatedImage image);
 
+		const std::string &getResourcePath() const { return resource_path; }
+
 	private:
 		uint8_t *loadImageData(std::string path, int *width, int *height, int *channels);
 

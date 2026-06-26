@@ -70,6 +70,8 @@ namespace RtEngine {
 		void initDefaultResources(const VkPhysicalDeviceRayTracingPipelinePropertiesKHR& raytracingProperties);
 		void createDefaultSamplers();
 		void createDefaultMaterials(const VkPhysicalDeviceRayTracingPipelinePropertiesKHR& raytracingProperties);
+		void loadSimilarityCoefficientBuffer();
+		void writeSimilarityCoefficientDescriptor();
 
 		void setupNewScene(const std::shared_ptr<IScene> &scene);
 		void createTlas();
@@ -107,6 +109,8 @@ namespace RtEngine {
 		std::vector<VkDescriptorSet> scene_descriptor_sets{};
 		std::vector<AllocatedBuffer> sceneUniformBuffers;
 		std::vector<void *> sceneUniformBuffersMapped;
+
+		AllocatedBuffer similarity_coefficient_buffer{};
 	};
 
 } // namespace RtEngine
