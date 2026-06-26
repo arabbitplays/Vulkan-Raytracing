@@ -6,7 +6,7 @@
 #include "../common/scene_data.glsl"
 #include "../common/random.glsl"
 #include "../common/camera.glsl"
-#include "../common/path_sample.glsl"
+#include "../common/path_sampler.glsl"
 
 #include "options.glsl"
 

@@ -1,6 +1,12 @@
 #ifndef PATH_VERTEX_GLSL
 #define PATH_VERTEX_GLSL
 
+const int SURFACE_TYPE         = 0;
+const int VOLUME_TYPE          = 1;
+const int VOLUME_BOUNDARY_TYPE = 2;
+const int ENVIRONMENT_TYPE     = 3;
+const int INVALID_TYPE         = 4;
+
 struct SampledSegment {
     vec3 pre_eval_beta;
     vec3 post_eval_beta;
@@ -33,7 +39,7 @@ struct PathVertex {
     uint material_idx;
     int volume_idx;
     vec3 local_volume_pos;
-    bool is_valid;
+    int type;
 };
 
 #endif

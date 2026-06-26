@@ -11,6 +11,7 @@
 
 #include "options.glsl"
 #include "vertex_evaluator.glsl"
+#include "path_evaluator.glsl"
 
 #include "../volume/layout.glsl"
 #include "../volume/distance_sampler.glsl"
@@ -29,7 +30,7 @@ hitAttributeEXT vec3 attribs;
 PathVertex createNewPathVertex() {
     PathVertex vertex;
     vertex.volume_idx = -1;
-    vertex.is_valid = true;
+    vertex.type = INVALID_TYPE;
     return vertex;
 }
 
@@ -42,6 +43,7 @@ SampledSegment createNewSegment() {
 
 PathVertex createSurfaceVertex() {
     PathVertex vertex = createNewPathVertex();
+    vertex.type = SURFACE_TYPE;
 
     Triangle triangle = getTriangle(gl_InstanceCustomIndexEXT, gl_PrimitiveID);
     Vertex A = triangle.A;
@@ -82,11 +84,9 @@ PathVertex createSurfaceVertex() {
     return vertex;
 }
 
-
 PathVertex createVolumeBorderVertex(bool entering) {
     PathVertex vertex = createNewPathVertex();
-
-    vertex.is_valid = false;
+    vertex.type = VOLUME_BOUNDARY_TYPE;
 
     Triangle triangle = getTriangle(gl_InstanceCustomIndexEXT, gl_PrimitiveID);
     Vertex A = triangle.A;
@@ -109,6 +109,7 @@ PathVertex createVolumeBorderVertex(bool entering) {
 
 PathVertex createVolumeVertex(vec3 pos, int volume_idx) {
     PathVertex vertex = createNewPathVertex();
+    vertex.type = VOLUME_TYPE;
 
     vertex.P = pos;
     vertex.V = -normalize(gl_WorldRayDirectionEXT);
@@ -260,8 +261,11 @@ PathVertex deltaTracking(vec3 origin, vec3 dir, int volume_idx, inout uvec4 rng_
             delta_tracking_pdf *= 1.0 / (sampled_scattering + sampled_absorption);
             SampledSegment segment = sampleVolumeSegment(dir, volume, delta_tracking_pdf, rng_state);
 
+            EvaluationOptions eval_options = getUserOptions();
+            EvaluationContext context;
+
             payload.beta *= segment.pre_eval_beta;
-            payload.light += payload.beta * evaluateVolumeVertex(vertex, payload.similarity_relation, rng_state);
+            payload.light += payload.beta * evaluateVertex(vertex, eval_options, context, rng_state);
             payload.beta *= segment.post_eval_beta;
 
             payload.next_segment = segment;
@@ -298,15 +302,18 @@ void main() {
         } else {
             // entering volume
             vertex = createVolumeBorderVertex(true);
+            payload.next_segment = createNewSegment();
         }
     } else {
         vertex = createSurfaceVertex();
 
         EvaluatedMaterial material = evaluateVertexMaterial(vertex);
 
-        // no direct light sampling or handle light that goes directly to the camera
-        bool consider_emission = !options.sample_light || payload.specular_bounce || (payload.depth == 0 && material.emission_power > 0);
-        payload.light += payload.beta * evaluateSurfaceVertex(vertex, options.sample_bsdf, options.sample_light, consider_emission, payload.similarity_relation, payload.rng_state);
+        EvaluationOptions eval_options = getUserOptions();
+        EvaluationContext context;
+        context.depth = payload.depth;
+        context.specular_bounce = payload.specular_bounce;
+        payload.light += payload.beta * evaluateVertex(vertex, eval_options, context, payload.rng_state);
 
         payload.next_segment = sampleNextSegment(vertex, options.sample_bsdf, payload.rng_state);
         payload.beta *= payload.next_segment.post_eval_beta;

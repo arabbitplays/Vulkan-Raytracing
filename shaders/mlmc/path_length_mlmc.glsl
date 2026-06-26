@@ -1,7 +1,7 @@
 #ifndef PATH_LENGTH_MLMC_GLSL
 #define PATH_LENGTH_MLMC_GLSL
 
-#include "../common/path_sample.glsl"
+#include "../common/path_sampler.glsl"
 
 vec3 pathLengthMlmc(uint sample_count, uint biased_path_length) {
     vec3 color = vec3(0);

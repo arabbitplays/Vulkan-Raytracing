@@ -5,21 +5,12 @@
 #include "../common/constants.glsl"
 #include "../common/payload.glsl"
 #include "../common/debug.glsl"
+#include "../common/path.glsl"
 #include "./options.glsl"
 
 layout(binding = 0, set = 0) uniform accelerationStructureEXT topLevelAS;
 
 layout(location = 0) rayPayloadEXT Payload payload;
-
-#define MAX_PATH_LENGTH 32
-struct Path {
-    uint len;
-    vec3 beta;
-    vec3 light;
-    PathVertex vertices[MAX_PATH_LENGTH];
-    SampledSegment segments[MAX_PATH_LENGTH];
-};
-Path path;
 
 void initPayload(vec3 origin, vec3 direction) {
     payload.next_vertex.P = origin;
@@ -33,12 +24,6 @@ void initPayload(vec3 origin, vec3 direction) {
     payload.eta_scale = 1;
     payload.specular_bounce = false;
     payload.similarity_relation = options.similarity_relation;
-}
-
-void initPath() {
-    path.len = 0;
-    path.beta = vec3(1.0);
-    path.light = vec3(0.0);
 }
 
 void addVertexToPath(PathVertex vertex, SampledSegment segment) {
@@ -55,7 +40,7 @@ void continuePath() {
     traceRayEXT(topLevelAS, gl_RayFlagsOpaqueEXT, 0xff, 0, 0, 0, payload.next_vertex.P, tmin, payload.next_dir, INFINITY, 0);
     addVertexToPath(payload.next_vertex, payload.next_segment);
 
-    if (payload.next_vertex.is_valid) {
+    if (payload.next_vertex.type != INVALID_TYPE) {
         payload.depth++;
     }
 }

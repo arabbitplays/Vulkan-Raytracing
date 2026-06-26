@@ -8,6 +8,7 @@
 #include "material.glsl"
 #include "light_sampler.glsl"
 #include "bsdf_sampler.glsl"
+#include "evaluation_options.glsl"
 
 #include "../volume/layout.glsl"
 #include "../volume/phase_function.glsl"
@@ -56,16 +57,18 @@ EvaluatedVolume evaluateVertexVolume(PathVertex vertex, bool use_similarity_rela
     return evaluateVolumeAtLocalPos(volume, use_similarity_relation, vertex.local_volume_pos);
 }
 
-vec3 evaluateSurfaceVertex(PathVertex vertex, bool sample_bsdf, bool sample_light, bool consider_emission, bool use_similarity_relation, inout uvec4 rng_state) {
+vec3 evaluateSurfaceVertex(PathVertex vertex, EvaluationOptions options, inout EvaluationContext context, inout uvec4 rng_state) {
     EvaluatedMaterial material = evaluateVertexMaterial(vertex);
     vec3 light = vec3(0);
 
     // no direct light sampling or handle light that goes directly to the camera
+    bool consider_emission = !options.sample_light || context.specular_bounce || (context.depth == 0 && material.emission_power > 0);
+
     if (consider_emission && dot(vertex.N, vertex.V) > 0) {
         light += material.emission_color * material.emission_power;
     }
 
-    if (sample_light) {
+    if (options.sample_light) {
         mat3 TBN = getTBN(vertex.geom_N, vertex.T);
         mat3 transpose_tbn = transpose(TBN);
 
@@ -78,9 +81,9 @@ vec3 evaluateSurfaceVertex(PathVertex vertex, bool sample_bsdf, bool sample_ligh
         vec3 wo = normalize(transpose_tbn * vertex.V);
         vec3 wi = normalize(transpose_tbn * L);
 
-        vec3 transmittance = estimateTransmittance(vertex.P, L, distance_to_light, use_similarity_relation, rng_state);
+        vec3 transmittance = estimateTransmittance(vertex.P, L, distance_to_light, options.use_similarity_relation, rng_state);
 
-        if (sample_bsdf) {
+        if (options.sample_bsdf) {
             vec3 f = calcConductorBRDF(wo, wi, material.albedo, material.metallic, material.roughness) * max(dot(vertex.N, L), 0.0);
             if (light_sample.light != vec3(0) && length(f) > 0.0 && length(transmittance) > 0) {
                 light += transmittance * f * light_sample.light / light_sample.pdf;
@@ -96,9 +99,9 @@ vec3 evaluateSurfaceVertex(PathVertex vertex, bool sample_bsdf, bool sample_ligh
     return light;
 }
 
-vec3 evaluateVolumeVertex(PathVertex vertex, bool use_similarity_relation, inout uvec4 rng_state) {
+vec3 evaluateVolumeVertex(PathVertex vertex, EvaluationOptions options, inout EvaluationContext context, inout uvec4 rng_state) {
     if (options.sample_light) {
-        EvaluatedVolume volume = evaluateVertexVolume(vertex, use_similarity_relation);
+        EvaluatedVolume volume = evaluateVertexVolume(vertex, options.use_similarity_relation);
 
         uint emitter_count = max(1, sceneData.emitter_count);
         LightSample light_sample = sampleEmittingPrimitive(vertex.P, emitter_count, rng_state);
@@ -106,10 +109,10 @@ vec3 evaluateVolumeVertex(PathVertex vertex, bool use_similarity_relation, inout
         float distance_to_light = length(L);
         L = normalize(L);
 
-        vec3 transmittance = estimateTransmittance(vertex.P, L, distance_to_light, vertex.volume_idx, use_similarity_relation, rng_state);
+        vec3 transmittance = estimateTransmittance(vertex.P, L, distance_to_light, vertex.volume_idx, options.use_similarity_relation, rng_state);
 
         float phase = 0;
-        if (use_similarity_relation) {
+        if (options.use_similarity_relation) {
             phase = evaluateAlteredPhaseFunction(vertex.V, L, volume.g);
         } else {
             phase = henyeyGreenstein(vertex.V, L, volume.g);
@@ -121,5 +124,6 @@ vec3 evaluateVolumeVertex(PathVertex vertex, bool use_similarity_relation, inout
 
     return vec3(0);
 }
+
 
 #endif

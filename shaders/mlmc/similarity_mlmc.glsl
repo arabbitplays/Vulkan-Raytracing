@@ -1,7 +1,7 @@
 #ifndef SIMILARITY_MLMC_GLSL
 #define SIMILARITY_MLMC_GLSL
 
-#include "../common/path_sample.glsl"
+#include "../common/path_sampler.glsl"
 
 vec3 similarityMlmc(uint sample_count, uint unbiased_path_length) {
     vec3 color = vec3(0);
