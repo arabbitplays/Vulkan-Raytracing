@@ -27,13 +27,6 @@ hitAttributeEXT vec3 attribs;
 #include "light_sampler.glsl"
 #include "../common/path_vertex.glsl"
 
-PathVertex createNewPathVertex() {
-    PathVertex vertex;
-    vertex.volume_idx = -1;
-    vertex.type = INVALID_TYPE;
-    return vertex;
-}
-
 SampledSegment createNewSegment() {
     SampledSegment segment;
     segment.pre_eval_beta = vec3(1);
@@ -120,7 +113,7 @@ PathVertex createVolumeVertex(vec3 pos, int volume_idx) {
     return vertex;
 }
 
-SampledSegment sampleNextSegment(PathVertex vertex, bool sample_bsdf, inout uvec4 rng_state) {
+SampledSegment sampleNextSegment(PathVertex vertex, bool sample_bsdf, out bool specular_bounce, inout uvec4 rng_state) {
     SampledSegment sampled_segment = createNewSegment();
 
     mat3 TBN = getTBN(vertex.geom_N, vertex.T);
@@ -142,7 +135,6 @@ SampledSegment sampleNextSegment(PathVertex vertex, bool sample_bsdf, inout uvec
         vec3 sampled_dir = TBN * brdf_sample.wi;
         payload.next_dir = sampled_dir;
         sampled_segment.post_eval_beta = brdf_sample.f * abs(dot(sampled_dir, vertex.N)) / brdf_sample.pdf;
-        payload.specular_bounce = isSpecular(brdf_sample.flags);
         if (isTransmissive(brdf_sample.flags))
             payload.eta_scale *= sqr(brdf_sample.eta);
     } else {
@@ -156,6 +148,8 @@ SampledSegment sampleNextSegment(PathVertex vertex, bool sample_bsdf, inout uvec
         float inv_pdf = 4.0 * PI;
         sampled_segment.post_eval_beta = computeBsdf(wo, wi, albedo, metallic, roughness, eta) * abs(dot(sampled_dir, vertex.N)) * inv_pdf;
     }
+
+    specular_bounce = effectivelySmooth(roughness, roughness);
 
     return sampled_segment;
 }
@@ -279,7 +273,10 @@ PathVertex deltaTracking(vec3 origin, vec3 dir, int volume_idx, inout uvec4 rng_
 
     if (tracked_dist >= dist_to_boundary) {
         // exit volume
-        payload.beta *= delta_tracking_pdf;
+        SampledSegment segment = createNewSegment();
+        segment.pre_eval_beta *= delta_tracking_pdf;
+        payload.beta *= segment.pre_eval_beta;
+        payload.next_segment = segment;
         return createVolumeBorderVertex(false);
     }
 
@@ -315,8 +312,10 @@ void main() {
         context.specular_bounce = payload.specular_bounce;
         payload.light += payload.beta * evaluateVertex(vertex, eval_options, context, payload.rng_state);
 
-        payload.next_segment = sampleNextSegment(vertex, options.sample_bsdf, payload.rng_state);
+        bool specular_bounce = false;
+        payload.next_segment = sampleNextSegment(vertex, options.sample_bsdf, specular_bounce, payload.rng_state);
         payload.beta *= payload.next_segment.post_eval_beta;
+        vertex.is_specular = specular_bounce;
 
         if (options.russian_roulette) {
             vec3 rr_beta = payload.beta * payload.eta_scale;
@@ -328,6 +327,7 @@ void main() {
                     payload.beta = vec3(0);
                 } else {
                     payload.beta /= 1 - q;
+                    payload.next_segment.post_eval_beta /= 1 - q;
                 }
             }
         }

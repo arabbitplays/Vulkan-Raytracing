@@ -7,8 +7,7 @@
 #include "../common/debug.glsl"
 #include "../common/path.glsl"
 #include "./options.glsl"
-
-layout(binding = 0, set = 0) uniform accelerationStructureEXT topLevelAS;
+#include "path_evaluator.glsl"
 
 layout(location = 0) rayPayloadEXT Payload payload;
 
@@ -54,7 +53,9 @@ vec3 takeSample(uint max_depth) {
     if (options.debug_depth) {
         return getDepthDebugColor(payload.depth);
     }
-    return payload.light;
+    //return payload.light;
+    EvaluationOptions options = getUserOptions();
+    return evaluatePath(options, payload.rng_state);
 }
 
 

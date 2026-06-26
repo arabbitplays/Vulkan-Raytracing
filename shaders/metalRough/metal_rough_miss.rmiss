@@ -6,6 +6,7 @@
 #include "../common/payload.glsl"
 #include "../common/scene_data.glsl"
 #include "../common/random.glsl"
+#include "../common/path_vertex.glsl"
 
 #include "./light_sampler.glsl"
 #include "./infinite_area_light.glsl"
@@ -14,6 +15,12 @@
 
 layout(location = 0) rayPayloadInEXT Payload payload;
 
+PathVertex createEnvironmentVertex() {
+    PathVertex vertex = createNewPathVertex();
+    vertex.type = ENVIRONMENT_TYPE;
+    return vertex;
+}
+
 void main() {
     //float alignment = dot(normalize(payload.next_direction), -normalize(sceneData.sunlightDirection.xyz));
     float alignment = 1;
@@ -21,4 +28,5 @@ void main() {
         payload.light += payload.beta * alignment * uniformLe();
     }
     payload.beta = vec3(0);
+    payload.next_vertex = createEnvironmentVertex();
 }

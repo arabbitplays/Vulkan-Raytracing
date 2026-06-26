@@ -40,6 +40,15 @@ struct PathVertex {
     int volume_idx;
     vec3 local_volume_pos;
     int type;
+    bool is_specular;
 };
+
+PathVertex createNewPathVertex() {
+    PathVertex vertex;
+    vertex.volume_idx = -1;
+    vertex.type = INVALID_TYPE;
+    return vertex;
+}
+
 
 #endif

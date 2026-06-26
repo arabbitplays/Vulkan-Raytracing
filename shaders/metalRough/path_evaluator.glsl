@@ -13,15 +13,17 @@ vec3 evaluateVertex(PathVertex vertex, EvaluationOptions options, inout Evaluati
         return vec3(0);
     } else if (vertex.type == VOLUME_TYPE) {
         return evaluateVolumeVertex(vertex, options, context, rng_state);
+    } else if (vertex.type == ENVIRONMENT_TYPE) {
+        return vec3(0);
     }
     
-    return vec3(0);
+    return vec3(1, 0, 0);
 }
 
 vec3 evaluatePath(EvaluationOptions options, inout uvec4 rng_state) {
     EvaluationContext context;
     vec3 light = vec3(0);
-    vec3 beta = vec3(0);
+    vec3 beta = vec3(1);
     context.specular_bounce = false;
 
     for (int i = 0; i < path.len; i++) {
@@ -30,7 +32,6 @@ vec3 evaluatePath(EvaluationOptions options, inout uvec4 rng_state) {
         light += beta * evaluateVertex(path.vertices[i], options, context, rng_state);
         beta *= path.segments[i].post_eval_beta;
     }
-
 
     return light;
 }
