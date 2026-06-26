@@ -36,7 +36,7 @@ vec3 unbiasedEstimator(uint sample_count) {
 vec3 biasedEstimator(uint sample_count, uint mlmc_method) {
     if (mlmc_method == 0) {
         return pathLengthMlmc(sample_count, options.biased_path_length);
-    } else if (mlmc_method == 1) {
+    } else if (mlmc_method == 1 || mlmc_method == 2) {
         return similarityMlmc(sample_count, options.recursion_depth);
     }
     return vec3(1, 0, 0);
@@ -46,7 +46,9 @@ vec3 diffEstimator(uint sample_count, uint mlmc_method) {
     if (mlmc_method == 0) {
         return pathLengthDiffMlmc(sample_count, options.biased_path_length, options.recursion_depth);
     } else if (mlmc_method == 1) {
-        return similarityDiffMlmc(sample_count, options.recursion_depth);
+        return similarityDiffMlmc(sample_count, options.recursion_depth, true);
+    } else if (mlmc_method == 2) {
+        return similarityDiffMlmc(sample_count, options.recursion_depth, false);
     }
     return vec3(1, 0, 0);
 }

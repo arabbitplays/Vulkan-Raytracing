@@ -46,7 +46,7 @@ EvaluatedVolume evaluateVolumeAtLocalPos(VolumeInstance volume, bool use_similar
 
     result.absorption = getAbsorption(volume, vol_uv);
     result.scattering = alpha * getScattering(volume, vol_uv);
-    result.majorant = volume.majorant;
+    result.majorant = alpha * volume.max_scattering + volume.max_absorption;
     result.g = volume.g;
 
     return result;

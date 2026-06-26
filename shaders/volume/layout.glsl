@@ -5,9 +5,9 @@
 
 struct VolumeInstance {
     float g;
-    float majorant; // majorant coefficient used for tracking algorithms
+    float max_scattering;
+    float max_absorption;
     uint tex_idx;
-    float pad;
     vec4 bounding_box_origin;
     vec4 bounding_box_extent;
 };

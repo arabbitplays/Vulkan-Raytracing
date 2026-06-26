@@ -224,11 +224,13 @@ PathVertex deltaTracking(vec3 origin, vec3 dir, int volume_idx, inout uvec4 rng_
     float tracked_dist = 0;
 
     VolumeInstance volume_instance = getVolume(volume_idx);
+    vec3 obj_pos = (gl_WorldToObjectEXT * vec4(origin, 1.0f)).xyz;
+    EvaluatedVolume volume = evaluateVolumeAtLocalPos(volume_instance, payload.sampling_options.similarity_relation, obj_pos);
 
     vec3 delta_tracking_pdf = vec3(1);
 
     while (true) {
-        float sampled_dist = sampleDistance(volume_instance.majorant, rng_state);
+        float sampled_dist = sampleDistance(volume.majorant, rng_state);
         tracked_dist += sampled_dist;
 
         if (tracked_dist >= dist_to_boundary) {
@@ -237,8 +239,8 @@ PathVertex deltaTracking(vec3 origin, vec3 dir, int volume_idx, inout uvec4 rng_
 
         vec3 curr_pos = origin + tracked_dist * dir;
 
-        vec3 obj_pos = (gl_WorldToObjectEXT * vec4(curr_pos, 1.0f)).xyz;
-        EvaluatedVolume volume = evaluateVolumeAtLocalPos(volume_instance, payload.sampling_options.similarity_relation, obj_pos);
+        obj_pos = (gl_WorldToObjectEXT * vec4(curr_pos, 1.0f)).xyz;
+        volume = evaluateVolumeAtLocalPos(volume_instance, payload.sampling_options.similarity_relation, obj_pos);
 
         vec2 sampled_channel = sampleChannel(volume, rng_state);
         float sampled_scattering = sampled_channel.x;

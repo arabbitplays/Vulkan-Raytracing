@@ -56,7 +56,7 @@ namespace RtEngine {
         assert(mesh_asset != nullptr);
         if (volume_name.empty()) {
             vol_asset = context->volume_repository->createHomogenousVolumeAsset(
-                absorption, scattering, g, majorant, mesh_asset);
+                absorption, scattering, g, mesh_asset);
         } else {
             vol_asset = context->volume_repository->createHeterogenousVolumeAsset(
                 volume_name, absorption, scattering, g, mesh_asset);

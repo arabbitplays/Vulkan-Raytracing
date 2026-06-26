@@ -7,6 +7,7 @@
 enum MlmcMethod {
     PATH_LENGTH,
     SIMILARITY,
+    SIMILARITY_SAME_PATH,
 };
 
 class MlmcMethodConverter {
@@ -15,6 +16,7 @@ public:
         return {
             "path length",
             "similarity",
+            "same path similarity",
         };
     }
 
@@ -24,6 +26,9 @@ public:
         }
         if (mode_string == "similarity") {
             return SIMILARITY;
+        }
+        if (mode_string == "same path similarity") {
+            return SIMILARITY_SAME_PATH;
         }
         throw std::invalid_argument("Invalid MLMC method string");
     }
