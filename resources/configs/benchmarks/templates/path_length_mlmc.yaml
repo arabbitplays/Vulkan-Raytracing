@@ -11,9 +11,9 @@ renderer:
 mlmc:
   mlmc_mode: "path length"
   mlmc_present_mode: "combined"
-  biased_path_length: 3
+  biased_path_length: 5
 metal_rough:
   normal_mapping: false
-  next_event_estimation: false
+  next_event_estimation: true
   bsdf_importance_sampling: true
   russian_roulette: true

@@ -20,13 +20,14 @@ layout(binding = 13, set = 0, rgba32f) uniform image2D diff_image;
 layout(binding = 14, set = 0, rgba32f) uniform image2D mlmc_image;
 
 vec3 unbiasedEstimator(uint sample_count) {
-
+    EvaluationOptions eval_options = getUserOptions();
 
     vec3 color = vec3(0);
     for (int i = 0; i < sample_count; i++) {
         ViewRay view_ray = generateViewRay(vec2(gl_LaunchIDEXT.xy), vec2(gl_LaunchSizeEXT.xy), sceneData.inv_view, sceneData.inv_proj, payload.rng_state);
         initPayload(view_ray.origin, view_ray.direction);
-        color += takeSample(options.recursion_depth);
+        takePathSample(options.recursion_depth);
+        color += evaluatePath(eval_options, payload.rng_state);
     }
     color /= sample_count;
     return color;

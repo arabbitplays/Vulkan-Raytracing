@@ -2,7 +2,7 @@
 #define DEBUG_GLSL
 
 #define MAX_DEPTH 20
-vec3 getDepthDebugColor(int depth) {
+vec3 getDepthDebugColor(uint depth) {
     float t = float(depth) / MAX_DEPTH;
     vec3 blue  = vec3(0.0, 0.0, 1.0);
     vec3 green = vec3(0.0, 1.0, 0.0);

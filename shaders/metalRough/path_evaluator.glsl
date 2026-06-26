@@ -5,6 +5,7 @@
 #include "vertex_evaluator.glsl"
 #include "../common/path.glsl"
 #include "../common/path_vertex.glsl"
+#include "../common/debug.glsl"
 
 vec3 evaluateVertex(PathVertex vertex, EvaluationOptions options, inout EvaluationContext context, inout uvec4 rng_state) {
     if (vertex.type == SURFACE_TYPE) {
@@ -26,7 +27,11 @@ vec3 evaluatePath(EvaluationOptions options, inout uvec4 rng_state) {
     vec3 beta = vec3(1);
     context.specular_bounce = false;
 
-    for (int i = 0; i < path.len; i++) {
+    if (options.debug_path_len) {
+        return getDepthDebugColor(path.len);
+    }
+
+    for (int i = 0; i < min(options.evaluation_depth, path.len); i++) {
         context.depth = i;
         beta *= path.segments[i].pre_eval_beta;
         light += beta * evaluateVertex(path.vertices[i], options, context, rng_state);

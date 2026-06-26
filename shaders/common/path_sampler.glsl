@@ -4,7 +4,6 @@
 #include "../common/random.glsl"
 #include "../common/constants.glsl"
 #include "payload.glsl"
-#include "../common/debug.glsl"
 #include "../common/path.glsl"
 #include "./options.glsl"
 #include "path_evaluator.glsl"
@@ -75,18 +74,11 @@ void continuePath() {
 
 }
 
-vec3 takeSample(uint max_depth) {
+void takePathSample(uint max_depth) {
     initPath();
     while (payload.depth < max_depth && payload.next_dir != vec3(0.0) && length(payload.rr_beta) > 0) {
         continuePath();
     }
-
-    if (options.debug_depth) {
-        return getDepthDebugColor(payload.depth);
-    }
-    //return payload.light;
-    EvaluationOptions options = getUserOptions();
-    return evaluatePath(options, payload.rng_state);
 }
 
 
