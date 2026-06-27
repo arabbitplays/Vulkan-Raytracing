@@ -266,10 +266,14 @@ namespace RtEngine {
         if (!fs::exists(TMP_FOLDER) || !fs::is_directory(TMP_FOLDER))
             return;
 
+        fs::path keep_path = fs::path(getTmpImagePath(final_biased_sample_count, final_diff_sample_count)).lexically_normal();
+
         for (const fs::directory_entry &entry: fs::directory_iterator(TMP_FOLDER)) {
-            if (entry.is_regular_file()) {
-                fs::remove(entry.path());
-            }
+            if (!entry.is_regular_file())
+                continue;
+            if (entry.path().lexically_normal() == keep_path)
+                continue;
+            fs::remove(entry.path());
         }
     }
 
