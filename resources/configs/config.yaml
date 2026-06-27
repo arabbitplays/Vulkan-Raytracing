@@ -1,5 +1,5 @@
 runner:
-  scene_name: volume_test_scene
+  scene_name: ref_scene_homo_volume
 renderer:
   recursion_depth: 20
 mlmc:
