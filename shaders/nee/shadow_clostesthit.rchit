@@ -15,9 +15,7 @@ layout(location = 0) rayPayloadInEXT ShadowPayload payload;
 
 hitAttributeEXT vec3 attribs;
 
-vec3 ratioTracking(vec3 origin, vec3 dir, int volume_idx, inout uvec4 rng_state) {
-    float dist_to_boundary = gl_HitTEXT;
-    float max_tracking_dist = min(dist_to_boundary, payload.dist_to_light);
+vec3 ratioTracking(vec3 origin, vec3 dir, float max_tracking_dist, int volume_idx, inout uvec4 rng_state) {
     float tracked_dist = 0;
 
     VolumeInstance volumeInstance = getVolume(volume_idx);
@@ -45,26 +43,37 @@ vec3 ratioTracking(vec3 origin, vec3 dir, int volume_idx, inout uvec4 rng_state)
 }
 
 void main() {
-    Triangle triangle = getTriangle(gl_InstanceCustomIndexEXT, gl_PrimitiveID);
-    if (!isVolumeBoundary(triangle)) {
-        payload.dist_to_light = 0;
-        payload.transmittance = vec3(0);
-        return;
-    }
-
-    VolumeInstance volume = getVolume(triangle);
-
-    vec3 tracking_origin = payload.next_origin;
+    // bool entering = (gl_HitKindEXT == gl_HitKindFrontFacingTriangleEXT);
     bool is_inside_volume = payload.current_volume_idx >= 0;
+    vec3 tracking_origin = payload.next_origin;
+    vec3 tracking_dir = normalize(payload.direction);
+    float dist_to_boundary = gl_HitTEXT;
+    Triangle triangle = getTriangle(gl_InstanceCustomIndexEXT, gl_PrimitiveID);
 
-    if (is_inside_volume) {
-        payload.transmittance *= ratioTracking(tracking_origin, normalize(payload.direction), payload.current_volume_idx, payload.rng_state);
-        payload.current_volume_idx = -1;
-    } else {
-        payload.current_volume_idx = getVolumeIdx(triangle);
+    if (dist_to_boundary < payload.dist_to_light - EPSILON) { // it is a real hit
+        if (!isVolumeBoundary(triangle)) { // solids block everything
+            payload.dist_to_light = 0;
+            payload.transmittance = vec3(0);
+            return;
+        } else {
+            if (is_inside_volume) {
+                // track to the volume boundary
+                payload.transmittance *= ratioTracking(tracking_origin, tracking_dir, gl_HitTEXT, payload.current_volume_idx, payload.rng_state);
+                payload.current_volume_idx = -1;
+            } else {
+                payload.current_volume_idx = getVolumeIdx(triangle);
+            }
+            payload.next_origin += gl_HitTEXT * payload.direction;
+            payload.dist_to_light -= gl_HitTEXT;
+        }
+    } else { // false it, basically like a miss
+         if (!is_inside_volume) {
+             payload.dist_to_light = 0;
+             return;
+         } else {
+             payload.transmittance *= ratioTracking(tracking_origin, tracking_dir, payload.dist_to_light, payload.current_volume_idx, payload.rng_state);
+             payload.dist_to_light = 0;
+             return;
+         }
     }
-
-    payload.next_origin += gl_HitTEXT * payload.direction;
-    payload.dist_to_light -= gl_HitTEXT;
-
 }
