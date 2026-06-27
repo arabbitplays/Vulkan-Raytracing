@@ -73,7 +73,7 @@ void continuePath() {
 }
 
 void takePathSample(uint max_depth) {
-    initPath();
+    initPath(payload.next_vertex.P);
     while (payload.depth < max_depth && payload.next_dir != vec3(0.0) && length(payload.rr_beta) > 0) {
         continuePath();
     }

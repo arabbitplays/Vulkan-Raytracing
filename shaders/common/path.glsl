@@ -3,6 +3,7 @@
 
 #define MAX_PATH_LENGTH 128
 struct Path {
+    vec3 origin;
     uint len;
     vec3 beta;
     PathVertex vertices[MAX_PATH_LENGTH];
@@ -10,7 +11,8 @@ struct Path {
 };
 Path path;
 
-void initPath() {
+void initPath(vec3 origin) {
+    path.origin = origin;
     path.len = 0;
     path.beta = vec3(1.0);
 }

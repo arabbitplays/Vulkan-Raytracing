@@ -249,14 +249,14 @@ PathVertex deltaTracking(vec3 origin, vec3 dir, int volume_idx, inout uvec4 rng_
         float p_real = (sampled_scattering + sampled_absorption) / volume.majorant;
         float rand = stepAndOutputRNGFloat(rng_state);
 
-    if (rand < p_real) {
+    if (rand < p_real) { // real collision
             PathVertex vertex = createVolumeVertex(curr_pos, volume_idx);
 
-            delta_tracking_pdf *= sampled_scattering + sampled_absorption;
+            delta_tracking_pdf *= (sampled_scattering + sampled_absorption);
             SampledSegment segment = sampleVolumeSegment(dir, volume, vec3(1), delta_tracking_pdf, rng_state);
             payload.next_segment = segment;
             return vertex;
-        } else {
+        } else { // null collision
             float p_unreal = max(0.0001f, (1 - p_real));
             delta_tracking_pdf /= (null_collision / (volume.majorant * p_unreal));
             continue;
