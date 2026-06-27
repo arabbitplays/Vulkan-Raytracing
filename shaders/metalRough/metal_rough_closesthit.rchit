@@ -27,13 +27,6 @@ hitAttributeEXT vec3 attribs;
 #include "light_sampler.glsl"
 #include "../common/path_vertex.glsl"
 
-SampledSegment createNewSegment() {
-    SampledSegment segment;
-    segment.pre_eval_beta = vec3(1);
-    segment.post_eval_beta = vec3(1);
-    return segment;
-}
-
 PathVertex createSurfaceVertex() {
     PathVertex vertex = createNewPathVertex();
     vertex.type = SURFACE_TYPE;
@@ -134,7 +127,8 @@ SampledSegment sampleNextSegment(PathVertex vertex, bool sample_bsdf, out bool s
 
         vec3 sampled_dir = TBN * brdf_sample.wi;
         payload.next_dir = sampled_dir;
-        sampled_segment.post_eval_beta = brdf_sample.f * abs(dot(sampled_dir, vertex.N)) / brdf_sample.pdf;
+        sampled_segment.bsdf *= brdf_sample.f * abs(dot(sampled_dir, vertex.N));
+        sampled_segment.dir_pdf *= brdf_sample.pdf;
         if (isTransmissive(brdf_sample.flags))
             payload.eta_scale *= sqr(brdf_sample.eta);
     } else {
@@ -145,8 +139,8 @@ SampledSegment sampleNextSegment(PathVertex vertex, bool sample_bsdf, out bool s
         vec3 wo = normalize(transpose_tbn * vertex.V);
         vec3 wi = normalize(transpose_tbn * sampled_dir);
         //payload.beta *= calcBRDF(wo, wi, albedo, metallic, roughness) * PI;
-        float inv_pdf = 4.0 * PI;
-        sampled_segment.post_eval_beta = computeBsdf(wo, wi, albedo, metallic, roughness, eta) * abs(dot(sampled_dir, vertex.N)) * inv_pdf;
+        sampled_segment.bsdf *= computeBsdf(wo, wi, albedo, metallic, roughness, eta) * abs(dot(sampled_dir, vertex.N));
+        sampled_segment.dir_pdf *= INV_4_PI;
     }
 
     specular_bounce = effectivelySmooth(roughness, roughness);
@@ -156,18 +150,20 @@ SampledSegment sampleNextSegment(PathVertex vertex, bool sample_bsdf, out bool s
 
 SampledSegment sampleVolumeSegment(vec3 dir, EvaluatedVolume volume, vec3 delta_tracking_pdf, inout uvec4 rng_state) {
     SampledSegment segment = createNewSegment();
-    segment.pre_eval_beta *= delta_tracking_pdf;
+    segment.dist_pdf *= delta_tracking_pdf;
 
     if (payload.sampling_options.similarity_relation) {
         if (options.sample_bsdf) {
             PhaseFunctionSample alt_sample = sampleAlteredPhaseFunction(-dir, volume.g, rng_state);
             payload.next_dir = alt_sample.wi;
-            segment.post_eval_beta *= volume.scattering * alt_sample.p / alt_sample.pdf;
+            segment.bsdf *= volume.scattering * alt_sample.p;
+            segment.dir_pdf *= alt_sample.pdf;
         } else {
             PhaseFunctionSample iso_sample = sampleIsoPhaseFunction(-dir, rng_state);
             payload.next_dir = iso_sample.wi;
             float phase = evaluateAlteredPhaseFunction(-dir, iso_sample.wi, volume.g);
-            segment.post_eval_beta *= volume.scattering * phase / iso_sample.pdf;
+            segment.bsdf *= volume.scattering * phase;
+            segment.dir_pdf *= iso_sample.pdf;
         }
         return segment;
     }
@@ -175,12 +171,14 @@ SampledSegment sampleVolumeSegment(vec3 dir, EvaluatedVolume volume, vec3 delta_
     if (options.sample_bsdf) {
         PhaseFunctionSample hg_sample = sampleHGPhaseFunction(-dir, volume.g, rng_state);
         payload.next_dir = hg_sample.wi;
-        segment.post_eval_beta *= volume.scattering * hg_sample.p / hg_sample.pdf;
+        segment.bsdf *= volume.scattering * hg_sample.p;
+        segment.dir_pdf *= hg_sample.pdf;
     } else {
         PhaseFunctionSample iso_sample = sampleIsoPhaseFunction(-dir, rng_state);
         payload.next_dir = iso_sample.wi;
         float phase = henyeyGreenstein(-dir, iso_sample.wi, volume.g);
-        segment.post_eval_beta *= volume.scattering * phase / iso_sample.pdf;
+        segment.bsdf *= volume.scattering * phase;
+        segment.dir_pdf *= iso_sample.pdf;
     }
 
 
@@ -253,13 +251,13 @@ PathVertex deltaTracking(vec3 origin, vec3 dir, int volume_idx, inout uvec4 rng_
     if (rand < p_real) {
             PathVertex vertex = createVolumeVertex(curr_pos, volume_idx);
 
-            delta_tracking_pdf *= 1.0 / (sampled_scattering + sampled_absorption);
+            delta_tracking_pdf *= sampled_scattering + sampled_absorption;
             SampledSegment segment = sampleVolumeSegment(dir, volume, delta_tracking_pdf, rng_state);
             payload.next_segment = segment;
             return vertex;
         } else {
             float p_unreal = max(0.0001f, (1 - p_real));
-            delta_tracking_pdf *= null_collision / (volume.majorant * p_unreal);
+            delta_tracking_pdf /= (null_collision / (volume.majorant * p_unreal));
             continue;
         }
     }
@@ -267,7 +265,7 @@ PathVertex deltaTracking(vec3 origin, vec3 dir, int volume_idx, inout uvec4 rng_
     if (tracked_dist >= dist_to_boundary) {
         // exit volume
         SampledSegment segment = createNewSegment();
-        segment.pre_eval_beta *= delta_tracking_pdf;
+        segment.dist_pdf *= delta_tracking_pdf;
         payload.next_segment = segment;
         return createVolumeBorderVertex(false);
     }
@@ -278,8 +276,6 @@ PathVertex deltaTracking(vec3 origin, vec3 dir, int volume_idx, inout uvec4 rng_
 
 void main() {
     PathVertex vertex;
-
-    SampledSegment last_segment = payload.next_segment;
     PathVertex last_vertex = payload.next_vertex;
 
     Triangle triangle = getTriangle(gl_InstanceCustomIndexEXT, gl_PrimitiveID);

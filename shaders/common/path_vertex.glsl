@@ -8,8 +8,10 @@ const int ENVIRONMENT_TYPE     = 3;
 const int INVALID_TYPE         = 4;
 
 struct SampledSegment {
-    vec3 pre_eval_beta;
-    vec3 post_eval_beta;
+    vec3 dist_pdf; // apply before evaluation
+    float dir_pdf;
+    float rr_pdf; // apply after evaluation
+    vec3 bsdf; // also phase function
 };
 
 struct EvaluatedMaterial {
@@ -50,5 +52,21 @@ PathVertex createNewPathVertex() {
     return vertex;
 }
 
+SampledSegment createNewSegment() {
+    SampledSegment segment;
+    segment.bsdf = vec3(1);
+    segment.dist_pdf = vec3(1.0);
+    segment.dir_pdf = 1.0;
+    segment.rr_pdf = 1.0;
+    return segment;
+}
+
+vec3 getPreEvaluationBeta(SampledSegment segment) {
+    return 1.0 / segment.dist_pdf;
+}
+
+vec3 getPostEvaluationBeta(SampledSegment segment) {
+    return segment.bsdf / segment.dir_pdf / segment.rr_pdf;
+}
 
 #endif

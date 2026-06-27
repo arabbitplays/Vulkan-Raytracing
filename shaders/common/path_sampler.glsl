@@ -13,8 +13,6 @@ layout(location = 0) rayPayloadEXT Payload payload;
 void initPayload(vec3 origin, vec3 direction) {
     payload.next_vertex.P = origin;
     payload.next_vertex.volume_idx = -1;
-    payload.next_segment.pre_eval_beta = vec3(1);
-    payload.next_segment.post_eval_beta = vec3(1);
     payload.next_dir = direction;
     payload.depth = 0;
     payload.rr_beta = vec3(1.0);
@@ -52,7 +50,7 @@ void continuePath() {
 
     traceRayEXT(topLevelAS, gl_RayFlagsOpaqueEXT, 0xff, 0, 0, 0, payload.next_vertex.P, tmin, payload.next_dir, INFINITY, 0);
 
-    payload.rr_beta *= payload.next_segment.pre_eval_beta;
+    payload.rr_beta *= getPreEvaluationBeta(payload.next_segment);
     float rr_pdf = 1;
     bool apply_russian_roulette = options.russian_roulette
         && payload.depth > 1
@@ -61,10 +59,10 @@ void continuePath() {
         if (evalRussianRoulette(payload.rr_beta, payload.eta_scale, rr_pdf, payload.rng_state)) {
             payload.rr_beta = vec3(0);
         } else {
-            payload.next_segment.post_eval_beta /= rr_pdf;
+            payload.next_segment.rr_pdf *= rr_pdf;
         }
     }
-    payload.rr_beta *= payload.next_segment.post_eval_beta;
+    payload.rr_beta *= getPostEvaluationBeta(payload.next_segment);
 
     addVertexToPath(payload.next_vertex, payload.next_segment);
 
