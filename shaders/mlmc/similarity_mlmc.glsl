@@ -21,17 +21,42 @@ vec3 similarityMlmc(uint sample_count, uint unbiased_path_length) {
     return color;
 }
 
-vec3 evaluateDiffVertex(PathVertex vertex, vec3 biased_throughput, vec3 unbiased_throughput, EvaluationOptions options, inout EvaluationContext context, inout uvec4 rng_state) {
+vec3 evaluateDiffVertex(PathVertex vertex, vec3 biased_throughput, vec3 unbiased_throughput, vec3 path_pdf, EvaluationOptions options, inout EvaluationContext context, inout uvec4 rng_state) {
     uvec4 rng = rng_state;
 
     options.use_similarity_relation = false;
-    vec3 unbiased = unbiased_throughput * evaluateVertex(vertex, options, context, rng_state);
+    vec3 unbiased = unbiased_throughput / path_pdf * evaluateVertex(vertex, options, context, rng_state);
 
     rng_state = rng;
     options.use_similarity_relation = true;
-    vec3 biased = biased_throughput * evaluateVertex(vertex, options, context, rng_state);
+    vec3 biased = biased_throughput / path_pdf * evaluateVertex(vertex, options, context, rng_state);
 
     return unbiased - biased;
+}
+
+// for this, the phase of the last vertex needs to be evaluated here (since the next vertex was not clear there)
+// also the transmittance / visibility needs to be recalculated to match the similarity relation parameters
+void updateBiasedThroughput(int curr_vertex_idx, int last_vertex_idx, inout vec3 biased_throughput, inout uvec4 rng_state) {
+    PathVertex vertex = path.vertices[curr_vertex_idx];
+    PathVertex last_vertex = path.vertices[last_vertex_idx];
+
+    vec3 biased_transmittance = vec3(1);;
+    if (vertex.type == VOLUME_TYPE // if this is a volume vertex
+            || (vertex.type == VOLUME_BOUNDARY_TYPE && last_vertex.type == VOLUME_TYPE)) { // or an exiting volume boundary vertex
+        vec3 dir = vertex.P - last_vertex.P;
+        biased_transmittance = estimateTransmittance(last_vertex.P, normalize(dir), length(dir), last_vertex.volume_idx, true, rng_state);
+        biased_throughput *= biased_transmittance;
+    }
+
+    // multiply the bsdf of the last evaluated vertex
+    vec3 biased_bsdf = path.segments[last_vertex_idx].bsdf;
+    if (last_vertex.type == VOLUME_TYPE) {
+        EvaluatedVolume last_volume = evaluateVertexVolume(last_vertex, true);
+        vec3 wi = normalize(vertex.P - last_vertex.P);
+        float phase = evaluateAlteredPhaseFunction(last_vertex.V, wi, last_volume.g);
+        biased_bsdf = last_volume.scattering * phase;
+    }
+    biased_throughput *= biased_bsdf;
 }
 
 vec3 similarityEvaluateCorrelatedPaths(EvaluationOptions options, inout uvec4 rng_state) {
@@ -41,43 +66,42 @@ vec3 similarityEvaluateCorrelatedPaths(EvaluationOptions options, inout uvec4 rn
     vec3 unbiased_throughput = vec3(1);
     vec3 path_pdf = vec3(1);
     context.specular_bounce = false;
-    bool skip_vertex = false;
+
+    PathVertex last_vertex;
+    int last_vertex_idx = 0;
+    int skipped_vertices = 0;
 
     uint evaluation_depth = min(options.evaluation_depth, path.len);
     for (int i = 0; i < evaluation_depth; i++) {
         PathVertex vertex = path.vertices[i];
         SampledSegment seg = path.segments[i];
-        EvaluatedVolume volume;
-        if (vertex.type == VOLUME_TYPE) {
-            volume = evaluateVertexVolume(vertex, true);
+        bool skip_vertex = false;
+
+        if (i != 0 && vertex.type == VOLUME_TYPE) {
+            if (last_vertex.type == VOLUME_TYPE && skipped_vertices == 0) {
+                skipped_vertices++;
+                skip_vertex = true;
+            }
         }
 
-        vec3 biased_transmittance = seg.transmittance;
-        if (seg.transmittance.x < 1 || seg.transmittance.y < 1 || seg.transmittance.z < 1) {
-            if (vertex.type == VOLUME_BOUNDARY_TYPE) {
-                volume = evaluateVertexVolume(path.vertices[i - 1], true);
-            }
-            float segment_length = i == 0 ? length(vertex.P - path.origin) : length(vertex.P - path.vertices[i - 1].P);
-            biased_transmittance = vec3(transmittance(segment_length, volume.scattering.x + volume.absorption.x));
+        if (i != 0 && !skip_vertex) { // skip the first one here, since the bsdf is applied later and the transmittance is 1 anyway
+            updateBiasedThroughput(i, last_vertex_idx, biased_throughput, rng_state);
         }
 
         context.depth = i;
-        unbiased_throughput *= seg.transmittance / seg.dist_pdf / seg.delta_pdf;
-        biased_throughput *= biased_transmittance / seg.dist_pdf / seg.delta_pdf;
-        diff += evaluateDiffVertex(vertex, biased_throughput, unbiased_throughput, options, context, rng_state);
-        //path_pdf *= seg.dist_pdf * seg.dir_pdf;
+        unbiased_throughput *= seg.transmittance;
+        path_pdf *= 1.0 / seg.dist_pdf / seg.delta_pdf;
 
-        if (i == evaluation_depth - 1)
-            break;
-        vec3 biased_bsdf = seg.bsdf;
-        if (vertex.type == VOLUME_TYPE) {
-            vec3 wi = normalize(path.vertices[i + 1].V);
-            float phase = evaluateAlteredPhaseFunction(-vertex.V, wi, volume.g);
-            biased_bsdf = volume.scattering * phase;
+        if (!skip_vertex) {
+            diff += evaluateDiffVertex(vertex, biased_throughput, unbiased_throughput, path_pdf, options, context, rng_state);
+            skipped_vertices = 0;
+
+            last_vertex = vertex;
+            last_vertex_idx = i;
         }
 
-        unbiased_throughput *= seg.bsdf / seg.dir_pdf / seg.rr_pdf;
-        biased_throughput *= biased_bsdf / seg.dir_pdf / seg.rr_pdf;
+        unbiased_throughput *= seg.bsdf;
+        path_pdf *= 1.0 / seg.dir_pdf / seg.rr_pdf;
     }
 
     return diff;
