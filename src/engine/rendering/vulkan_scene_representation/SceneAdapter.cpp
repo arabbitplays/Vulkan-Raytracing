@@ -71,6 +71,7 @@ namespace RtEngine {
 		layoutBuilder.addBinding(13, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE); // diff image
 		layoutBuilder.addBinding(14, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE); // mlmc image
 		layoutBuilder.addBinding(15, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER); // similarity coefficient buffer
+		layoutBuilder.addBinding(16, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE); // second moment image
 
 		scene_descriptor_set_layout = layoutBuilder.build(
 				vulkan_context->device_manager->getDevice(),
@@ -140,6 +141,8 @@ namespace RtEngine {
 		vulkan_context->descriptor_allocator->writeImage(13, target_repository->getCurrRenderTargetImage(DIFF_TARGET_KEY).imageView, VK_NULL_HANDLE,
 														 VK_IMAGE_LAYOUT_GENERAL, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
 		vulkan_context->descriptor_allocator->writeImage(14, target_repository->getCurrRenderTargetImage(MLMC_TARGET_KEY).imageView, VK_NULL_HANDLE,
+														 VK_IMAGE_LAYOUT_GENERAL, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
+		vulkan_context->descriptor_allocator->writeImage(16, target_repository->getCurrRenderTargetImage(MOMENT_TARGET_KEY).imageView, VK_NULL_HANDLE,
 														 VK_IMAGE_LAYOUT_GENERAL, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
 
 		vulkan_context->descriptor_allocator->writeImage(10, target_repository->getCurrRenderTargetImage(RNG_TARGET_KEY).imageView, VK_NULL_HANDLE, VK_IMAGE_LAYOUT_GENERAL,

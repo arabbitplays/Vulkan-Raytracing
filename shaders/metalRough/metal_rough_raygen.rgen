@@ -18,6 +18,7 @@
 layout(binding = 1, set = 0, rgba32f) uniform image2D image;
 layout(binding = 13, set = 0, rgba32f) uniform image2D diff_image;
 layout(binding = 14, set = 0, rgba32f) uniform image2D mlmc_image;
+layout(binding = 16, set = 0, rg32f) uniform image2D moment_image;
 
 vec3 unbiasedEstimator(uint sample_count) {
     EvaluationOptions eval_options = getUserOptions();
@@ -59,6 +60,19 @@ vec3 diffEstimator(uint sample_count, uint mlmc_method) {
 
 void main() {
     payload.rng_state = imageLoad(rng_tex, ivec2(gl_LaunchIDEXT.xy));
+
+    if (options.debug_diff_variance) {
+        imageStore(image, ivec2(gl_LaunchIDEXT.xy), vec4(1.0, 0.0, 0.0, 1.0));
+        imageStore(diff_image, ivec2(gl_LaunchIDEXT.xy), vec4(1.0, 0.0, 0.0, 1.0));
+        imageStore(mlmc_image, ivec2(gl_LaunchIDEXT.xy), vec4(1.0, 0.0, 0.0, 1.0));
+        return;
+    }
+    if (options.debug_variance) {
+        imageStore(image, ivec2(gl_LaunchIDEXT.xy), vec4(0.0, 1.0, 0.0, 1.0));
+        imageStore(diff_image, ivec2(gl_LaunchIDEXT.xy), vec4(0.0, 1.0, 0.0, 1.0));
+        imageStore(mlmc_image, ivec2(gl_LaunchIDEXT.xy), vec4(0.0, 1.0, 0.0, 1.0));
+        return;
+    }
 
     if (!options.do_mlmc) {
         uint accum_count = options.accumulated_frame_count;
