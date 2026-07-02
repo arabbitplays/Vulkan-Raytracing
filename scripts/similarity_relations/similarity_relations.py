@@ -152,5 +152,5 @@ def solve_and_show_specific(g, alpha, N_max = 10, k = 360):
 
     print(to_glsl_array(c))
 
-solve_and_show_specific(0.9, 0.5, 10)
+solve_and_show_specific(0.4, 0.5, 1)
 #generate_coefficients_glsl()

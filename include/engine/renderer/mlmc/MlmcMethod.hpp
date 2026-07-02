@@ -8,6 +8,8 @@ enum MlmcMethod {
     PATH_LENGTH,
     SIMILARITY,
     SIMILARITY_SAME_PATH,
+    SIMILARITY_SKIP_DETERMINISTIC,
+    SIMILARITY_SKIP_RANDOM,
 };
 
 class MlmcMethodConverter {
@@ -17,6 +19,8 @@ public:
             "path length",
             "similarity",
             "same path similarity",
+            "skip deterministic similarity",
+            "skip random similarity",
         };
     }
 
@@ -29,6 +33,12 @@ public:
         }
         if (mode_string == "same path similarity") {
             return SIMILARITY_SAME_PATH;
+        }
+        if (mode_string == "skip deterministic similarity") {
+            return SIMILARITY_SKIP_DETERMINISTIC;
+        }
+        if (mode_string == "skip random similarity") {
+            return SIMILARITY_SKIP_RANDOM;
         }
         throw std::invalid_argument("Invalid MLMC method string");
     }
