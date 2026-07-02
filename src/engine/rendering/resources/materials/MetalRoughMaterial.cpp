@@ -99,6 +99,7 @@ namespace RtEngine {
 			reset_required |= config->addBool("adaptive_sampling", &adaptive_sampling);
 			reset_required |= config->addBool("debug_variance", &debug_variance);
 			reset_required |= config->addBool("debug_diff_variance", &debug_diff_variance);
+			reset_required |= config->addBool("debug_adaptive_sampling", &debug_adaptive_sampling);
 			config->endChild();
 		}
 
@@ -117,6 +118,7 @@ namespace RtEngine {
 		push_constants.push_back(static_cast<int32_t>(adaptive_sampling));
 		push_constants.push_back(static_cast<int32_t>(debug_variance));
 		push_constants.push_back(static_cast<int32_t>(debug_diff_variance));
+		push_constants.push_back(static_cast<int32_t>(debug_adaptive_sampling));
 	}
 
 	void MetalRoughMaterial::reset() {

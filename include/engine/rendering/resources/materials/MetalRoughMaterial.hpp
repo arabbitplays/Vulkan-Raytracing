@@ -35,6 +35,7 @@ namespace RtEngine {
 		bool debug_depth = false;
 		bool adaptive_sampling = false;
 		bool debug_variance = false, debug_diff_variance = false;
+		bool debug_adaptive_sampling = false;
 
 		VkSampler sampler;
 	};
