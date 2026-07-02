@@ -1,5 +1,6 @@
 #include "MetalRoughMaterial.hpp"
 
+#include <cstring>
 #include <DescriptorLayoutBuilder.hpp>
 #include <OptionsWindow.hpp>
 #include <VulkanUtil.hpp>
@@ -100,6 +101,8 @@ namespace RtEngine {
 			reset_required |= config->addBool("debug_variance", &debug_variance);
 			reset_required |= config->addBool("debug_diff_variance", &debug_diff_variance);
 			reset_required |= config->addBool("debug_adaptive_sampling", &debug_adaptive_sampling);
+			reset_required |= config->addFloat("adaptive_error_bound", &adaptive_error_bound, 0.001f, 1.0f);
+			reset_required |= config->addInt("adaptive_min_samples", &adaptive_min_samples, 2, 4096);
 			config->endChild();
 		}
 
@@ -119,6 +122,10 @@ namespace RtEngine {
 		push_constants.push_back(static_cast<int32_t>(debug_variance));
 		push_constants.push_back(static_cast<int32_t>(debug_diff_variance));
 		push_constants.push_back(static_cast<int32_t>(debug_adaptive_sampling));
+		int32_t error_bound_bits;
+		std::memcpy(&error_bound_bits, &adaptive_error_bound, sizeof(float));
+		push_constants.push_back(error_bound_bits);
+		push_constants.push_back(adaptive_min_samples);
 	}
 
 	void MetalRoughMaterial::reset() {

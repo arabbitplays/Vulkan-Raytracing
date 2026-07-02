@@ -17,3 +17,4 @@ metal_rough:
   next_event_estimation: true
   bsdf_importance_sampling: true
   russian_roulette: true
+  adaptive_sampling: [[ADAPTIVE_SAMPLING]]

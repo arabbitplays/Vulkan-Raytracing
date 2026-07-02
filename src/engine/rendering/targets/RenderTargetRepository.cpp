@@ -8,6 +8,7 @@
 #include "targets/RaytracingTarget.hpp"
 #include "targets/RenderTargetKeys.hpp"
 #include "targets/RngTarget.hpp"
+#include "targets/SampleCountTarget.hpp"
 
 namespace RtEngine {
     RenderTargetRepository::RenderTargetRepository(const std::shared_ptr<ResourceBuilder> &resource_builder,
@@ -31,6 +32,9 @@ namespace RtEngine {
             case MOMENT_TARGET:
                 render_target = std::make_shared<MomentTarget>(resource_builder, max_frames_in_flight);
                 break;
+            case SAMPLE_COUNT_TARGET:
+                render_target = std::make_shared<SampleCountTarget>(resource_builder, max_frames_in_flight);
+                break;
         }
         render_target->createTargetImages(image_extent);
         render_targets[key] = render_target;
@@ -42,6 +46,7 @@ namespace RtEngine {
         addRenderTarget(DIFF_TARGET_KEY, RAYTRACE_TARGET);
         addRenderTarget(MLMC_TARGET_KEY, COMPUTE_TARGET);
         addRenderTarget(MOMENT_TARGET_KEY, MOMENT_TARGET);
+        addRenderTarget(SAMPLE_COUNT_TARGET_KEY, SAMPLE_COUNT_TARGET);
     }
 
     void RenderTargetRepository::recreate(const VkExtent2D new_image_extent) {

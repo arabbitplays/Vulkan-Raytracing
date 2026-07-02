@@ -6,5 +6,6 @@
 #define DIFF_TARGET_KEY "diff"
 #define MLMC_TARGET_KEY "mlmc_out"
 #define MOMENT_TARGET_KEY "moment"
+#define SAMPLE_COUNT_TARGET_KEY "sample_count"
 
 #endif //VULKAN_RAYTRACING_RENDERTARGETKEYS_HPP
