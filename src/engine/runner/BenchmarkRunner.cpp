@@ -333,7 +333,7 @@ namespace RtEngine
         }
         stbi_image_free(ref_data);
 
-        clearTmpfolder();
+        // clearTmpfolder();
     }
 
     void BenchmarkRunner::outputErrorsToCsv()

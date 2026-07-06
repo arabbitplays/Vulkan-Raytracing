@@ -39,6 +39,7 @@ build_dir="./buildDir"
 out_dir="./resources/benchmarks"
 tmp_dir="$build_dir/tmp"
 csv_out_path="$out_dir/bm_out.csv"
+flip_csv_out_path="$out_dir/flip_out.csv"
 
 # remove all existing csv files
 csv_files=$(get_csv_files "$out_dir")
@@ -91,5 +92,7 @@ for file in $csv_files; do
   fi
   rm -fv "$file"
 done
+
+python3 ./scripts/compute_error_metrics.py --csv "$flip_csv_out_path" --merge-into "$csv_out_path"
 
 Rscript ./scripts/generate_plots.R $csv_out_path $out_dir/bm_plots.pdf

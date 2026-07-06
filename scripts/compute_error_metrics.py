@@ -35,6 +35,10 @@ DEFAULT_CSV_PATH = REPO_ROOT / "resources" / "benchmarks" / "error_metrics.csv"
 
 SCENE_TOKEN_RE = re.compile(r"(ref_scene_[A-Za-z0-9_]+?)(?:\.png)?$")
 REFERENCE_RE = re.compile(r"^(\d+)_(ref_scene_[A-Za-z0-9_]+)\.png$")
+# Benchmark filenames have the form `{name}_bm_{biased}_{diff}_{scene}.png`.
+# BenchmarkRunner's `samples` key in bm_out.csv equals biased + diff in all
+# emission paths (unbiased phase, diff phase, combined mode).
+BENCHMARK_NAME_RE = re.compile(r"^(.+)_bm_(\d+)_(\d+)_.+\.png$")
 
 
 @dataclass
@@ -128,6 +132,16 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--error-map-dir", type=Path, default=DEFAULT_ERROR_MAP_DIR)
     parser.add_argument("--csv", type=Path, default=DEFAULT_CSV_PATH)
     parser.add_argument(
+        "--merge-into",
+        type=Path,
+        default=None,
+        help=(
+            "Optional path to a bm_out-style CSV. If provided, adds a `flip` "
+            "column keyed on (name, samples = biased + diff) parsed from the "
+            "benchmark image filenames."
+        ),
+    )
+    parser.add_argument(
         "--metrics",
         nargs="+",
         default=[FlipMetric.name],
@@ -140,8 +154,13 @@ def parse_args() -> argparse.Namespace:
 def main() -> int:
     args = parse_args()
 
+    if args.error_map_dir.exists():
+        for existing in args.error_map_dir.iterdir():
+            if existing.is_file() or existing.is_symlink():
+                existing.unlink()
     args.error_map_dir.mkdir(parents=True, exist_ok=True)
     args.csv.parent.mkdir(parents=True, exist_ok=True)
+    args.csv.unlink(missing_ok=True)
 
     references = index_references(args.reference_dir)
     if not references:
@@ -195,7 +214,56 @@ def main() -> int:
         writer.writeheader()
         writer.writerows(rows)
     print(f"\nWrote {len(rows)} rows -> {args.csv}")
+
+    if args.merge_into is not None:
+        merge_flip_into_bm_csv(args.merge_into, rows)
     return 0
+
+
+def merge_flip_into_bm_csv(bm_path: Path, flip_rows: list[dict[str, object]]) -> None:
+    """Add a `flip` column to a bm_out-style CSV by parsing the benchmark filename.
+
+    Match key is (name, samples) where `name` comes from the prefix before
+    `_bm_` and `samples` equals biased + diff from the filename numeric parts.
+    """
+    if not bm_path.exists():
+        print(f"[merge] skip: {bm_path} does not exist", file=sys.stderr)
+        return
+
+    flip_lookup: dict[tuple[str, int], object] = {}
+    for row in flip_rows:
+        benchmark = str(row.get("benchmark", ""))
+        flip_mean = row.get("flip_mean")
+        if flip_mean is None:
+            continue
+        match = BENCHMARK_NAME_RE.match(benchmark)
+        if not match:
+            continue
+        key = (match.group(1), int(match.group(2)) + int(match.group(3)))
+        flip_lookup[key] = flip_mean
+
+    with bm_path.open(newline="") as fh:
+        reader = csv.DictReader(fh)
+        fieldnames = list(reader.fieldnames or [])
+        merged_rows = list(reader)
+
+    if "flip" not in fieldnames:
+        fieldnames.append("flip")
+
+    for row in merged_rows:
+        try:
+            key = (row["name"], int(row["samples"]))
+        except (KeyError, ValueError):
+            row["flip"] = ""
+            continue
+        value = flip_lookup.get(key)
+        row["flip"] = "" if value is None else value
+
+    with bm_path.open("w", newline="") as fh:
+        writer = csv.DictWriter(fh, fieldnames=fieldnames)
+        writer.writeheader()
+        writer.writerows(merged_rows)
+    print(f"[merge] added flip column to {bm_path}")
 
 
 if __name__ == "__main__":
