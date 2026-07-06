@@ -77,13 +77,10 @@ void main() {
         uint accum_count = options.accumulated_frame_count;
         uint global_diff_accum_count = options.accumulated_diff_frame_count;
 
-        // moment_image stores Welford's M2 (sum of squared deviations from the
-        // running mean) for luminance: .x for color, .y for diff.
+        // .x for color, .y for diff.
         vec2 prev_m2 = imageLoad(moment_image, ivec2(gl_LaunchIDEXT.xy)).xy;
         if (accum_count == 0) prev_m2.x = 0.0;
 
-        // Per-pixel diff sample counter: on the first frame of a fresh accumulation,
-        // the global counter is 0 -- reset the per-pixel counter and its M2.
         uint pixel_diff_count = global_diff_accum_count == 0
             ? 0u
             : imageLoad(diff_sample_count_image, ivec2(gl_LaunchIDEXT.xy)).x;
@@ -93,7 +90,6 @@ void main() {
         vec3 prev_diff = pixel_diff_count == 0 ? vec3(0)
                                                : imageLoad(diff_image, ivec2(gl_LaunchIDEXT.xy)).xyz;
 
-        // Adaptive stop: decide with the state we had at the start of the frame.
         // Uses main-color luminance as the absolute-error scale so pixels with
         // near-zero diff can still converge.
         float color_lum_prev = luminance(imageLoad(image, ivec2(gl_LaunchIDEXT.xy)).xyz);

@@ -66,10 +66,12 @@ namespace RtEngine
             {
                 if (error_calculation_frame_count == rendered_frame_count)
                 {
+                    recordCheckpointTime(final_biased_sample_count + rendered_frame_count);
                     raytracing_renderer->waitForIdle();
                     raytracing_renderer->outputRenderingTarget(target_repository,
                                                                target_to_output, getTmpImagePath(
                                                                    final_biased_sample_count, rendered_frame_count));
+                    last_time_point = clock::now();
 
                     if (rendered_frame_count == final_diff_sample_count)
                     {
@@ -87,10 +89,12 @@ namespace RtEngine
             {
                 if (error_calculation_frame_count == rendered_frame_count)
                 {
+                    recordCheckpointTime(rendered_frame_count);
                     raytracing_renderer->waitForIdle();
                     raytracing_renderer->outputRenderingTarget(target_repository,
                                                                target_to_output,
                                                                getTmpImagePath(rendered_frame_count, 0));
+                    last_time_point = clock::now();
 
                     if (rendered_frame_count == final_biased_sample_count)
                     {
@@ -117,11 +121,13 @@ namespace RtEngine
         {
             if (error_calculation_frame_count == rendered_frame_count)
             {
+                recordCheckpointTime(rendered_frame_count * biased_samples_per_diff_sample + rendered_frame_count);
                 raytracing_renderer->waitForIdle();
                 raytracing_renderer->outputRenderingTarget(target_repository,
                                                            target_to_output, getTmpImagePath(
                                                                rendered_frame_count * biased_samples_per_diff_sample,
                                                                rendered_frame_count));
+                last_time_point = clock::now();
 
                 if (rendered_frame_count * biased_samples_per_diff_sample >= final_biased_sample_count)
                 {
@@ -170,6 +176,7 @@ namespace RtEngine
         if (last_time_point.has_value())
         {
             const auto dur = duration_cast<std::chrono::microseconds>(clock::now() - last_time_point.value()).count();
+            accumulated_frame_time_us += static_cast<double>(dur);
             if (biased_samples_per_diff_sample != 0)
             {
                 mean_combined_frame_time += dur / (final_biased_sample_count / biased_samples_per_diff_sample);
@@ -219,11 +226,25 @@ namespace RtEngine
         update_flags->resetFlags();
     }
 
+    void BenchmarkRunner::recordCheckpointTime(uint32_t samples)
+    {
+        if (last_time_point.has_value())
+        {
+            const auto now = clock::now();
+            accumulated_frame_time_us += static_cast<double>(
+                duration_cast<std::chrono::microseconds>(now - last_time_point.value()).count());
+            last_time_point = now;
+        }
+        time_averages[samples] += accumulated_frame_time_us / static_cast<double>(averaging_rounds);
+    }
+
     void BenchmarkRunner::resetForNextRound(std::shared_ptr<RenderTargetRepository> target_repository)
     {
         rendered_frame_count = 0;
         error_calculation_frame_count = 1;
         calculating_mlmc_diff = false;
+        accumulated_frame_time_us = 0;
+        last_time_point.reset();
         if (biased_samples_per_diff_sample == 0)
         {
             target_repository->setSamplesPerFrame(1, 0);
@@ -321,7 +342,7 @@ namespace RtEngine
         std::ofstream out(output_path);
         if (!out)
             throw std::runtime_error("Failed to open CSV file");
-        out << "name,samples,mse\n";
+        out << "name,samples,mse,time_ms\n";
 
         std::vector<uint32_t> keys;
         keys.reserve(mse_averages.size());
@@ -341,7 +362,8 @@ namespace RtEngine
                 hacky_skip_count--;
                 continue;
             }
-            out << std::format("{},{},{}\n", benchmark_name, key, mse_averages[key]);
+            out << std::format("{},{},{},{}\n", benchmark_name, key, mse_averages[key],
+                               time_averages[key] / 1000.0);
         }
         SPDLOG_INFO("Saved benchmark data to {}!", output_path);;
     }

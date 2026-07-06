@@ -59,10 +59,16 @@ namespace RtEngine {
 		bool calculating_mlmc_diff = false;
 
 		std::unordered_map<uint32_t, float> mse_averages{};
+		std::unordered_map<uint32_t, double> time_averages{};
 
 		double mean_biased_frame_time = 0;
 		double mean_diff_frame_time = 0;
 		double mean_combined_frame_time = 0;
+
+		// Accumulated frame time (microseconds) since the start of the current round,
+		double accumulated_frame_time_us = 0;
+
+		void recordCheckpointTime(uint32_t samples);
 	};
 
 } // namespace RtEngine

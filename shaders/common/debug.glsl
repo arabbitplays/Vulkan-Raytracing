@@ -15,7 +15,7 @@ vec3 getDepthDebugColor(uint depth) {
     return c;
 }
 
-// m2 is Welford's sum of squared deviations; population variance = M2/N.
+// m2 is Welford's sum of squared deviations
 vec3 getVarianceDebugColor(float m2, uint sample_count) {
     if (sample_count < 2u) return vec3(0.0);
     float variance = m2 / float(sample_count);
