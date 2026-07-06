@@ -227,14 +227,25 @@ PathVertex deltaTracking(vec3 origin, vec3 dir, int volume_idx, inout uvec4 rng_
     EvaluatedVolume volume = evaluateVolumeAtLocalPos(volume_instance, payload.sampling_options.similarity_relation, obj_pos);
 
     vec3 delta_tracking_pdf = vec3(1);
+    vec3 accumulated_transmittance = vec3(1);
+    vec3 accumulated_null_scattering = vec3(1);
+    vec3 dist_pdf = vec3(1);
 
     while (true) {
         float sampled_dist = sampleDistance(volume.majorant, rng_state);
+        float transmittance = transmittance(min(sampled_dist, dist_to_boundary - tracked_dist), volume.majorant);
         tracked_dist += sampled_dist;
 
+        accumulated_transmittance *= transmittance;
         if (tracked_dist >= dist_to_boundary) {
+            dist_pdf *= transmittance;
             break;
+        } else {
+            dist_pdf *= transmittance;
         }
+
+        dist_pdf *= volume.majorant;
+        delta_tracking_pdf /= volume.majorant;
 
         vec3 curr_pos = origin + tracked_dist * dir;
 
@@ -244,22 +255,25 @@ PathVertex deltaTracking(vec3 origin, vec3 dir, int volume_idx, inout uvec4 rng_
         vec2 sampled_channel = sampleChannel(volume, rng_state);
         float sampled_scattering = sampled_channel.x;
         float sampled_absorption = sampled_channel.y;
-        vec3 null_collision = vec3(volume.majorant) - (volume.scattering + volume.absorption);
+        float sampled_extinction = sampled_scattering + sampled_absorption;
+        vec3 null_scattering = vec3(volume.majorant) - (volume.scattering + volume.absorption);
 
-        float p_real = (sampled_scattering + sampled_absorption) / volume.majorant;
+        float p_real = sampled_extinction / volume.majorant;
         float rand = stepAndOutputRNGFloat(rng_state);
 
-    if (rand < p_real) { // real collision
-            PathVertex vertex = createVolumeVertex(curr_pos, volume_idx);
+        if (rand < p_real) { // real collision
+             PathVertex vertex = createVolumeVertex(curr_pos, volume_idx);
 
-            delta_tracking_pdf *= (sampled_scattering + sampled_absorption);
-            SampledSegment segment = sampleVolumeSegment(dir, volume, vec3(1), delta_tracking_pdf, rng_state);
-            payload.next_segment = segment;
-            return vertex;
+             delta_tracking_pdf *= sampled_extinction;
+             SampledSegment segment = sampleVolumeSegment(dir, volume, dist_pdf, delta_tracking_pdf, rng_state);
+             segment.transmittance *= accumulated_transmittance;
+             segment.null_scattering *= accumulated_null_scattering;
+             payload.next_segment = segment;
+             return vertex;
         } else { // null collision
-            float p_unreal = max(0.0001f, (1 - p_real));
-            delta_tracking_pdf /= (null_collision / (volume.majorant * p_unreal));
-            continue;
+             accumulated_null_scattering *= null_scattering;
+             delta_tracking_pdf *= (volume.majorant - sampled_extinction);
+             continue;
         }
     }
 
@@ -267,6 +281,9 @@ PathVertex deltaTracking(vec3 origin, vec3 dir, int volume_idx, inout uvec4 rng_
         // exit volume
         SampledSegment segment = createNewSegment();
         segment.delta_pdf *= delta_tracking_pdf;
+        segment.dist_pdf *= dist_pdf;
+        segment.transmittance *= accumulated_transmittance;
+        segment.null_scattering *= accumulated_null_scattering;
         payload.next_segment = segment;
         return createVolumeBorderVertex(false);
     }

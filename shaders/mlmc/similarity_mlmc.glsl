@@ -123,7 +123,7 @@ vec3 similarityEvaluateCorrelatedPaths(EvaluationOptions options, uint correlati
         }
 
         context.depth = i;
-        unbiased_throughput *= seg.transmittance;
+        unbiased_throughput *= seg.transmittance * seg.null_scattering;
         path_pdf /= seg.dist_pdf / seg.delta_pdf;
 
         if (!skip_vertex) {

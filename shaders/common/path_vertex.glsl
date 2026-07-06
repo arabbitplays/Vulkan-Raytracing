@@ -12,6 +12,7 @@ struct SampledSegment {
     vec3 delta_pdf; // apply before evaluation
     float dir_pdf;
     float rr_pdf; // apply after evaluation
+    vec3 null_scattering;
     vec3 bsdf; // also phase function
     vec3 transmittance; // transmittance before the vertex
 };
@@ -57,6 +58,7 @@ PathVertex createNewPathVertex() {
 SampledSegment createNewSegment() {
     SampledSegment segment;
     segment.bsdf = vec3(1);
+    segment.null_scattering = vec3(1);
     segment.transmittance = vec3(1);
     segment.dist_pdf = vec3(1.0);
     segment.delta_pdf = vec3(1.0);
@@ -66,7 +68,7 @@ SampledSegment createNewSegment() {
 }
 
 vec3 getPreEvaluationBeta(SampledSegment segment) {
-    return segment.transmittance / segment.delta_pdf / segment.dist_pdf;
+    return segment.null_scattering * segment.transmittance / segment.delta_pdf / segment.dist_pdf;
 }
 
 vec3 getPostEvaluationBeta(SampledSegment segment) {
