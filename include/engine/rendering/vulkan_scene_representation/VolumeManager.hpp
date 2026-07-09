@@ -2,6 +2,7 @@
 #define VULKAN_RAYTRACING_VOLUMEMANAGER_HPP
 #include <memory>
 
+#include "SimilarityTable.hpp"
 #include "VolumeAsset.hpp"
 #include "VulkanContext.hpp"
 
@@ -23,7 +24,9 @@ namespace RtEngine {
 
         void createVolumeResources(const std::vector<std::shared_ptr<VolumeAsset> > &volume_assets);
 
-        static VolumeData createVolumeData(const std::shared_ptr<VolumeAsset> &volume_asset, uint32_t texture_idx);
+        void setSimilarityTable(const std::shared_ptr<SimilarityTable> &table) { similarity_table = table; }
+
+        VolumeData createVolumeData(const std::shared_ptr<VolumeAsset> &volume_asset, uint32_t texture_idx) const;
 
         void writeVolumeResources(VkSampler sampler) const;
 
@@ -34,6 +37,7 @@ namespace RtEngine {
         AllocatedImage createVolumeTexture(glm::uvec3 vol_size, std::shared_ptr<std::vector<glm::vec4>> coefficients) const;
 
         std::shared_ptr<VulkanContext> vulkan_context;
+        std::shared_ptr<SimilarityTable> similarity_table;
         AllocatedBuffer volume_mapping_buffer;
         std::vector<AllocatedImage> scattering_textures;
         std::vector<AllocatedImage> absorption_textures;

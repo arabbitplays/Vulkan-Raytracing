@@ -155,14 +155,14 @@ SampledSegment sampleVolumeSegment(vec3 dir, EvaluatedVolume volume, vec3 dist_p
 
     if (payload.sampling_options.similarity_relation) {
         if (options.sample_bsdf) {
-            PhaseFunctionSample alt_sample = sampleAlteredPhaseFunction(-dir, volume.g, rng_state);
+            PhaseFunctionSample alt_sample = sampleAlteredPhaseFunctionIdx(-dir, volume.similarity_idx, rng_state);
             payload.next_dir = alt_sample.wi;
             segment.bsdf *= volume.scattering * alt_sample.p;
             segment.dir_pdf *= alt_sample.pdf;
         } else {
             PhaseFunctionSample iso_sample = sampleIsoPhaseFunction(-dir, rng_state);
             payload.next_dir = iso_sample.wi;
-            float phase = evaluateAlteredPhaseFunction(-dir, iso_sample.wi, volume.g);
+            float phase = evaluateAlteredPhaseFunctionIdx(-dir, iso_sample.wi, volume.similarity_idx);
             segment.bsdf *= volume.scattering * phase;
             segment.dir_pdf *= iso_sample.pdf;
         }

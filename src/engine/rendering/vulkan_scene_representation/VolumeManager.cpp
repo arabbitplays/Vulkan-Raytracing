@@ -50,13 +50,25 @@ namespace RtEngine {
             volume_datas.data(), volume_datas.size() * sizeof(VolumeData), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
     }
 
-    VolumeData VolumeManager::createVolumeData(const std::shared_ptr<VolumeAsset> &volume_asset, uint32_t texture_idx) {
+    VolumeData VolumeManager::createVolumeData(const std::shared_ptr<VolumeAsset> &volume_asset, uint32_t texture_idx) const {
         auto [origin, extent] = volume_asset->bounding_mesh->calcAABB();
+
+        if (!similarity_table || similarity_table->g_keys.empty()) {
+            throw std::runtime_error("Similarity table not loaded before creating volume resources");
+        }
+        const int similarity_idx = similarity_table->findBestIndex(volume_asset->g);
+        const float similarity_alpha = similarity_table->alphas.at(similarity_idx);
+        spdlog::info("Volume '{}': g={} -> similarity table {} (g_key={}, alpha={})",
+                     volume_asset->name, volume_asset->g, similarity_idx,
+                     similarity_table->g_keys.at(similarity_idx), similarity_alpha);
+
         const VolumeData volume_data{
             .g = volume_asset->g,
             .max_scattering = volume_asset->getMaxScattering(),
             .max_absorption = volume_asset->getMaxAbsorption(),
             .volume_texture_idx = texture_idx,
+            .similarity_alpha = similarity_alpha,
+            .similarity_table_idx = similarity_idx,
             .bounding_box_origin = glm::vec4(origin, 0),
             .bounding_box_extent = glm::vec4(extent, 0),
             .avg_scattering = glm::vec4(volume_asset->getAvgScattering(), 0),

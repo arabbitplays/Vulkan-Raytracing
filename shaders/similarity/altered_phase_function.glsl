@@ -57,22 +57,28 @@ int cosThetaToBin(float cosTheta) {
     return clamp(idx, 0, NUM_COEFFS - 1);
 }
 
+// Preferred entry point: tableIdx is precomputed on the CPU per volume
+// (VolumeInstance.similarity_idx / EvaluatedVolume.similarity_idx), so no
+// key scan is needed here.
+float evaluateAlteredPhaseFunctionIdx(vec3 wo, vec3 wi, int tableIdx) {
+    int bin = cosThetaToBin(-dot(wo, wi));
+    return fetchPhaseCoefficient(tableIdx, bin);
+}
+
 float evaluateAlteredPhaseFunction(vec3 wo, vec3 wi, float g, float alpha) {
-    int idx = cosThetaToBin(-dot(wo, wi));
-    return fetchPhaseCoefficient(findBestIndex(g, alpha), idx);
+    return evaluateAlteredPhaseFunctionIdx(wo, wi, findBestIndex(g, alpha));
 }
 
 float evaluateAlteredPhaseFunction(vec3 wo, vec3 wi, float g) {
-    int idx = findBestIndex(g);
-    return evaluateAlteredPhaseFunction(wo, wi, g, ALPHAS[idx]);
+    return evaluateAlteredPhaseFunctionIdx(wo, wi, findBestIndex(g));
 }
 
 // Importance-samples the tabulated phase function via CDF inversion.
 // wo is the direction toward the previous vertex (e.g. -ray_dir); the
 // sampled wi follows the same convention as evaluateAlteredPhaseFunction,
 // i.e. the scattering cosine is -dot(wo, wi).
-PhaseFunctionSample sampleAlteredPhaseFunction(vec3 wo, float g, float alpha, inout uvec4 rng_state) {
-    int tableIdx = findBestIndex(g, alpha);
+// Preferred entry point: tableIdx is precomputed on the CPU per volume.
+PhaseFunctionSample sampleAlteredPhaseFunctionIdx(vec3 wo, int tableIdx, inout uvec4 rng_state) {
     int base = tableIdx * NUM_COEFFS;
 
     float total = similarity_buf.totals[tableIdx];
@@ -109,9 +115,12 @@ PhaseFunctionSample sampleAlteredPhaseFunction(vec3 wo, float g, float alpha, in
     return PhaseFunctionSample(selectedC, wi, pdf);
 }
 
+PhaseFunctionSample sampleAlteredPhaseFunction(vec3 wo, float g, float alpha, inout uvec4 rng_state) {
+    return sampleAlteredPhaseFunctionIdx(wo, findBestIndex(g, alpha), rng_state);
+}
+
 PhaseFunctionSample sampleAlteredPhaseFunction(vec3 wo, float g, inout uvec4 rng_state) {
-    int idx = findBestIndex(g);
-    return sampleAlteredPhaseFunction(wo, g, ALPHAS[idx], rng_state);
+    return sampleAlteredPhaseFunctionIdx(wo, findBestIndex(g), rng_state);
 }
 
 #endif

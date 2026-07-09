@@ -59,7 +59,7 @@ void updateBiasedThroughput(int curr_vertex_idx, int last_vertex_idx, inout vec3
     if (last_vertex.type == VOLUME_TYPE) {
         EvaluatedVolume last_volume = evaluateVertexVolume(last_vertex, true, options.assume_homogenous);
         vec3 wi = normalize(vertex.P - last_vertex.P);
-        float phase = evaluateAlteredPhaseFunction(last_vertex.V, wi, last_volume.g);
+        float phase = evaluateAlteredPhaseFunctionIdx(last_vertex.V, wi, last_volume.similarity_idx);
         biased_bsdf = last_volume.scattering * phase;
     }
     biased_throughput *= biased_bsdf;
@@ -77,11 +77,13 @@ bool shouldSkip(uint correlation_mode, int vertex_idx, int last_vertex_idx, out 
         }
     } else if (correlation_mode == SKIP_RANDOM_CORRELATION_MODE) {
         EvaluatedVolume unbiased_vol = evaluateVertexVolume(path.vertices[vertex_idx], false, options.assume_homogenous);
-        float sigma_s = luminance(unbiased_vol.scattering);
-        float sigma_t = sigma_s + luminance(unbiased_vol.absorption);
-        float albedo  = sigma_s / max(sigma_t, 1e-8);
-        float g       = max(unbiased_vol.g, 0.0);
-        float p_keep  = clamp(1.0 - g * albedo, 0.0, 1.0);
+        // Keep with the biased-to-unbiased extinction ratio
+        // (alpha * sigma_s + sigma_a) / (sigma_s + sigma_a),
+        // using the channel that maximizes it.
+        vec3 sigma_s = unbiased_vol.scattering;
+        vec3 sigma_t = sigma_s + unbiased_vol.absorption;
+        vec3 p_keep_rgb = (unbiased_vol.similarity_alpha * sigma_s + unbiased_vol.absorption) / max(sigma_t, vec3(1e-8));
+        float p_keep = clamp(getMaxComponent(p_keep_rgb), 0.0, 1.0);
         float r = stepAndOutputRNGFloat(rng_state);
         if (r < p_keep) {
             pdf = p_keep;

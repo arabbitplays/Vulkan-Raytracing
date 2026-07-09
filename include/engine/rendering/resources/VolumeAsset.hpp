@@ -14,6 +14,12 @@ namespace RtEngine {
         float max_scattering;
         float max_absorption;
         uint32_t volume_texture_idx;
+        // Precomputed similarity-relation lookup (matches the shader-side
+        // findBestIndex over the table keys); see VolumeManager::createVolumeData.
+        float similarity_alpha;
+        int32_t similarity_table_idx;
+        uint32_t _pad0; // std430: keep the vec4 members 16-byte aligned
+        uint32_t _pad1;
         glm::vec4 bounding_box_origin;
         glm::vec4 bounding_box_extent;
         glm::vec4 avg_scattering;

@@ -41,13 +41,15 @@ EvaluatedVolume evaluateVolumeAtLocalPos(VolumeInstance volume, bool use_similar
 
     float alpha = 1.0;
     if (use_similarity_relation) {
-        alpha = getSimilarityRelationsAlpha(volume.g);
+        alpha = volume.similarity_alpha;
     }
 
     result.absorption = getAbsorption(volume, vol_uv);
     result.scattering = alpha * getScattering(volume, vol_uv);
     result.majorant = alpha * volume.max_scattering + volume.max_absorption;
     result.g = volume.g;
+    result.similarity_idx = volume.similarity_idx;
+    result.similarity_alpha = volume.similarity_alpha;
 
     return result;
 }
@@ -61,13 +63,15 @@ EvaluatedVolume evaluateHomoVolume(VolumeInstance volume, bool use_similarity_re
 
     float alpha = 1.0;
     if (use_similarity_relation) {
-        alpha = getSimilarityRelationsAlpha(volume.g);
+        alpha = volume.similarity_alpha;
     }
 
     result.absorption = volume.avg_absorption.xyz;
     result.scattering = alpha * volume.avg_scattering.xyz;
     result.majorant = alpha * getMaxComponent(volume.avg_absorption.xyz + volume.avg_scattering.xyz);
     result.g = volume.g;
+    result.similarity_idx = volume.similarity_idx;
+    result.similarity_alpha = volume.similarity_alpha;
 
     return result;
 }
@@ -136,7 +140,7 @@ vec3 evaluateVolumeVertex(PathVertex vertex, EvaluationOptions options, inout Ev
 
         float phase = 0;
         if (options.use_similarity_relation) {
-            phase = evaluateAlteredPhaseFunction(vertex.V, L, volume.g);
+            phase = evaluateAlteredPhaseFunctionIdx(vertex.V, L, volume.similarity_idx);
         } else {
             phase = henyeyGreenstein(vertex.V, L, volume.g);
         }

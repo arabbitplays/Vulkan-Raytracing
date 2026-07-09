@@ -7,6 +7,7 @@
 #include <QuickTimer.hpp>
 #include <SceneUtil.hpp>
 
+#include <cstring>
 #include <filesystem>
 #include <fstream>
 #include <stdexcept>
@@ -253,14 +254,47 @@ namespace RtEngine {
 		const std::streamsize byte_size = stream.tellg();
 		stream.seekg(0, std::ios::beg);
 
-		std::vector<float> data(byte_size / sizeof(float));
-		stream.read(reinterpret_cast<char *>(data.data()), byte_size);
+		std::vector<char> data(byte_size);
+		stream.read(data.data(), byte_size);
 		if (!stream) {
 			throw std::runtime_error("Failed to read similarity coefficient buffer: " + path.string());
 		}
 
+		// Layout written by scripts/similarity_relations/build_similarity_buffer.pl:
+		// header, g_keys/alphas (kept on the CPU for the per-volume precompute),
+		// then the SSBO payload (coeffs, cdf, totals).
+		struct Header {
+			char magic[4];
+			uint32_t version;
+			uint32_t num_keys;
+			uint32_t num_coeffs;
+		};
+		Header header{};
+		if (static_cast<size_t>(byte_size) < sizeof(Header)) {
+			throw std::runtime_error("Similarity coefficient buffer too small: " + path.string());
+		}
+		std::memcpy(&header, data.data(), sizeof(Header));
+		if (std::memcmp(header.magic, "SIMR", 4) != 0 || header.version != 1) {
+			throw std::runtime_error(
+				"Similarity coefficient buffer has an unknown format (regenerate it with "
+				"scripts/similarity_relations/build_similarity_buffer.pl): " + path.string());
+		}
+
+		const size_t keys_bytes = 2ull * header.num_keys * sizeof(float);
+		const size_t ssbo_bytes =
+			(2ull * header.num_keys * header.num_coeffs + header.num_keys) * sizeof(float);
+		if (static_cast<size_t>(byte_size) != sizeof(Header) + keys_bytes + ssbo_bytes) {
+			throw std::runtime_error("Similarity coefficient buffer has unexpected size: " + path.string());
+		}
+
+		const auto table = std::make_shared<SimilarityTable>();
+		const float *keys = reinterpret_cast<const float *>(data.data() + sizeof(Header));
+		table->g_keys.assign(keys, keys + header.num_keys);
+		table->alphas.assign(keys + header.num_keys, keys + 2ull * header.num_keys);
+		volume_manager->setSimilarityTable(table);
+
 		similarity_coefficient_buffer = vulkan_context->resource_builder->stageMemoryToNewBuffer(
-			data.data(), static_cast<size_t>(byte_size), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
+			data.data() + sizeof(Header) + keys_bytes, ssbo_bytes, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
 
 		main_deletion_queue.pushFunction([&]() {
 			vulkan_context->resource_builder->destroyBuffer(similarity_coefficient_buffer);

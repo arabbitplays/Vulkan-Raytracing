@@ -32,6 +32,8 @@ struct EvaluatedVolume {
     vec3 absorption;
     float majorant;
     float g;
+    int similarity_idx; // precomputed table index for the altered phase function
+    float similarity_alpha; // scattering scale of the matched similarity table
 };
 
 struct PathVertex {

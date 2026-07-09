@@ -8,6 +8,10 @@ struct VolumeInstance {
     float max_scattering;
     float max_absorption;
     uint tex_idx;
+    float similarity_alpha;
+    int similarity_idx; // Precomputed on the CPU from g (see VolumeManager::createVolumeData);
+    uint _pad0;
+    uint _pad1;
     vec4 bounding_box_origin;
     vec4 bounding_box_extent;
     vec4 avg_scattering;
