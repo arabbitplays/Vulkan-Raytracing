@@ -298,21 +298,29 @@ PathVertex sampleVertexInHomogenous(vec3 origin, vec3 dir, int volume_idx, inout
     VolumeInstance volume_instance = getVolume(volume_idx);
 
     EvaluatedVolume volume = evaluateHomoVolume(volume_instance, payload.sampling_options.similarity_relation);
-    float extinction = volume.scattering.x + volume.absorption.x;
-    float sampled_dist = sampleDistance(extinction, rng_state);
+    vec3 extinction = volume.scattering + volume.absorption;
+
+    // hero wavelength sampling: pick one channel uniformly, sample distance from its exponential
+    int hero = min(int(stepAndOutputRNGFloat(rng_state) * 3.0), 2);
+    float hero_extinction = extinction[hero];
+    float sampled_dist = sampleDistance(hero_extinction, rng_state);
 
     if (sampled_dist < dist_to_boundary) {
         PathVertex vertex = createVolumeVertex(origin + sampled_dist * dir, volume_idx);
-        float transmittance = transmittance(sampled_dist, extinction);
-        SampledSegment segment = sampleVolumeSegment(dir, volume, vec3(extinction * transmittance), vec3(1), rng_state);
-        segment.transmittance *= transmittance;
+        vec3 transmittance_vec = exp(-extinction * sampled_dist);
+        // balance heuristic MIS across the three hero-channel strategies
+        vec3 scatter_pdfs = extinction * transmittance_vec;
+        vec3 dist_pdf = vec3((scatter_pdfs.x + scatter_pdfs.y + scatter_pdfs.z) / 3.0);
+        SampledSegment segment = sampleVolumeSegment(dir, volume, dist_pdf, vec3(1), rng_state);
+        segment.transmittance *= transmittance_vec;
         payload.next_segment = segment;
         return vertex;
     } else {
         SampledSegment segment = createNewSegment();
-        float transmittance = transmittance(extinction, dist_to_boundary);
-        segment.dist_pdf *= transmittance;
-        segment.transmittance *= transmittance;
+        vec3 transmittance_vec = exp(-extinction * dist_to_boundary);
+        vec3 dist_pdf = vec3((transmittance_vec.x + transmittance_vec.y + transmittance_vec.z) / 3.0);
+        segment.dist_pdf *= dist_pdf;
+        segment.transmittance *= transmittance_vec;
         payload.next_segment = segment;
         return createVolumeBorderVertex(false);
     }
