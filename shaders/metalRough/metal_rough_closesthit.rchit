@@ -11,7 +11,6 @@
 
 #include "options.glsl"
 #include "vertex_evaluator.glsl"
-#include "path_evaluator.glsl"
 
 #include "../volume/layout.glsl"
 #include "../volume/distance_sampler.glsl"
@@ -331,17 +330,18 @@ PathVertex sampleVertexInHomogenous(vec3 origin, vec3 dir, int volume_idx, inout
 
 void main() {
     PathVertex vertex;
-    PathVertex last_vertex = payload.next_vertex;
+    vec3 last_P = payload.next_vertex.P;
+    int last_volume_idx = getVertexVolumeIdx(payload.next_vertex);
 
     Triangle triangle = getTriangle(gl_InstanceCustomIndexEXT, gl_PrimitiveID);
 
     if (isVolumeBoundary(triangle)) {
-        if (last_vertex.volume_idx >= 0) {
+        if (last_volume_idx >= 0) {
             // exiting volume or scattering inside
             if (payload.sampling_options.assume_homogenous) {
-                vertex = sampleVertexInHomogenous(last_vertex.P, normalize(gl_WorldRayDirectionEXT), getVolumeIdx(triangle), payload.rng_state);
+                vertex = sampleVertexInHomogenous(last_P, normalize(gl_WorldRayDirectionEXT), getVolumeIdx(triangle), payload.rng_state);
             } else {
-                vertex = deltaTracking(last_vertex.P, normalize(gl_WorldRayDirectionEXT), getVolumeIdx(triangle), payload.rng_state);
+                vertex = deltaTracking(last_P, normalize(gl_WorldRayDirectionEXT), getVolumeIdx(triangle), payload.rng_state);
             }
         } else {
             // entering volume
@@ -358,5 +358,5 @@ void main() {
         vertex.is_specular = specular_bounce;
     }
 
-    payload.next_vertex = vertex;
+    payload.next_vertex = packPathVertex(vertex);
 }

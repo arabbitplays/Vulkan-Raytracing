@@ -66,6 +66,10 @@ namespace RtEngine {
 
 		std::shared_ptr<Window> window;
 
+		// Must match MAX_PATH_LENGTH in shaders/common/path.glsl: paths are
+		// stored per thread and vertices beyond this cap would be dropped.
+		static constexpr uint32_t MAX_PATH_LENGTH = 32;
+
 		uint32_t recursion_depth = 5;
 		MlmcMethod mlmc_mode = PATH_LENGTH;
 		std::string mlmc_mode_str = "path length";

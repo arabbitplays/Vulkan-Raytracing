@@ -28,5 +28,5 @@ void main() {
     //    payload.light += payload.beta * alignment * uniformLe();
     //}
     payload.rr_beta = vec3(0);
-    payload.next_vertex = createEnvironmentVertex();
+    payload.next_vertex = packPathVertex(createEnvironmentVertex());
 }

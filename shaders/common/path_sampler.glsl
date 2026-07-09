@@ -12,7 +12,7 @@ layout(location = 0) rayPayloadEXT Payload payload;
 
 void initPayload(vec3 origin, vec3 direction) {
     payload.next_vertex.P = origin;
-    payload.next_vertex.volume_idx = -1;
+    payload.next_vertex.meta = packVertexMeta(0u, -1, INVALID_TYPE, false);
     payload.next_dir = direction;
     payload.depth = 0;
     payload.rr_beta = vec3(1.0);
@@ -23,7 +23,7 @@ void initPayload(vec3 origin, vec3 direction) {
     payload.sampling_options = sample_options;
 }
 
-void addVertexToPath(PathVertex vertex, SampledSegment segment) {
+void addVertexToPath(PackedPathVertex vertex, SampledSegment segment) {
     if (path.len == MAX_PATH_LENGTH)
         return;
     path.vertices[path.len] = vertex;
@@ -53,9 +53,10 @@ void continuePath() {
 
     payload.rr_beta *= getPreEvaluationBeta(payload.next_segment);
     float rr_pdf = 1;
+    int next_vertex_type = getVertexType(payload.next_vertex);
     bool apply_russian_roulette = options.russian_roulette
         && payload.depth > 1
-        && (payload.next_vertex.type == SURFACE_TYPE || payload.next_vertex.type == VOLUME_TYPE);
+        && (next_vertex_type == SURFACE_TYPE || next_vertex_type == VOLUME_TYPE);
     if (apply_russian_roulette) {
         if (evalRussianRoulette(payload.rr_beta, payload.eta_scale, rr_pdf, payload.rng_state)) {
             payload.rr_beta = vec3(0);
@@ -67,13 +68,15 @@ void continuePath() {
 
     addVertexToPath(payload.next_vertex, payload.next_segment);
 
-    if (payload.next_vertex.type != INVALID_TYPE) {
+    if (next_vertex_type != INVALID_TYPE) {
         payload.depth++;
     }
 
 }
 
 void takePathSample(uint max_depth) {
+    // vertices beyond MAX_PATH_LENGTH would be dropped by addVertexToPath anyway
+    max_depth = min(max_depth, MAX_PATH_LENGTH);
     initPath(payload.next_vertex.P);
     while (payload.depth < max_depth && payload.next_dir != vec3(0.0) && length(payload.rr_beta) > 0) {
         continuePath();
