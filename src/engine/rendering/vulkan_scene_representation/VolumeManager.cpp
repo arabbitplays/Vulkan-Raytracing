@@ -73,6 +73,7 @@ namespace RtEngine {
             .bounding_box_extent = glm::vec4(extent, 0),
             .avg_scattering = glm::vec4(volume_asset->getAvgScattering(), 0),
             .avg_absorption = glm::vec4(volume_asset->getAvgAbsorption(), 0),
+            .world_to_object = glm::inverse(volume_asset->world_transform),
         };
         return volume_data;
     }

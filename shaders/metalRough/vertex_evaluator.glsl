@@ -12,6 +12,7 @@
 
 #include "../volume/layout.glsl"
 #include "../volume/phase_function.glsl"
+#include "../volume/distance_sampler.glsl"
 #include "../similarity/altered_phase_function.glsl"
 #include "../volume/transmittance_estimator.glsl"
 
@@ -81,7 +82,44 @@ EvaluatedVolume evaluateVertexVolume(PathVertex vertex, bool use_similarity_rela
     if (assume_homogenous) {
         return evaluateHomoVolume(volume, use_similarity_relation);
     }
-    return evaluateVolumeAtLocalPos(volume, use_similarity_relation, vertex.local_volume_pos);
+    return evaluateVolumeAtLocalPos(volume, use_similarity_relation, posToVolumeLocal(volume, vertex.P));
+}
+
+// Transmittance along a segment known to lie entirely inside one volume (e.g.
+// between two stored path vertices). Marches the volume directly through its
+// world_to_object transform instead of tracing rays to rediscover boundaries
+// the path already recorded; the estimators match the shadow-ray versions in
+// shadow_clostesthit.rchit (ratio tracking / analytic).
+vec3 estimateSegmentTransmittance(vec3 from_P, vec3 to_P, int volume_idx, bool use_similarity_relation, bool assume_homogenous, inout uvec4 rng_state) {
+    if (volume_idx < 0) {
+        return vec3(1);
+    }
+    VolumeInstance volume_instance = getVolume(volume_idx);
+    vec3 dir = to_P - from_P;
+    float dist = length(dir);
+    if (dist <= 0.0) {
+        return vec3(1);
+    }
+    dir /= dist;
+
+    if (assume_homogenous) {
+        EvaluatedVolume volume = evaluateHomoVolume(volume_instance, use_similarity_relation);
+        return exp(-(volume.scattering + volume.absorption) * dist);
+    }
+
+    EvaluatedVolume volume = evaluateVolumeAtLocalPos(volume_instance, use_similarity_relation, posToVolumeLocal(volume_instance, from_P));
+    vec3 transmittance = vec3(1);
+    float tracked_dist = 0;
+    while (true) {
+        tracked_dist += sampleDistance(volume.majorant, rng_state);
+        if (tracked_dist >= dist) {
+            break;
+        }
+        vec3 curr_pos = from_P + tracked_dist * dir;
+        volume = evaluateVolumeAtLocalPos(volume_instance, use_similarity_relation, posToVolumeLocal(volume_instance, curr_pos));
+        transmittance *= (1.0 - (volume.scattering + volume.absorption) / volume.majorant);
+    }
+    return transmittance;
 }
 
 vec3 evaluateSurfaceVertex(PathVertex vertex, EvaluationOptions options, inout EvaluationContext context, inout uvec4 rng_state) {

@@ -45,7 +45,6 @@ struct PathVertex {
     vec2 uv;
     uint material_idx;
     int volume_idx;
-    vec3 local_volume_pos;
     int type;
     bool is_specular;
 };
@@ -60,16 +59,16 @@ PathVertex createNewPathVertex() {
     vertex.uv = vec2(0);
     vertex.material_idx = 0;
     vertex.volume_idx = -1;
-    vertex.local_volume_pos = vec3(0);
     vertex.type = INVALID_TYPE;
     vertex.is_specular = false;
     return vertex;
 }
 
 // --- packed path vertex ------------------------------------------------------
-// Storage form of PathVertex (44 B instead of 96 B): V is derived from the
-// previous vertex position (V = normalize(prev_P - P), i.e. -ray_dir), the
-// direction vectors are octahedral-encoded to 2x16-bit snorm, uv is 2x f16,
+// Storage form of PathVertex (32 B instead of the original 96 B): V is derived
+// from the previous vertex position (V = normalize(prev_P - P), i.e. -ray_dir),
+// the volume-local position from P via the volume's world_to_object transform,
+// the direction vectors are octahedral-encoded to 2x16-bit snorm, uv is 2x f16,
 // and material_idx / volume_idx / type / is_specular share one uint.
 
 vec2 octWrap(vec2 v) {
@@ -101,7 +100,6 @@ uint packVertexMeta(uint material_idx, int volume_idx, int type, bool is_specula
 struct PackedPathVertex {
     vec3 P;
     uint meta;
-    vec3 local_volume_pos;
     uint geom_N_oct;
     uint N_oct;
     uint T_oct;
@@ -123,7 +121,6 @@ PackedPathVertex packPathVertex(PathVertex v) {
     PackedPathVertex p;
     p.P = v.P;
     p.meta = packVertexMeta(v.material_idx, v.volume_idx, v.type, v.is_specular);
-    p.local_volume_pos = v.local_volume_pos;
     p.geom_N_oct = packDirectionOct(v.geom_N);
     p.N_oct = packDirectionOct(v.N);
     p.T_oct = packDirectionOct(v.T);
@@ -141,7 +138,6 @@ PathVertex unpackPathVertex(PackedPathVertex p, vec3 prev_P) {
     v.uv = getVertexUV(p);
     v.material_idx = getVertexMaterialIdx(p);
     v.volume_idx = getVertexVolumeIdx(p);
-    v.local_volume_pos = p.local_volume_pos;
     v.type = getVertexType(p);
     v.is_specular = isVertexSpecular(p);
     return v;

@@ -100,7 +100,6 @@ PathVertex createVolumeVertex(vec3 pos, int volume_idx) {
     vertex.V = -normalize(gl_WorldRayDirectionEXT);
 
     vertex.volume_idx = volume_idx;
-    vertex.local_volume_pos = (gl_WorldToObjectEXT * vec4(pos, 1.0f)).xyz;
 
     return vertex;
 }

@@ -49,8 +49,9 @@ void updateBiasedThroughput(int curr_vertex_idx, int last_vertex_idx, inout vec3
     vec3 biased_transmittance = vec3(1);;
     if (vertex.type == VOLUME_TYPE // if this is a volume vertex
             || (vertex.type == VOLUME_BOUNDARY_TYPE && last_vertex.type == VOLUME_TYPE)) { // or an exiting volume boundary vertex
-        vec3 dir = vertex.P - last_vertex.P;
-        biased_transmittance = estimateTransmittance(last_vertex.P, normalize(dir), length(dir), last_vertex.volume_idx, true, options.assume_homogenous, rng_state);
+        // the segment lies inside last_vertex's volume, so march it directly
+        // instead of re-tracing rays against boundaries the path already found
+        biased_transmittance = estimateSegmentTransmittance(last_vertex.P, vertex.P, last_vertex.volume_idx, true, options.assume_homogenous, rng_state);
         biased_throughput *= biased_transmittance;
     }
 

@@ -4,6 +4,7 @@
 #include <vector>
 #include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
+#include <glm/mat4x4.hpp>
 
 #include "MeshAsset.hpp"
 #include "Volume.hpp"
@@ -24,6 +25,9 @@ namespace RtEngine {
         glm::vec4 bounding_box_extent;
         glm::vec4 avg_scattering;
         glm::vec4 avg_absorption;
+        // Inverse of the volume node's world transform, so shaders can map
+        // world positions into the volume without hit-shader instance context.
+        glm::mat4 world_to_object;
     };
 
     struct VolumeAsset
@@ -31,6 +35,11 @@ namespace RtEngine {
         std::string name;
         uint32_t volume_id;
         std::shared_ptr<Volume> volume;
+        // World transform of the node rendering this volume, stamped during
+        // asset collection (SceneUtil::collectVolumeAssets). Assumes one
+        // instance per volume asset; animated volumes need a re-collect
+        // (VOLUME_UPDATE) to stay in sync.
+        glm::mat4 world_transform = glm::mat4(1.0f);
         float g;
         glm::vec3 absorption_scale, scattering_scale;
         std::shared_ptr<MeshAsset> bounding_mesh;

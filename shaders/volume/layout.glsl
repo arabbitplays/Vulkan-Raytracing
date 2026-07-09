@@ -16,6 +16,9 @@ struct VolumeInstance {
     vec4 bounding_box_extent;
     vec4 avg_scattering;
     vec4 avg_absorption;
+    // maps world positions into the volume's object space, so evaluation code
+    // outside hit shaders (no gl_WorldToObjectEXT) can sample the volume
+    mat4 world_to_object;
 };
 
 layout(binding = 8, set = 0) buffer VolumeBuffer {
@@ -42,6 +45,10 @@ VolumeInstance getVolume(Triangle triangle) {
 
 bool isVolumeBoundary(Triangle triangle) {
     return isVolumeBoundary(getVolumeIdx(triangle));
+}
+
+vec3 posToVolumeLocal(VolumeInstance volume, vec3 world_pos) {
+    return (volume.world_to_object * vec4(world_pos, 1.0)).xyz;
 }
 
 vec3 posToVolumeUV(VolumeInstance volume, vec3 obj_pos) {
