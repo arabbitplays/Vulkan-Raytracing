@@ -1,23 +1,7 @@
 #include "VolumeManager.hpp"
 
-#include "AccelerationStructure.hpp"
-#include "AccelerationStructure.hpp"
-#include "AccelerationStructure.hpp"
-#include "AccelerationStructure.hpp"
-#include "AccelerationStructure.hpp"
-#include "AccelerationStructure.hpp"
-#include "AccelerationStructure.hpp"
-#include "AccelerationStructure.hpp"
-#include "AccelerationStructure.hpp"
-#include "AccelerationStructure.hpp"
-#include "AccelerationStructure.hpp"
-#include "AccelerationStructure.hpp"
-#include "AccelerationStructure.hpp"
-#include "AccelerationStructure.hpp"
-#include "AccelerationStructure.hpp"
-#include "AccelerationStructure.hpp"
-#include "AccelerationStructure.hpp"
-#include "AccelerationStructure.hpp"
+#include <glm/gtc/packing.hpp>
+
 #include "QuickTimer.hpp"
 #include "spdlog/spdlog.h"
 
@@ -79,8 +63,18 @@ namespace RtEngine {
     }
 
     AllocatedImage VolumeManager::createVolumeTexture(glm::uvec3 vol_size, std::shared_ptr<std::vector<glm::vec4>> coefficients) const {
+        // Pack RGBA to fp16 so the two 3D fetches per delta/ratio-tracking step
+        // move half the bandwidth. Volume coefficients don't need fp32.
+        std::vector<uint16_t> packed(coefficients->size() * 4);
+        for (size_t i = 0; i < coefficients->size(); ++i) {
+            const glm::vec4 &v = (*coefficients)[i];
+            packed[i * 4 + 0] = glm::packHalf1x16(v.x);
+            packed[i * 4 + 1] = glm::packHalf1x16(v.y);
+            packed[i * 4 + 2] = glm::packHalf1x16(v.z);
+            packed[i * 4 + 3] = glm::packHalf1x16(v.w);
+        }
         VkExtent3D extent = {vol_size.x, vol_size.y, vol_size.z};
-        return vulkan_context->resource_builder->createImage(coefficients->data(), extent, VK_FORMAT_R32G32B32A32_SFLOAT,
+        return vulkan_context->resource_builder->createImage(packed.data(), extent, VK_FORMAT_R16G16B16A16_SFLOAT,
                                                              VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_SAMPLED_BIT,
                                                              VK_IMAGE_ASPECT_COLOR_BIT,
                                                              VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,

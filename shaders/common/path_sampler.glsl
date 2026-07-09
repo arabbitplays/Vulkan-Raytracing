@@ -78,7 +78,7 @@ void takePathSample(uint max_depth) {
     // vertices beyond MAX_PATH_LENGTH would be dropped by addVertexToPath anyway
     max_depth = min(max_depth, MAX_PATH_LENGTH);
     initPath(payload.next_vertex.P);
-    while (payload.depth < max_depth && payload.next_dir != vec3(0.0) && length(payload.rr_beta) > 0) {
+    while (payload.depth < max_depth && payload.next_dir != vec3(0.0) && dot(payload.rr_beta, payload.rr_beta) > 0.0) {
         continuePath();
     }
 }

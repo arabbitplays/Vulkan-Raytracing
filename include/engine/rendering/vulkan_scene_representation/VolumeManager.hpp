@@ -12,9 +12,10 @@ namespace RtEngine {
         VolumeManager() = default;
 
         explicit VolumeManager(const std::shared_ptr<VulkanContext> &vulkan_context) : vulkan_context(vulkan_context) {
-            uint32_t black = glm::packUnorm4x8(glm::vec4(0, 0, 0, 0));
+            // Fallback bound to the unused slots of scattering/absorption samplers.
+            uint16_t black[4] = {0, 0, 0, 0};
             default_volume_texture = vulkan_context->resource_builder->createImage(
-                (void *) &black, VkExtent3D{1, 1, 1}, VK_FORMAT_R32G32_SFLOAT, VK_IMAGE_TILING_OPTIMAL,
+                (void *) &black, VkExtent3D{1, 1, 1}, VK_FORMAT_R16G16B16A16_SFLOAT, VK_IMAGE_TILING_OPTIMAL,
                 VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
                 VK_IMAGE_TYPE_3D);
         }

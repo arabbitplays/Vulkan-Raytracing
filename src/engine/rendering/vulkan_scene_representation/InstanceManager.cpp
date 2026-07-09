@@ -4,6 +4,8 @@
 
 #include <InstanceManager.hpp>
 
+#include <glm/gtc/matrix_inverse.hpp>
+
 namespace RtEngine {
 	void InstanceManager::createInstanceMappingBuffer(std::vector<RenderObject> &objects) {
 		assert(!objects.empty());
@@ -34,6 +36,7 @@ namespace RtEngine {
 			EmittingInstanceData instance_data;
 			instance_data.instance_id = i;
 			instance_data.model_matrix = objects[i].transform;
+			instance_data.normal_matrix = glm::mat4(glm::transpose(glm::inverse(glm::mat3(objects[i].transform))));
 			float power = objects[i].emitting_power;
 			instance_data.primitive_count = objects[i].primitive_count;
 			if (power > 0.0f || (i == objects.size() - 1 && emitting_instances.empty())) {

@@ -104,18 +104,17 @@ PathVertex createVolumeVertex(vec3 pos, int volume_idx) {
     return vertex;
 }
 
-SampledSegment sampleNextSegment(PathVertex vertex, bool sample_bsdf, out bool specular_bounce, inout uvec4 rng_state) {
+// Takes an already-evaluated material so we don't re-fetch the two textures
+// the caller (main()) already fetched via evaluateVertexMaterial.
+SampledSegment sampleNextSegment(PathVertex vertex, EvaluatedMaterial material, bool sample_bsdf, out bool specular_bounce, inout uvec4 rng_state) {
     SampledSegment sampled_segment = createNewSegment();
 
     mat3 TBN = getTBN(vertex.geom_N, vertex.T);
     mat3 transpose_tbn = transpose(TBN);
 
-    Material material = getMaterial(vertex.material_idx);
-    vec3 albedo = texture(material_textures[material.albedo_tex_idx], vertex.uv).xyz + material.albedo;
-    vec3 metal_rough_ao = texture(material_textures[material.metal_rough_ao_tex_idx], vertex.uv).xyz;
-    float metallic = metal_rough_ao.x + material.metallic;
-    float roughness = metal_rough_ao.y + material.roughness;
-    float ao = metal_rough_ao.z + material.ao;
+    vec3 albedo = material.albedo;
+    float metallic = material.metallic;
+    float roughness = material.roughness;
     float eta = material.eta;
 
     if (sample_bsdf) {
@@ -353,7 +352,7 @@ void main() {
         EvaluatedMaterial material = evaluateVertexMaterial(vertex);
 
         bool specular_bounce = false;
-        payload.next_segment = sampleNextSegment(vertex, options.sample_bsdf, specular_bounce, payload.rng_state);
+        payload.next_segment = sampleNextSegment(vertex, material, options.sample_bsdf, specular_bounce, payload.rng_state);
         vertex.is_specular = specular_bounce;
     }
 

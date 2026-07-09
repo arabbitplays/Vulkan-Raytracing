@@ -26,6 +26,7 @@ layout(binding = 6, set = 0) readonly buffer InstanceMappingBuffer {
 
 struct EmittingInstance {
     mat4 transform;
+    mat4 normal_matrix; // precomputed transpose(inverse(mat3(transform))) in the top-left 3x3
     uint instance_idx;
     uint primitive_count;
     uint padding[2];

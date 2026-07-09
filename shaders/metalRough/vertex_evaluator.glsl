@@ -150,12 +150,12 @@ vec3 evaluateSurfaceVertex(PathVertex vertex, EvaluationOptions options, inout E
 
         if (options.sample_bsdf) {
             vec3 f = calcConductorBRDF(wo, wi, material.albedo, material.metallic, material.roughness) * max(dot(vertex.N, L), 0.0);
-            if (light_sample.light != vec3(0) && length(f) > 0.0 && length(transmittance) > 0) {
+            if (light_sample.light != vec3(0) && dot(f, f) > 0.0 && dot(transmittance, transmittance) > 0.0) {
                 light += transmittance * f * light_sample.light / light_sample.pdf;
             }
         } else {
             vec3 f = computeBsdf(wo, wi, material.albedo, material.metallic, material.roughness, material.eta) * abs(dot(vertex.N, L));
-            if (light_sample.light != vec3(0) && length(f) > 0.0 && length(transmittance) > 0) {
+            if (light_sample.light != vec3(0) && dot(f, f) > 0.0 && dot(transmittance, transmittance) > 0.0) {
                 light += transmittance * f * light_sample.light / light_sample.pdf;
             }
         }
@@ -182,7 +182,7 @@ vec3 evaluateVolumeVertex(PathVertex vertex, EvaluationOptions options, inout Ev
         } else {
             phase = henyeyGreenstein(vertex.V, L, volume.g);
         }
-        if (light_sample.light != vec3(0) && phase > 0.0 && length(transmittance) > 0) {
+        if (light_sample.light != vec3(0) && phase > 0.0 && dot(transmittance, transmittance) > 0.0) {
             return volume.scattering * transmittance * phase * light_sample.light / light_sample.pdf;
         }
     }

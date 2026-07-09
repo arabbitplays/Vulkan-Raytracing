@@ -37,9 +37,8 @@ LightSample sampleEmittingPrimitive(vec3 P, uint emitter_count, inout uvec4 rng_
     float area = 0.5 * length(cross(B_pos - A_pos, C_pos - A_pos));
     float pdf = 1.0 / area;
 
-    mat3 normal_matrix = transpose(inverse(mat3(emitting_instance.transform)));
     vec3 N = normalize((1 - u - v) * triangle.A.normal + u * triangle.B.normal + v * triangle.C.normal);
-    N = normalize(vec3(normal_matrix * N));
+    N = normalize(mat3(emitting_instance.normal_matrix) * N);
 
     vec3 L = P - sampled_P;
 
