@@ -330,8 +330,11 @@ void main() {
     if (isVolumeBoundary(triangle)) {
         if (last_vertex.volume_idx >= 0) {
             // exiting volume or scattering inside
-            //vertex = deltaTracking(last_vertex.P, normalize(gl_WorldRayDirectionEXT), getVolumeIdx(triangle), payload.rng_state);
-            vertex = sampleVertexInHomogenous(last_vertex.P, normalize(gl_WorldRayDirectionEXT), getVolumeIdx(triangle), payload.rng_state);
+            if (payload.sampling_options.assume_homogenous) {
+                vertex = sampleVertexInHomogenous(last_vertex.P, normalize(gl_WorldRayDirectionEXT), getVolumeIdx(triangle), payload.rng_state);
+            } else {
+                vertex = deltaTracking(last_vertex.P, normalize(gl_WorldRayDirectionEXT), getVolumeIdx(triangle), payload.rng_state);
+            }
         } else {
             // entering volume
             vertex = createVolumeBorderVertex(true);

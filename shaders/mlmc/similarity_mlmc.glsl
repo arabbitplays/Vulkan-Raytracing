@@ -50,14 +50,14 @@ void updateBiasedThroughput(int curr_vertex_idx, int last_vertex_idx, inout vec3
     if (vertex.type == VOLUME_TYPE // if this is a volume vertex
             || (vertex.type == VOLUME_BOUNDARY_TYPE && last_vertex.type == VOLUME_TYPE)) { // or an exiting volume boundary vertex
         vec3 dir = vertex.P - last_vertex.P;
-        biased_transmittance = estimateTransmittance(last_vertex.P, normalize(dir), length(dir), last_vertex.volume_idx, true, rng_state);
+        biased_transmittance = estimateTransmittance(last_vertex.P, normalize(dir), length(dir), last_vertex.volume_idx, true, options.assume_homogenous, rng_state);
         biased_throughput *= biased_transmittance;
     }
 
     // multiply the bsdf of the last evaluated vertex
     vec3 biased_bsdf = path.segments[last_vertex_idx].bsdf;
     if (last_vertex.type == VOLUME_TYPE) {
-        EvaluatedVolume last_volume = evaluateVertexVolume(last_vertex, true);
+        EvaluatedVolume last_volume = evaluateVertexVolume(last_vertex, true, options.assume_homogenous);
         vec3 wi = normalize(vertex.P - last_vertex.P);
         float phase = evaluateAlteredPhaseFunction(last_vertex.V, wi, last_volume.g);
         biased_bsdf = last_volume.scattering * phase;
@@ -76,7 +76,7 @@ bool shouldSkip(uint correlation_mode, int vertex_idx, int last_vertex_idx, out 
             return true;
         }
     } else if (correlation_mode == SKIP_RANDOM_CORRELATION_MODE) {
-        EvaluatedVolume unbiased_vol = evaluateVertexVolume(path.vertices[vertex_idx], false);
+        EvaluatedVolume unbiased_vol = evaluateVertexVolume(path.vertices[vertex_idx], false, options.assume_homogenous);
         float sigma_s = luminance(unbiased_vol.scattering);
         float sigma_t = sigma_s + luminance(unbiased_vol.absorption);
         float albedo  = sigma_s / max(sigma_t, 1e-8);
