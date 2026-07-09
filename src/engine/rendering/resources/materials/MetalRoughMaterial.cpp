@@ -2,8 +2,10 @@
 
 #include <cstring>
 #include <DescriptorLayoutBuilder.hpp>
+#include <DeviceManager.hpp>
 #include <OptionsWindow.hpp>
 #include <VulkanUtil.hpp>
+#include <spdlog/spdlog.h>
 #include <metal_rough_closesthit.rchit.spv.h>
 #include <shadow_clostesthit.rchit.spv.h>
 #include <metal_rough_miss.rmiss.spv.h>
@@ -14,21 +16,36 @@
 
 namespace RtEngine {
 	void MetalRoughMaterial::buildPipelines(VkDescriptorSetLayout sceneLayout) {
-		DescriptorLayoutBuilder layoutBuilder;
-		pipeline = std::make_shared<RaytracingPipeline>(vulkan_context);
 		VkDevice device = vulkan_context->device_manager->getDevice();
+		scene_layout = sceneLayout;
 
-		layoutBuilder.addBinding(0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
-		layoutBuilder.addBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 64); // TODO make this dynamic depending on the scene
+		// Layout, descriptor set and deletion-queue entries are created once;
+		// the pipeline itself can be rebuilt (see ensurePathCapacity).
+		if (materialLayout == VK_NULL_HANDLE) {
+			DescriptorLayoutBuilder layoutBuilder;
+			layoutBuilder.addBinding(0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+			layoutBuilder.addBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 64); // TODO make this dynamic depending on the scene
 
-		materialLayout = layoutBuilder.build(device, VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR | VK_SHADER_STAGE_MISS_BIT_KHR);
-		mainDeletionQueue.pushFunction([&]() {
-			vkDestroyDescriptorSetLayout(vulkan_context->device_manager->getDevice(), materialLayout, nullptr);
-		});
-		materialDescriptorSet = descriptorAllocator.allocate(vulkan_context->device_manager->getDevice(), materialLayout);
+			materialLayout = layoutBuilder.build(device, VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR | VK_SHADER_STAGE_MISS_BIT_KHR);
+			mainDeletionQueue.pushFunction([&]() {
+				vkDestroyDescriptorSetLayout(vulkan_context->device_manager->getDevice(), materialLayout, nullptr);
+			});
+			materialDescriptorSet = descriptorAllocator.allocate(device, materialLayout);
+			mainDeletionQueue.pushFunction([&]() {
+				if (pipeline)
+					pipeline->destroy();
+			});
+		}
 
-		std::vector<VkDescriptorSetLayout> descriptorSetLayouts{sceneLayout, materialLayout};
+		if (pipeline) { // rebuild: the caller must have waited for device idle
+			pipeline->destroy();
+		}
+		pipeline = std::make_shared<RaytracingPipeline>(vulkan_context);
+
+		std::vector<VkDescriptorSetLayout> descriptorSetLayouts{scene_layout, materialLayout};
 		pipeline->setDescriptorSetLayouts(descriptorSetLayouts);
+
+		pipeline->setSpecConstant(0, max_path_length); // MAX_PATH_LENGTH in shaders/common/path.glsl
 
 		pipeline->addPushConstant(21 * sizeof(uint32_t), VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR |
 																  VK_SHADER_STAGE_RAYGEN_BIT_KHR |
@@ -58,13 +75,26 @@ namespace RtEngine {
 
 		pipeline->build();
 
-		mainDeletionQueue.pushFunction([&]() { pipeline->destroy(); });
-
 		vkDestroyShaderModule(device, raygenShaderModule, nullptr);
 		vkDestroyShaderModule(device, missShaderModule, nullptr);
 		vkDestroyShaderModule(device, shadowMissShaderModule, nullptr);
 		vkDestroyShaderModule(device, closestHitShaderModule, nullptr);
 		vkDestroyShaderModule(device, shadow_hit_shader_module, nullptr);
+	}
+
+	void MetalRoughMaterial::ensurePathCapacity(uint32_t required_depth) {
+		if (required_depth <= max_path_length || scene_layout == VK_NULL_HANDLE) {
+			return;
+		}
+		// round up so sweeping the depth upwards does not rebuild every step
+		const uint32_t new_limit = (required_depth + 15u) / 16u * 16u;
+		spdlog::info("Growing path capacity {} -> {}, rebuilding the metal-rough pipeline", max_path_length,
+					 new_limit);
+		max_path_length = new_limit;
+
+		vkDeviceWaitIdle(vulkan_context->device_manager->getDevice());
+		buildPipelines(scene_layout);
+		pipeline->createShaderBindingTables(DeviceManager::RAYTRACING_PROPERTIES);
 	}
 
 	void MetalRoughMaterial::writeMaterial(AllocatedBuffer material_buffer, std::shared_ptr<MaterialTextures<>> material_textures) {

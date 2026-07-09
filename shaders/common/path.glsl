@@ -3,10 +3,11 @@
 
 #include "path_vertex.glsl"
 
-// Hard cap on stored path vertices; sampling clamps to it and the CPU-side
-// recursion_depth option mirrors it (RaytracingRenderer::MAX_PATH_LENGTH).
-// Keep it tight: the path lives in per-thread scratch memory.
-#define MAX_PATH_LENGTH 32
+// Upper bound on stored path vertices, specialized at pipeline creation
+// (MetalRoughMaterial::buildPipelines sets constant_id 0 and rebuilds the
+// pipeline when recursion_depth grows beyond it). Keep the default tight:
+// the path lives in per-thread scratch memory.
+layout(constant_id = 0) const uint MAX_PATH_LENGTH = 32;
 struct Path {
     vec3 origin;
     uint len;

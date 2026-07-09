@@ -66,9 +66,12 @@ namespace RtEngine {
 
 		std::shared_ptr<Window> window;
 
-		// Must match MAX_PATH_LENGTH in shaders/common/path.glsl: paths are
-		// stored per thread and vertices beyond this cap would be dropped.
-		static constexpr uint32_t MAX_PATH_LENGTH = 32;
+		// Sanity ceiling for the recursion_depth option. Path storage grows
+		// dynamically with it: the pipeline is respecialized with a larger
+		// MAX_PATH_LENGTH when the depth exceeds the current capacity
+		// (Material::ensurePathCapacity), at ~110 B of per-thread scratch
+		// per vertex.
+		static constexpr uint32_t MAX_RECURSION_DEPTH = 256;
 
 		uint32_t recursion_depth = 5;
 		MlmcMethod mlmc_mode = PATH_LENGTH;

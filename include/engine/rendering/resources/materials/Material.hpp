@@ -33,11 +33,15 @@ namespace RtEngine {
 		virtual ~Material() {};
 
 		std::shared_ptr<RaytracingPipeline> pipeline;
-		VkDescriptorSetLayout materialLayout;
-		VkDescriptorSet materialDescriptorSet;
+		VkDescriptorSetLayout materialLayout = VK_NULL_HANDLE;
+		VkDescriptorSet materialDescriptorSet = VK_NULL_HANDLE;
 
 		virtual void buildPipelines(VkDescriptorSetLayout sceneLayout) = 0;
 		virtual void writeMaterial(AllocatedBuffer material_buffer, std::shared_ptr<MaterialTextures<>> material_textures) = 0;
+
+		// Rebuilds the pipeline if it cannot store paths of the required depth
+		// (no-op for materials without path storage). May wait for device idle.
+		virtual void ensurePathCapacity(uint32_t /*required_depth*/) {}
 
 		virtual std::shared_ptr<MaterialInstance> loadInstance(const YAML::Node &yaml_node) = 0;
 		AllocatedBuffer createMaterialBuffer();

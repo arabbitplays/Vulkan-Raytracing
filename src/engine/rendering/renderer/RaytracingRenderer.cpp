@@ -231,6 +231,9 @@ namespace RtEngine {
     }
 
 	void RaytracingRenderer::recordRenderToImage(VkCommandBuffer commandBuffer, std::shared_ptr<RenderTargetRepository> target) {
+		// may wait for device idle and rebuild the pipeline with a larger
+		// MAX_PATH_LENGTH specialization; must happen before the pipeline is bound
+		scene_adapter->getMaterial()->ensurePathCapacity(recursion_depth);
 		RaytracingPipeline pipeline = *scene_adapter->getMaterial()->pipeline;
 
         const uint32_t handleSizeAligned =
@@ -278,11 +281,6 @@ namespace RtEngine {
 	void* RaytracingRenderer::createPushConstants(uint32_t* size, const std::shared_ptr<RenderTargetRepository> &target) {
 		push_constants.clear();
 
-        if (recursion_depth > MAX_PATH_LENGTH) {
-            spdlog::warn("recursion_depth {} exceeds MAX_PATH_LENGTH, clamping to {}", recursion_depth,
-                         MAX_PATH_LENGTH);
-            recursion_depth = MAX_PATH_LENGTH;
-        }
         push_constants.push_back(recursion_depth);
         std::shared_ptr<Material> material = scene_adapter->getMaterial();
         material->getPushConstantValues(push_constants);
@@ -404,7 +402,7 @@ namespace RtEngine {
                                         const UpdateFlagsHandle &update_flags) {
         bool target_reset = false;
         if (config->startChild("renderer")) {
-            target_reset |= config->addUint("recursion_depth", &recursion_depth, 1, MAX_PATH_LENGTH);
+            target_reset |= config->addUint("recursion_depth", &recursion_depth, 1, MAX_RECURSION_DEPTH);
             config->endChild();
         }
 

@@ -22,6 +22,8 @@ namespace RtEngine {
 		void buildPipelines(VkDescriptorSetLayout sceneLayout) override;
 		void writeMaterial(AllocatedBuffer material_buffer, std::shared_ptr<MaterialTextures<>> material_textures) override;
 
+		void ensurePathCapacity(uint32_t required_depth) override;
+
 		std::shared_ptr<MaterialInstance> loadInstance(const YAML::Node &yaml_node) override;
 
 		void initProperties(const std::shared_ptr<IProperties> &config, const UpdateFlagsHandle &update_flags) override;
@@ -30,6 +32,10 @@ namespace RtEngine {
 		void reset() override;
 
 	private:
+		// Mirrors the MAX_PATH_LENGTH specialization constant (constant_id 0)
+		// default in shaders/common/path.glsl; grows via ensurePathCapacity.
+		uint32_t max_path_length = 32;
+		VkDescriptorSetLayout scene_layout = VK_NULL_HANDLE;
 
 		bool normal_mapping = false, sample_lights = false, sample_bsdf = false, russian_roulette = false, similarity_relation = false, assume_homogenous = false;
 		bool debug_depth = false;
