@@ -38,6 +38,7 @@ namespace RtEngine {
         volume->densities.reserve(vol_size.x * vol_size.y * vol_size.z);
 
         float majorant = 0;
+        double density_sum = 0.0;
         // Dense sampling
         for (int z = 0; z < vol_size.z; ++z) {
             for (int y = 0; y < vol_size.y; ++y) {
@@ -50,11 +51,13 @@ namespace RtEngine {
 
                     float density = floatGrid->tree().getValue(coord);
                     majorant = std::max(majorant, density);
+                    density_sum += density;
                     volume->densities.emplace_back(density);
                 }
             }
         }
         volume->max_density = majorant;
+        volume->avg_density = static_cast<float>(density_sum / volume->densities.size());
 
         return volume;
     }

@@ -297,8 +297,7 @@ PathVertex sampleVertexInHomogenous(vec3 origin, vec3 dir, int volume_idx, inout
 
     VolumeInstance volume_instance = getVolume(volume_idx);
 
-    vec3 obj_pos = (gl_WorldToObjectEXT * vec4(origin, 1.0f)).xyz;
-    EvaluatedVolume volume = evaluateVolumeAtLocalPos(volume_instance, payload.sampling_options.similarity_relation, obj_pos);
+    EvaluatedVolume volume = evaluateHomoVolume(volume_instance, payload.sampling_options.similarity_relation);
     float extinction = volume.scattering.x + volume.absorption.x;
     float sampled_dist = sampleDistance(extinction, rng_state);
 

@@ -13,6 +13,7 @@ namespace RtEngine {
         auto result = std::make_shared<Volume>();
         result->path = "";
         result->max_density = 1;
+        result->avg_density = 1;
 
         result->size = glm::uvec3(1);
         result->densities = std::vector<float>(1, 1);

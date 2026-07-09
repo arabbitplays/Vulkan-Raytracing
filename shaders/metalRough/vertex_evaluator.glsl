@@ -34,19 +34,39 @@ EvaluatedMaterial evaluateVertexMaterial(PathVertex vertex) {
     return result;
 }
 
-EvaluatedVolume evaluateVolumeAtLocalPos(VolumeInstance volume, bool use_similarity_realtion, vec3 obj_pos) {
+EvaluatedVolume evaluateVolumeAtLocalPos(VolumeInstance volume, bool use_similarity_relation, vec3 obj_pos) {
     EvaluatedVolume result;
 
     vec3 vol_uv = posToVolumeUV(volume, obj_pos);
 
     float alpha = 1.0;
-    if (use_similarity_realtion) {
+    if (use_similarity_relation) {
         alpha = getSimilarityRelationsAlpha(volume.g);
     }
 
     result.absorption = getAbsorption(volume, vol_uv);
     result.scattering = alpha * getScattering(volume, vol_uv);
     result.majorant = alpha * volume.max_scattering + volume.max_absorption;
+    result.g = volume.g;
+
+    return result;
+}
+
+float getMaxComponent(vec3 v) {
+    return max(v.x, max(v.y, v.z));
+}
+
+EvaluatedVolume evaluateHomoVolume(VolumeInstance volume, bool use_similarity_relation) {
+     EvaluatedVolume result;
+
+    float alpha = 1.0;
+    if (use_similarity_relation) {
+        alpha = getSimilarityRelationsAlpha(volume.g);
+    }
+
+    result.absorption = volume.avg_absorption.xyz;
+    result.scattering = alpha * volume.avg_scattering.xyz;
+    result.majorant = alpha * getMaxComponent(volume.avg_absorption.xyz + volume.avg_scattering.xyz);
     result.g = volume.g;
 
     return result;

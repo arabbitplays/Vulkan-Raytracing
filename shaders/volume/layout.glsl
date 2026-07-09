@@ -10,6 +10,8 @@ struct VolumeInstance {
     uint tex_idx;
     vec4 bounding_box_origin;
     vec4 bounding_box_extent;
+    vec4 avg_scattering;
+    vec4 avg_absorption;
 };
 
 layout(binding = 8, set = 0) buffer VolumeBuffer {
