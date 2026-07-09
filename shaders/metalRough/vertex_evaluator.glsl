@@ -148,7 +148,7 @@ vec3 evaluateSurfaceVertex(PathVertex vertex, EvaluationOptions options, inout E
 
         vec3 transmittance = estimateTransmittance(vertex.P, L, distance_to_light, options.use_similarity_relation, options.assume_homogenous, rng_state);
 
-        if (options.sample_bsdf) {
+        if (SPEC_SAMPLE_BSDF) {
             vec3 f = calcConductorBRDF(wo, wi, material.albedo, material.metallic, material.roughness) * max(dot(vertex.N, L), 0.0);
             if (light_sample.light != vec3(0) && dot(f, f) > 0.0 && dot(transmittance, transmittance) > 0.0) {
                 light += transmittance * f * light_sample.light / light_sample.pdf;

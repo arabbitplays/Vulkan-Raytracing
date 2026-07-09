@@ -151,7 +151,7 @@ SampledSegment sampleVolumeSegment(vec3 dir, EvaluatedVolume volume, vec3 dist_p
     segment.delta_pdf *= delta_tracking_pdf;
 
     if (payload.sampling_options.similarity_relation) {
-        if (options.sample_bsdf) {
+        if (SPEC_SAMPLE_BSDF) {
             PhaseFunctionSample alt_sample = sampleAlteredPhaseFunctionIdx(-dir, volume.similarity_idx, rng_state);
             payload.next_dir = alt_sample.wi;
             segment.bsdf *= volume.scattering * alt_sample.p;
@@ -166,7 +166,7 @@ SampledSegment sampleVolumeSegment(vec3 dir, EvaluatedVolume volume, vec3 dist_p
         return segment;
     }
 
-    if (options.sample_bsdf) {
+    if (SPEC_SAMPLE_BSDF) {
         PhaseFunctionSample hg_sample = sampleHGPhaseFunction(-dir, volume.g, rng_state);
         payload.next_dir = hg_sample.wi;
         segment.bsdf *= volume.scattering * hg_sample.p;
@@ -352,7 +352,7 @@ void main() {
         EvaluatedMaterial material = evaluateVertexMaterial(vertex);
 
         bool specular_bounce = false;
-        payload.next_segment = sampleNextSegment(vertex, material, options.sample_bsdf, specular_bounce, payload.rng_state);
+        payload.next_segment = sampleNextSegment(vertex, material, SPEC_SAMPLE_BSDF, specular_bounce, payload.rng_state);
         vertex.is_specular = specular_bounce;
     }
 

@@ -39,9 +39,13 @@ namespace RtEngine {
 		virtual void buildPipelines(VkDescriptorSetLayout sceneLayout) = 0;
 		virtual void writeMaterial(AllocatedBuffer material_buffer, std::shared_ptr<MaterialTextures<>> material_textures) = 0;
 
-		// Rebuilds the pipeline if it cannot store paths of the required depth
-		// (no-op for materials without path storage). May wait for device idle.
-		virtual void ensurePathCapacity(uint32_t /*required_depth*/) {}
+		// Rebuilds the pipeline if any specialization constant would change
+		// (path storage size, selected MLMC method, mlmc on/off; other flags
+		// are material-owned and read locally). No-op for materials without
+		// path storage / MLMC. May wait for device idle.
+		virtual void ensurePipelineSpecialization(uint32_t /*required_depth*/,
+												  uint32_t /*mlmc_method*/,
+												  bool /*do_mlmc*/) {}
 
 		virtual std::shared_ptr<MaterialInstance> loadInstance(const YAML::Node &yaml_node) = 0;
 		AllocatedBuffer createMaterialBuffer();

@@ -69,7 +69,7 @@ namespace RtEngine {
 		// Sanity ceiling for the recursion_depth option. Path storage grows
 		// dynamically with it: the pipeline is respecialized with a larger
 		// MAX_PATH_LENGTH when the depth exceeds the current capacity
-		// (Material::ensurePathCapacity), at ~110 B of per-thread scratch
+		// (Material::ensurePipelineSpecialization), at ~110 B of per-thread scratch
 		// per vertex.
 		static constexpr uint32_t MAX_RECURSION_DEPTH = 256;
 

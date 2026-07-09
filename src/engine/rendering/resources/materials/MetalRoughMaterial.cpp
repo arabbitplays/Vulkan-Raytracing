@@ -20,7 +20,7 @@ namespace RtEngine {
 		scene_layout = sceneLayout;
 
 		// Layout, descriptor set and deletion-queue entries are created once;
-		// the pipeline itself can be rebuilt (see ensurePathCapacity).
+		// the pipeline itself can be rebuilt (see ensurePipelineSpecialization).
 		if (materialLayout == VK_NULL_HANDLE) {
 			DescriptorLayoutBuilder layoutBuilder;
 			layoutBuilder.addBinding(0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
@@ -45,9 +45,19 @@ namespace RtEngine {
 		std::vector<VkDescriptorSetLayout> descriptorSetLayouts{scene_layout, materialLayout};
 		pipeline->setDescriptorSetLayouts(descriptorSetLayouts);
 
-		pipeline->setSpecConstant(0, max_path_length); // MAX_PATH_LENGTH in shaders/common/path.glsl
+		// Specialization constants — see shaders/metalRough/options.glsl and
+		// shaders/common/path.glsl. Caller (ensurePipelineSpecialization or
+		// the initial buildPipelines) sets current_* first; here we just bake.
+		current_sample_bsdf = sample_bsdf;
+		current_russian_roulette = russian_roulette;
+		pipeline_specialized = true;
+		pipeline->setSpecConstant(0, max_path_length);            // MAX_PATH_LENGTH
+		pipeline->setSpecConstant(1, current_mlmc_method);        // SPEC_MLMC_METHOD
+		pipeline->setSpecConstant(2, current_do_mlmc ? 1u : 0u);  // SPEC_DO_MLMC
+		pipeline->setSpecConstant(3, current_sample_bsdf ? 1u : 0u);        // SPEC_SAMPLE_BSDF
+		pipeline->setSpecConstant(4, current_russian_roulette ? 1u : 0u);   // SPEC_RUSSIAN_ROULETTE
 
-		pipeline->addPushConstant(21 * sizeof(uint32_t), VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR |
+		pipeline->addPushConstant(17 * sizeof(uint32_t), VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR |
 																  VK_SHADER_STAGE_RAYGEN_BIT_KHR |
 																  VK_SHADER_STAGE_MISS_BIT_KHR);
 
@@ -82,15 +92,39 @@ namespace RtEngine {
 		vkDestroyShaderModule(device, shadow_hit_shader_module, nullptr);
 	}
 
-	void MetalRoughMaterial::ensurePathCapacity(uint32_t required_depth) {
-		if (required_depth <= max_path_length || scene_layout == VK_NULL_HANDLE) {
+	void MetalRoughMaterial::ensurePipelineSpecialization(uint32_t required_depth, uint32_t mlmc_method, bool do_mlmc) {
+		if (scene_layout == VK_NULL_HANDLE) {
 			return;
 		}
-		// round up so sweeping the depth upwards does not rebuild every step
-		const uint32_t new_limit = (required_depth + 15u) / 16u * 16u;
-		spdlog::info("Growing path capacity {} -> {}, rebuilding the metal-rough pipeline", max_path_length,
-					 new_limit);
-		max_path_length = new_limit;
+
+		// Grow path capacity monotonically, rounded up so sweeping the depth
+		// upwards does not rebuild every step.
+		uint32_t new_path_length = max_path_length;
+		if (required_depth > max_path_length) {
+			new_path_length = (required_depth + 15u) / 16u * 16u;
+		}
+
+		const bool needs_rebuild = !pipeline_specialized
+			|| new_path_length != max_path_length
+			|| mlmc_method != current_mlmc_method
+			|| do_mlmc != current_do_mlmc
+			|| sample_bsdf != current_sample_bsdf
+			|| russian_roulette != current_russian_roulette;
+		if (!needs_rebuild) {
+			return;
+		}
+
+		spdlog::info(
+			"Rebuilding metal-rough pipeline: path_length {}->{}, mlmc_method {}->{}, do_mlmc {}->{}, sample_bsdf {}->{}, rr {}->{}",
+			max_path_length, new_path_length,
+			current_mlmc_method, mlmc_method,
+			current_do_mlmc, do_mlmc,
+			current_sample_bsdf, sample_bsdf,
+			current_russian_roulette, russian_roulette);
+
+		max_path_length = new_path_length;
+		current_mlmc_method = mlmc_method;
+		current_do_mlmc = do_mlmc;
 
 		vkDeviceWaitIdle(vulkan_context->device_manager->getDevice());
 		buildPipelines(scene_layout);
@@ -145,8 +179,8 @@ namespace RtEngine {
 	void MetalRoughMaterial::getPushConstantValues(std::vector<int32_t> &push_constants) {
 		push_constants.push_back(static_cast<int32_t>(normal_mapping));
 		push_constants.push_back(static_cast<int32_t>(sample_lights));
-		push_constants.push_back(static_cast<int32_t>(sample_bsdf));
-		push_constants.push_back(static_cast<int32_t>(russian_roulette));
+		// sample_bsdf and russian_roulette are specialization constants now
+		// (see MetalRoughMaterial::ensurePipelineSpecialization).
 		push_constants.push_back(static_cast<int32_t>(similarity_relation));
 		push_constants.push_back(static_cast<int32_t>(assume_homogenous));
 		push_constants.push_back(static_cast<int32_t>(debug_depth));

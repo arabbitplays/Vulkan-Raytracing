@@ -54,7 +54,7 @@ void continuePath() {
     payload.rr_beta *= getPreEvaluationBeta(payload.next_segment);
     float rr_pdf = 1;
     int next_vertex_type = getVertexType(payload.next_vertex);
-    bool apply_russian_roulette = options.russian_roulette
+    bool apply_russian_roulette = SPEC_RUSSIAN_ROULETTE
         && payload.depth > 1
         && (next_vertex_type == SURFACE_TYPE || next_vertex_type == VOLUME_TYPE);
     if (apply_russian_roulette) {
