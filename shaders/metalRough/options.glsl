@@ -7,6 +7,7 @@ layout(push_constant) uniform PushConstants {
     bool sample_bsdf;
     bool russian_roulette;
     bool similarity_relation;
+    bool assume_homogenous;
 
     bool debug_depth;
     bool adaptive_sampling;
