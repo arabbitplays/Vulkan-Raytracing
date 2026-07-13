@@ -85,16 +85,8 @@ EvaluatedVolume evaluateVertexVolume(PathVertex vertex, bool use_similarity_rela
     return evaluateVolumeAtLocalPos(volume, use_similarity_relation, posToVolumeLocal(volume, vertex.P));
 }
 
-// Transmittance along a segment known to lie entirely inside one volume (e.g.
-// between two stored path vertices). Marches the volume directly through its
-// world_to_object transform instead of tracing rays to rediscover boundaries
-// the path already recorded; the estimators match the shadow-ray versions in
-// shadow_clostesthit.rchit (ratio tracking / analytic).
-vec3 estimateSegmentTransmittance(vec3 from_P, vec3 to_P, int volume_idx, bool use_similarity_relation, bool assume_homogenous, inout uvec4 rng_state) {
-    if (volume_idx < 0) {
-        return vec3(1);
-    }
-    VolumeInstance volume_instance = getVolume(volume_idx);
+// Transmittance along a segment known to lie entirely inside one volume
+vec3 estimateSegmentTransmittance(vec3 from_P, vec3 to_P, VolumeInstance volume_instance, bool use_similarity_relation, bool assume_homogenous, inout uvec4 rng_state) {
     vec3 dir = to_P - from_P;
     float dist = length(dir);
     if (dist <= 0.0) {
