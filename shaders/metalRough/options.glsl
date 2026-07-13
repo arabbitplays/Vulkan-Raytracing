@@ -9,6 +9,12 @@ layout(push_constant) uniform PushConstants {
     bool similarity_relation;
 
     bool debug_depth;
+    bool adaptive_sampling;
+    bool debug_variance;
+    bool debug_diff_variance;
+    bool debug_adaptive_sampling;
+    float adaptive_error_bound;
+    uint adaptive_min_samples;
 
     uint accumulated_frame_count;
     uint accumulated_diff_frame_count;

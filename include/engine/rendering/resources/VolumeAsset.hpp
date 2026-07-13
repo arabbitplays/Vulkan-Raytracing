@@ -11,9 +11,9 @@
 namespace RtEngine {
     struct VolumeData {
         float g;
-        float majorant;
+        float max_scattering;
+        float max_absorption;
         uint32_t volume_texture_idx;
-        float pad;
         glm::vec4 bounding_box_origin;
         glm::vec4 bounding_box_extent;
     };
@@ -25,7 +25,6 @@ namespace RtEngine {
         std::shared_ptr<Volume> volume;
         float g;
         glm::vec3 absorption_scale, scattering_scale;
-        float bonus_majorant = 0;
         std::shared_ptr<MeshAsset> bounding_mesh;
 
         std::shared_ptr<std::vector<glm::vec4>> getScatteringCoefficients() const {
@@ -54,10 +53,14 @@ namespace RtEngine {
             return coefficients;
         }
 
-        float getMajorant() const {
-            glm::vec3 extinction = scattering_scale + absorption_scale;
-            return std::max(extinction.x, std::max(extinction.y, extinction.z)) + bonus_majorant;
-            // because densities get scaled down this is not max_density * (scattering_scale + absorption_scale)
+        float getMaxScattering() const {
+            // because density gets scaled down
+            return std::max(scattering_scale.x, std::max(scattering_scale.y, scattering_scale.z));
+        }
+
+        float getMaxAbsorption() const {
+            // because density gets scaled down
+            return std::max(absorption_scale.x, std::max(absorption_scale.y, absorption_scale.z));
         }
     };
 } // RtEngine

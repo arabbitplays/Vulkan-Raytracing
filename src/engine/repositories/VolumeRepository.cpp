@@ -24,7 +24,7 @@ namespace RtEngine {
         return volume_asset;
     }
 
-    std::shared_ptr<VolumeAsset> VolumeRepository::createHomogenousVolumeAsset(glm::vec3 absorption, glm::vec3 scattering, float g, float majorant,
+    std::shared_ptr<VolumeAsset> VolumeRepository::createHomogenousVolumeAsset(glm::vec3 absorption, glm::vec3 scattering, float g,
                                                            const std::shared_ptr<MeshAsset> &mesh_asset) {
 
         auto volume_asset = std::make_shared<VolumeAsset>();
@@ -32,7 +32,6 @@ namespace RtEngine {
         volume_asset->volume = VolumeBuilder::createHomogenous();
         volume_asset->absorption_scale = absorption;
         volume_asset->scattering_scale = scattering;
-        volume_asset->bonus_majorant = majorant;
         volume_asset->g = g;
         volume_asset->bounding_mesh = mesh_asset;
 

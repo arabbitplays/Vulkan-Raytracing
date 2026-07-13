@@ -33,6 +33,11 @@ namespace RtEngine {
 
 		bool normal_mapping = false, sample_lights = false, sample_bsdf = false, russian_roulette = false, similarity_relation = false;
 		bool debug_depth = false;
+		bool adaptive_sampling = false;
+		bool debug_variance = false, debug_diff_variance = false;
+		bool debug_adaptive_sampling = false;
+		float adaptive_error_bound = 0.05f;
+		int32_t adaptive_min_samples = 16;
 
 		VkSampler sampler;
 	};

@@ -54,7 +54,8 @@ namespace RtEngine {
         auto [origin, extent] = volume_asset->bounding_mesh->calcAABB();
         const VolumeData volume_data{
             .g = volume_asset->g,
-            .majorant = volume_asset->getMajorant(),
+            .max_scattering = volume_asset->getMaxScattering(),
+            .max_absorption = volume_asset->getMaxAbsorption(),
             .volume_texture_idx = texture_idx,
             .bounding_box_origin = glm::vec4(origin, 0),
             .bounding_box_extent = glm::vec4(extent, 0),

@@ -17,8 +17,8 @@ namespace RtEngine {
 
         std::shared_ptr<Volume> getOrCreateVolume(const std::string &path);
         std::shared_ptr<VolumeAsset> createHeterogenousVolumeAsset(const fs::path &path, glm::vec3 absorption, glm::vec3 scattering, float g, const std::shared_ptr<MeshAsset> &mesh_asset);
-        static std::shared_ptr<VolumeAsset> createHomogenousVolumeAsset(glm::vec3 absorption, glm::vec3 scattering, float g, float majorant,
-                                                           const std::shared_ptr<MeshAsset> &mesh_asset);
+        static std::shared_ptr<VolumeAsset> createHomogenousVolumeAsset(glm::vec3 absorption, glm::vec3 scattering, float g,
+                                                                        const std::shared_ptr<MeshAsset>& mesh_asset);
         void destroy();
 
     private:

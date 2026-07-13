@@ -1,5 +1,6 @@
 #include "MetalRoughMaterial.hpp"
 
+#include <cstring>
 #include <DescriptorLayoutBuilder.hpp>
 #include <OptionsWindow.hpp>
 #include <VulkanUtil.hpp>
@@ -20,7 +21,7 @@ namespace RtEngine {
 		layoutBuilder.addBinding(0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
 		layoutBuilder.addBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 64); // TODO make this dynamic depending on the scene
 
-		materialLayout = layoutBuilder.build(device, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR | VK_SHADER_STAGE_MISS_BIT_KHR);
+		materialLayout = layoutBuilder.build(device, VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR | VK_SHADER_STAGE_MISS_BIT_KHR);
 		mainDeletionQueue.pushFunction([&]() {
 			vkDestroyDescriptorSetLayout(vulkan_context->device_manager->getDevice(), materialLayout, nullptr);
 		});
@@ -29,7 +30,7 @@ namespace RtEngine {
 		std::vector<VkDescriptorSetLayout> descriptorSetLayouts{sceneLayout, materialLayout};
 		pipeline->setDescriptorSetLayouts(descriptorSetLayouts);
 
-		pipeline->addPushConstant(16 * sizeof(uint32_t), VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR |
+		pipeline->addPushConstant(20 * sizeof(uint32_t), VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR |
 																  VK_SHADER_STAGE_RAYGEN_BIT_KHR |
 																  VK_SHADER_STAGE_MISS_BIT_KHR);
 
@@ -96,6 +97,12 @@ namespace RtEngine {
 			reset_required |= config->addBool("russian_roulette", &russian_roulette);
 			reset_required |= config->addBool("similarity_relation", &similarity_relation);
 			reset_required |= config->addBool("debug_depth", &debug_depth);
+			reset_required |= config->addBool("adaptive_sampling", &adaptive_sampling);
+			reset_required |= config->addBool("debug_variance", &debug_variance);
+			reset_required |= config->addBool("debug_diff_variance", &debug_diff_variance);
+			reset_required |= config->addBool("debug_adaptive_sampling", &debug_adaptive_sampling);
+			reset_required |= config->addFloat("adaptive_error_bound", &adaptive_error_bound, 0.001f, 1.0f);
+			reset_required |= config->addInt("adaptive_min_samples", &adaptive_min_samples, 2, 4096);
 			config->endChild();
 		}
 
@@ -111,6 +118,14 @@ namespace RtEngine {
 		push_constants.push_back(static_cast<int32_t>(russian_roulette));
 		push_constants.push_back(static_cast<int32_t>(similarity_relation));
 		push_constants.push_back(static_cast<int32_t>(debug_depth));
+		push_constants.push_back(static_cast<int32_t>(adaptive_sampling));
+		push_constants.push_back(static_cast<int32_t>(debug_variance));
+		push_constants.push_back(static_cast<int32_t>(debug_diff_variance));
+		push_constants.push_back(static_cast<int32_t>(debug_adaptive_sampling));
+		int32_t error_bound_bits;
+		std::memcpy(&error_bound_bits, &adaptive_error_bound, sizeof(float));
+		push_constants.push_back(error_bound_bits);
+		push_constants.push_back(adaptive_min_samples);
 	}
 
 	void MetalRoughMaterial::reset() {

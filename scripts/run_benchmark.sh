@@ -37,13 +37,19 @@ get_csv_files() {
 bm_configs=$(get_yaml_files "./resources/configs/benchmarks_to_run")
 build_dir="./buildDir"
 out_dir="./resources/benchmarks"
+tmp_dir="$build_dir/tmp"
 csv_out_path="$out_dir/bm_out.csv"
+flip_csv_out_path="$out_dir/flip_out.csv"
 
 # remove all existing csv files
 csv_files=$(get_csv_files "$out_dir")
 for file in $csv_files; do
   rm -fv "$file"
 done
+
+# remove leftover preview images from the last run
+rm -fv "$out_dir"/*.png 2>/dev/null
+rm -fv "$tmp_dir"/*.png 2>/dev/null
 
 # compile the project
 (
@@ -61,6 +67,15 @@ done
     echo ""
     echo "Running benchmark with $config"
     ./renderer --config ../$config --resources ../resources --benchmark
+
+    # Move the final preview image left in tmp into the benchmarks folder,
+    # tagged with the benchmark config name so it survives the next run.
+    bm_name=$(basename "$config")
+    bm_name="${bm_name%.*}"
+    for img in tmp/*.png; do
+      [ -f "$img" ] || continue
+      mv -v "$img" "../$out_dir/${bm_name}_$(basename "$img")"
+    done
   done
 )
 
@@ -77,5 +92,7 @@ for file in $csv_files; do
   fi
   rm -fv "$file"
 done
+
+python3 ./scripts/compute_error_metrics.py --csv "$flip_csv_out_path" --merge-into "$csv_out_path"
 
 Rscript ./scripts/generate_plots.R $csv_out_path $out_dir/bm_plots.pdf

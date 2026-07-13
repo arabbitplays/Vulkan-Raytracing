@@ -3,7 +3,7 @@
 #extension GL_GOOGLE_include_directive : enable
 #extension GL_EXT_shader_explicit_arithmetic_types : enable
 
-#include "../common/payload.glsl"
+#include "../metalRough/payload.glsl"
 
 layout(set = 0, binding = 9) uniform sampler2D textures[6];
 
@@ -37,5 +37,5 @@ vec3 evaluateCubeMap() {
 }
 
 void main() {
-    payload.light = evaluateCubeMap();
+    //payload.light = evaluateCubeMap();
 }

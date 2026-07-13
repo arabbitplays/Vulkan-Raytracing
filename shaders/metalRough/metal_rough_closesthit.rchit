@@ -4,13 +4,14 @@
 #extension GL_EXT_nonuniform_qualifier : enable
 #extension GL_EXT_shader_explicit_arithmetic_types : enable
 
-#include "../common/payload.glsl"
+#include "payload.glsl"
 #include "../common/scene_data.glsl"
 #include "../common/layout.glsl"
 #include "../common/random.glsl"
 
 #include "options.glsl"
 #include "vertex_evaluator.glsl"
+#include "path_evaluator.glsl"
 
 #include "../volume/layout.glsl"
 #include "../volume/distance_sampler.glsl"
@@ -26,22 +27,9 @@ hitAttributeEXT vec3 attribs;
 #include "light_sampler.glsl"
 #include "../common/path_vertex.glsl"
 
-PathVertex createNewPathVertex() {
-    PathVertex vertex;
-    vertex.volume_idx = -1;
-    vertex.is_valid = true;
-    return vertex;
-}
-
-SampledSegment createNewSegment() {
-    SampledSegment segment;
-    segment.pre_eval_beta = vec3(1);
-    segment.post_eval_beta = vec3(1);
-    return segment;
-}
-
 PathVertex createSurfaceVertex() {
     PathVertex vertex = createNewPathVertex();
+    vertex.type = SURFACE_TYPE;
 
     Triangle triangle = getTriangle(gl_InstanceCustomIndexEXT, gl_PrimitiveID);
     Vertex A = triangle.A;
@@ -82,11 +70,9 @@ PathVertex createSurfaceVertex() {
     return vertex;
 }
 
-
 PathVertex createVolumeBorderVertex(bool entering) {
     PathVertex vertex = createNewPathVertex();
-
-    vertex.is_valid = false;
+    vertex.type = VOLUME_BOUNDARY_TYPE;
 
     Triangle triangle = getTriangle(gl_InstanceCustomIndexEXT, gl_PrimitiveID);
     Vertex A = triangle.A;
@@ -109,6 +95,7 @@ PathVertex createVolumeBorderVertex(bool entering) {
 
 PathVertex createVolumeVertex(vec3 pos, int volume_idx) {
     PathVertex vertex = createNewPathVertex();
+    vertex.type = VOLUME_TYPE;
 
     vertex.P = pos;
     vertex.V = -normalize(gl_WorldRayDirectionEXT);
@@ -119,7 +106,7 @@ PathVertex createVolumeVertex(vec3 pos, int volume_idx) {
     return vertex;
 }
 
-SampledSegment sampleNextSegment(PathVertex vertex, bool sample_bsdf, inout uvec4 rng_state) {
+SampledSegment sampleNextSegment(PathVertex vertex, bool sample_bsdf, out bool specular_bounce, inout uvec4 rng_state) {
     SampledSegment sampled_segment = createNewSegment();
 
     mat3 TBN = getTBN(vertex.geom_N, vertex.T);
@@ -140,8 +127,8 @@ SampledSegment sampleNextSegment(PathVertex vertex, bool sample_bsdf, inout uvec
 
         vec3 sampled_dir = TBN * brdf_sample.wi;
         payload.next_dir = sampled_dir;
-        sampled_segment.post_eval_beta = brdf_sample.f * abs(dot(sampled_dir, vertex.N)) / brdf_sample.pdf;
-        payload.specular_bounce = isSpecular(brdf_sample.flags);
+        sampled_segment.bsdf *= brdf_sample.f * abs(dot(sampled_dir, vertex.N));
+        sampled_segment.dir_pdf *= brdf_sample.pdf;
         if (isTransmissive(brdf_sample.flags))
             payload.eta_scale *= sqr(brdf_sample.eta);
     } else {
@@ -152,28 +139,32 @@ SampledSegment sampleNextSegment(PathVertex vertex, bool sample_bsdf, inout uvec
         vec3 wo = normalize(transpose_tbn * vertex.V);
         vec3 wi = normalize(transpose_tbn * sampled_dir);
         //payload.beta *= calcBRDF(wo, wi, albedo, metallic, roughness) * PI;
-        float inv_pdf = 4.0 * PI;
-        sampled_segment.post_eval_beta = computeBsdf(wo, wi, albedo, metallic, roughness, eta) * abs(dot(sampled_dir, vertex.N)) * inv_pdf;
+        sampled_segment.bsdf *= computeBsdf(wo, wi, albedo, metallic, roughness, eta) * abs(dot(sampled_dir, vertex.N));
+        sampled_segment.dir_pdf *= INV_4_PI;
     }
+
+    specular_bounce = effectivelySmooth(roughness, roughness);
 
     return sampled_segment;
 }
 
-SampledSegment sampleVolumeSegment(vec3 dir, EvaluatedVolume volume, vec3 delta_tracking_pdf, inout uvec4 rng_state) {
+SampledSegment sampleVolumeSegment(vec3 dir, EvaluatedVolume volume, vec3 dist_pdf, vec3 delta_tracking_pdf, inout uvec4 rng_state) {
     SampledSegment segment = createNewSegment();
-    segment.pre_eval_beta *= delta_tracking_pdf;
-    payload.specular_bounce = false;
+    segment.dist_pdf *= dist_pdf;
+    segment.delta_pdf *= delta_tracking_pdf;
 
-    if (payload.similarity_relation) {
+    if (payload.sampling_options.similarity_relation) {
         if (options.sample_bsdf) {
             PhaseFunctionSample alt_sample = sampleAlteredPhaseFunction(-dir, volume.g, rng_state);
             payload.next_dir = alt_sample.wi;
-            segment.post_eval_beta *= volume.scattering * alt_sample.p / alt_sample.pdf;
+            segment.bsdf *= volume.scattering * alt_sample.p;
+            segment.dir_pdf *= alt_sample.pdf;
         } else {
             PhaseFunctionSample iso_sample = sampleIsoPhaseFunction(-dir, rng_state);
             payload.next_dir = iso_sample.wi;
             float phase = evaluateAlteredPhaseFunction(-dir, iso_sample.wi, volume.g);
-            segment.post_eval_beta *= volume.scattering * phase / iso_sample.pdf;
+            segment.bsdf *= volume.scattering * phase;
+            segment.dir_pdf *= iso_sample.pdf;
         }
         return segment;
     }
@@ -181,12 +172,14 @@ SampledSegment sampleVolumeSegment(vec3 dir, EvaluatedVolume volume, vec3 delta_
     if (options.sample_bsdf) {
         PhaseFunctionSample hg_sample = sampleHGPhaseFunction(-dir, volume.g, rng_state);
         payload.next_dir = hg_sample.wi;
-        segment.post_eval_beta *= volume.scattering * hg_sample.p / hg_sample.pdf;
+        segment.bsdf *= volume.scattering * hg_sample.p;
+        segment.dir_pdf *= hg_sample.pdf;
     } else {
         PhaseFunctionSample iso_sample = sampleIsoPhaseFunction(-dir, rng_state);
         payload.next_dir = iso_sample.wi;
         float phase = henyeyGreenstein(-dir, iso_sample.wi, volume.g);
-        segment.post_eval_beta *= volume.scattering * phase / iso_sample.pdf;
+        segment.bsdf *= volume.scattering * phase;
+        segment.dir_pdf *= iso_sample.pdf;
     }
 
 
@@ -230,52 +223,98 @@ PathVertex deltaTracking(vec3 origin, vec3 dir, int volume_idx, inout uvec4 rng_
     float tracked_dist = 0;
 
     VolumeInstance volume_instance = getVolume(volume_idx);
+    vec3 obj_pos = (gl_WorldToObjectEXT * vec4(origin, 1.0f)).xyz;
+    EvaluatedVolume volume = evaluateVolumeAtLocalPos(volume_instance, payload.sampling_options.similarity_relation, obj_pos);
 
     vec3 delta_tracking_pdf = vec3(1);
+    vec3 accumulated_transmittance = vec3(1);
+    vec3 accumulated_null_scattering = vec3(1);
+    vec3 dist_pdf = vec3(1);
 
     while (true) {
-        float sampled_dist = sampleDistance(volume_instance.majorant, rng_state);
+        float sampled_dist = sampleDistance(volume.majorant, rng_state);
+        float transmittance = transmittance(min(sampled_dist, dist_to_boundary - tracked_dist), volume.majorant);
         tracked_dist += sampled_dist;
 
+        accumulated_transmittance *= transmittance;
         if (tracked_dist >= dist_to_boundary) {
+            dist_pdf *= transmittance;
             break;
+        } else {
+            dist_pdf *= transmittance;
         }
+
+        dist_pdf *= volume.majorant;
+        delta_tracking_pdf /= volume.majorant;
 
         vec3 curr_pos = origin + tracked_dist * dir;
 
-        vec3 obj_pos = (gl_WorldToObjectEXT * vec4(curr_pos, 1.0f)).xyz;
-        EvaluatedVolume volume = evaluateVolumeAtLocalPos(volume_instance, payload.similarity_relation, obj_pos);
+        obj_pos = (gl_WorldToObjectEXT * vec4(curr_pos, 1.0f)).xyz;
+        volume = evaluateVolumeAtLocalPos(volume_instance, payload.sampling_options.similarity_relation, obj_pos);
 
         vec2 sampled_channel = sampleChannel(volume, rng_state);
         float sampled_scattering = sampled_channel.x;
         float sampled_absorption = sampled_channel.y;
-        vec3 null_collision = vec3(volume.majorant) - (volume.scattering + volume.absorption);
+        float sampled_extinction = sampled_scattering + sampled_absorption;
+        vec3 null_scattering = vec3(volume.majorant) - (volume.scattering + volume.absorption);
 
-        float p_real = (sampled_scattering + sampled_absorption) / volume.majorant;
+        float p_real = sampled_extinction / volume.majorant;
         float rand = stepAndOutputRNGFloat(rng_state);
 
-    if (rand < p_real) {
-            PathVertex vertex = createVolumeVertex(curr_pos, volume_idx);
+        if (rand < p_real) { // real collision
+             PathVertex vertex = createVolumeVertex(curr_pos, volume_idx);
 
-            delta_tracking_pdf *= 1.0 / (sampled_scattering + sampled_absorption);
-            SampledSegment segment = sampleVolumeSegment(dir, volume, delta_tracking_pdf, rng_state);
-
-            payload.beta *= segment.pre_eval_beta;
-            payload.light += payload.beta * evaluateVolumeVertex(vertex, payload.similarity_relation, rng_state);
-            payload.beta *= segment.post_eval_beta;
-
-            payload.next_segment = segment;
-            return vertex;
-        } else {
-            float p_unreal = max(0.0001f, (1 - p_real));
-            delta_tracking_pdf *= null_collision / (volume.majorant * p_unreal);
-            continue;
+             delta_tracking_pdf *= sampled_extinction;
+             SampledSegment segment = sampleVolumeSegment(dir, volume, dist_pdf, delta_tracking_pdf, rng_state);
+             segment.transmittance *= accumulated_transmittance;
+             segment.null_scattering *= accumulated_null_scattering;
+             payload.next_segment = segment;
+             return vertex;
+        } else { // null collision
+             accumulated_null_scattering *= null_scattering;
+             delta_tracking_pdf *= (volume.majorant - sampled_extinction);
+             continue;
         }
     }
 
     if (tracked_dist >= dist_to_boundary) {
         // exit volume
-        payload.beta *= delta_tracking_pdf;
+        SampledSegment segment = createNewSegment();
+        segment.delta_pdf *= delta_tracking_pdf;
+        segment.dist_pdf *= dist_pdf;
+        segment.transmittance *= accumulated_transmittance;
+        segment.null_scattering *= accumulated_null_scattering;
+        payload.next_segment = segment;
+        return createVolumeBorderVertex(false);
+    }
+
+    // should not be reachable
+     return createVolumeBorderVertex(false);
+}
+
+PathVertex sampleVertexInHomogenous(vec3 origin, vec3 dir, int volume_idx, inout uvec4 rng_state) {
+    float dist_to_boundary = gl_HitTEXT;
+
+    VolumeInstance volume_instance = getVolume(volume_idx);
+
+    vec3 obj_pos = (gl_WorldToObjectEXT * vec4(origin, 1.0f)).xyz;
+    EvaluatedVolume volume = evaluateVolumeAtLocalPos(volume_instance, payload.sampling_options.similarity_relation, obj_pos);
+    float extinction = volume.scattering.x + volume.absorption.x;
+    float sampled_dist = sampleDistance(extinction, rng_state);
+
+    if (sampled_dist < dist_to_boundary) {
+        PathVertex vertex = createVolumeVertex(origin + sampled_dist * dir, volume_idx);
+        float transmittance = transmittance(sampled_dist, extinction);
+        SampledSegment segment = sampleVolumeSegment(dir, volume, vec3(extinction * transmittance), vec3(1), rng_state);
+        segment.transmittance *= transmittance;
+        payload.next_segment = segment;
+        return vertex;
+    } else {
+        SampledSegment segment = createNewSegment();
+        float transmittance = transmittance(extinction, dist_to_boundary);
+        segment.dist_pdf *= transmittance;
+        segment.transmittance *= transmittance;
+        payload.next_segment = segment;
         return createVolumeBorderVertex(false);
     }
 
@@ -285,8 +324,6 @@ PathVertex deltaTracking(vec3 origin, vec3 dir, int volume_idx, inout uvec4 rng_
 
 void main() {
     PathVertex vertex;
-
-    SampledSegment last_segment = payload.next_segment;
     PathVertex last_vertex = payload.next_vertex;
 
     Triangle triangle = getTriangle(gl_InstanceCustomIndexEXT, gl_PrimitiveID);
@@ -294,36 +331,21 @@ void main() {
     if (isVolumeBoundary(triangle)) {
         if (last_vertex.volume_idx >= 0) {
             // exiting volume or scattering inside
-            vertex = deltaTracking(last_vertex.P, normalize(gl_WorldRayDirectionEXT), getVolumeIdx(triangle), payload.rng_state);
+            //vertex = deltaTracking(last_vertex.P, normalize(gl_WorldRayDirectionEXT), getVolumeIdx(triangle), payload.rng_state);
+            vertex = sampleVertexInHomogenous(last_vertex.P, normalize(gl_WorldRayDirectionEXT), getVolumeIdx(triangle), payload.rng_state);
         } else {
             // entering volume
             vertex = createVolumeBorderVertex(true);
+            payload.next_segment = createNewSegment();
         }
     } else {
         vertex = createSurfaceVertex();
 
         EvaluatedMaterial material = evaluateVertexMaterial(vertex);
 
-        // no direct light sampling or handle light that goes directly to the camera
-        bool consider_emission = !options.sample_light || payload.specular_bounce || (payload.depth == 0 && material.emission_power > 0);
-        payload.light += payload.beta * evaluateSurfaceVertex(vertex, options.sample_bsdf, options.sample_light, consider_emission, payload.similarity_relation, payload.rng_state);
-
-        payload.next_segment = sampleNextSegment(vertex, options.sample_bsdf, payload.rng_state);
-        payload.beta *= payload.next_segment.post_eval_beta;
-
-        if (options.russian_roulette) {
-            vec3 rr_beta = payload.beta * payload.eta_scale;
-            float beta_max_component = max(rr_beta.x, max(rr_beta.y, rr_beta.z));
-            if (beta_max_component < 1 && payload.depth > 1) {
-                float q = max(0, 1 - beta_max_component);
-                float u = stepAndOutputRNGFloat(payload.rng_state);
-                if (u < q) {
-                    payload.beta = vec3(0);
-                } else {
-                    payload.beta /= 1 - q;
-                }
-            }
-        }
+        bool specular_bounce = false;
+        payload.next_segment = sampleNextSegment(vertex, options.sample_bsdf, specular_bounce, payload.rng_state);
+        vertex.is_specular = specular_bounce;
     }
 
     payload.next_vertex = vertex;

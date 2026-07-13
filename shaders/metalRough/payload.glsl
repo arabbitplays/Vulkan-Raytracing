@@ -1,20 +1,21 @@
 #ifndef PAYLOAD_GLSL
 #define PAYLOAD_GLSL
 
-#include "path_vertex.glsl"
+#include "../common/path_vertex.glsl"
+
+struct SamplingOptions {
+    bool similarity_relation;
+};
 
 struct Payload {
-    vec3 light;
     int depth;
     uvec4 rng_state;
     PathVertex next_vertex;
     SampledSegment next_segment;
     vec3 next_dir;
-    vec3 beta;
+    vec3 rr_beta;
     float eta_scale; // used for russian roulette
-    bool specular_bounce;
-
-    bool similarity_relation;
+    SamplingOptions sampling_options;
 };
 
 #endif

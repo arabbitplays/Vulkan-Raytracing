@@ -7,6 +7,11 @@
 #include <QuickTimer.hpp>
 #include <SceneUtil.hpp>
 
+#include <filesystem>
+#include <fstream>
+#include <stdexcept>
+#include <vector>
+
 #include "PhongMaterial.hpp"
 #include "UpdateFlagValue.hpp"
 #include "targets/RenderTargetKeys.hpp"
@@ -24,6 +29,8 @@ namespace RtEngine {
 		updateGeometryResources(loaded_scene);
 		updateVolumeResources(loaded_scene);
 		updateMaterial(loaded_scene);
+
+		writeSimilarityCoefficientDescriptor();
 	}
 
 	void SceneAdapter::setupNewScene(const std::shared_ptr<IScene> &scene) {
@@ -63,6 +70,9 @@ namespace RtEngine {
 		layoutBuilder.addBinding(12, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 16); // absorption tex
 		layoutBuilder.addBinding(13, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE); // diff image
 		layoutBuilder.addBinding(14, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE); // mlmc image
+		layoutBuilder.addBinding(15, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER); // similarity coefficient buffer
+		layoutBuilder.addBinding(16, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE); // second moment image
+		layoutBuilder.addBinding(17, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE); // per-pixel diff sample counter
 
 		scene_descriptor_set_layout = layoutBuilder.build(
 				vulkan_context->device_manager->getDevice(),
@@ -132,6 +142,10 @@ namespace RtEngine {
 		vulkan_context->descriptor_allocator->writeImage(13, target_repository->getCurrRenderTargetImage(DIFF_TARGET_KEY).imageView, VK_NULL_HANDLE,
 														 VK_IMAGE_LAYOUT_GENERAL, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
 		vulkan_context->descriptor_allocator->writeImage(14, target_repository->getCurrRenderTargetImage(MLMC_TARGET_KEY).imageView, VK_NULL_HANDLE,
+														 VK_IMAGE_LAYOUT_GENERAL, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
+		vulkan_context->descriptor_allocator->writeImage(16, target_repository->getCurrRenderTargetImage(MOMENT_TARGET_KEY).imageView, VK_NULL_HANDLE,
+														 VK_IMAGE_LAYOUT_GENERAL, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
+		vulkan_context->descriptor_allocator->writeImage(17, target_repository->getCurrRenderTargetImage(SAMPLE_COUNT_TARGET_KEY).imageView, VK_NULL_HANDLE,
 														 VK_IMAGE_LAYOUT_GENERAL, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
 
 		vulkan_context->descriptor_allocator->writeImage(10, target_repository->getCurrRenderTargetImage(RNG_TARGET_KEY).imageView, VK_NULL_HANDLE, VK_IMAGE_LAYOUT_GENERAL,
@@ -223,7 +237,39 @@ namespace RtEngine {
 
 	void SceneAdapter::initDefaultResources(const VkPhysicalDeviceRayTracingPipelinePropertiesKHR& raytracingProperties) {
 		createDefaultSamplers();
+		loadSimilarityCoefficientBuffer();
 		createDefaultMaterials(raytracingProperties);
+	}
+
+	void SceneAdapter::loadSimilarityCoefficientBuffer() {
+		const std::filesystem::path path =
+			std::filesystem::path(vulkan_context->resource_builder->getResourcePath())
+				/ "similarity" / "altered_phase_coefficients.bin";
+
+		std::ifstream stream(path, std::ios::binary | std::ios::ate);
+		if (!stream) {
+			throw std::runtime_error("Failed to open similarity coefficient buffer: " + path.string());
+		}
+		const std::streamsize byte_size = stream.tellg();
+		stream.seekg(0, std::ios::beg);
+
+		std::vector<float> data(byte_size / sizeof(float));
+		stream.read(reinterpret_cast<char *>(data.data()), byte_size);
+		if (!stream) {
+			throw std::runtime_error("Failed to read similarity coefficient buffer: " + path.string());
+		}
+
+		similarity_coefficient_buffer = vulkan_context->resource_builder->stageMemoryToNewBuffer(
+			data.data(), static_cast<size_t>(byte_size), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
+
+		main_deletion_queue.pushFunction([&]() {
+			vulkan_context->resource_builder->destroyBuffer(similarity_coefficient_buffer);
+		});
+	}
+
+	void SceneAdapter::writeSimilarityCoefficientDescriptor() {
+		vulkan_context->descriptor_allocator->writeBuffer(
+			15, similarity_coefficient_buffer.handle, 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
 	}
 
 	void SceneAdapter::createDefaultSamplers() {

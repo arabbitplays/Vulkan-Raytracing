@@ -21,7 +21,7 @@ vec3 estimateTransmittance(vec3 P, vec3 L, float distance_to_light, int volume_i
 
     while (length(shadow_payload.transmittance) > 0.0f && shadow_payload.dist_to_light > EPSILON) {
         float tmin = EPSILON;
-        float tmax = shadow_payload.dist_to_light - EPSILON;
+        float tmax = INFINITY;
         vec3 direction = shadow_payload.direction;
         vec3 origin = shadow_payload.next_origin;
         uint flags = gl_RayFlagsOpaqueEXT;

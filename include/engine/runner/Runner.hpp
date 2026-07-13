@@ -7,7 +7,6 @@
 
 namespace RtEngine {
     class Runner : public ISerializable {
-		using clock = std::chrono::high_resolution_clock;
     public:
         Runner(std::shared_ptr<EngineContext> engine_context, const std::shared_ptr<SceneManager> &scene_manager);
 
@@ -22,6 +21,7 @@ namespace RtEngine {
         void initProperties(const std::shared_ptr<IProperties> &config, const UpdateFlagsHandle& update_flags) override;
 
     protected:
+		using clock = std::chrono::high_resolution_clock;
         virtual void drawFrame(const std::shared_ptr<DrawContext> &draw_context);
 
         virtual void prepareFrame(VkCommandBuffer cmd, const std::shared_ptr<DrawContext> &draw_context);
@@ -50,6 +50,8 @@ namespace RtEngine {
         UpdateFlagsHandle update_flags;
 
 		std::optional<clock::time_point> last_time_point;
+
+    private:
         double moving_frame_time_average = 0;
         float moving_average_alpha = 0.1f;
     };

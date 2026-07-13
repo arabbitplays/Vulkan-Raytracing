@@ -6,6 +6,8 @@ namespace RtEngine {
         RAYTRACE_TARGET,
         COMPUTE_TARGET,
         RNG_TARGET,
+        MOMENT_TARGET,
+        SAMPLE_COUNT_TARGET,
     };
 } // RtEngine
 

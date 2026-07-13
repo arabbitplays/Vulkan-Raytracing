@@ -26,6 +26,8 @@ namespace RtEngine {
 		std::string getTmpImagePath(uint32_t biased_samples, uint32_t diff_samples);
 		std::string getOutputFilePath();
 		std::string getRefFilePath();
+		void calculateErrorBetweenImages(uint8_t* ref_data, uint32_t ref_width, uint32_t ref_height, uint8_t* data,
+		                                  uint32_t width, uint32_t height, uint32_t samples);
 		void clearTmpfolder();
 
 		void calculateErrors();
@@ -48,15 +50,25 @@ namespace RtEngine {
 
 		uint32_t final_biased_sample_count = 1 << 10;
 		uint32_t final_diff_sample_count = 1 << 10;
+		uint32_t biased_samples_per_diff_sample = 0;
 		uint32_t averaging_rounds = 1;
 		uint32_t done_rounds = 0;
 
-		uint32_t biased_sample_count = 0;
-		uint32_t diff_sample_count = 0;
+		uint32_t rendered_frame_count = 0;
 
 		bool calculating_mlmc_diff = false;
 
 		std::unordered_map<uint32_t, float> mse_averages{};
+		std::unordered_map<uint32_t, double> time_averages{};
+
+		double mean_biased_frame_time = 0;
+		double mean_diff_frame_time = 0;
+		double mean_combined_frame_time = 0;
+
+		// Accumulated frame time (microseconds) since the start of the current round,
+		double accumulated_frame_time_us = 0;
+
+		void recordCheckpointTime(uint32_t samples);
 	};
 
 } // namespace RtEngine
