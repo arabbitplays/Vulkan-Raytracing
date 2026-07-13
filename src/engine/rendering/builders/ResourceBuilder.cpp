@@ -179,6 +179,8 @@ namespace RtEngine {
 			imageSize *= 16;
 		} else if (format == VK_FORMAT_R32G32_SFLOAT) {
 			imageSize *= 8;
+		} else if (format == VK_FORMAT_R16G16B16A16_SFLOAT) {
+			imageSize *= 8;
 		} else if (format == VK_FORMAT_R32G32B32A32_SFLOAT) {
 			imageSize *= 16;
 		} else {

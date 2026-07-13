@@ -67,6 +67,9 @@ namespace RtEngine {
 	}
 
 	std::vector<std::shared_ptr<VolumeAsset>> Scene::getVolumeAssets() {
+		// volume resources can be created before the first frame update, so make
+		// sure the node transforms stamped onto the assets are up to date
+		getRootNode()->refreshTransform(glm::mat4(1.0f));
 		return SceneUtil::collectVolumeAssets(getRootNode());
 	}
 

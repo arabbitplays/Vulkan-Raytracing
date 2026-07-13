@@ -34,7 +34,7 @@ vec3 evaluatePath(EvaluationOptions options, inout uvec4 rng_state) {
     for (int i = 0; i < min(options.evaluation_depth, path.len); i++) {
         context.depth = i;
         beta *= getPreEvaluationBeta(path.segments[i]);
-        light += beta * evaluateVertex(path.vertices[i], options, context, rng_state);
+        light += beta * evaluateVertex(getPathVertex(i), options, context, rng_state);
         beta *= getPostEvaluationBeta(path.segments[i]);
     }
 

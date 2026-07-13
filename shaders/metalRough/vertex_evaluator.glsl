@@ -12,6 +12,7 @@
 
 #include "../volume/layout.glsl"
 #include "../volume/phase_function.glsl"
+#include "../volume/distance_sampler.glsl"
 #include "../similarity/altered_phase_function.glsl"
 #include "../volume/transmittance_estimator.glsl"
 
@@ -41,13 +42,15 @@ EvaluatedVolume evaluateVolumeAtLocalPos(VolumeInstance volume, bool use_similar
 
     float alpha = 1.0;
     if (use_similarity_relation) {
-        alpha = getSimilarityRelationsAlpha(volume.g);
+        alpha = volume.similarity_alpha;
     }
 
     result.absorption = getAbsorption(volume, vol_uv);
     result.scattering = alpha * getScattering(volume, vol_uv);
     result.majorant = alpha * volume.max_scattering + volume.max_absorption;
     result.g = volume.g;
+    result.similarity_idx = volume.similarity_idx;
+    result.similarity_alpha = volume.similarity_alpha;
 
     return result;
 }
@@ -61,13 +64,15 @@ EvaluatedVolume evaluateHomoVolume(VolumeInstance volume, bool use_similarity_re
 
     float alpha = 1.0;
     if (use_similarity_relation) {
-        alpha = getSimilarityRelationsAlpha(volume.g);
+        alpha = volume.similarity_alpha;
     }
 
     result.absorption = volume.avg_absorption.xyz;
     result.scattering = alpha * volume.avg_scattering.xyz;
     result.majorant = alpha * getMaxComponent(volume.avg_absorption.xyz + volume.avg_scattering.xyz);
     result.g = volume.g;
+    result.similarity_idx = volume.similarity_idx;
+    result.similarity_alpha = volume.similarity_alpha;
 
     return result;
 }
@@ -77,7 +82,44 @@ EvaluatedVolume evaluateVertexVolume(PathVertex vertex, bool use_similarity_rela
     if (assume_homogenous) {
         return evaluateHomoVolume(volume, use_similarity_relation);
     }
-    return evaluateVolumeAtLocalPos(volume, use_similarity_relation, vertex.local_volume_pos);
+    return evaluateVolumeAtLocalPos(volume, use_similarity_relation, posToVolumeLocal(volume, vertex.P));
+}
+
+// Transmittance along a segment known to lie entirely inside one volume (e.g.
+// between two stored path vertices). Marches the volume directly through its
+// world_to_object transform instead of tracing rays to rediscover boundaries
+// the path already recorded; the estimators match the shadow-ray versions in
+// shadow_clostesthit.rchit (ratio tracking / analytic).
+vec3 estimateSegmentTransmittance(vec3 from_P, vec3 to_P, int volume_idx, bool use_similarity_relation, bool assume_homogenous, inout uvec4 rng_state) {
+    if (volume_idx < 0) {
+        return vec3(1);
+    }
+    VolumeInstance volume_instance = getVolume(volume_idx);
+    vec3 dir = to_P - from_P;
+    float dist = length(dir);
+    if (dist <= 0.0) {
+        return vec3(1);
+    }
+    dir /= dist;
+
+    if (assume_homogenous) {
+        EvaluatedVolume volume = evaluateHomoVolume(volume_instance, use_similarity_relation);
+        return exp(-(volume.scattering + volume.absorption) * dist);
+    }
+
+    EvaluatedVolume volume = evaluateVolumeAtLocalPos(volume_instance, use_similarity_relation, posToVolumeLocal(volume_instance, from_P));
+    vec3 transmittance = vec3(1);
+    float tracked_dist = 0;
+    while (true) {
+        tracked_dist += sampleDistance(volume.majorant, rng_state);
+        if (tracked_dist >= dist) {
+            break;
+        }
+        vec3 curr_pos = from_P + tracked_dist * dir;
+        volume = evaluateVolumeAtLocalPos(volume_instance, use_similarity_relation, posToVolumeLocal(volume_instance, curr_pos));
+        transmittance *= (1.0 - (volume.scattering + volume.absorption) / volume.majorant);
+    }
+    return transmittance;
 }
 
 vec3 evaluateSurfaceVertex(PathVertex vertex, EvaluationOptions options, inout EvaluationContext context, inout uvec4 rng_state) {
@@ -106,14 +148,14 @@ vec3 evaluateSurfaceVertex(PathVertex vertex, EvaluationOptions options, inout E
 
         vec3 transmittance = estimateTransmittance(vertex.P, L, distance_to_light, options.use_similarity_relation, options.assume_homogenous, rng_state);
 
-        if (options.sample_bsdf) {
+        if (SPEC_SAMPLE_BSDF) {
             vec3 f = calcConductorBRDF(wo, wi, material.albedo, material.metallic, material.roughness) * max(dot(vertex.N, L), 0.0);
-            if (light_sample.light != vec3(0) && length(f) > 0.0 && length(transmittance) > 0) {
+            if (light_sample.light != vec3(0) && dot(f, f) > 0.0 && dot(transmittance, transmittance) > 0.0) {
                 light += transmittance * f * light_sample.light / light_sample.pdf;
             }
         } else {
             vec3 f = computeBsdf(wo, wi, material.albedo, material.metallic, material.roughness, material.eta) * abs(dot(vertex.N, L));
-            if (light_sample.light != vec3(0) && length(f) > 0.0 && length(transmittance) > 0) {
+            if (light_sample.light != vec3(0) && dot(f, f) > 0.0 && dot(transmittance, transmittance) > 0.0) {
                 light += transmittance * f * light_sample.light / light_sample.pdf;
             }
         }
@@ -136,11 +178,11 @@ vec3 evaluateVolumeVertex(PathVertex vertex, EvaluationOptions options, inout Ev
 
         float phase = 0;
         if (options.use_similarity_relation) {
-            phase = evaluateAlteredPhaseFunction(vertex.V, L, volume.g);
+            phase = evaluateAlteredPhaseFunctionIdx(vertex.V, L, volume.similarity_idx);
         } else {
             phase = henyeyGreenstein(vertex.V, L, volume.g);
         }
-        if (light_sample.light != vec3(0) && phase > 0.0 && length(transmittance) > 0) {
+        if (light_sample.light != vec3(0) && phase > 0.0 && dot(transmittance, transmittance) > 0.0) {
             return volume.scattering * transmittance * phase * light_sample.light / light_sample.pdf;
         }
     }

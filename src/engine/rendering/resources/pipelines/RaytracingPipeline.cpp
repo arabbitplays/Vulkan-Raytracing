@@ -40,6 +40,16 @@ namespace RtEngine {
 			throw std::runtime_error("failed to create pipeline layout!");
 		}
 
+		if (!spec_map_entries.empty()) {
+			spec_info.mapEntryCount = static_cast<uint32_t>(spec_map_entries.size());
+			spec_info.pMapEntries = spec_map_entries.data();
+			spec_info.dataSize = spec_data.size() * sizeof(uint32_t);
+			spec_info.pData = spec_data.data();
+			for (auto &stage: shader_stages) {
+				stage.pSpecializationInfo = &spec_info;
+			}
+		}
+
 		VkRayTracingPipelineCreateInfoKHR pipelineInfo{};
 		pipelineInfo.sType = VK_STRUCTURE_TYPE_RAY_TRACING_PIPELINE_CREATE_INFO_KHR;
 		pipelineInfo.stageCount = static_cast<uint32_t>(shader_stages.size());
@@ -146,11 +156,23 @@ namespace RtEngine {
 		pushConstants.push_back(pushConstantRange);
 	}
 
+	void RaytracingPipeline::setSpecConstant(uint32_t constant_id, uint32_t value) {
+		VkSpecializationMapEntry entry{};
+		entry.constantID = constant_id;
+		entry.offset = static_cast<uint32_t>(spec_data.size() * sizeof(uint32_t));
+		entry.size = sizeof(uint32_t);
+		spec_map_entries.push_back(entry);
+		spec_data.push_back(value);
+	}
+
 	void RaytracingPipeline::clear() {
 		pipelineLayoutInfo = {.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO};
 		shader_stages.clear();
 		shader_groups.clear();
 		pushConstants.clear();
+		spec_map_entries.clear();
+		spec_data.clear();
+		spec_info = {};
 	}
 
 	void RaytracingPipeline::destroy() { deletionQueue.flush(); }

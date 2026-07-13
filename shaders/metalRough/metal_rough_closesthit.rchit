@@ -11,7 +11,6 @@
 
 #include "options.glsl"
 #include "vertex_evaluator.glsl"
-#include "path_evaluator.glsl"
 
 #include "../volume/layout.glsl"
 #include "../volume/distance_sampler.glsl"
@@ -101,23 +100,21 @@ PathVertex createVolumeVertex(vec3 pos, int volume_idx) {
     vertex.V = -normalize(gl_WorldRayDirectionEXT);
 
     vertex.volume_idx = volume_idx;
-    vertex.local_volume_pos = (gl_WorldToObjectEXT * vec4(pos, 1.0f)).xyz;
 
     return vertex;
 }
 
-SampledSegment sampleNextSegment(PathVertex vertex, bool sample_bsdf, out bool specular_bounce, inout uvec4 rng_state) {
+// Takes an already-evaluated material so we don't re-fetch the two textures
+// the caller (main()) already fetched via evaluateVertexMaterial.
+SampledSegment sampleNextSegment(PathVertex vertex, EvaluatedMaterial material, bool sample_bsdf, out bool specular_bounce, inout uvec4 rng_state) {
     SampledSegment sampled_segment = createNewSegment();
 
     mat3 TBN = getTBN(vertex.geom_N, vertex.T);
     mat3 transpose_tbn = transpose(TBN);
 
-    Material material = getMaterial(vertex.material_idx);
-    vec3 albedo = texture(material_textures[material.albedo_tex_idx], vertex.uv).xyz + material.albedo;
-    vec3 metal_rough_ao = texture(material_textures[material.metal_rough_ao_tex_idx], vertex.uv).xyz;
-    float metallic = metal_rough_ao.x + material.metallic;
-    float roughness = metal_rough_ao.y + material.roughness;
-    float ao = metal_rough_ao.z + material.ao;
+    vec3 albedo = material.albedo;
+    float metallic = material.metallic;
+    float roughness = material.roughness;
     float eta = material.eta;
 
     if (sample_bsdf) {
@@ -154,22 +151,22 @@ SampledSegment sampleVolumeSegment(vec3 dir, EvaluatedVolume volume, vec3 dist_p
     segment.delta_pdf *= delta_tracking_pdf;
 
     if (payload.sampling_options.similarity_relation) {
-        if (options.sample_bsdf) {
-            PhaseFunctionSample alt_sample = sampleAlteredPhaseFunction(-dir, volume.g, rng_state);
+        if (SPEC_SAMPLE_BSDF) {
+            PhaseFunctionSample alt_sample = sampleAlteredPhaseFunctionIdx(-dir, volume.similarity_idx, rng_state);
             payload.next_dir = alt_sample.wi;
             segment.bsdf *= volume.scattering * alt_sample.p;
             segment.dir_pdf *= alt_sample.pdf;
         } else {
             PhaseFunctionSample iso_sample = sampleIsoPhaseFunction(-dir, rng_state);
             payload.next_dir = iso_sample.wi;
-            float phase = evaluateAlteredPhaseFunction(-dir, iso_sample.wi, volume.g);
+            float phase = evaluateAlteredPhaseFunctionIdx(-dir, iso_sample.wi, volume.similarity_idx);
             segment.bsdf *= volume.scattering * phase;
             segment.dir_pdf *= iso_sample.pdf;
         }
         return segment;
     }
 
-    if (options.sample_bsdf) {
+    if (SPEC_SAMPLE_BSDF) {
         PhaseFunctionSample hg_sample = sampleHGPhaseFunction(-dir, volume.g, rng_state);
         payload.next_dir = hg_sample.wi;
         segment.bsdf *= volume.scattering * hg_sample.p;
@@ -331,17 +328,18 @@ PathVertex sampleVertexInHomogenous(vec3 origin, vec3 dir, int volume_idx, inout
 
 void main() {
     PathVertex vertex;
-    PathVertex last_vertex = payload.next_vertex;
+    vec3 last_P = payload.next_vertex.P;
+    int last_volume_idx = getVertexVolumeIdx(payload.next_vertex);
 
     Triangle triangle = getTriangle(gl_InstanceCustomIndexEXT, gl_PrimitiveID);
 
     if (isVolumeBoundary(triangle)) {
-        if (last_vertex.volume_idx >= 0) {
+        if (last_volume_idx >= 0) {
             // exiting volume or scattering inside
             if (payload.sampling_options.assume_homogenous) {
-                vertex = sampleVertexInHomogenous(last_vertex.P, normalize(gl_WorldRayDirectionEXT), getVolumeIdx(triangle), payload.rng_state);
+                vertex = sampleVertexInHomogenous(last_P, normalize(gl_WorldRayDirectionEXT), getVolumeIdx(triangle), payload.rng_state);
             } else {
-                vertex = deltaTracking(last_vertex.P, normalize(gl_WorldRayDirectionEXT), getVolumeIdx(triangle), payload.rng_state);
+                vertex = deltaTracking(last_P, normalize(gl_WorldRayDirectionEXT), getVolumeIdx(triangle), payload.rng_state);
             }
         } else {
             // entering volume
@@ -354,9 +352,9 @@ void main() {
         EvaluatedMaterial material = evaluateVertexMaterial(vertex);
 
         bool specular_bounce = false;
-        payload.next_segment = sampleNextSegment(vertex, options.sample_bsdf, specular_bounce, payload.rng_state);
+        payload.next_segment = sampleNextSegment(vertex, material, SPEC_SAMPLE_BSDF, specular_bounce, payload.rng_state);
         vertex.is_specular = specular_bounce;
     }
 
-    payload.next_vertex = vertex;
+    payload.next_vertex = packPathVertex(vertex);
 }

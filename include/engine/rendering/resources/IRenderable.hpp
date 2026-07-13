@@ -13,6 +13,7 @@ namespace RtEngine {
 
     struct EmittingInstanceData {
         glm::mat4 model_matrix;
+        glm::mat4 normal_matrix; // Precomputed transpose(inverse(mat3(model_matrix))) to transform normals into world space
         uint32_t instance_id;
         uint32_t primitive_count;
         uint32_t padding[2];

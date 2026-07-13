@@ -77,6 +77,7 @@ namespace RtEngine {
 			for (auto child_node: root_node->children) {
 				std::shared_ptr<VolumeRenderer> vol_renderer = child_node->getComponent<VolumeRenderer>();
 				if (vol_renderer && !volume_map->contains(vol_renderer->vol_asset->name)) {
+					vol_renderer->vol_asset->world_transform = child_node->transform->getWorldTransform();
 					(*volume_map)[vol_renderer->vol_asset->name] = vol_renderer->vol_asset;
 				}
 				collectVolumeAssetsRecursive(child_node, volume_map);

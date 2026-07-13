@@ -1,23 +1,7 @@
 #include "VolumeManager.hpp"
 
-#include "AccelerationStructure.hpp"
-#include "AccelerationStructure.hpp"
-#include "AccelerationStructure.hpp"
-#include "AccelerationStructure.hpp"
-#include "AccelerationStructure.hpp"
-#include "AccelerationStructure.hpp"
-#include "AccelerationStructure.hpp"
-#include "AccelerationStructure.hpp"
-#include "AccelerationStructure.hpp"
-#include "AccelerationStructure.hpp"
-#include "AccelerationStructure.hpp"
-#include "AccelerationStructure.hpp"
-#include "AccelerationStructure.hpp"
-#include "AccelerationStructure.hpp"
-#include "AccelerationStructure.hpp"
-#include "AccelerationStructure.hpp"
-#include "AccelerationStructure.hpp"
-#include "AccelerationStructure.hpp"
+#include <glm/gtc/packing.hpp>
+
 #include "QuickTimer.hpp"
 #include "spdlog/spdlog.h"
 
@@ -50,24 +34,47 @@ namespace RtEngine {
             volume_datas.data(), volume_datas.size() * sizeof(VolumeData), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
     }
 
-    VolumeData VolumeManager::createVolumeData(const std::shared_ptr<VolumeAsset> &volume_asset, uint32_t texture_idx) {
+    VolumeData VolumeManager::createVolumeData(const std::shared_ptr<VolumeAsset> &volume_asset, uint32_t texture_idx) const {
         auto [origin, extent] = volume_asset->bounding_mesh->calcAABB();
+
+        if (!similarity_table || similarity_table->g_keys.empty()) {
+            throw std::runtime_error("Similarity table not loaded before creating volume resources");
+        }
+        const int similarity_idx = similarity_table->findBestIndex(volume_asset->g);
+        const float similarity_alpha = similarity_table->alphas.at(similarity_idx);
+        spdlog::info("Volume '{}': g={} -> similarity table {} (g_key={}, alpha={})",
+                     volume_asset->name, volume_asset->g, similarity_idx,
+                     similarity_table->g_keys.at(similarity_idx), similarity_alpha);
+
         const VolumeData volume_data{
             .g = volume_asset->g,
             .max_scattering = volume_asset->getMaxScattering(),
             .max_absorption = volume_asset->getMaxAbsorption(),
             .volume_texture_idx = texture_idx,
+            .similarity_alpha = similarity_alpha,
+            .similarity_table_idx = similarity_idx,
             .bounding_box_origin = glm::vec4(origin, 0),
             .bounding_box_extent = glm::vec4(extent, 0),
             .avg_scattering = glm::vec4(volume_asset->getAvgScattering(), 0),
             .avg_absorption = glm::vec4(volume_asset->getAvgAbsorption(), 0),
+            .world_to_object = glm::inverse(volume_asset->world_transform),
         };
         return volume_data;
     }
 
     AllocatedImage VolumeManager::createVolumeTexture(glm::uvec3 vol_size, std::shared_ptr<std::vector<glm::vec4>> coefficients) const {
+        // Pack RGBA to fp16 so the two 3D fetches per delta/ratio-tracking step
+        // move half the bandwidth. Volume coefficients don't need fp32.
+        std::vector<uint16_t> packed(coefficients->size() * 4);
+        for (size_t i = 0; i < coefficients->size(); ++i) {
+            const glm::vec4 &v = (*coefficients)[i];
+            packed[i * 4 + 0] = glm::packHalf1x16(v.x);
+            packed[i * 4 + 1] = glm::packHalf1x16(v.y);
+            packed[i * 4 + 2] = glm::packHalf1x16(v.z);
+            packed[i * 4 + 3] = glm::packHalf1x16(v.w);
+        }
         VkExtent3D extent = {vol_size.x, vol_size.y, vol_size.z};
-        return vulkan_context->resource_builder->createImage(coefficients->data(), extent, VK_FORMAT_R32G32B32A32_SFLOAT,
+        return vulkan_context->resource_builder->createImage(packed.data(), extent, VK_FORMAT_R16G16B16A16_SFLOAT,
                                                              VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_SAMPLED_BIT,
                                                              VK_IMAGE_ASPECT_COLOR_BIT,
                                                              VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,

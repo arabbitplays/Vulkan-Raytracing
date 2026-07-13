@@ -11,7 +11,7 @@ struct SamplingOptions {
 struct Payload {
     int depth;
     uvec4 rng_state;
-    PathVertex next_vertex;
+    PackedPathVertex next_vertex;
     SampledSegment next_segment;
     vec3 next_dir;
     vec3 rr_beta;

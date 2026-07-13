@@ -20,7 +20,7 @@ vec3 estimateTransmittance(vec3 P, vec3 L, float distance_to_light, int volume_i
     shadow_payload.similarity_relation = use_similarity_relation;
     shadow_payload.assume_homogenous = assume_homogenous;
 
-    while (length(shadow_payload.transmittance) > 0.0f && shadow_payload.dist_to_light > EPSILON) {
+    while (dot(shadow_payload.transmittance, shadow_payload.transmittance) > 0.0 && shadow_payload.dist_to_light > EPSILON) {
         float tmin = EPSILON;
         float tmax = INFINITY;
         vec3 direction = shadow_payload.direction;

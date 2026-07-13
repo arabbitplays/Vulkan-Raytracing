@@ -2,7 +2,7 @@
   description = "A Nix-flake-based development environment";
 
   inputs = {
-    nixpkgs.url = "github:nixos/nixpkgs/nixos-25.05";
+    nixpkgs.url = "github:nixos/nixpkgs/nixos-25.11";
   };
 
   outputs = { self , nixpkgs ,... }: let
@@ -22,8 +22,8 @@
         version = "1.7";
         format = "wheel";
         src = pkgs.fetchurl {
-          url = "https://files.pythonhosted.org/packages/ef/13/f6cd04b63d30bed8befeec3c5f424f698d80f71a530f6fc6f86e7aca0fe6/flip_evaluator-1.7-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl";
-          sha256 = "afd53e4ea606e6b6518e4cbbdce416a1b3b018bcb4c370bed0328a7f65f1308f";
+          url = "https://files.pythonhosted.org/packages/a5/ed/fc88540c25b08aba2458835c26c8db54c6ea9c1dee058734492efe96eb1e/flip_evaluator-1.7-cp313-cp313-manylinux_2_17_x86_64.manylinux2014_x86_64.whl";
+          sha256 = "d63eff9eaf9a68a6f9c30a3714c8a1a83fb6182f18df2fbc9bc361634a6691f7";
         };
         nativeBuildInputs = [ pkgs.autoPatchelfHook ];
         buildInputs = [ pkgs.stdenv.cc.cc.lib ];

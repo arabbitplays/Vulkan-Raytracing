@@ -66,6 +66,13 @@ namespace RtEngine {
 
 		std::shared_ptr<Window> window;
 
+		// Sanity ceiling for the recursion_depth option. Path storage grows
+		// dynamically with it: the pipeline is respecialized with a larger
+		// MAX_PATH_LENGTH when the depth exceeds the current capacity
+		// (Material::ensurePipelineSpecialization), at ~110 B of per-thread scratch
+		// per vertex.
+		static constexpr uint32_t MAX_RECURSION_DEPTH = 256;
+
 		uint32_t recursion_depth = 5;
 		MlmcMethod mlmc_mode = PATH_LENGTH;
 		std::string mlmc_mode_str = "path length";

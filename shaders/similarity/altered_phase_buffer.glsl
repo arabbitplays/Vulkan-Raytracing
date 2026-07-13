@@ -29,9 +29,10 @@ const float ALPHAS[NUM_KEYS] = float[](
 );
 
 // Backing storage for the tabulated phase functions. Populated once at
-// startup from resources/similarity/altered_phase_coefficients.bin.
-// std430 layout means consecutive floats with no padding, so the .bin
-// file is just COEFFS then CDF then TOTALS, each a packed float array.
+// startup from resources/similarity/altered_phase_coefficients.bin (the
+// SSBO payload after that file's header and key arrays). std430 layout
+// means consecutive floats with no padding, so the payload is just
+// COEFFS then CDF then TOTALS, each a packed float array.
 layout(set = 0, binding = 15, std430) readonly buffer SimilarityCoefficientBuffer {
     float coeffs[NUM_KEYS * NUM_COEFFS];
     float cdf[NUM_KEYS * NUM_COEFFS];

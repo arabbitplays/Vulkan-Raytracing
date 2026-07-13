@@ -22,6 +22,8 @@ namespace RtEngine {
 		void buildPipelines(VkDescriptorSetLayout sceneLayout) override;
 		void writeMaterial(AllocatedBuffer material_buffer, std::shared_ptr<MaterialTextures<>> material_textures) override;
 
+		void ensurePipelineSpecialization(uint32_t required_depth, uint32_t mlmc_method, bool do_mlmc) override;
+
 		std::shared_ptr<MaterialInstance> loadInstance(const YAML::Node &yaml_node) override;
 
 		void initProperties(const std::shared_ptr<IProperties> &config, const UpdateFlagsHandle &update_flags) override;
@@ -30,6 +32,17 @@ namespace RtEngine {
 		void reset() override;
 
 	private:
+		// Specialization state currently baked into `pipeline`. Kept in sync
+		// with the shader-side spec constants in shaders/metalRough/options.glsl
+		// (plus MAX_PATH_LENGTH in shaders/common/path.glsl). Any mismatch with
+		// the values requested by ensurePipelineSpecialization triggers a rebuild.
+		uint32_t max_path_length = 32;                // constant_id 0
+		uint32_t current_mlmc_method = 0;             // constant_id 1
+		bool current_do_mlmc = false;                 // constant_id 2
+		bool current_sample_bsdf = false;             // constant_id 3
+		bool current_russian_roulette = false;        // constant_id 4
+		bool pipeline_specialized = false;
+		VkDescriptorSetLayout scene_layout = VK_NULL_HANDLE;
 
 		bool normal_mapping = false, sample_lights = false, sample_bsdf = false, russian_roulette = false, similarity_relation = false, assume_homogenous = false;
 		bool debug_depth = false;

@@ -18,6 +18,8 @@ namespace RtEngine {
 							VkRayTracingShaderGroupTypeKHR shaderGroup);
 		void setDescriptorSetLayouts(std::vector<VkDescriptorSetLayout> &descriptorSetLayouts);
 		void addPushConstant(uint32_t size, VkShaderStageFlags shaderStage);
+		// Applied to all stages at build(); stages without a matching constant_id ignore it.
+		void setSpecConstant(uint32_t constant_id, uint32_t value);
 		void clear();
 		void destroy();
 
@@ -40,6 +42,9 @@ namespace RtEngine {
 		std::vector<VkPushConstantRange> pushConstants{};
 		std::vector<VkRayTracingShaderGroupCreateInfoKHR> shader_groups{};
 		std::vector<VkPipelineShaderStageCreateInfo> shader_stages{};
+		std::vector<VkSpecializationMapEntry> spec_map_entries{};
+		std::vector<uint32_t> spec_data{};
+		VkSpecializationInfo spec_info{};
 	};
 
 } // namespace RtEngine

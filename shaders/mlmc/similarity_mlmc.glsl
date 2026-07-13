@@ -43,14 +43,15 @@ vec3 evaluateDiffVertex(PathVertex vertex, vec3 biased_throughput, vec3 unbiased
 // for this, the phase of the last vertex needs to be evaluated here (since the next vertex was not clear there)
 // also the transmittance / visibility needs to be recalculated to match the similarity relation parameters
 void updateBiasedThroughput(int curr_vertex_idx, int last_vertex_idx, inout vec3 biased_throughput, inout uvec4 rng_state) {
-    PathVertex vertex = path.vertices[curr_vertex_idx];
-    PathVertex last_vertex = path.vertices[last_vertex_idx];
+    PathVertex vertex = getPathVertex(curr_vertex_idx);
+    PathVertex last_vertex = getPathVertex(last_vertex_idx);
 
     vec3 biased_transmittance = vec3(1);;
     if (vertex.type == VOLUME_TYPE // if this is a volume vertex
             || (vertex.type == VOLUME_BOUNDARY_TYPE && last_vertex.type == VOLUME_TYPE)) { // or an exiting volume boundary vertex
-        vec3 dir = vertex.P - last_vertex.P;
-        biased_transmittance = estimateTransmittance(last_vertex.P, normalize(dir), length(dir), last_vertex.volume_idx, true, options.assume_homogenous, rng_state);
+        // the segment lies inside last_vertex's volume, so march it directly
+        // instead of re-tracing rays against boundaries the path already found
+        biased_transmittance = estimateSegmentTransmittance(last_vertex.P, vertex.P, last_vertex.volume_idx, true, options.assume_homogenous, rng_state);
         biased_throughput *= biased_transmittance;
     }
 
@@ -59,7 +60,7 @@ void updateBiasedThroughput(int curr_vertex_idx, int last_vertex_idx, inout vec3
     if (last_vertex.type == VOLUME_TYPE) {
         EvaluatedVolume last_volume = evaluateVertexVolume(last_vertex, true, options.assume_homogenous);
         vec3 wi = normalize(vertex.P - last_vertex.P);
-        float phase = evaluateAlteredPhaseFunction(last_vertex.V, wi, last_volume.g);
+        float phase = evaluateAlteredPhaseFunctionIdx(last_vertex.V, wi, last_volume.similarity_idx);
         biased_bsdf = last_volume.scattering * phase;
     }
     biased_throughput *= biased_bsdf;
@@ -67,21 +68,23 @@ void updateBiasedThroughput(int curr_vertex_idx, int last_vertex_idx, inout vec3
 
 bool shouldSkip(uint correlation_mode, int vertex_idx, int last_vertex_idx, out float pdf, inout uvec4 rng_state) {
     pdf = 1;
-    if (vertex_idx == 0 || path.vertices[vertex_idx].type != VOLUME_TYPE) {
+    if (vertex_idx == 0 || getVertexType(path.vertices[vertex_idx]) != VOLUME_TYPE) {
         return false;
     }
 
     if (correlation_mode == SKIP_DETERMINISTIC_CORRELATION_MODE) {
-        if (vertex_idx - last_vertex_idx == 1 && path.vertices[last_vertex_idx].type == VOLUME_TYPE) {
+        if (vertex_idx - last_vertex_idx == 1 && getVertexType(path.vertices[last_vertex_idx]) == VOLUME_TYPE) {
             return true;
         }
     } else if (correlation_mode == SKIP_RANDOM_CORRELATION_MODE) {
-        EvaluatedVolume unbiased_vol = evaluateVertexVolume(path.vertices[vertex_idx], false, options.assume_homogenous);
-        float sigma_s = luminance(unbiased_vol.scattering);
-        float sigma_t = sigma_s + luminance(unbiased_vol.absorption);
-        float albedo  = sigma_s / max(sigma_t, 1e-8);
-        float g       = max(unbiased_vol.g, 0.0);
-        float p_keep  = clamp(1.0 - g * albedo, 0.0, 1.0);
+        EvaluatedVolume unbiased_vol = evaluateVertexVolume(getPathVertex(vertex_idx), false, options.assume_homogenous);
+        // Keep with the biased-to-unbiased extinction ratio
+        // (alpha * sigma_s + sigma_a) / (sigma_s + sigma_a),
+        // using the channel that maximizes it.
+        vec3 sigma_s = unbiased_vol.scattering;
+        vec3 sigma_t = sigma_s + unbiased_vol.absorption;
+        vec3 p_keep_rgb = (unbiased_vol.similarity_alpha * sigma_s + unbiased_vol.absorption) / max(sigma_t, vec3(1e-8));
+        float p_keep = clamp(getMaxComponent(p_keep_rgb), 0.0, 1.0);
         float r = stepAndOutputRNGFloat(rng_state);
         if (r < p_keep) {
             pdf = p_keep;
@@ -108,7 +111,7 @@ vec3 similarityEvaluateCorrelatedPaths(EvaluationOptions options, uint correlati
 
     uint evaluation_depth = min(options.evaluation_depth, path.len);
     for (int i = 0; i < evaluation_depth; i++) {
-        PathVertex vertex = path.vertices[i];
+        PathVertex vertex = getPathVertex(i);
         SampledSegment seg = path.segments[i];
         bool skip_vertex = false;
 

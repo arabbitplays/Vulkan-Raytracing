@@ -40,12 +40,8 @@ assimp = dependency('assimp')
 openmp = dependency('openmp', required: true)
 yaml = dependency('yaml-cpp')
 
-openvdb_root = '/nix/store/2xpyf2q28vh0vp9y9h5vncxi2pjn3zny-openvdb-12.0.1-dev'
-openvdb_dep = declare_dependency(
-    include_directories: include_directories(openvdb_root + '/include'),
-    link_args: ['-L' + openvdb_root + '/lib', '-lopenvdb']
-)
 cc = meson.get_compiler('cpp')
+openvdb_dep = cc.find_library('openvdb', required: true)
 tbb_dep = cc.find_library('tbb', required: true)
 
 project_root = meson.current_source_dir()

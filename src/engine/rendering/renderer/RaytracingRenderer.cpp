@@ -231,6 +231,13 @@ namespace RtEngine {
     }
 
 	void RaytracingRenderer::recordRenderToImage(VkCommandBuffer commandBuffer, std::shared_ptr<RenderTargetRepository> target) {
+		// may wait for device idle and rebuild the pipeline if any specialization
+		// constant needs to change (path length, mlmc_method, do_mlmc, sample_bsdf,
+		// russian_roulette); must happen before the pipeline is bound
+		scene_adapter->getMaterial()->ensurePipelineSpecialization(
+			recursion_depth,
+			MlmcMethodConverter::toIndex(mlmc_mode),
+			mlmc_present_mode != UNBIASED);
 		RaytracingPipeline pipeline = *scene_adapter->getMaterial()->pipeline;
 
         const uint32_t handleSizeAligned =
@@ -287,9 +294,8 @@ namespace RtEngine {
         push_constants.push_back(target->getSamplesPerFrame());
         push_constants.push_back(target->getDiffSamplesPerFrame());
 
-        push_constants.push_back(mlmc_present_mode != UNBIASED);
-        push_constants.push_back(MlmcMethodConverter::toIndex(mlmc_mode));
-
+        // do_mlmc and mlmc_method are specialization constants; see
+        // MetalRoughMaterial::ensurePipelineSpecialization.
         push_constants.push_back(mlmc_biased_path_length);
 
         *size = sizeof(uint32_t) * push_constants.size();
@@ -399,7 +405,7 @@ namespace RtEngine {
                                         const UpdateFlagsHandle &update_flags) {
         bool target_reset = false;
         if (config->startChild("renderer")) {
-            target_reset |= config->addUint("recursion_depth", &recursion_depth, 1, 50);
+            target_reset |= config->addUint("recursion_depth", &recursion_depth, 1, MAX_RECURSION_DEPTH);
             config->endChild();
         }
 
