@@ -59,6 +59,8 @@ namespace RtEngine {
             .volume_texture_idx = texture_idx,
             .bounding_box_origin = glm::vec4(origin, 0),
             .bounding_box_extent = glm::vec4(extent, 0),
+            .avg_scattering = glm::vec4(volume_asset->getAvgScattering(), 0),
+            .avg_absorption = glm::vec4(volume_asset->getAvgAbsorption(), 0),
         };
         return volume_data;
     }

@@ -10,7 +10,7 @@ float transmittance(float distance, float extinction) {
     return exp(-extinction * distance);
 }
 
-vec3 estimateTransmittance(vec3 P, vec3 L, float distance_to_light, int volume_idx, bool use_similarity_relation, inout uvec4 rng_state) {
+vec3 estimateTransmittance(vec3 P, vec3 L, float distance_to_light, int volume_idx, bool use_similarity_relation, bool assume_homogenous, inout uvec4 rng_state) {
     shadow_payload.rng_state = rng_state;
     shadow_payload.transmittance = vec3(1);
     shadow_payload.dist_to_light = distance_to_light;
@@ -18,6 +18,7 @@ vec3 estimateTransmittance(vec3 P, vec3 L, float distance_to_light, int volume_i
     shadow_payload.direction = normalize(L);
     shadow_payload.current_volume_idx = volume_idx;
     shadow_payload.similarity_relation = use_similarity_relation;
+    shadow_payload.assume_homogenous = assume_homogenous;
 
     while (length(shadow_payload.transmittance) > 0.0f && shadow_payload.dist_to_light > EPSILON) {
         float tmin = EPSILON;
@@ -32,8 +33,8 @@ vec3 estimateTransmittance(vec3 P, vec3 L, float distance_to_light, int volume_i
     return shadow_payload.transmittance;
 }
 
-vec3 estimateTransmittance(vec3 P, vec3 L, float distance_to_light, bool use_similarity_relation, inout uvec4 rng_state) {
-    return estimateTransmittance(P, L, distance_to_light, -1, use_similarity_relation, rng_state);
+vec3 estimateTransmittance(vec3 P, vec3 L, float distance_to_light, bool use_similarity_relation, bool assume_homogenous, inout uvec4 rng_state) {
+    return estimateTransmittance(P, L, distance_to_light, -1, use_similarity_relation, assume_homogenous, rng_state);
 }
 
 #endif

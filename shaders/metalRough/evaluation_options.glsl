@@ -13,6 +13,7 @@ struct EvaluationOptions {
     bool sample_light;
     bool sample_bsdf;
     bool use_similarity_relation;
+    bool assume_homogenous;
     bool debug_path_len;
 };
 
@@ -22,6 +23,7 @@ EvaluationOptions getUserOptions() {
     eval_options.sample_light = options.sample_light;
     eval_options.sample_bsdf = options.sample_bsdf;
     eval_options.use_similarity_relation = options.similarity_relation;
+    eval_options.assume_homogenous = options.assume_homogenous;
     eval_options.debug_path_len = options.debug_depth;
     return eval_options;
 }

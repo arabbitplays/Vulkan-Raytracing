@@ -5,6 +5,7 @@
 
 struct SamplingOptions {
     bool similarity_relation;
+    bool assume_homogenous;
 };
 
 struct Payload {

@@ -16,6 +16,8 @@ namespace RtEngine {
         uint32_t volume_texture_idx;
         glm::vec4 bounding_box_origin;
         glm::vec4 bounding_box_extent;
+        glm::vec4 avg_scattering;
+        glm::vec4 avg_absorption;
     };
 
     struct VolumeAsset
@@ -61,6 +63,14 @@ namespace RtEngine {
         float getMaxAbsorption() const {
             // because density gets scaled down
             return std::max(absorption_scale.x, std::max(absorption_scale.y, absorption_scale.z));
+        }
+
+        glm::vec3 getAvgScattering() const {
+            return volume->avg_density / volume->max_density * scattering_scale;
+        }
+
+        glm::vec3 getAvgAbsorption() const {
+            return volume->avg_density / volume->max_density * absorption_scale;
         }
     };
 } // RtEngine

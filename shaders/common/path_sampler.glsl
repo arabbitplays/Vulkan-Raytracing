@@ -19,6 +19,7 @@ void initPayload(vec3 origin, vec3 direction) {
     payload.eta_scale = 1;
     SamplingOptions sample_options;
     sample_options.similarity_relation = options.similarity_relation;
+    sample_options.assume_homogenous = options.assume_homogenous;
     payload.sampling_options = sample_options;
 }
 

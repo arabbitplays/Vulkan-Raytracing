@@ -14,6 +14,7 @@
 
 #include "../mlmc/path_length_mlmc.glsl"
 #include "../mlmc/similarity_mlmc.glsl"
+#include "../mlmc/homo_mlmc.glsl"
 
 #define STORE_RNG true
 
@@ -42,6 +43,8 @@ vec3 biasedEstimator(uint sample_count, uint mlmc_method) {
         return pathLengthMlmc(sample_count, options.biased_path_length);
     } else if (mlmc_method == 1 || mlmc_method == 2 || mlmc_method == 3 || mlmc_method == 4) {
         return similarityMlmc(sample_count, options.recursion_depth);
+    } else if (mlmc_method == 5) {
+        return homoMlmc(sample_count, options.recursion_depth);
     }
     return vec3(1, 0, 0);
 }
@@ -57,6 +60,8 @@ vec3 diffEstimator(uint sample_count, uint mlmc_method) {
         return similarityDiffMlmc(sample_count, options.recursion_depth, SKIP_DETERMINISTIC_CORRELATION_MODE);
     } else if (mlmc_method == 4) {
         return similarityDiffMlmc(sample_count, options.recursion_depth, SKIP_RANDOM_CORRELATION_MODE);
+    } else if (mlmc_method == 5) {
+        return homoDiffMlmc(sample_count, options.recursion_depth);
     }
     return vec3(1, 0, 0);
 }

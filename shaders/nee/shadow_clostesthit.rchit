@@ -42,6 +42,13 @@ vec3 ratioTracking(vec3 origin, vec3 dir, float max_tracking_dist, int volume_id
     return transmittance;
 }
 
+vec3 analyticTransmittance(float dist, int volume_idx) {
+    VolumeInstance volumeInstance = getVolume(volume_idx);
+    EvaluatedVolume volume = evaluateHomoVolume(volumeInstance, payload.similarity_relation);
+    vec3 extinction = volume.scattering + volume.absorption;
+    return exp(-extinction * dist);
+}
+
 void main() {
     // bool entering = (gl_HitKindEXT == gl_HitKindFrontFacingTriangleEXT);
     bool is_inside_volume = payload.current_volume_idx >= 0;
@@ -58,7 +65,11 @@ void main() {
         } else {
             if (is_inside_volume) {
                 // track to the volume boundary
-                payload.transmittance *= ratioTracking(tracking_origin, tracking_dir, gl_HitTEXT, payload.current_volume_idx, payload.rng_state);
+                if (payload.assume_homogenous) {
+                    payload.transmittance *= analyticTransmittance(gl_HitTEXT, payload.current_volume_idx);
+                } else {
+                    payload.transmittance *= ratioTracking(tracking_origin, tracking_dir, gl_HitTEXT, payload.current_volume_idx, payload.rng_state);
+                }
                 payload.current_volume_idx = -1;
             } else {
                 payload.current_volume_idx = getVolumeIdx(triangle);
@@ -71,7 +82,11 @@ void main() {
              payload.dist_to_light = 0;
              return;
          } else {
-             payload.transmittance *= ratioTracking(tracking_origin, tracking_dir, payload.dist_to_light, payload.current_volume_idx, payload.rng_state);
+             if (payload.assume_homogenous) {
+                 payload.transmittance *= analyticTransmittance(payload.dist_to_light, payload.current_volume_idx);
+             } else {
+                 payload.transmittance *= ratioTracking(tracking_origin, tracking_dir, payload.dist_to_light, payload.current_volume_idx, payload.rng_state);
+             }
              payload.dist_to_light = 0;
              return;
          }

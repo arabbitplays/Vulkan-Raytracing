@@ -9,6 +9,7 @@ struct ShadowPayload {
     vec3 direction;
     int current_volume_idx;
     bool similarity_relation;
+    bool assume_homogenous;
 };
 
 #endif
