@@ -10,7 +10,7 @@ benchmark:
 renderer:
   recursion_depth: [[RECURSION_DEPTH]]
 mlmc:
-  mlmc_mode: "skip deterministic similarity"
+  mlmc_mode: "similarity skip random"
   mlmc_present_mode: "combined"
 metal_rough:
   normal_mapping: false

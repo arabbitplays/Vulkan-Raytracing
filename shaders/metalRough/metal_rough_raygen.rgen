@@ -45,7 +45,7 @@ vec3 biasedEstimator(uint sample_count) {
         return pathLengthMlmc(sample_count, options.biased_path_length);
     } else if (SPEC_MLMC_METHOD == 1 || SPEC_MLMC_METHOD == 2 || SPEC_MLMC_METHOD == 3 || SPEC_MLMC_METHOD == 4) {
         return similarityMlmc(sample_count, options.recursion_depth);
-    } else if (SPEC_MLMC_METHOD == 5) {
+    } else if (SPEC_MLMC_METHOD == 5 || SPEC_MLMC_METHOD == 6) {
         return homoMlmc(sample_count, options.recursion_depth);
     }
     return vec3(1, 0, 0);
@@ -63,7 +63,9 @@ vec3 diffEstimator(uint sample_count) {
     } else if (SPEC_MLMC_METHOD == 4) {
         return similarityDiffMlmc(sample_count, options.recursion_depth, SKIP_RANDOM_CORRELATION_MODE);
     } else if (SPEC_MLMC_METHOD == 5) {
-        return homoDiffMlmc(sample_count, options.recursion_depth);
+        return homoDiffMlmc(sample_count, options.recursion_depth, RESAMPLE_CORRELATION_MODE);
+    } else if (SPEC_MLMC_METHOD == 6) {
+        return homoDiffMlmc(sample_count, options.recursion_depth, SAME_PATH_CORRELATION_MODE);
     }
     return vec3(1, 0, 0);
 }

@@ -10,7 +10,7 @@ benchmark:
 renderer:
   recursion_depth: [[RECURSION_DEPTH]]
 mlmc:
-  mlmc_mode: "same path similarity"
+  mlmc_mode: "similarity same path"
   mlmc_present_mode: "combined"
 metal_rough:
   normal_mapping: false
