@@ -57,7 +57,7 @@ namespace RtEngine {
 		pipeline->setSpecConstant(3, current_sample_bsdf ? 1u : 0u);        // SPEC_SAMPLE_BSDF
 		pipeline->setSpecConstant(4, current_russian_roulette ? 1u : 0u);   // SPEC_RUSSIAN_ROULETTE
 
-		pipeline->addPushConstant(17 * sizeof(uint32_t), VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR |
+		pipeline->addPushConstant(18 * sizeof(uint32_t), VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR |
 																  VK_SHADER_STAGE_RAYGEN_BIT_KHR |
 																  VK_SHADER_STAGE_MISS_BIT_KHR);
 
@@ -161,6 +161,7 @@ namespace RtEngine {
 			reset_required |= config->addBool("russian_roulette", &russian_roulette);
 			reset_required |= config->addBool("similarity_relation", &similarity_relation);
 			reset_required |= config->addBool("assume_homogenous", &assume_homogenous);
+			reset_required |= config->addBool("regular_tracking", &regular_tracking);
 			reset_required |= config->addBool("debug_depth", &debug_depth);
 			reset_required |= config->addBool("adaptive_sampling", &adaptive_sampling);
 			reset_required |= config->addBool("debug_variance", &debug_variance);
@@ -183,6 +184,7 @@ namespace RtEngine {
 		// (see MetalRoughMaterial::ensurePipelineSpecialization).
 		push_constants.push_back(static_cast<int32_t>(similarity_relation));
 		push_constants.push_back(static_cast<int32_t>(assume_homogenous));
+		push_constants.push_back(static_cast<int32_t>(regular_tracking));
 		push_constants.push_back(static_cast<int32_t>(debug_depth));
 		push_constants.push_back(static_cast<int32_t>(adaptive_sampling));
 		push_constants.push_back(static_cast<int32_t>(debug_variance));

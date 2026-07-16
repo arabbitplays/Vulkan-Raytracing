@@ -20,6 +20,7 @@ void initPayload(vec3 origin, vec3 direction) {
     SamplingOptions sample_options;
     sample_options.similarity_relation = options.similarity_relation;
     sample_options.assume_homogenous = options.assume_homogenous;
+    sample_options.regular_tracking = options.regular_tracking;
     payload.sampling_options = sample_options;
 }
 

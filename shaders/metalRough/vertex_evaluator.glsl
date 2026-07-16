@@ -86,7 +86,7 @@ EvaluatedVolume evaluateVertexVolume(PathVertex vertex, bool use_similarity_rela
 }
 
 // Transmittance along a segment known to lie entirely inside one volume
-vec3 estimateSegmentTransmittance(vec3 from_P, vec3 to_P, VolumeInstance volume_instance, bool use_similarity_relation, bool assume_homogenous, inout uvec4 rng_state) {
+vec3 estimateSegmentTransmittance(vec3 from_P, vec3 to_P, VolumeInstance volume_instance, bool use_similarity_relation, bool assume_homogenous, bool regular_tracking, inout uvec4 rng_state) {
     vec3 dir = to_P - from_P;
     float dist = length(dir);
     if (dist <= 0.0) {
@@ -97,6 +97,62 @@ vec3 estimateSegmentTransmittance(vec3 from_P, vec3 to_P, VolumeInstance volume_
     if (assume_homogenous) {
         EvaluatedVolume volume = evaluateHomoVolume(volume_instance, use_similarity_relation);
         return exp(-(volume.scattering + volume.absorption) * dist);
+    }
+
+    if (regular_tracking) {
+        ivec3 res = textureSize(scattering_textures[volume_instance.tex_idx], 0);
+        vec3 bb_origin = volume_instance.bounding_box_origin.xyz;
+        vec3 bb_extent = volume_instance.bounding_box_extent.xyz;
+        vec3 voxel_size = bb_extent / vec3(res);
+
+        vec3 obj_origin = (volume_instance.world_to_object * vec4(from_P, 1.0)).xyz;
+        vec3 obj_dir = mat3(volume_instance.world_to_object) * dir;
+
+        vec3 grid_pos = (obj_origin - bb_origin) / voxel_size;
+        ivec3 voxel = clamp(ivec3(floor(grid_pos)), ivec3(0), res - ivec3(1));
+
+        ivec3 step_dir;
+        vec3 t_delta;
+        vec3 next_boundary;
+        for (int i = 0; i < 3; ++i) {
+            if (obj_dir[i] > 0.0) {
+                step_dir[i] = 1;
+                t_delta[i] = voxel_size[i] / obj_dir[i];
+                float edge = bb_origin[i] + float(voxel[i] + 1) * voxel_size[i];
+                next_boundary[i] = (edge - obj_origin[i]) / obj_dir[i];
+            } else if (obj_dir[i] < 0.0) {
+                step_dir[i] = -1;
+                t_delta[i] = -voxel_size[i] / obj_dir[i];
+                float edge = bb_origin[i] + float(voxel[i]) * voxel_size[i];
+                next_boundary[i] = (edge - obj_origin[i]) / obj_dir[i];
+            } else {
+                step_dir[i] = 0;
+                t_delta[i] = INFINITY;
+                next_boundary[i] = INFINITY;
+            }
+        }
+
+        vec3 optical_depth = vec3(0);
+        float tracked_dist = 0.0;
+        while (tracked_dist < dist) {
+            int axis = 0;
+            if (next_boundary.y < next_boundary.x) axis = 1;
+            if (next_boundary.z < next_boundary[axis]) axis = 2;
+
+            float seg_end = min(next_boundary[axis], dist);
+            float seg_len = max(0.0, seg_end - tracked_dist);
+
+            vec3 voxel_center_obj = bb_origin + (vec3(voxel) + 0.5) * voxel_size;
+            EvaluatedVolume vol = evaluateVolumeAtLocalPos(volume_instance, use_similarity_relation, voxel_center_obj);
+            optical_depth += (vol.scattering + vol.absorption) * seg_len;
+            tracked_dist = seg_end;
+
+            if (tracked_dist >= dist) break;
+            voxel[axis] += step_dir[axis];
+            next_boundary[axis] += t_delta[axis];
+            if (voxel[axis] < 0 || voxel[axis] >= res[axis]) break;
+        }
+        return exp(-optical_depth);
     }
 
     EvaluatedVolume volume = evaluateVolumeAtLocalPos(volume_instance, use_similarity_relation, posToVolumeLocal(volume_instance, from_P));

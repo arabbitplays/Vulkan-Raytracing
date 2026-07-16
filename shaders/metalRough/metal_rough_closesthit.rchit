@@ -289,6 +289,102 @@ PathVertex deltaTracking(vec3 origin, vec3 dir, int volume_idx, inout uvec4 rng_
      return createVolumeBorderVertex(false);
 }
 
+// Regular tracking: DDA-march through every voxel of the volume grid, treating
+// each voxel as piecewise-constant. Accumulates the exact transmittance along
+// the ray and does hero-wavelength distance sampling analogous to the
+// homogeneous sampler.
+PathVertex regularTracking(vec3 origin, vec3 dir, int volume_idx, inout uvec4 rng_state) {
+    float dist_to_boundary = gl_HitTEXT;
+
+    VolumeInstance volume_instance = getVolume(volume_idx);
+    ivec3 res = textureSize(scattering_textures[volume_instance.tex_idx], 0);
+    vec3 bb_origin = volume_instance.bounding_box_origin.xyz;
+    vec3 bb_extent = volume_instance.bounding_box_extent.xyz;
+    vec3 voxel_size = bb_extent / vec3(res);
+
+    // Parameterise obj-space ray by world-space t: obj_pos(t) = obj_origin + t * obj_dir
+    vec3 obj_origin = (gl_WorldToObjectEXT * vec4(origin, 1.0)).xyz;
+    vec3 obj_dir = mat3(gl_WorldToObjectEXT) * dir;
+
+    vec3 grid_pos = (obj_origin - bb_origin) / voxel_size;
+    ivec3 voxel = clamp(ivec3(floor(grid_pos)), ivec3(0), res - ivec3(1));
+
+    ivec3 step_dir;
+    vec3 t_delta;
+    vec3 next_boundary;
+    for (int i = 0; i < 3; ++i) {
+        if (obj_dir[i] > 0.0) {
+            step_dir[i] = 1;
+            t_delta[i] = voxel_size[i] / obj_dir[i];
+            float edge = bb_origin[i] + float(voxel[i] + 1) * voxel_size[i];
+            next_boundary[i] = (edge - obj_origin[i]) / obj_dir[i];
+        } else if (obj_dir[i] < 0.0) {
+            step_dir[i] = -1;
+            t_delta[i] = -voxel_size[i] / obj_dir[i];
+            float edge = bb_origin[i] + float(voxel[i]) * voxel_size[i];
+            next_boundary[i] = (edge - obj_origin[i]) / obj_dir[i];
+        } else {
+            step_dir[i] = 0;
+            t_delta[i] = INFINITY;
+            next_boundary[i] = INFINITY;
+        }
+    }
+
+    int hero = min(int(stepAndOutputRNGFloat(rng_state) * 3.0), 2);
+    float target_tau = -log(1.0 - stepAndOutputRNGFloat(rng_state));
+
+    vec3 optical_depth = vec3(0);
+    float tracked_dist = 0.0;
+
+    while (tracked_dist < dist_to_boundary) {
+        int axis = 0;
+        if (next_boundary.y < next_boundary.x) axis = 1;
+        if (next_boundary.z < next_boundary[axis]) axis = 2;
+
+        float seg_end = min(next_boundary[axis], dist_to_boundary);
+        float seg_len = max(0.0, seg_end - tracked_dist);
+
+        vec3 voxel_center_obj = bb_origin + (vec3(voxel) + 0.5) * voxel_size;
+        EvaluatedVolume volume = evaluateVolumeAtLocalPos(volume_instance, payload.sampling_options.similarity_relation, voxel_center_obj);
+        vec3 extinction = volume.scattering + volume.absorption;
+
+        float voxel_hero_tau = extinction[hero] * seg_len;
+        if (extinction[hero] > 0.0 && optical_depth[hero] + voxel_hero_tau >= target_tau) {
+            float remain = target_tau - optical_depth[hero];
+            float scatter_seg = remain / extinction[hero];
+            float scatter_dist = tracked_dist + scatter_seg;
+
+            optical_depth += extinction * scatter_seg;
+            vec3 transmittance_vec = exp(-optical_depth);
+            vec3 scatter_pdf = extinction * transmittance_vec;
+            vec3 dist_pdf = vec3((scatter_pdf.x + scatter_pdf.y + scatter_pdf.z) / 3.0);
+
+            PathVertex vertex = createVolumeVertex(origin + scatter_dist * dir, volume_idx);
+            SampledSegment segment = sampleVolumeSegment(dir, volume, dist_pdf, vec3(1), rng_state);
+            segment.transmittance *= transmittance_vec;
+            payload.next_segment = segment;
+            return vertex;
+        }
+
+        optical_depth += extinction * seg_len;
+        tracked_dist = seg_end;
+
+        if (tracked_dist >= dist_to_boundary) break;
+
+        voxel[axis] += step_dir[axis];
+        next_boundary[axis] += t_delta[axis];
+        if (voxel[axis] < 0 || voxel[axis] >= res[axis]) break;
+    }
+
+    vec3 transmittance_vec = exp(-optical_depth);
+    vec3 dist_pdf = vec3((transmittance_vec.x + transmittance_vec.y + transmittance_vec.z) / 3.0);
+    SampledSegment segment = createNewSegment();
+    segment.dist_pdf *= dist_pdf;
+    segment.transmittance *= transmittance_vec;
+    payload.next_segment = segment;
+    return createVolumeBorderVertex(false);
+}
+
 PathVertex sampleVertexInHomogenous(vec3 origin, vec3 dir, int volume_idx, inout uvec4 rng_state) {
     float dist_to_boundary = gl_HitTEXT;
 
@@ -338,6 +434,8 @@ void main() {
             // exiting volume or scattering inside
             if (payload.sampling_options.assume_homogenous) {
                 vertex = sampleVertexInHomogenous(last_P, normalize(gl_WorldRayDirectionEXT), getVolumeIdx(triangle), payload.rng_state);
+            } else if (payload.sampling_options.regular_tracking) {
+                vertex = regularTracking(last_P, normalize(gl_WorldRayDirectionEXT), getVolumeIdx(triangle), payload.rng_state);
             } else {
                 vertex = deltaTracking(last_P, normalize(gl_WorldRayDirectionEXT), getVolumeIdx(triangle), payload.rng_state);
             }

@@ -48,7 +48,7 @@ void updateSimilarityBiasedThroughput(int curr_vertex_idx, int last_vertex_idx, 
         // the segment lies inside last_vertex's volume, so march it directly
         // instead of re-tracing rays against boundaries the path already found
         VolumeInstance volume_instance = getVolume(last_vertex.volume_idx);
-        biased_transmittance = estimateSegmentTransmittance(last_vertex.P, vertex.P, volume_instance, true, options.assume_homogenous, rng_state);
+        biased_transmittance = estimateSegmentTransmittance(last_vertex.P, vertex.P, volume_instance, true, options.assume_homogenous, options.regular_tracking, rng_state);
         biased_throughput *= biased_transmittance;
     }
 

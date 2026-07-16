@@ -15,6 +15,7 @@ layout(push_constant) uniform PushConstants {
     bool sample_light;
     bool similarity_relation;
     bool assume_homogenous;
+    bool regular_tracking;
 
     bool debug_depth;
     bool adaptive_sampling;
