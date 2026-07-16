@@ -10,7 +10,6 @@ struct ShadowPayload {
     int current_volume_idx;
     bool similarity_relation;
     bool assume_homogenous;
-    bool regular_tracking;
 };
 
 #endif

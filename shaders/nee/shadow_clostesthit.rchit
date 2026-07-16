@@ -49,66 +49,6 @@ vec3 analyticTransmittance(float dist, int volume_idx) {
     return exp(-extinction * dist);
 }
 
-// Analytic per-voxel transmittance via DDA. Same grid traversal as the
-// distance sampler in metal_rough_closesthit.rchit, but only accumulating
-// optical depth (no sampling).
-vec3 regularTransmittance(vec3 origin, vec3 dir, float max_tracking_dist, int volume_idx) {
-    VolumeInstance volume_instance = getVolume(volume_idx);
-    ivec3 res = textureSize(scattering_textures[volume_instance.tex_idx], 0);
-    vec3 bb_origin = volume_instance.bounding_box_origin.xyz;
-    vec3 bb_extent = volume_instance.bounding_box_extent.xyz;
-    vec3 voxel_size = bb_extent / vec3(res);
-
-    vec3 obj_origin = (gl_WorldToObjectEXT * vec4(origin, 1.0)).xyz;
-    vec3 obj_dir = mat3(gl_WorldToObjectEXT) * dir;
-
-    vec3 grid_pos = (obj_origin - bb_origin) / voxel_size;
-    ivec3 voxel = clamp(ivec3(floor(grid_pos)), ivec3(0), res - ivec3(1));
-
-    ivec3 step_dir;
-    vec3 t_delta;
-    vec3 next_boundary;
-    for (int i = 0; i < 3; ++i) {
-        if (obj_dir[i] > 0.0) {
-            step_dir[i] = 1;
-            t_delta[i] = voxel_size[i] / obj_dir[i];
-            float edge = bb_origin[i] + float(voxel[i] + 1) * voxel_size[i];
-            next_boundary[i] = (edge - obj_origin[i]) / obj_dir[i];
-        } else if (obj_dir[i] < 0.0) {
-            step_dir[i] = -1;
-            t_delta[i] = -voxel_size[i] / obj_dir[i];
-            float edge = bb_origin[i] + float(voxel[i]) * voxel_size[i];
-            next_boundary[i] = (edge - obj_origin[i]) / obj_dir[i];
-        } else {
-            step_dir[i] = 0;
-            t_delta[i] = INFINITY;
-            next_boundary[i] = INFINITY;
-        }
-    }
-
-    vec3 optical_depth = vec3(0);
-    float tracked_dist = 0.0;
-    while (tracked_dist < max_tracking_dist) {
-        int axis = 0;
-        if (next_boundary.y < next_boundary.x) axis = 1;
-        if (next_boundary.z < next_boundary[axis]) axis = 2;
-
-        float seg_end = min(next_boundary[axis], max_tracking_dist);
-        float seg_len = max(0.0, seg_end - tracked_dist);
-
-        vec3 voxel_center_obj = bb_origin + (vec3(voxel) + 0.5) * voxel_size;
-        EvaluatedVolume volume = evaluateVolumeAtLocalPos(volume_instance, payload.similarity_relation, voxel_center_obj);
-        optical_depth += (volume.scattering + volume.absorption) * seg_len;
-        tracked_dist = seg_end;
-
-        if (tracked_dist >= max_tracking_dist) break;
-        voxel[axis] += step_dir[axis];
-        next_boundary[axis] += t_delta[axis];
-        if (voxel[axis] < 0 || voxel[axis] >= res[axis]) break;
-    }
-    return exp(-optical_depth);
-}
-
 void main() {
     // bool entering = (gl_HitKindEXT == gl_HitKindFrontFacingTriangleEXT);
     bool is_inside_volume = payload.current_volume_idx >= 0;
@@ -127,8 +67,6 @@ void main() {
                 // track to the volume boundary
                 if (payload.assume_homogenous) {
                     payload.transmittance *= analyticTransmittance(gl_HitTEXT, payload.current_volume_idx);
-                } else if (payload.regular_tracking) {
-                    payload.transmittance *= regularTransmittance(tracking_origin, tracking_dir, gl_HitTEXT, payload.current_volume_idx);
                 } else {
                     payload.transmittance *= ratioTracking(tracking_origin, tracking_dir, gl_HitTEXT, payload.current_volume_idx, payload.rng_state);
                 }
@@ -146,8 +84,6 @@ void main() {
          } else {
              if (payload.assume_homogenous) {
                  payload.transmittance *= analyticTransmittance(payload.dist_to_light, payload.current_volume_idx);
-             } else if (payload.regular_tracking) {
-                 payload.transmittance *= regularTransmittance(tracking_origin, tracking_dir, payload.dist_to_light, payload.current_volume_idx);
              } else {
                  payload.transmittance *= ratioTracking(tracking_origin, tracking_dir, payload.dist_to_light, payload.current_volume_idx, payload.rng_state);
              }
