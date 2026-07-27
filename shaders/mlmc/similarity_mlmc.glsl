@@ -9,12 +9,14 @@ vec3 similarityMlmc(uint sample_count, uint unbiased_path_length) {
     EvaluationOptions eval_options = getUserOptions();
     eval_options.evaluation_depth = unbiased_path_length;
     eval_options.use_similarity_relation = true;
+    eval_options.regular_tracking = true;
 
     vec3 color = vec3(0);
     for (int i = 0; i < sample_count; i++) {
         ViewRay view_ray = generateViewRay(vec2(gl_LaunchIDEXT.xy), vec2(gl_LaunchSizeEXT.xy), sceneData.inv_view, sceneData.inv_proj, payload.rng_state);
         initPayload(view_ray.origin, view_ray.direction);
         payload.sampling_options.similarity_relation = true;
+        payload.sampling_options.regular_tracking = true;
 
         takePathSample(unbiased_path_length);
         color += evaluatePath(eval_options, payload.rng_state);
@@ -23,22 +25,21 @@ vec3 similarityMlmc(uint sample_count, uint unbiased_path_length) {
     return color;
 }
 
-vec3 evaluateSimilarityDiffVertex(PathVertex vertex, vec3 biased_throughput, vec3 unbiased_throughput, vec3 path_pdf, EvaluationOptions options, inout EvaluationContext context, inout uvec4 rng_state) {
+void evaluateSimilarityDiffVertex(PathVertex vertex, out vec3 biased_contribution, out vec3 unbiased_contribution, EvaluationOptions options, inout EvaluationContext context, inout uvec4 rng_state) {
     uvec4 rng = rng_state;
 
     options.use_similarity_relation = false;
-    vec3 unbiased = unbiased_throughput / path_pdf * evaluateVertex(vertex, options, context, rng_state);
+    unbiased_contribution = evaluateVertex(vertex, options, context, rng_state);
 
     rng_state = rng;
     options.use_similarity_relation = true;
-    vec3 biased = biased_throughput / path_pdf * evaluateVertex(vertex, options, context, rng_state);
-
-    return unbiased - biased;
+    biased_contribution = evaluateVertex(vertex, options, context, rng_state);
 }
 
 // for this, the phase of the last vertex needs to be evaluated here (since the next vertex was not clear there)
 // also the transmittance / visibility needs to be recalculated to match the similarity relation parameters
-void updateSimilarityBiasedThroughput(int curr_vertex_idx, int last_vertex_idx, inout vec3 biased_throughput, EvaluationOptions options, inout uvec4 rng_state) {
+void updateSimilarityBiasedThroughput(int curr_vertex_idx, int last_vertex_idx,
+        inout vec3 biased_throughput, inout vec3 biased_pdf, EvaluationOptions options, inout uvec4 rng_state) {
     PathVertex vertex = getPathVertex(curr_vertex_idx);
     PathVertex last_vertex = getPathVertex(last_vertex_idx);
 
@@ -61,16 +62,23 @@ void updateSimilarityBiasedThroughput(int curr_vertex_idx, int last_vertex_idx, 
         biased_bsdf = last_volume.scattering * phase;
     }
     biased_throughput *= biased_bsdf;
+
+    // add the conditional pdf for this vertex p(x_i | x_{i-1})
+    biased_pdf *= path.segments[curr_vertex_idx].dist_pdf;
+    biased_pdf *= path.segments[last_vertex_idx].dir_pdf;
+    biased_pdf *= path.segments[last_vertex_idx].rr_pdf;
 }
 
 bool shouldSkip(uint correlation_mode, int vertex_idx, int last_vertex_idx, out float pdf, inout uvec4 rng_state) {
     pdf = 1;
-    if (vertex_idx == 0 || getVertexType(path.vertices[vertex_idx]) != VOLUME_TYPE) {
+    if (vertex_idx == 0 || vertex_idx == path.len - 1 || getVertexType(path.vertices[vertex_idx]) != VOLUME_TYPE) {
         return false;
     }
 
     if (correlation_mode == SKIP_DETERMINISTIC_CORRELATION_MODE) {
-        if (vertex_idx - last_vertex_idx == 1 && getVertexType(path.vertices[last_vertex_idx]) == VOLUME_TYPE) {
+        if (vertex_idx - last_vertex_idx == 1
+                && getVertexType(path.vertices[last_vertex_idx]) != VOLUME_BOUNDARY_TYPE
+                && getVertexType(path.vertices[vertex_idx + 1]) != VOLUME_BOUNDARY_TYPE) {
             return true;
         }
     } else if (correlation_mode == SKIP_RANDOM_CORRELATION_MODE) {
@@ -97,10 +105,12 @@ bool shouldSkip(uint correlation_mode, int vertex_idx, int last_vertex_idx, out 
 
 vec3 similarityEvaluateCorrelatedPaths(EvaluationOptions options, uint correlation_mode, inout uvec4 rng_state) {
     EvaluationContext context;
-    vec3 diff = vec3(0);
     vec3 biased_throughput = vec3(1);
     vec3 unbiased_throughput = vec3(1);
-    vec3 path_pdf = vec3(1);
+    vec3 biased_contribution = vec3(1);
+    vec3 unbiased_contribution = vec3(1);
+    vec3 unbiased_path_pdf = vec3(1);
+    vec3 biased_path_pdf = vec3(1);
     context.specular_bounce = false;
 
     PathVertex last_vertex;
@@ -116,32 +126,38 @@ vec3 similarityEvaluateCorrelatedPaths(EvaluationOptions options, uint correlati
         if (shouldSkip(correlation_mode, i, last_vertex_idx, skip_pdf, rng_state)) {
             skip_vertex = true;
         }
-        path_pdf *= skip_pdf;
+        unbiased_path_pdf *= skip_pdf;
+        biased_path_pdf *= skip_pdf;
 
         if (i != 0 && !skip_vertex) { // skip the first one here, since the bsdf is applied later and the transmittance is 1 anyway
-            updateSimilarityBiasedThroughput(i, last_vertex_idx, biased_throughput, options, rng_state);
+            updateSimilarityBiasedThroughput(i, last_vertex_idx, biased_throughput, biased_path_pdf, options, rng_state);
         }
 
         context.depth = i;
-        unbiased_throughput *= seg.transmittance * seg.null_scattering;
-        path_pdf /= seg.dist_pdf / seg.delta_pdf;
+        unbiased_throughput *= seg.transmittance;
+        unbiased_path_pdf *= seg.dist_pdf;
 
+        vec3 biased = vec3(0);
+        vec3 unbiased = vec3(0);
+        evaluateSimilarityDiffVertex(vertex, biased, unbiased, options, context, rng_state);
+        unbiased_contribution += unbiased_throughput / unbiased_path_pdf * unbiased;
         if (!skip_vertex) {
-            diff += evaluateSimilarityDiffVertex(vertex, biased_throughput, unbiased_throughput, path_pdf, options, context, rng_state);
+            biased_contribution += biased_throughput / biased_path_pdf * biased;
 
             last_vertex = vertex;
             last_vertex_idx = i;
         }
 
         unbiased_throughput *= seg.bsdf;
-        path_pdf /= seg.dir_pdf / seg.rr_pdf;
+        unbiased_path_pdf *= seg.dir_pdf * seg.rr_pdf;
     }
 
-    return diff;
+    return unbiased_contribution - biased_contribution;
 }
 
 vec3 similarityDiffMlmc(uint sample_count, uint unbiased_path_length, uint correlation_mode) {
     EvaluationOptions eval_options = getUserOptions();
+    eval_options.regular_tracking = true;
     eval_options.evaluation_depth = unbiased_path_length;
 
     if (correlation_mode != RESAMPLE_CORRELATION_MODE) {
@@ -150,6 +166,7 @@ vec3 similarityDiffMlmc(uint sample_count, uint unbiased_path_length, uint corre
             ViewRay view_ray = generateViewRay(vec2(gl_LaunchIDEXT.xy), vec2(gl_LaunchSizeEXT.xy), sceneData.inv_view, sceneData.inv_proj, payload.rng_state);
             initPayload(view_ray.origin, view_ray.direction);
             payload.sampling_options.similarity_relation = false;
+            payload.sampling_options.regular_tracking = true;
             takePathSample(unbiased_path_length);
             diff += similarityEvaluateCorrelatedPaths(eval_options, correlation_mode, payload.rng_state);
         }
