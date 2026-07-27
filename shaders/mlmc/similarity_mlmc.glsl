@@ -124,7 +124,7 @@ vec3 similarityEvaluateCorrelatedPaths(EvaluationOptions options, uint correlati
 
         context.depth = i;
         unbiased_throughput *= seg.transmittance * seg.null_scattering;
-        path_pdf /= seg.dist_pdf / seg.delta_pdf;
+        path_pdf *= seg.dist_pdf * seg.delta_pdf;
 
         if (!skip_vertex) {
             diff += evaluateSimilarityDiffVertex(vertex, biased_throughput, unbiased_throughput, path_pdf, options, context, rng_state);
@@ -134,7 +134,7 @@ vec3 similarityEvaluateCorrelatedPaths(EvaluationOptions options, uint correlati
         }
 
         unbiased_throughput *= seg.bsdf;
-        path_pdf /= seg.dir_pdf / seg.rr_pdf;
+        path_pdf *= seg.dir_pdf * seg.rr_pdf;
     }
 
     return diff;
