@@ -5,6 +5,7 @@ from numpy.polynomial.legendre import Legendre, leggauss
 from existance_check import check_existance
 from gurobi_solver import solve_qp
 from plotting import plotPhaseAndReconstruction, henyey_greenstein
+import matplotlib.pyplot as plt
 
 DEFAULT_COEFFS_GLSL = (
     Path(__file__).resolve().parent.parent.parent
@@ -152,5 +153,7 @@ def solve_and_show_specific(g, alpha, N_max = 10, k = 360):
 
     print(to_glsl_array(c))
 
+plt.rcParams.update({'font.size': 20})   # default is 10
 solve_and_show_specific(0.4, 0.5, 1)
+solve_and_show_specific(0.4, 0.7, 3)
 #generate_coefficients_glsl()
