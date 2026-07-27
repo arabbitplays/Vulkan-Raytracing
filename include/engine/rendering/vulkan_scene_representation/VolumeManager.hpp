@@ -27,6 +27,15 @@ namespace RtEngine {
 
         void setSimilarityTable(const std::shared_ptr<SimilarityTable> &table) { similarity_table = table; }
 
+        // Returns true if the flag changed (caller should trigger VOLUME_UPDATE
+        // to rebuild the volume mapping buffer with the new avg-source values).
+        bool setUseMedianDensity(bool use_median) {
+            if (use_median_density == use_median) return false;
+            use_median_density = use_median;
+            return true;
+        }
+        bool getUseMedianDensity() const { return use_median_density; }
+
         VolumeData createVolumeData(const std::shared_ptr<VolumeAsset> &volume_asset, uint32_t texture_idx) const;
 
         void writeVolumeResources(VkSampler sampler) const;
@@ -44,6 +53,8 @@ namespace RtEngine {
         std::vector<AllocatedImage> absorption_textures;
 
         AllocatedImage default_volume_texture;
+
+        bool use_median_density = false;
     };
 } // RtEngine
 

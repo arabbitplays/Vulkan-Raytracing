@@ -12,6 +12,7 @@ renderer:
 mlmc:
   mlmc_mode: "homo same path"
   mlmc_present_mode: "combined"
+  homo_density_statistic: "average"
 metal_rough:
   normal_mapping: false
   next_event_estimation: true

@@ -14,8 +14,8 @@ struct VolumeInstance {
     uint _pad1;
     vec4 bounding_box_origin;
     vec4 bounding_box_extent;
-    vec4 avg_scattering;
-    vec4 avg_absorption;
+    vec4 homogenized_scattering;
+    vec4 homogenized_absorption;
     // maps world positions into the volume's object space, so evaluation code
     // outside hit shaders (no gl_WorldToObjectEXT) can sample the volume
     mat4 world_to_object;

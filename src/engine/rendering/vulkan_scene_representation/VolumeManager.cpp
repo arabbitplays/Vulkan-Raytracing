@@ -53,8 +53,8 @@ namespace RtEngine {
             .similarity_table_idx = similarity_idx,
             .bounding_box_origin = glm::vec4(origin, 0),
             .bounding_box_extent = glm::vec4(extent, 0),
-            .avg_scattering = glm::vec4(volume_asset->getAvgScattering(), 0),
-            .avg_absorption = glm::vec4(volume_asset->getAvgAbsorption(), 0),
+            .homogenized_scattering = glm::vec4(volume_asset->getHomogenizedScattering(use_median_density), 0),
+            .homogenized_absorption = glm::vec4(volume_asset->getHomogenizedAbsorption(use_median_density), 0),
             .world_to_object = glm::inverse(volume_asset->world_transform),
         };
         return volume_data;

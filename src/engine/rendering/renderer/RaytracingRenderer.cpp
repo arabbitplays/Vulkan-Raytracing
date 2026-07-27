@@ -421,6 +421,15 @@ namespace RtEngine {
             }
 
             target_reset |= config->addUint("biased_path_length", &mlmc_biased_path_length, 1, 10);
+
+            if (config->addSelection("homo_density_statistic", &homo_density_statistic_str, {"average", "median"})) {
+                const bool use_median = homo_density_statistic_str == "median";
+                if (scene_adapter && scene_adapter->getVolumeManager()
+                        && scene_adapter->getVolumeManager()->setUseMedianDensity(use_median)) {
+                    update_flags->setFlag(VOLUME_UPDATE);
+                    target_reset = true;
+                }
+            }
             config->endChild();
         }
 

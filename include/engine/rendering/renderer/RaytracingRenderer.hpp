@@ -80,6 +80,7 @@ namespace RtEngine {
 		std::string mlmc_present_mode_str = "combined";
 
 		uint32_t mlmc_biased_path_length = 2;
+		std::string homo_density_statistic_str = "average";
 
 		std::vector<int32_t> push_constants{};
 

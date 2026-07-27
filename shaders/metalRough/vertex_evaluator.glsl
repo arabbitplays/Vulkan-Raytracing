@@ -67,9 +67,9 @@ EvaluatedVolume evaluateHomoVolume(VolumeInstance volume, bool use_similarity_re
         alpha = volume.similarity_alpha;
     }
 
-    result.absorption = volume.avg_absorption.xyz;
-    result.scattering = alpha * volume.avg_scattering.xyz;
-    result.majorant = alpha * getMaxComponent(volume.avg_absorption.xyz + volume.avg_scattering.xyz);
+    result.absorption = volume.homogenized_absorption.xyz;
+    result.scattering = alpha * volume.homogenized_scattering.xyz;
+    result.majorant = alpha * getMaxComponent(volume.homogenized_absorption.xyz + volume.homogenized_scattering.xyz);
     result.g = volume.g;
     result.similarity_idx = volume.similarity_idx;
     result.similarity_alpha = volume.similarity_alpha;

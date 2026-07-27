@@ -23,8 +23,8 @@ namespace RtEngine {
         uint32_t _pad1;
         glm::vec4 bounding_box_origin;
         glm::vec4 bounding_box_extent;
-        glm::vec4 avg_scattering;
-        glm::vec4 avg_absorption;
+        glm::vec4 homogenized_scattering;
+        glm::vec4 homogenized_absorption;
         // Inverse of the volume node's world transform, so shaders can map
         // world positions into the volume without hit-shader instance context.
         glm::mat4 world_to_object;
@@ -80,12 +80,14 @@ namespace RtEngine {
             return std::max(absorption_scale.x, std::max(absorption_scale.y, absorption_scale.z));
         }
 
-        glm::vec3 getAvgScattering() const {
-            return volume->avg_density / volume->max_density * scattering_scale;
+        glm::vec3 getHomogenizedScattering(bool use_median = false) const {
+            const float density = use_median ? volume->median_density : volume->avg_density;
+            return density / volume->max_density * scattering_scale;
         }
 
-        glm::vec3 getAvgAbsorption() const {
-            return volume->avg_density / volume->max_density * absorption_scale;
+        glm::vec3 getHomogenizedAbsorption(bool use_median = false) const {
+            const float density = use_median ? volume->median_density : volume->avg_density;
+            return density / volume->max_density * absorption_scale;
         }
     };
 } // RtEngine

@@ -1,4 +1,5 @@
 #include "OpenVdbVolumeLoader.hpp"
+#include <algorithm>
 #include <openvdb/openvdb.h>
 #include <openvdb/tools/Dense.h>
 
@@ -38,7 +39,9 @@ namespace RtEngine {
         volume->densities.reserve(vol_size.x * vol_size.y * vol_size.z);
 
         float majorant = 0;
-        double density_sum = 0.0;
+        double nonzero_sum = 0.0;
+        std::vector<float> nonzero_densities;
+        nonzero_densities.reserve(vol_size.x * vol_size.y * vol_size.z);
         // Dense sampling
         for (int z = 0; z < vol_size.z; ++z) {
             for (int y = 0; y < vol_size.y; ++y) {
@@ -51,13 +54,29 @@ namespace RtEngine {
 
                     float density = floatGrid->tree().getValue(coord);
                     majorant = std::max(majorant, density);
-                    density_sum += density;
+                    if (density > 0.0f) {
+                        nonzero_sum += density;
+                        nonzero_densities.emplace_back(density);
+                    }
                     volume->densities.emplace_back(density);
                 }
             }
         }
         volume->max_density = majorant;
-        volume->avg_density = static_cast<float>(density_sum / volume->densities.size());
+        if (nonzero_densities.empty()) {
+            volume->avg_density = 0.0f;
+            volume->median_density = 0.0f;
+        } else {
+            volume->avg_density = static_cast<float>(nonzero_sum / nonzero_densities.size());
+            const size_t mid = nonzero_densities.size() / 2;
+            std::nth_element(nonzero_densities.begin(), nonzero_densities.begin() + mid, nonzero_densities.end());
+            float median = nonzero_densities[mid];
+            if ((nonzero_densities.size() & 1u) == 0u) {
+                float lower_max = *std::max_element(nonzero_densities.begin(), nonzero_densities.begin() + mid);
+                median = 0.5f * (lower_max + median);
+            }
+            volume->median_density = median;
+        }
 
         return volume;
     }
