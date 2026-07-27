@@ -164,7 +164,7 @@ namespace RtEngine {
 	void SceneAdapter::updateVolumeResources(const std::shared_ptr<IScene> &scene) {
 		std::vector<std::shared_ptr<VolumeAsset>> volume_assets = scene->getVolumeAssets();
 		volume_manager->createVolumeResources(volume_assets);
-		volume_manager->writeVolumeResources(defaultSamplerLinear);
+		volume_manager->writeVolumeResources(defaultSamplerNearest);
 	}
 
 	// TODO split into dynamic and static

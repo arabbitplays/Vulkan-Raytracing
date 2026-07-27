@@ -3,11 +3,7 @@
 
 #include "../common/path_sampler.glsl"
 #include "../common/luminance.glsl"
-
-const uint RESAMPLE_CORRELATION_MODE = 0;
-const uint SAME_PATH_CORRELATION_MODE = 1;
-const uint SKIP_DETERMINISTIC_CORRELATION_MODE = 2;
-const uint SKIP_RANDOM_CORRELATION_MODE = 3;
+#include "correlation_modes.glsl"
 
 vec3 similarityMlmc(uint sample_count, uint unbiased_path_length) {
     EvaluationOptions eval_options = getUserOptions();
@@ -27,7 +23,7 @@ vec3 similarityMlmc(uint sample_count, uint unbiased_path_length) {
     return color;
 }
 
-vec3 evaluateDiffVertex(PathVertex vertex, vec3 biased_throughput, vec3 unbiased_throughput, vec3 path_pdf, EvaluationOptions options, inout EvaluationContext context, inout uvec4 rng_state) {
+vec3 evaluateSimilarityDiffVertex(PathVertex vertex, vec3 biased_throughput, vec3 unbiased_throughput, vec3 path_pdf, EvaluationOptions options, inout EvaluationContext context, inout uvec4 rng_state) {
     uvec4 rng = rng_state;
 
     options.use_similarity_relation = false;
@@ -42,7 +38,7 @@ vec3 evaluateDiffVertex(PathVertex vertex, vec3 biased_throughput, vec3 unbiased
 
 // for this, the phase of the last vertex needs to be evaluated here (since the next vertex was not clear there)
 // also the transmittance / visibility needs to be recalculated to match the similarity relation parameters
-void updateBiasedThroughput(int curr_vertex_idx, int last_vertex_idx, inout vec3 biased_throughput, inout uvec4 rng_state) {
+void updateSimilarityBiasedThroughput(int curr_vertex_idx, int last_vertex_idx, inout vec3 biased_throughput, EvaluationOptions options, inout uvec4 rng_state) {
     PathVertex vertex = getPathVertex(curr_vertex_idx);
     PathVertex last_vertex = getPathVertex(last_vertex_idx);
 
@@ -51,7 +47,8 @@ void updateBiasedThroughput(int curr_vertex_idx, int last_vertex_idx, inout vec3
             || (vertex.type == VOLUME_BOUNDARY_TYPE && last_vertex.type == VOLUME_TYPE)) { // or an exiting volume boundary vertex
         // the segment lies inside last_vertex's volume, so march it directly
         // instead of re-tracing rays against boundaries the path already found
-        biased_transmittance = estimateSegmentTransmittance(last_vertex.P, vertex.P, last_vertex.volume_idx, true, options.assume_homogenous, rng_state);
+        VolumeInstance volume_instance = getVolume(last_vertex.volume_idx);
+        biased_transmittance = estimateSegmentTransmittance(last_vertex.P, vertex.P, volume_instance, true, options.assume_homogenous, options.regular_tracking, rng_state);
         biased_throughput *= biased_transmittance;
     }
 
@@ -122,7 +119,7 @@ vec3 similarityEvaluateCorrelatedPaths(EvaluationOptions options, uint correlati
         path_pdf *= skip_pdf;
 
         if (i != 0 && !skip_vertex) { // skip the first one here, since the bsdf is applied later and the transmittance is 1 anyway
-            updateBiasedThroughput(i, last_vertex_idx, biased_throughput, rng_state);
+            updateSimilarityBiasedThroughput(i, last_vertex_idx, biased_throughput, options, rng_state);
         }
 
         context.depth = i;
@@ -130,7 +127,7 @@ vec3 similarityEvaluateCorrelatedPaths(EvaluationOptions options, uint correlati
         path_pdf /= seg.dist_pdf / seg.delta_pdf;
 
         if (!skip_vertex) {
-            diff += evaluateDiffVertex(vertex, biased_throughput, unbiased_throughput, path_pdf, options, context, rng_state);
+            diff += evaluateSimilarityDiffVertex(vertex, biased_throughput, unbiased_throughput, path_pdf, options, context, rng_state);
 
             last_vertex = vertex;
             last_vertex_idx = i;
@@ -144,6 +141,9 @@ vec3 similarityEvaluateCorrelatedPaths(EvaluationOptions options, uint correlati
 }
 
 vec3 similarityDiffMlmc(uint sample_count, uint unbiased_path_length, uint correlation_mode) {
+    EvaluationOptions eval_options = getUserOptions();
+    eval_options.evaluation_depth = unbiased_path_length;
+
     if (correlation_mode != RESAMPLE_CORRELATION_MODE) {
         vec3 diff = vec3(0);
         for (int i = 0; i < sample_count; i++) {
@@ -151,13 +151,10 @@ vec3 similarityDiffMlmc(uint sample_count, uint unbiased_path_length, uint corre
             initPayload(view_ray.origin, view_ray.direction);
             payload.sampling_options.similarity_relation = false;
             takePathSample(unbiased_path_length);
-            diff += similarityEvaluateCorrelatedPaths(getUserOptions(), correlation_mode, payload.rng_state);
+            diff += similarityEvaluateCorrelatedPaths(eval_options, correlation_mode, payload.rng_state);
         }
         return diff / sample_count;
     }
-
-    EvaluationOptions eval_options = getUserOptions();
-    eval_options.evaluation_depth = unbiased_path_length;
 
     vec3 diff = vec3(0);
     for (int i = 0; i < sample_count; i++) {

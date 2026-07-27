@@ -10,6 +10,8 @@ float transmittance(float distance, float extinction) {
     return exp(-extinction * distance);
 }
 
+// NEE always uses ratio tracking (or the analytic transmittance for
+// homogeneous volumes); regular tracking is only for distance sampling.
 vec3 estimateTransmittance(vec3 P, vec3 L, float distance_to_light, int volume_idx, bool use_similarity_relation, bool assume_homogenous, inout uvec4 rng_state) {
     shadow_payload.rng_state = rng_state;
     shadow_payload.transmittance = vec3(1);

@@ -6,6 +6,6 @@ mlmc:
   mlmc_present_mode: "unbiased"
 metal_rough:
   normal_mapping: false
-  next_event_estimation: false
+  next_event_estimation: true
   bsdf_importance_sampling: true
   russian_roulette: false
