@@ -38,7 +38,8 @@ void evaluateSimilarityDiffVertex(PathVertex vertex, out vec3 biased_contributio
 
 // for this, the phase of the last vertex needs to be evaluated here (since the next vertex was not clear there)
 // also the transmittance / visibility needs to be recalculated to match the similarity relation parameters
-void updateSimilarityBiasedThroughput(int curr_vertex_idx, int last_vertex_idx, inout vec3 biased_throughput, EvaluationOptions options, inout uvec4 rng_state) {
+void updateSimilarityBiasedThroughput(int curr_vertex_idx, int last_vertex_idx,
+        inout vec3 biased_throughput, inout vec3 biased_pdf, EvaluationOptions options, inout uvec4 rng_state) {
     PathVertex vertex = getPathVertex(curr_vertex_idx);
     PathVertex last_vertex = getPathVertex(last_vertex_idx);
 
@@ -61,6 +62,11 @@ void updateSimilarityBiasedThroughput(int curr_vertex_idx, int last_vertex_idx, 
         biased_bsdf = last_volume.scattering * phase;
     }
     biased_throughput *= biased_bsdf;
+
+    // add the conditional pdf for this vertex p(x_i | x_{i-1})
+    biased_pdf *= path.segments[curr_vertex_idx].dist_pdf;
+    biased_pdf *= path.segments[last_vertex_idx].dir_pdf;
+    biased_pdf *= path.segments[last_vertex_idx].rr_pdf;
 }
 
 bool shouldSkip(uint correlation_mode, int vertex_idx, int last_vertex_idx, out float pdf, inout uvec4 rng_state) {
@@ -103,7 +109,8 @@ vec3 similarityEvaluateCorrelatedPaths(EvaluationOptions options, uint correlati
     vec3 unbiased_throughput = vec3(1);
     vec3 biased_contribution = vec3(1);
     vec3 unbiased_contribution = vec3(1);
-    vec3 path_pdf = vec3(1);
+    vec3 unbiased_path_pdf = vec3(1);
+    vec3 biased_path_pdf = vec3(1);
     context.specular_bounce = false;
 
     PathVertex last_vertex;
@@ -119,29 +126,30 @@ vec3 similarityEvaluateCorrelatedPaths(EvaluationOptions options, uint correlati
         if (shouldSkip(correlation_mode, i, last_vertex_idx, skip_pdf, rng_state)) {
             skip_vertex = true;
         }
-        path_pdf *= skip_pdf;
+        unbiased_path_pdf *= skip_pdf;
+        biased_path_pdf *= skip_pdf;
 
         if (i != 0 && !skip_vertex) { // skip the first one here, since the bsdf is applied later and the transmittance is 1 anyway
-            updateSimilarityBiasedThroughput(i, last_vertex_idx, biased_throughput, options, rng_state);
+            updateSimilarityBiasedThroughput(i, last_vertex_idx, biased_throughput, biased_path_pdf, options, rng_state);
         }
 
         context.depth = i;
         unbiased_throughput *= seg.transmittance;
-        path_pdf *= seg.dist_pdf;
+        unbiased_path_pdf *= seg.dist_pdf;
 
         vec3 biased = vec3(0);
         vec3 unbiased = vec3(0);
         evaluateSimilarityDiffVertex(vertex, biased, unbiased, options, context, rng_state);
-        unbiased_contribution += unbiased_throughput / path_pdf * unbiased;
+        unbiased_contribution += unbiased_throughput / unbiased_path_pdf * unbiased;
         if (!skip_vertex) {
-            biased_contribution += biased_throughput / path_pdf * biased;
+            biased_contribution += biased_throughput / biased_path_pdf * biased;
 
             last_vertex = vertex;
             last_vertex_idx = i;
         }
 
         unbiased_throughput *= seg.bsdf;
-        path_pdf *= seg.dir_pdf * seg.rr_pdf;
+        unbiased_path_pdf *= seg.dir_pdf * seg.rr_pdf;
     }
 
     return unbiased_contribution - biased_contribution;
