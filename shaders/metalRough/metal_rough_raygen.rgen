@@ -44,7 +44,7 @@ vec3 biasedEstimator(uint sample_count) {
     if (SPEC_MLMC_METHOD == 0) {
         return pathLengthMlmc(sample_count, options.biased_path_length);
     } else if (SPEC_MLMC_METHOD == 1 || SPEC_MLMC_METHOD == 2 || SPEC_MLMC_METHOD == 3 || SPEC_MLMC_METHOD == 4) {
-        return similarityMlmc(sample_count, options.recursion_depth);
+        return similarityMlmc(sample_count, options.recursion_depth, SIMILARITY_KIND_NORMAL);
     } else if (SPEC_MLMC_METHOD == 5 || SPEC_MLMC_METHOD == 6) {
         return homoMlmc(sample_count, options.recursion_depth);
     }
@@ -55,13 +55,13 @@ vec3 diffEstimator(uint sample_count) {
     if (SPEC_MLMC_METHOD == 0) {
         return pathLengthDiffMlmc(sample_count, options.biased_path_length, options.recursion_depth);
     } else if (SPEC_MLMC_METHOD == 1) {
-        return similarityDiffMlmc(sample_count, options.recursion_depth, RESAMPLE_CORRELATION_MODE);
+        return similarityDiffMlmc(sample_count, options.recursion_depth, RESAMPLE_CORRELATION_MODE, SIMILARITY_KIND_NORMAL);
     } else if (SPEC_MLMC_METHOD == 2) {
-        return similarityDiffMlmc(sample_count, options.recursion_depth, SAME_PATH_CORRELATION_MODE);
+        return similarityDiffMlmc(sample_count, options.recursion_depth, SAME_PATH_CORRELATION_MODE, SIMILARITY_KIND_NORMAL);
     } else if (SPEC_MLMC_METHOD == 3) {
-        return similarityDiffMlmc(sample_count, options.recursion_depth, SKIP_DETERMINISTIC_CORRELATION_MODE);
+        return similarityDiffMlmc(sample_count, options.recursion_depth, SKIP_DETERMINISTIC_CORRELATION_MODE, SIMILARITY_KIND_NORMAL);
     } else if (SPEC_MLMC_METHOD == 4) {
-        return similarityDiffMlmc(sample_count, options.recursion_depth, SKIP_RANDOM_CORRELATION_MODE);
+        return similarityDiffMlmc(sample_count, options.recursion_depth, SKIP_RANDOM_CORRELATION_MODE, SIMILARITY_KIND_NORMAL);
     } else if (SPEC_MLMC_METHOD == 5) {
         return homoDiffMlmc(sample_count, options.recursion_depth, RESAMPLE_CORRELATION_MODE);
     } else if (SPEC_MLMC_METHOD == 6) {
