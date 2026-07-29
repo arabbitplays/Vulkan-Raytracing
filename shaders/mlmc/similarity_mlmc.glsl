@@ -5,17 +5,29 @@
 #include "../common/luminance.glsl"
 #include "correlation_modes.glsl"
 
+// The similarity MLMC estimators toggle a single "biased" flag across
+// sampling and evaluation options. Concentrating the writes here keeps
+// the two sides in sync and prevents leftover state from bleeding
+// between the biased and unbiased passes of the RESAMPLE branch.
+void setSamplingBiased(inout SamplingOptions opts, bool biased) {
+    opts.similarity_relation = biased;
+}
+
+void setEvalBiased(inout EvaluationOptions opts, bool biased) {
+    opts.use_similarity_relation = biased;
+}
+
 vec3 similarityMlmc(uint sample_count, uint unbiased_path_length) {
     EvaluationOptions eval_options = getUserOptions();
     eval_options.evaluation_depth = unbiased_path_length;
-    eval_options.use_similarity_relation = true;
     eval_options.regular_tracking = true;
+    setEvalBiased(eval_options, true);
 
     vec3 color = vec3(0);
     for (int i = 0; i < sample_count; i++) {
         ViewRay view_ray = generateViewRay(vec2(gl_LaunchIDEXT.xy), vec2(gl_LaunchSizeEXT.xy), sceneData.inv_view, sceneData.inv_proj, payload.rng_state);
         initPayload(view_ray.origin, view_ray.direction);
-        payload.sampling_options.similarity_relation = true;
+        setSamplingBiased(payload.sampling_options, true);
         payload.sampling_options.regular_tracking = true;
 
         takePathSample(unbiased_path_length);
@@ -28,11 +40,11 @@ vec3 similarityMlmc(uint sample_count, uint unbiased_path_length) {
 void evaluateSimilarityDiffVertex(PathVertex vertex, out vec3 biased_contribution, out vec3 unbiased_contribution, EvaluationOptions options, inout EvaluationContext context, inout uvec4 rng_state) {
     uvec4 rng = rng_state;
 
-    options.use_similarity_relation = false;
+    setEvalBiased(options, false);
     unbiased_contribution = evaluateVertex(vertex, options, context, rng_state);
 
     rng_state = rng;
-    options.use_similarity_relation = true;
+    setEvalBiased(options, true);
     biased_contribution = evaluateVertex(vertex, options, context, rng_state);
 }
 
@@ -40,6 +52,11 @@ void evaluateSimilarityDiffVertex(PathVertex vertex, out vec3 biased_contributio
 // also the transmittance / visibility needs to be recalculated to match the similarity relation parameters
 void updateSimilarityBiasedThroughput(int curr_vertex_idx, int last_vertex_idx,
         inout vec3 biased_throughput, inout vec3 biased_pdf, EvaluationOptions options, inout uvec4 rng_state) {
+    // The correlated estimator uses this function to fold the biased branch
+    // in on top of unbiased sampling; force the biased flag on regardless of
+    // what the caller passed in.
+    setEvalBiased(options, true);
+
     PathVertex vertex = getPathVertex(curr_vertex_idx);
     PathVertex last_vertex = getPathVertex(last_vertex_idx);
 
@@ -127,10 +144,10 @@ vec3 similarityEvaluateCorrelatedPaths(EvaluationOptions options, uint correlati
             skip_vertex = true;
         }
         unbiased_path_pdf *= skip_pdf;
-        biased_path_pdf *= skip_pdf;
 
         if (i != 0 && !skip_vertex) { // skip the first one here, since the bsdf is applied later and the transmittance is 1 anyway
             updateSimilarityBiasedThroughput(i, last_vertex_idx, biased_throughput, biased_path_pdf, options, rng_state);
+            biased_path_pdf *= skip_pdf;
         }
 
         context.depth = i;
@@ -165,7 +182,7 @@ vec3 similarityDiffMlmc(uint sample_count, uint unbiased_path_length, uint corre
         for (int i = 0; i < sample_count; i++) {
             ViewRay view_ray = generateViewRay(vec2(gl_LaunchIDEXT.xy), vec2(gl_LaunchSizeEXT.xy), sceneData.inv_view, sceneData.inv_proj, payload.rng_state);
             initPayload(view_ray.origin, view_ray.direction);
-            payload.sampling_options.similarity_relation = false;
+            setSamplingBiased(payload.sampling_options, false);
             payload.sampling_options.regular_tracking = true;
             takePathSample(unbiased_path_length);
             diff += similarityEvaluateCorrelatedPaths(eval_options, correlation_mode, payload.rng_state);
@@ -179,20 +196,20 @@ vec3 similarityDiffMlmc(uint sample_count, uint unbiased_path_length, uint corre
 
         uvec4 sampling_rng = payload.rng_state;
         initPayload(view_ray.origin, view_ray.direction);
-        payload.sampling_options.similarity_relation = false;
+        setSamplingBiased(payload.sampling_options, false);
         takePathSample(unbiased_path_length);
 
         uvec4 eval_rng = payload.rng_state;
-        eval_options.use_similarity_relation = false;
+        setEvalBiased(eval_options, false);
         vec3 unbiased_color = evaluatePath(eval_options, payload.rng_state);
 
         payload.rng_state = sampling_rng;
         initPayload(view_ray.origin, view_ray.direction);
-        payload.sampling_options.similarity_relation = true;
+        setSamplingBiased(payload.sampling_options, true);
         takePathSample(unbiased_path_length);
 
         payload.rng_state = eval_rng;
-        eval_options.use_similarity_relation = true;
+        setEvalBiased(eval_options, true);
         vec3 biased_color = evaluatePath(eval_options, payload.rng_state);
 
         diff += unbiased_color - biased_color;
