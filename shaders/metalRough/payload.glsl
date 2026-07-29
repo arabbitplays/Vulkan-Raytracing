@@ -5,6 +5,7 @@
 
 struct SamplingOptions {
     bool similarity_relation;
+    bool use_first_order_similarity;
     bool assume_homogenous;
     bool regular_tracking;
 };
