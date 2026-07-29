@@ -150,6 +150,16 @@ SampledSegment sampleVolumeSegment(vec3 dir, EvaluatedVolume volume, vec3 dist_p
     segment.dist_pdf *= dist_pdf;
     segment.delta_pdf *= delta_tracking_pdf;
 
+    if (payload.sampling_options.use_first_order_similarity) {
+        // First-order similarity: fully isotropic biased path. volume.scattering
+        // already carries the reduced coefficient (1 - g) * sigma_s.
+        PhaseFunctionSample iso_sample = sampleIsoPhaseFunction(-dir, rng_state);
+        payload.next_dir = iso_sample.wi;
+        segment.bsdf *= volume.scattering * INV_4_PI;
+        segment.dir_pdf *= iso_sample.pdf;
+        return segment;
+    }
+
     if (payload.sampling_options.similarity_relation) {
         if (SPEC_SAMPLE_BSDF) {
             PhaseFunctionSample alt_sample = sampleAlteredPhaseFunctionIdx(-dir, volume.similarity_idx, rng_state);
@@ -221,7 +231,7 @@ PathVertex deltaTracking(vec3 origin, vec3 dir, int volume_idx, inout uvec4 rng_
 
     VolumeInstance volume_instance = getVolume(volume_idx);
     vec3 obj_pos = (gl_WorldToObjectEXT * vec4(origin, 1.0f)).xyz;
-    EvaluatedVolume volume = evaluateVolumeAtLocalPos(volume_instance, payload.sampling_options.similarity_relation, obj_pos);
+    EvaluatedVolume volume = evaluateVolumeAtLocalPos(volume_instance, payload.sampling_options.similarity_relation, payload.sampling_options.use_first_order_similarity, obj_pos);
 
     vec3 delta_tracking_pdf = vec3(1);
     vec3 accumulated_transmittance = vec3(1);
@@ -247,7 +257,7 @@ PathVertex deltaTracking(vec3 origin, vec3 dir, int volume_idx, inout uvec4 rng_
         vec3 curr_pos = origin + tracked_dist * dir;
 
         obj_pos = (gl_WorldToObjectEXT * vec4(curr_pos, 1.0f)).xyz;
-        volume = evaluateVolumeAtLocalPos(volume_instance, payload.sampling_options.similarity_relation, obj_pos);
+        volume = evaluateVolumeAtLocalPos(volume_instance, payload.sampling_options.similarity_relation, payload.sampling_options.use_first_order_similarity, obj_pos);
 
         vec2 sampled_channel = sampleChannel(volume, rng_state);
         float sampled_scattering = sampled_channel.x;
@@ -345,7 +355,7 @@ PathVertex regularTracking(vec3 origin, vec3 dir, int volume_idx, inout uvec4 rn
         float seg_len = max(0.0, seg_end - tracked_dist);
 
         vec3 voxel_center_obj = bb_origin + (vec3(voxel) + 0.5) * voxel_size;
-        EvaluatedVolume volume = evaluateVolumeAtLocalPos(volume_instance, payload.sampling_options.similarity_relation, voxel_center_obj);
+        EvaluatedVolume volume = evaluateVolumeAtLocalPos(volume_instance, payload.sampling_options.similarity_relation, payload.sampling_options.use_first_order_similarity, voxel_center_obj);
         vec3 extinction = volume.scattering + volume.absorption;
 
         float voxel_hero_tau = extinction[hero] * seg_len;
@@ -390,7 +400,7 @@ PathVertex sampleVertexInHomogenous(vec3 origin, vec3 dir, int volume_idx, inout
 
     VolumeInstance volume_instance = getVolume(volume_idx);
 
-    EvaluatedVolume volume = evaluateHomoVolume(volume_instance, payload.sampling_options.similarity_relation);
+    EvaluatedVolume volume = evaluateHomoVolume(volume_instance, payload.sampling_options.similarity_relation, payload.sampling_options.use_first_order_similarity);
     vec3 extinction = volume.scattering + volume.absorption;
 
     // hero wavelength sampling: pick one channel uniformly, sample distance from its exponential

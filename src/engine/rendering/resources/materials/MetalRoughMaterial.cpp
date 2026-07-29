@@ -155,12 +155,25 @@ namespace RtEngine {
 	void MetalRoughMaterial::initProperties(const std::shared_ptr<IProperties> &config, const UpdateFlagsHandle &update_flags) {
 		bool reset_required = false;
 		if (config->startChild(name)) {
+			const bool prev_similarity = similarity_relation;
+			const bool prev_first_order = use_first_order_similarity;
 			reset_required |= config->addBool("normal_mapping", &normal_mapping);
 			reset_required |= config->addBool("next_event_estimation", &sample_lights);
 			reset_required |= config->addBool("bsdf_importance_sampling", &sample_bsdf);
 			reset_required |= config->addBool("russian_roulette", &russian_roulette);
 			reset_required |= config->addBool("similarity_relation", &similarity_relation);
 			reset_required |= config->addBool("use_first_order_similarity", &use_first_order_similarity);
+			// Normal and first-order similarity are mutually exclusive; whichever
+			// flipped this frame wins and clears the other.
+			if (similarity_relation && use_first_order_similarity) {
+				if (similarity_relation != prev_similarity) {
+					use_first_order_similarity = false;
+				} else if (use_first_order_similarity != prev_first_order) {
+					similarity_relation = false;
+				} else {
+					use_first_order_similarity = false;
+				}
+			}
 			reset_required |= config->addBool("assume_homogenous", &assume_homogenous);
 			reset_required |= config->addBool("regular_tracking", &regular_tracking);
 			reset_required |= config->addBool("debug_depth", &debug_depth);

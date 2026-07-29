@@ -49,14 +49,14 @@ void updateSimilarityBiasedThroughput(int curr_vertex_idx, int last_vertex_idx,
         // the segment lies inside last_vertex's volume, so march it directly
         // instead of re-tracing rays against boundaries the path already found
         VolumeInstance volume_instance = getVolume(last_vertex.volume_idx);
-        biased_transmittance = estimateSegmentTransmittance(last_vertex.P, vertex.P, volume_instance, true, options.assume_homogenous, options.regular_tracking, rng_state);
+        biased_transmittance = estimateSegmentTransmittance(last_vertex.P, vertex.P, volume_instance, options.use_similarity_relation, options.use_first_order_similarity, options.assume_homogenous, options.regular_tracking, rng_state);
         biased_throughput *= biased_transmittance;
     }
 
     // multiply the bsdf of the last evaluated vertex
     vec3 biased_bsdf = path.segments[last_vertex_idx].bsdf;
     if (last_vertex.type == VOLUME_TYPE) {
-        EvaluatedVolume last_volume = evaluateVertexVolume(last_vertex, true, options.assume_homogenous);
+        EvaluatedVolume last_volume = evaluateVertexVolume(last_vertex, options.use_similarity_relation, options.use_first_order_similarity, options.assume_homogenous);
         vec3 wi = normalize(vertex.P - last_vertex.P);
         float phase = evaluateAlteredPhaseFunctionIdx(last_vertex.V, wi, last_volume.similarity_idx);
         biased_bsdf = last_volume.scattering * phase;
@@ -82,7 +82,7 @@ bool shouldSkip(uint correlation_mode, int vertex_idx, int last_vertex_idx, out 
             return true;
         }
     } else if (correlation_mode == SKIP_RANDOM_CORRELATION_MODE) {
-        EvaluatedVolume unbiased_vol = evaluateVertexVolume(getPathVertex(vertex_idx), false, options.assume_homogenous);
+        EvaluatedVolume unbiased_vol = evaluateVertexVolume(getPathVertex(vertex_idx), false, false, options.assume_homogenous);
         // Keep with the biased-to-unbiased extinction ratio
         // (alpha * sigma_s + sigma_a) / (sigma_s + sigma_a),
         // using the channel that maximizes it.

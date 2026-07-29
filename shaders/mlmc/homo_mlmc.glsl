@@ -46,7 +46,7 @@ void updateHomoUnbiasedTransmittance(int curr_vertex_idx, inout vec3 unbiased_th
     if (vertex.type == VOLUME_TYPE // if this is a volume vertex
             || (vertex.type == VOLUME_BOUNDARY_TYPE && last_vertex.type == VOLUME_TYPE)) { // or an exiting volume boundary vertex
         VolumeInstance volume_instance = getVolume(last_vertex.volume_idx);
-        vec3 unbiased_transmittance = estimateSegmentTransmittance(last_vertex.P, vertex.P, volume_instance, options.use_similarity_relation, false, options.regular_tracking, rng_state);
+        vec3 unbiased_transmittance = estimateSegmentTransmittance(last_vertex.P, vertex.P, volume_instance, options.use_similarity_relation, options.use_first_order_similarity, false, options.regular_tracking, rng_state);
         unbiased_throughput *= unbiased_transmittance;
     }
 }
@@ -64,7 +64,7 @@ void updateHomoUnbiasedBrdf(int curr_vertex_idx, inout vec3 unbiased_throughput,
 
     vec3 unbiased_bsdf = path.segments[curr_vertex_idx - 1].bsdf;
     if (last_vertex.type == VOLUME_TYPE) {
-        EvaluatedVolume last_volume = evaluateVertexVolume(last_vertex, options.use_similarity_relation, false);
+        EvaluatedVolume last_volume = evaluateVertexVolume(last_vertex, options.use_similarity_relation, options.use_first_order_similarity, false);
         vec3 wi = normalize(vertex.P - last_vertex.P);
         float phase;
         if (options.use_similarity_relation) {
