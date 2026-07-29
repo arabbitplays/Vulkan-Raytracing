@@ -14,6 +14,7 @@ layout(push_constant) uniform PushConstants {
     bool normal_mapping;
     bool sample_light;
     bool similarity_relation;
+    bool use_first_order_similarity;
     bool assume_homogenous;
     bool regular_tracking;
 

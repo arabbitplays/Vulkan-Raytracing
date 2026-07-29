@@ -20,7 +20,7 @@ vec3 ratioTracking(vec3 origin, vec3 dir, float max_tracking_dist, int volume_id
 
     VolumeInstance volumeInstance = getVolume(volume_idx);
     vec3 obj_pos = (gl_WorldToObjectEXT * vec4(origin, 1.0f)).xyz;
-    EvaluatedVolume volume = evaluateVolumeAtLocalPos(volumeInstance, payload.similarity_relation, obj_pos);
+    EvaluatedVolume volume = evaluateVolumeAtLocalPos(volumeInstance, payload.similarity_relation, payload.use_first_order_similarity, obj_pos);
 
     vec3 transmittance = vec3(1);
 
@@ -34,7 +34,7 @@ vec3 ratioTracking(vec3 origin, vec3 dir, float max_tracking_dist, int volume_id
 
         vec3 curr_pos = origin + tracked_dist * dir;
         obj_pos = (gl_WorldToObjectEXT * vec4(curr_pos, 1.0f)).xyz;
-        volume = evaluateVolumeAtLocalPos(volumeInstance, payload.similarity_relation, obj_pos);
+        volume = evaluateVolumeAtLocalPos(volumeInstance, payload.similarity_relation, payload.use_first_order_similarity, obj_pos);
 
         transmittance *= (1.0 - (volume.scattering + volume.absorption) / volume.majorant);
     }
@@ -44,7 +44,7 @@ vec3 ratioTracking(vec3 origin, vec3 dir, float max_tracking_dist, int volume_id
 
 vec3 analyticTransmittance(float dist, int volume_idx) {
     VolumeInstance volumeInstance = getVolume(volume_idx);
-    EvaluatedVolume volume = evaluateHomoVolume(volumeInstance, payload.similarity_relation);
+    EvaluatedVolume volume = evaluateHomoVolume(volumeInstance, payload.similarity_relation, payload.use_first_order_similarity);
     vec3 extinction = volume.scattering + volume.absorption;
     return exp(-extinction * dist);
 }
