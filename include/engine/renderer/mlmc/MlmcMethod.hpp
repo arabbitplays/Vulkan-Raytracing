@@ -12,6 +12,9 @@ enum MlmcMethod {
     SIMILARITY_SKIP_RANDOM,
     HOMO,
     HOMO_SAME_PATH,
+    FIRST_ORDER_SIMILARITY,
+    FIRST_ORDER_SIMILARITY_SAME_PATH,
+    FIRST_ORDER_SIMILARITY_SKIP_DETERMINISTIC,
 };
 
 class MlmcMethodConverter {
@@ -25,6 +28,9 @@ public:
             "similarity skip random",
             "homo",
             "homo same path",
+            "first order similarity",
+            "first order similarity same path",
+            "first order similarity skip deterministic",
         };
     }
 
@@ -49,6 +55,15 @@ public:
         }
         if (mode_string == "homo same path") {
             return HOMO_SAME_PATH;
+        }
+        if (mode_string == "first order similarity") {
+            return FIRST_ORDER_SIMILARITY;
+        }
+        if (mode_string == "first order similarity same path") {
+            return FIRST_ORDER_SIMILARITY_SAME_PATH;
+        }
+        if (mode_string == "first order similarity skip deterministic") {
+            return FIRST_ORDER_SIMILARITY_SKIP_DETERMINISTIC;
         }
         throw std::invalid_argument("Invalid MLMC method string");
     }
