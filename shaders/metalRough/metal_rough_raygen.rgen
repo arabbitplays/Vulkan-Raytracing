@@ -41,7 +41,7 @@ vec3 unbiasedEstimator(uint sample_count) {
 // The dispatch is over SPEC_MLMC_METHOD, so the compiler folds these to a
 // single tail call per pipeline variant and DCEs the other estimators.
 vec3 biasedEstimator(uint sample_count) {
-    if (SPEC_MLMC_METHOD == 0) {
+    if (SPEC_MLMC_METHOD == 0 || SPEC_MLMC_METHOD == 10) {
         return pathLengthMlmc(sample_count, options.biased_path_length);
     } else if (SPEC_MLMC_METHOD == 1 || SPEC_MLMC_METHOD == 2 || SPEC_MLMC_METHOD == 3 || SPEC_MLMC_METHOD == 4) {
         return similarityMlmc(sample_count, options.recursion_depth, SIMILARITY_KIND_NORMAL);
@@ -55,7 +55,7 @@ vec3 biasedEstimator(uint sample_count) {
 
 vec3 diffEstimator(uint sample_count) {
     if (SPEC_MLMC_METHOD == 0) {
-        return pathLengthDiffMlmc(sample_count, options.biased_path_length, options.recursion_depth);
+        return pathLengthPrefixDiffMlmc(sample_count, options.biased_path_length, options.recursion_depth);
     } else if (SPEC_MLMC_METHOD == 1) {
         return similarityDiffMlmc(sample_count, options.recursion_depth, RESAMPLE_CORRELATION_MODE, SIMILARITY_KIND_NORMAL);
     } else if (SPEC_MLMC_METHOD == 2) {
@@ -74,6 +74,8 @@ vec3 diffEstimator(uint sample_count) {
         return similarityDiffMlmc(sample_count, options.recursion_depth, SAME_PATH_CORRELATION_MODE, SIMILARITY_KIND_FIRST_ORDER);
     } else if (SPEC_MLMC_METHOD == 9) {
         return similarityDiffMlmc(sample_count, options.recursion_depth, SKIP_DETERMINISTIC_CORRELATION_MODE, SIMILARITY_KIND_FIRST_ORDER);
+    } else if (SPEC_MLMC_METHOD == 10) {
+        return pathLengthResampleDiffMlmc(sample_count, options.biased_path_length, options.recursion_depth);
     }
     return vec3(1, 0, 0);
 }

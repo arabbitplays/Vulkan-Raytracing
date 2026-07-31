@@ -3,7 +3,7 @@ runner:
 renderer:
   recursion_depth: 20
 mlmc:
-  mlmc_mode: "path length"
+  mlmc_mode: "path length prefix"
   mlmc_present_mode: "unbiased"
   biased_path_length: 5
 phong:

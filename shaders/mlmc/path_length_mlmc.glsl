@@ -19,7 +19,10 @@ vec3 pathLengthMlmc(uint sample_count, uint biased_path_length) {
     return color;
 }
 
-vec3 pathLengthDiffMlmc(uint sample_count, uint biased_path_length, uint unbiased_path_length) {
+// Prefix correlation: sample one unbiased path, then evaluate it twice --
+// once truncated to biased_path_length and once at full length -- restoring
+// the RNG state between evaluations so both share the prefix samples.
+vec3 pathLengthPrefixDiffMlmc(uint sample_count, uint biased_path_length, uint unbiased_path_length) {
     EvaluationOptions eval_options = getUserOptions();
 
     vec3 diff = vec3(0);
@@ -36,6 +39,31 @@ vec3 pathLengthDiffMlmc(uint sample_count, uint biased_path_length, uint unbiase
 
         payload.rng_state = rng;
 
+        eval_options.evaluation_depth = unbiased_path_length;
+        vec3 unbiased_color = evaluatePath(eval_options, payload.rng_state);
+
+        diff += unbiased_color - biased_color;
+    }
+    diff /= sample_count;
+    return diff;
+}
+
+// Resample correlation: draw two independent path samples, one at the
+// biased length and one at the unbiased length; no shared random state.
+vec3 pathLengthResampleDiffMlmc(uint sample_count, uint biased_path_length, uint unbiased_path_length) {
+    EvaluationOptions eval_options = getUserOptions();
+
+    vec3 diff = vec3(0);
+    for (int i = 0; i < sample_count; i++) {
+        ViewRay biased_view_ray = generateViewRay(vec2(gl_LaunchIDEXT.xy), vec2(gl_LaunchSizeEXT.xy), sceneData.inv_view, sceneData.inv_proj, payload.rng_state);
+        initPayload(biased_view_ray.origin, biased_view_ray.direction);
+        takePathSample(biased_path_length);
+        eval_options.evaluation_depth = biased_path_length;
+        vec3 biased_color = evaluatePath(eval_options, payload.rng_state);
+
+        ViewRay unbiased_view_ray = generateViewRay(vec2(gl_LaunchIDEXT.xy), vec2(gl_LaunchSizeEXT.xy), sceneData.inv_view, sceneData.inv_proj, payload.rng_state);
+        initPayload(unbiased_view_ray.origin, unbiased_view_ray.direction);
+        takePathSample(unbiased_path_length);
         eval_options.evaluation_depth = unbiased_path_length;
         vec3 unbiased_color = evaluatePath(eval_options, payload.rng_state);
 
