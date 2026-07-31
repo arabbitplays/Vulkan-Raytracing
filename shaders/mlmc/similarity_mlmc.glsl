@@ -102,8 +102,7 @@ void updateSimilarityBiasedThroughput(int curr_vertex_idx, int last_vertex_idx,
     biased_pdf *= path.segments[last_vertex_idx].rr_pdf;
 }
 
-bool shouldSkip(uint correlation_mode, uint similarity_kind, int vertex_idx, int last_vertex_idx, out float pdf, inout uvec4 rng_state) {
-    pdf = 1;
+bool shouldSkip(uint correlation_mode, int vertex_idx, int last_vertex_idx) {
     if (vertex_idx == 0 || vertex_idx == path.len - 1 || getVertexType(path.vertices[vertex_idx]) != VOLUME_TYPE) {
         return false;
     }
@@ -112,27 +111,6 @@ bool shouldSkip(uint correlation_mode, uint similarity_kind, int vertex_idx, int
         if (vertex_idx - last_vertex_idx == 1
                 && getVertexType(path.vertices[last_vertex_idx]) != VOLUME_BOUNDARY_TYPE
                 && getVertexType(path.vertices[vertex_idx + 1]) != VOLUME_BOUNDARY_TYPE) {
-            return true;
-        }
-    } else if (correlation_mode == SKIP_RANDOM_CORRELATION_MODE) {
-        EvaluatedVolume unbiased_vol = evaluateVertexVolume(getPathVertex(vertex_idx), false, false, options.assume_homogenous);
-        // Keep with the biased-to-unbiased extinction ratio
-        // (alpha * sigma_s + sigma_a) / (sigma_s + sigma_a),
-        // using the channel that maximizes it. First-order similarity uses
-        // alpha = 1 - g in place of similarity_alpha.
-        vec3 sigma_s = unbiased_vol.scattering;
-        vec3 sigma_t = sigma_s + unbiased_vol.absorption;
-        float alpha = (similarity_kind == SIMILARITY_KIND_FIRST_ORDER)
-            ? (1.0 - unbiased_vol.g)
-            : unbiased_vol.similarity_alpha;
-        vec3 p_keep_rgb = (alpha * sigma_s + unbiased_vol.absorption) / max(sigma_t, vec3(1e-8));
-        float p_keep = clamp(getMaxComponent(p_keep_rgb), 0.0, 1.0);
-        float r = stepAndOutputRNGFloat(rng_state);
-        if (r < p_keep) {
-            pdf = p_keep;
-            return false;
-        } else {
-            pdf = 1 - p_keep;
             return true;
         }
     }
@@ -144,8 +122,8 @@ vec3 similarityEvaluateCorrelatedPaths(EvaluationOptions options, uint correlati
     EvaluationContext context;
     vec3 biased_throughput = vec3(1);
     vec3 unbiased_throughput = vec3(1);
-    vec3 biased_contribution = vec3(1);
-    vec3 unbiased_contribution = vec3(1);
+    vec3 biased_contribution = vec3(0);
+    vec3 unbiased_contribution = vec3(0);
     vec3 unbiased_path_pdf = vec3(1);
     vec3 biased_path_pdf = vec3(1);
     context.specular_bounce = false;
@@ -157,17 +135,10 @@ vec3 similarityEvaluateCorrelatedPaths(EvaluationOptions options, uint correlati
     for (int i = 0; i < evaluation_depth; i++) {
         PathVertex vertex = getPathVertex(i);
         SampledSegment seg = path.segments[i];
-        bool skip_vertex = false;
-
-        float skip_pdf = 1;
-        if (shouldSkip(correlation_mode, similarity_kind, i, last_vertex_idx, skip_pdf, rng_state)) {
-            skip_vertex = true;
-        }
-        unbiased_path_pdf *= skip_pdf;
+        bool skip_vertex = shouldSkip(correlation_mode, i, last_vertex_idx);
 
         if (i != 0 && !skip_vertex) { // skip the first one here, since the bsdf is applied later and the transmittance is 1 anyway
             updateSimilarityBiasedThroughput(i, last_vertex_idx, biased_throughput, biased_path_pdf, options, similarity_kind, rng_state);
-            biased_path_pdf *= skip_pdf;
         }
 
         context.depth = i;

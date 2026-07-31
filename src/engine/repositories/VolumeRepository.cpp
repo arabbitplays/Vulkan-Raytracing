@@ -12,19 +12,20 @@ namespace RtEngine {
         return volume_path_cache[path];
     }
 
-    std::shared_ptr<VolumeAsset> VolumeRepository::createHeterogenousVolumeAsset(const fs::path &path, glm::vec3 absorption, glm::vec3 scattering, float g, const std::shared_ptr<MeshAsset> &mesh_asset) {
+    std::shared_ptr<VolumeAsset> VolumeRepository::createHeterogenousVolumeAsset(const fs::path &path, glm::vec3 absorption, glm::vec3 scattering, float g, float optical_depth, const std::shared_ptr<MeshAsset> &mesh_asset) {
         auto volume_asset = std::make_shared<VolumeAsset>();
         volume_asset->name = "_hetero_" + path.stem().string(); // TODO collect Volumes not VolumeAssets
         volume_asset->absorption_scale = absorption;
         volume_asset->scattering_scale = scattering;
         volume_asset->g = g;
+        volume_asset->optical_depth = optical_depth;
         volume_asset->bounding_mesh = mesh_asset;
         volume_asset->volume = getOrCreateVolume(path);
 
         return volume_asset;
     }
 
-    std::shared_ptr<VolumeAsset> VolumeRepository::createHomogenousVolumeAsset(glm::vec3 absorption, glm::vec3 scattering, float g,
+    std::shared_ptr<VolumeAsset> VolumeRepository::createHomogenousVolumeAsset(glm::vec3 absorption, glm::vec3 scattering, float g, float optical_depth,
                                                            const std::shared_ptr<MeshAsset> &mesh_asset) {
 
         auto volume_asset = std::make_shared<VolumeAsset>();
@@ -33,6 +34,7 @@ namespace RtEngine {
         volume_asset->absorption_scale = absorption;
         volume_asset->scattering_scale = scattering;
         volume_asset->g = g;
+        volume_asset->optical_depth = optical_depth;
         volume_asset->bounding_mesh = mesh_asset;
 
         return volume_asset;

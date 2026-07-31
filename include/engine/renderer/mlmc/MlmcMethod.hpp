@@ -9,7 +9,6 @@ enum MlmcMethod {
     SIMILARITY,
     SIMILARITY_SAME_PATH,
     SIMILARITY_SKIP_DETERMINISTIC,
-    SIMILARITY_SKIP_RANDOM,
     HOMO,
     HOMO_SAME_PATH,
     FIRST_ORDER_SIMILARITY,
@@ -26,7 +25,6 @@ public:
             "similarity",
             "similarity same path",
             "similarity skip deterministic",
-            "similarity skip random",
             "homo",
             "homo same path",
             "first order similarity",
@@ -48,9 +46,6 @@ public:
         }
         if (mode_string == "similarity skip deterministic") {
             return SIMILARITY_SKIP_DETERMINISTIC;
-        }
-        if (mode_string == "similarity skip random") {
-            return SIMILARITY_SKIP_RANDOM;
         }
         if (mode_string == "homo") {
             return HOMO;

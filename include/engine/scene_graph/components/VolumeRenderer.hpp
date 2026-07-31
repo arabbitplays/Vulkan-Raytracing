@@ -33,6 +33,9 @@ namespace RtEngine {
         glm::vec3 absorption = glm::vec3(0.02f), scattering = glm::vec3(0.5f);
         float g = 0.0f;
         float majorant = 0.0f;
+        // Target optical depth across the longest world-space axis of the
+        // cloud. 0 keeps the raw density-normalized behavior.
+        float optical_depth = 0.0f;
     };
 } // RtEngine
 
