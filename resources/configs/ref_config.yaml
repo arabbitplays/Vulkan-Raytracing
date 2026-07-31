@@ -1,5 +1,5 @@
 runner:
-  scene_name: ref_scene_dense_cloud
+  scene_name: ref_scene_real_cloud
 renderer:
   recursion_depth: 200
 mlmc:
