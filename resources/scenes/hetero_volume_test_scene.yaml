@@ -132,6 +132,7 @@ scene:
             - 1
             - 1
           g: 0.2
+          optical_depth: 0
       children:
         []
     - name: Room

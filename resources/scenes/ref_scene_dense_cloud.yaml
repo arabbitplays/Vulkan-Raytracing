@@ -144,5 +144,6 @@ scene:
             - 0.5
             - 0.4
           g: 0.9
+          optical_depth: 0
       children:
         []

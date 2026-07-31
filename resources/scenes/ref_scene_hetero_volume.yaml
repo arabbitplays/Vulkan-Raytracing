@@ -121,6 +121,7 @@ scene:
             - 0.2
           majorant: 2
           g: 0
+          optical_depth: 0
       children:
         []
     - name: Cube2
@@ -151,6 +152,7 @@ scene:
             - 1
             - 1
           g: 0
+          optical_depth: 0
       children:
         []
     - name: Room
