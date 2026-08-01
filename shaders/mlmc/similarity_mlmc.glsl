@@ -144,8 +144,8 @@ vec3 similarityEvaluateCorrelatedPaths(EvaluationOptions options, uint correlati
     EvaluationContext context;
     vec3 biased_throughput = vec3(1);
     vec3 unbiased_throughput = vec3(1);
-    vec3 biased_contribution = vec3(1);
-    vec3 unbiased_contribution = vec3(1);
+    vec3 biased_contribution = vec3(0);
+    vec3 unbiased_contribution = vec3(0);
     vec3 unbiased_path_pdf = vec3(1);
     vec3 biased_path_pdf = vec3(1);
     context.specular_bounce = false;

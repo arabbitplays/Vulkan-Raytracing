@@ -67,7 +67,9 @@ void updateHomoUnbiasedBrdf(int curr_vertex_idx, inout vec3 unbiased_throughput,
         EvaluatedVolume last_volume = evaluateVertexVolume(last_vertex, options.use_similarity_relation, options.use_first_order_similarity, false);
         vec3 wi = normalize(vertex.P - last_vertex.P);
         float phase;
-        if (options.use_similarity_relation) {
+        if (options.use_first_order_similarity) {
+            phase = INV_4_PI;
+        } else if (options.use_similarity_relation) {
             phase = evaluateAlteredPhaseFunctionIdx(last_vertex.V, wi, last_volume.similarity_idx);
         } else {
             phase = henyeyGreenstein(last_vertex.V, wi, last_volume.g);
