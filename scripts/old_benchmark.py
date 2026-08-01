@@ -84,7 +84,7 @@ def run_benchmark(program, reference_dir, reference_name, sample_counts):
 
         sys.stdout = sys.__stdout__  # Restore stdout
 
-build_path = "buildDir/renderer"
+build_path = "buildDir/Edna-Engine"
 reference_dir = "resources/references/simple_cornell"
 reference_name = "100000_ref.png"
 

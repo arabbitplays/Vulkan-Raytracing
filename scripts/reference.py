@@ -97,7 +97,7 @@ def render_reference(program, total_samples, samples_per_image, reference_dir, o
     calculate_final_image(image_count, output_dir, str(total_samples) + "_ref")
     delete_images(image_count, output_dir)
 
-build_path = "buildDir/renderer"
+build_path = "buildDir/Edna-Engine"
 reference_dir = "resources/references/simple_cornell"
 output_dir = "tmp"
 render_reference(build_path, 100000, 5000, reference_dir, output_dir)
