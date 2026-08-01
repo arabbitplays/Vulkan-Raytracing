@@ -54,7 +54,7 @@ rm -fv "$tmp_dir"/*.png 2>/dev/null
 # compile the project
 (
   cd "$build_dir"
-  if ! meson compile renderer -j 10; then
+  if ! meson compile Edna-Engine -j 10; then
       echo "Build failed"
       exit 1
   fi
@@ -66,7 +66,7 @@ rm -fv "$tmp_dir"/*.png 2>/dev/null
   for config in $bm_configs; do
     echo ""
     echo "Running benchmark with $config"
-    ./renderer --config ../$config --resources ../resources --benchmark
+    ./Edna-Engine --config ../$config --resources ../resources --benchmark
 
     # Move the final preview image left in tmp into the benchmarks folder,
     # tagged with the benchmark config name so it survives the next run.

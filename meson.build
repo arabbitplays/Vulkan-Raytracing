@@ -1,4 +1,4 @@
-project('Raytracing',
+project('Edna-Engine',
         ['cpp', 'c'],
         default_options : [
             'warning_level=3',
@@ -90,7 +90,7 @@ subdir('src')
 subdir('shaders')
 
 exe = executable(
-    'renderer',
+    'Edna-Engine',
     sources: src,
     dependencies: [
         glfw,

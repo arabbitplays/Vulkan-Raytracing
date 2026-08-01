@@ -2,6 +2,6 @@
 
 cd buildDir
 
-meson compile renderer -j 10
+meson compile Edna-Engine -j 10
 
-./renderer --config ../resources/configs/ref_config.yaml --resources ../resources -v --ref
+./Edna-Engine --config ../resources/configs/ref_config.yaml --resources ../resources -v --ref
