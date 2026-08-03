@@ -10,32 +10,21 @@ class ConfigGenerator:
         templates_dir,
         references_dir,
         output_dir,
-        meta_config_path,
+        meta_configs_dir,
+        scenes_file,
+        templates_file,
+        meta_configs_file,
     ):
         self.scene_dir = Path(scene_dir)
         self.templates_dir = Path(templates_dir)
         self.references_dir = Path(references_dir)
         self.output_dir = Path(output_dir)
-        self.meta_config_path = Path(meta_config_path)
-
-        self.selected_scenes = []
-        self.selected_templates = []
+        self.meta_configs_dir = Path(meta_configs_dir)
+        self.scenes_file = Path(scenes_file)
+        self.templates_file = Path(templates_file)
+        self.meta_configs_file = Path(meta_configs_file)
 
     # ---------- setup ----------
-
-    def get_ref_scenes(self):
-        return [
-            file.name
-            for file in Path(self.scene_dir).iterdir()
-            if file.is_file() and file.name.startswith("ref_")
-        ]
-
-    def get_config_templates(self):
-        return [
-            file.name
-            for file in Path(self.templates_dir).iterdir()
-            if file.is_file()
-        ]
 
     def find_best_reference_sample_count(self, scene):
         base = self.strip_yaml(scene)
@@ -57,38 +46,6 @@ class ConfigGenerator:
             raise Exception("No reference found for scene " + base)
         return max_num
 
-    # ---------- user input ----------
-
-    @staticmethod
-    def multi_select(options, displayed_options):
-        if not options:
-            return []
-
-        print("Select one or more items (comma-separated):")
-        for i, option in enumerate(displayed_options, start=1):
-            print(f"{i}. {option}")
-
-        while True:
-            try:
-                selection = input("\nSelection: ").strip()
-
-                indices = {
-                    int(x.strip()) - 1
-                    for x in selection.split(",")
-                    if x.strip()
-                }
-
-                if not all(0 <= i < len(options) for i in indices):
-                    raise ValueError
-
-                print("")
-
-                return [options[i] for i in sorted(indices)]
-
-            except ValueError:
-                print("Invalid input. Example: 1,3,5")
-
-
     # ---------- IO ----------
 
     @staticmethod
@@ -99,6 +56,14 @@ class ConfigGenerator:
     def load_yaml_file(path):
         with open(Path(path), "r", encoding="utf-8") as f:
             return yaml.safe_load(f) or {}
+
+    @staticmethod
+    def load_yaml_list(path):
+        with open(Path(path), "r", encoding="utf-8") as f:
+            data = yaml.safe_load(f) or []
+        if not isinstance(data, list):
+            raise ValueError(f"{path} must contain a YAML list")
+        return data
 
     def write_config(self, name, content):
         self.output_dir.mkdir(parents=True, exist_ok=True)
@@ -141,8 +106,12 @@ class ConfigGenerator:
             for f in files
         ]
 
-    def get_config_name(self, scene, template):
-        return f"{self.strip_scene_name(scene)}-{self.strip_yaml(template)}"
+    def get_config_name(self, scene, template, meta_config):
+        return (
+            f"{self.strip_scene_name(scene)}"
+            f"_{self.strip_yaml(template)}"
+            f"_{self.strip_yaml(meta_config)}"
+        )
 
     # ---------- templating ----------
 
@@ -152,35 +121,36 @@ class ConfigGenerator:
 
     # ---------- main generate ----------
 
-    def build_configs(self):
+    def generate(self):
         self.clear_output()
 
-        meta_config = self.load_yaml_file(self.meta_config_path)
+        scenes = self.load_yaml_list(self.scenes_file)
+        templates = self.load_yaml_list(self.templates_file)
+        meta_configs = self.load_yaml_list(self.meta_configs_file)
 
-        for template in self.selected_templates:
+        for template in templates:
             base = self.load_text_file(self.templates_dir / template)
 
-            for scene in self.selected_scenes:
-                config = base
-                name = self.get_config_name(scene, template)
+            for scene in scenes:
+                expected_samples = self.find_best_reference_sample_count(scene)
 
-                config = self.replace_placeholder(
-                    config, "SCENE_NAME", self.strip_yaml(scene)
-                )
-                config = self.replace_placeholder(config, "NAME", name)
-                config = self.replace_placeholder(config, "EXPECTED_SAMPLES", self.find_best_reference_sample_count(scene))
+                for meta_config in meta_configs:
+                    meta_values = self.load_yaml_file(
+                        self.meta_configs_dir / meta_config
+                    )
 
-                for k, v in meta_config.items():
-                    config = self.replace_placeholder(config, k, v)
+                    name = self.get_config_name(scene, template, meta_config)
+                    config = base
+                    config = self.replace_placeholder(
+                        config, "SCENE_NAME", self.strip_yaml(scene)
+                    )
+                    config = self.replace_placeholder(config, "NAME", name)
+                    config = self.replace_placeholder(
+                        config, "EXPECTED_SAMPLES", expected_samples
+                    )
 
-                self.write_config(name, config)
-                print(f"Generated {name}")
+                    for k, v in meta_values.items():
+                        config = self.replace_placeholder(config, k, v)
 
-    def generate(self):
-        scenes = self.get_ref_scenes()
-        self.selected_scenes = self.multi_select(scenes, self.strip_scene_name(scenes))
-
-        templates = self.get_config_templates()
-        self.selected_templates = self.multi_select(templates, self.strip_yaml(templates))
-
-        self.build_configs()
+                    self.write_config(name, config)
+                    print(f"Generated {name}")
