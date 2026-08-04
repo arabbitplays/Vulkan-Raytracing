@@ -58,40 +58,59 @@ def to_glsl_array(a, name="A"):
     vals = ", ".join(f"{x:.6g}" for x in np.ravel(a))
     return f"float {name}[{len(np.ravel(a))}] = float[]({vals});"
 
+MIN_ORDER = 2
+
 def generate_coefficients_glsl(output_path=DEFAULT_COEFFS_GLSL, k=360, N_max=10):
     """Generate altered_phase_coefficients.glsl with tables for a grid of
     (g, alpha) values.
 
     g sweeps 0.1..0.9 in steps of 0.1. For each g, alpha sweeps 1-g..1.0 in
-    steps of 0.1. For each pair the largest order N (1..N_max-1) admitting a
-    valid moment sequence is found, the boxcar QP is solved, and the resulting
-    coefficients are written as a `const float[k]` array. A `// g, alpha, N`
-    comment and a console log line are emitted for every entry.
+    steps of 0.1. Each (g, alpha) pair must admit an order-N solution with
+    N >= MIN_ORDER (=2); if N=2 existence fails or the QP is infeasible, the
+    alpha is bumped by +0.1 and retried until a valid table is found or the
+    physical bound alpha=1.0 is exceeded. The stored ALPHAS[i] therefore
+    reflects the alpha actually solved with — the same value threaded through
+    volume.similarity_alpha in the shader.
     """
     output_path = Path(output_path)
     g_values = [round(0.1 * i, 6) for i in range(1, 10)]
 
     entries = []
     for g in g_values:
-        n_alphas = int(round(g / 0.1)) + 1   # alphas from 1-g..1.0 inclusive
-        alphas = [round(1.0 - g + 0.1 * j, 6) for j in range(n_alphas)]
+        n_alphas = int(round(g / 0.1)) + 1   # base alphas from 1-g..1.0 inclusive
+        base_alphas = [round(1.0 - g + 0.1 * j, 6) for j in range(n_alphas)]
 
-        for alpha in alphas:
-            f_full = altered_phase_moments(g, N_max, alpha)
-            n = 1
-            while n < N_max and check_existance(f_full[0:n + 2]):
-                n += 1
-            f = f_full[0:n + 1]
+        for base_alpha in base_alphas:
+            alpha = base_alpha
+            while alpha <= 1.0 + 1e-9:
+                f_full = altered_phase_moments(g, N_max, alpha)
+                if not check_existance(f_full[0:MIN_ORDER + 1]):
+                    print(f"  bump   g={g:.2f}  alpha={alpha:.2f} -> {alpha + 0.1:.2f}  (N={MIN_ORDER} existence fails)")
+                    alpha = round(alpha + 0.1, 6)
+                    continue
 
-            G = moments_matrix(n, k)
-            c = solve_qp(G, f, k)
+                n = MIN_ORDER
+                while n < N_max and check_existance(f_full[0:n + 2]):
+                    n += 1
+                f = f_full[0:n + 1]
 
-            if c is None:
-                print(f"  SKIP   g={g:.2f}  alpha={alpha:.2f}  N={n}  (no optimal QP solution)")
-                continue
+                G = moments_matrix(n, k)
+                c = solve_qp(G, f, k)
 
-            print(f"  added  g={g:.2f}  alpha={alpha:.2f}  N={n}")
-            entries.append((float(g), float(alpha), int(n), np.asarray(c, dtype=float)))
+                if c is None:
+                    print(f"  bump   g={g:.2f}  alpha={alpha:.2f} -> {alpha + 0.1:.2f}  N={n}  (no optimal QP solution)")
+                    alpha = round(alpha + 0.1, 6)
+                    continue
+
+                if any(abs(g - eg) < 1e-9 and abs(alpha - ea) < 1e-9 for eg, ea, _, _ in entries):
+                    print(f"  dup    g={g:.2f}  alpha={alpha:.2f}  N={n}  (already added, skipping)")
+                    break
+
+                print(f"  added  g={g:.2f}  base_alpha={base_alpha:.2f}  alpha={alpha:.2f}  N={n}")
+                entries.append((float(g), float(alpha), int(n), np.asarray(c, dtype=float)))
+                break
+            else:
+                print(f"  SKIP   g={g:.2f}  base_alpha={base_alpha:.2f}  (no N>={MIN_ORDER} solution up to alpha=1.0)")
 
     if not entries:
         raise RuntimeError("No coefficient tables generated; aborting write.")
@@ -153,7 +172,6 @@ def solve_and_show_specific(g, alpha, N_max = 10, k = 360):
 
     print(to_glsl_array(c))
 
-plt.rcParams.update({'font.size': 20})   # default is 10
-solve_and_show_specific(0.4, 0.5, 1)
-solve_and_show_specific(0.4, 0.7, 3)
-#generate_coefficients_glsl()
+if __name__ == "__main__":
+    plt.rcParams.update({'font.size': 20})   # default is 10
+    generate_coefficients_glsl()
