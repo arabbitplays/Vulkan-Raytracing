@@ -33,11 +33,18 @@ namespace RtEngine {
         void nextFrame() {
             for (const auto &target: target_repositories) {
                 target->nextImage();
+
+                // Keep in lockstep with metal_rough_raygen.rgen: in combined mode a
+                // diff sample leads each ratio block, so it fires when the pre-increment
+                // biased count is a multiple of biased_samples_per_diff_sample.
+                if (target->getDiffSamplesPerFrame() != 0) {
+                    const uint32_t per_diff = target->getBiasedSamplesPerDiffSample();
+                    if (per_diff == 0 || target->getAccumulatedFrameCount() % per_diff == 0) {
+                        target->incrementAccumulatedDiffFrameCount();
+                    }
+                }
                 if (target->getSamplesPerFrame() != 0)
                     target->incrementAccumulatedFrameCount();
-                if (target->getDiffSamplesPerFrame() != 0) {
-                    target->incrementAccumulatedDiffFrameCount();
-                }
             }
         }
 

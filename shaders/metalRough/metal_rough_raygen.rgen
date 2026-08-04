@@ -116,8 +116,14 @@ void main() {
                              options.adaptive_min_samples,
                              options.adaptive_error_bound, abs_floor);
 
+        // In combined mode (biased_samples_per_diff_sample > 0) a diff sample leads
+        // each ratio block: it fires on the first frame and every N-th frame after.
+        // Uses the pre-increment biased count (accumulated_frame_count), so 0, N, 2N, ...
+        bool diff_sample_this_frame = options.biased_samples_per_diff_sample == 0
+            || (options.accumulated_frame_count % options.biased_samples_per_diff_sample == 0);
+
         vec3 diff;
-        if (options.diff_samples_per_pixel > 0 && !converged) {
+        if (options.diff_samples_per_pixel > 0 && !converged && diff_sample_this_frame) {
             vec3 diff_sample = diffEstimator(options.diff_samples_per_pixel);
             float sample_lum = luminance(diff_sample);
             float prev_mean_lum = luminance(prev_diff);

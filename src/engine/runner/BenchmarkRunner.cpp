@@ -40,11 +40,16 @@ namespace RtEngine
         std::shared_ptr<RenderTargetRepository> target_repository = draw_context->target_repositories[0];
         if (biased_samples_per_diff_sample > 0)
         {
-            target_repository->setSamplesPerFrame(biased_samples_per_diff_sample, 1);
+            // One biased sample per frame; the shader/DrawContext gate the diff sample
+            // to fire only on frames where the biased count crosses a multiple of
+            // biased_samples_per_diff_sample.
+            target_repository->setSamplesPerFrame(1, 1);
+            target_repository->setBiasedSamplesPerDiffSample(biased_samples_per_diff_sample);
         }
         else
         {
             target_repository->setSamplesPerFrame(1, 0);
+            target_repository->setBiasedSamplesPerDiffSample(0);
         }
     }
 
@@ -121,15 +126,19 @@ namespace RtEngine
         {
             if (error_calculation_frame_count == rendered_frame_count)
             {
-                recordCheckpointTime(rendered_frame_count * biased_samples_per_diff_sample + rendered_frame_count);
+                // rendered_frame_count == biased sample count (one biased sample per frame).
+                // A diff sample leads each ratio block, so at biased count k we've taken
+                // ceil(k / biased_samples_per_diff_sample) diff samples.
+                uint32_t diff_count =
+                    (rendered_frame_count + biased_samples_per_diff_sample - 1) / biased_samples_per_diff_sample;
+                recordCheckpointTime(rendered_frame_count + diff_count);
                 raytracing_renderer->waitForIdle();
                 raytracing_renderer->outputRenderingTarget(target_repository,
-                                                           target_to_output, getTmpImagePath(
-                                                               rendered_frame_count * biased_samples_per_diff_sample,
-                                                               rendered_frame_count));
+                                                           target_to_output,
+                                                           getTmpImagePath(rendered_frame_count, diff_count));
                 last_time_point = clock::now();
 
-                if (rendered_frame_count * biased_samples_per_diff_sample >= final_biased_sample_count)
+                if (rendered_frame_count == final_biased_sample_count)
                 {
                     SPDLOG_INFO("Average combined frame time: {} ms",
                                 mean_combined_frame_time / 1000.0f);
@@ -179,7 +188,7 @@ namespace RtEngine
             accumulated_frame_time_us += static_cast<double>(dur);
             if (biased_samples_per_diff_sample != 0)
             {
-                mean_combined_frame_time += dur / (final_biased_sample_count / biased_samples_per_diff_sample);
+                mean_combined_frame_time += dur / final_biased_sample_count;
             }
             else
             {
@@ -248,10 +257,12 @@ namespace RtEngine
         if (biased_samples_per_diff_sample == 0)
         {
             target_repository->setSamplesPerFrame(1, 0);
+            target_repository->setBiasedSamplesPerDiffSample(0);
         }
         else
         {
-            target_repository->setSamplesPerFrame(biased_samples_per_diff_sample, 1);
+            target_repository->setSamplesPerFrame(1, 1);
+            target_repository->setBiasedSamplesPerDiffSample(biased_samples_per_diff_sample);
         }
         target_repository->resetAccumulatedFrames();
     }
@@ -322,13 +333,16 @@ namespace RtEngine
         }
         else
         {
-            for (uint32_t i = 1; i <= final_biased_sample_count / biased_samples_per_diff_sample; i *= 2)
+            // Same exponential schedule as the two-phase mode. The image at biased
+            // count i was captured after i biased and ceil(i / biased_samples_per_diff_sample)
+            // diff samples (a diff sample leads each block); the CSV x-axis is their sum.
+            for (uint32_t i = 1; i <= final_biased_sample_count; i *= 2)
             {
+                uint32_t diff_count = (i + biased_samples_per_diff_sample - 1) / biased_samples_per_diff_sample;
                 int width, height;
-                uint8_t* data = ImageUtil::loadPNG(getTmpImagePath(i * biased_samples_per_diff_sample, i), &width,
-                                                   &height);
+                uint8_t* data = ImageUtil::loadPNG(getTmpImagePath(i, diff_count), &width, &height);
                 calculateErrorBetweenImages(ref_data, ref_width, ref_height, data, width, height,
-                                            i * biased_samples_per_diff_sample + i);
+                                            i + diff_count);
             }
         }
         stbi_image_free(ref_data);
@@ -379,9 +393,9 @@ namespace RtEngine
         fs::path keep_path;
         if (biased_samples_per_diff_sample != 0)
         {
-            keep_path = fs::path(getTmpImagePath(final_biased_sample_count,
-                                                 final_biased_sample_count / biased_samples_per_diff_sample)).
-                lexically_normal();
+            uint32_t final_diff = (final_biased_sample_count + biased_samples_per_diff_sample - 1)
+                                  / biased_samples_per_diff_sample;
+            keep_path = fs::path(getTmpImagePath(final_biased_sample_count, final_diff)).lexically_normal();
         }
         else
         {

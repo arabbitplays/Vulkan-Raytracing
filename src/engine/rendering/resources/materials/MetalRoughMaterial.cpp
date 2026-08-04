@@ -57,7 +57,7 @@ namespace RtEngine {
 		pipeline->setSpecConstant(3, current_sample_bsdf ? 1u : 0u);        // SPEC_SAMPLE_BSDF
 		pipeline->setSpecConstant(4, current_russian_roulette ? 1u : 0u);   // SPEC_RUSSIAN_ROULETTE
 
-		pipeline->addPushConstant(19 * sizeof(uint32_t), VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR |
+		pipeline->addPushConstant(20 * sizeof(uint32_t), VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR |
 																  VK_SHADER_STAGE_RAYGEN_BIT_KHR |
 																  VK_SHADER_STAGE_MISS_BIT_KHR);
 

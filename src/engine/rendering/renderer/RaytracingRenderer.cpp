@@ -293,6 +293,7 @@ namespace RtEngine {
         push_constants.push_back(target->getAccumulatedDiffFrameCount());
         push_constants.push_back(target->getSamplesPerFrame());
         push_constants.push_back(target->getDiffSamplesPerFrame());
+        push_constants.push_back(target->getBiasedSamplesPerDiffSample());
 
         // do_mlmc and mlmc_method are specialization constants; see
         // MetalRoughMaterial::ensurePipelineSpecialization.

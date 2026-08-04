@@ -30,6 +30,7 @@ layout(push_constant) uniform PushConstants {
     uint accumulated_diff_frame_count;
     uint samples_per_pixel;
     uint diff_samples_per_pixel;
+    uint biased_samples_per_diff_sample;
 
     uint biased_path_length;
 } options;
