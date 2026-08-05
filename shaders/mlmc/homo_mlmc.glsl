@@ -15,6 +15,7 @@ vec3 homoMlmc(uint sample_count, uint unbiased_path_length) {
         ViewRay view_ray = generateViewRay(vec2(gl_LaunchIDEXT.xy), vec2(gl_LaunchSizeEXT.xy), sceneData.inv_view, sceneData.inv_proj, payload.rng_state);
         initPayload(view_ray.origin, view_ray.direction);
         payload.sampling_options.assume_homogenous = true;
+        payload.sampling_options.regular_tracking = true;
 
         takePathSample(unbiased_path_length);
         color += evaluatePath(eval_options, payload.rng_state);
@@ -23,17 +24,15 @@ vec3 homoMlmc(uint sample_count, uint unbiased_path_length) {
     return color;
 }
 
-vec3 evaluateHomoDiffVertex(PathVertex vertex, vec3 biased_throughput, vec3 unbiased_throughput, vec3 path_pdf, EvaluationOptions options, inout EvaluationContext context, inout uvec4 rng_state) {
+void evaluateHomoDiffVertex(PathVertex vertex, out vec3 biased_contribution, out vec3 unbiased_contribution, EvaluationOptions options,inout EvaluationContext context, inout uvec4 rng_state) {
     uvec4 rng = rng_state;
 
     options.assume_homogenous = false;
-    vec3 unbiased = unbiased_throughput / path_pdf * evaluateVertex(vertex, options, context, rng_state);
+    unbiased_contribution = evaluateVertex(vertex, options, context, rng_state);
 
     rng_state = rng;
     options.assume_homogenous = true;
-    vec3 biased = biased_throughput / path_pdf * evaluateVertex(vertex, options, context, rng_state);
-
-    return unbiased - biased;
+    biased_contribution = evaluateVertex(vertex, options, context, rng_state);
 }
 
 void updateHomoUnbiasedTransmittance(int curr_vertex_idx, inout vec3 unbiased_throughput, EvaluationOptions options, inout uvec4 rng_state) {
@@ -43,18 +42,15 @@ void updateHomoUnbiasedTransmittance(int curr_vertex_idx, inout vec3 unbiased_th
     PathVertex vertex = getPathVertex(curr_vertex_idx);
     PathVertex last_vertex = getPathVertex(curr_vertex_idx - 1);
 
-    if (vertex.type == VOLUME_TYPE // if this is a volume vertex
-            || (vertex.type == VOLUME_BOUNDARY_TYPE && last_vertex.type == VOLUME_TYPE)) { // or an exiting volume boundary vertex
+    bool segment_in_volume = last_vertex.volume_idx >= 0; // or an exiting volume boundary vertex
+    if (segment_in_volume) {
         VolumeInstance volume_instance = getVolume(last_vertex.volume_idx);
-        vec3 unbiased_transmittance = estimateSegmentTransmittance(last_vertex.P, vertex.P, volume_instance, options.use_similarity_relation, options.use_first_order_similarity, false, options.regular_tracking, rng_state);
+        vec3 unbiased_transmittance = estimateSegmentTransmittance(last_vertex.P, vertex.P, volume_instance, false, false, false, rng_state);
         unbiased_throughput *= unbiased_transmittance;
     }
 }
 
-// Multiplies the bsdf of the previous vertex onto the unbiased throughput. The
-// stored segment bsdf of a volume vertex holds the homogenized scattering
-// coefficient, so it is rebuilt from the local volume lookup; surface bsdfs are
-// identical on both sides and pass through unchanged.
+// Multiplies the bsdf of the previous vertex onto the unbiased throughput
 void updateHomoUnbiasedBrdf(int curr_vertex_idx, inout vec3 unbiased_throughput, EvaluationOptions options) {
     if (curr_vertex_idx <= 0)
         return;
@@ -64,16 +60,9 @@ void updateHomoUnbiasedBrdf(int curr_vertex_idx, inout vec3 unbiased_throughput,
 
     vec3 unbiased_bsdf = path.segments[curr_vertex_idx - 1].bsdf;
     if (last_vertex.type == VOLUME_TYPE) {
-        EvaluatedVolume last_volume = evaluateVertexVolume(last_vertex, options.use_similarity_relation, options.use_first_order_similarity, false);
+        EvaluatedVolume last_volume = evaluateVertexVolume(last_vertex, false, false, false);
         vec3 wi = normalize(vertex.P - last_vertex.P);
-        float phase;
-        if (options.use_first_order_similarity) {
-            phase = INV_4_PI;
-        } else if (options.use_similarity_relation) {
-            phase = evaluateAlteredPhaseFunctionIdx(last_vertex.V, wi, last_volume.similarity_idx);
-        } else {
-            phase = henyeyGreenstein(last_vertex.V, wi, last_volume.g);
-        }
+        float phase = henyeyGreenstein(last_vertex.V, wi, last_volume.g);
         unbiased_bsdf = last_volume.scattering * phase;
     }
     unbiased_throughput *= unbiased_bsdf;
@@ -81,9 +70,10 @@ void updateHomoUnbiasedBrdf(int curr_vertex_idx, inout vec3 unbiased_throughput,
 
 vec3 homoEvaluateCorrelatedPaths(EvaluationOptions options, inout uvec4 rng_state) {
     EvaluationContext context;
-    vec3 diff = vec3(0);
     vec3 biased_throughput = vec3(1);
     vec3 unbiased_throughput = vec3(1);
+    vec3 biased_contribution = vec3(0);
+    vec3 unbiased_contribution = vec3(0);
     vec3 path_pdf = vec3(1);
     context.specular_bounce = false;
 
@@ -100,13 +90,17 @@ vec3 homoEvaluateCorrelatedPaths(EvaluationOptions options, inout uvec4 rng_stat
         biased_throughput *= seg.transmittance;
         path_pdf *= seg.dist_pdf * seg.delta_pdf;
 
-        diff += evaluateHomoDiffVertex(vertex, biased_throughput, unbiased_throughput, path_pdf, options, context, rng_state);
+        vec3 biased = vec3(0);
+        vec3 unbiased = vec3(0);
+        evaluateHomoDiffVertex(vertex, biased, unbiased, options, context, rng_state);
+        unbiased_contribution += unbiased_throughput / path_pdf * unbiased;
+        biased_contribution += biased_throughput / path_pdf * biased;
 
         biased_throughput *= seg.bsdf;
         path_pdf *= seg.dir_pdf * seg.rr_pdf;
     }
 
-    return diff;
+    return unbiased_contribution - biased_contribution;
 }
 
 vec3 homoDiffMlmc(uint sample_count, uint unbiased_path_length, uint correlation_mode) {
@@ -119,6 +113,7 @@ vec3 homoDiffMlmc(uint sample_count, uint unbiased_path_length, uint correlation
             ViewRay view_ray = generateViewRay(vec2(gl_LaunchIDEXT.xy), vec2(gl_LaunchSizeEXT.xy), sceneData.inv_view, sceneData.inv_proj, payload.rng_state);
             initPayload(view_ray.origin, view_ray.direction);
             payload.sampling_options.assume_homogenous = true;
+            payload.sampling_options.regular_tracking = true;
             takePathSample(unbiased_path_length);
             diff += homoEvaluateCorrelatedPaths(eval_options, payload.rng_state);
         }

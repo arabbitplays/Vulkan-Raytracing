@@ -5,10 +5,7 @@
 #include "../common/luminance.glsl"
 #include "correlation_modes.glsl"
 
-// The similarity MLMC estimators toggle a single "biased" flag across
-// sampling and evaluation options. The similarity_kind selects which
-// biased mode is active (normal similarity vs. first-order similarity);
-// the two are always mutually exclusive.
+// The similarity_kind selects which biased mode is active (normal similarity vs. first-order similarity);
 void setSamplingBiased(inout SamplingOptions opts, uint similarity_kind, bool biased) {
     if (similarity_kind == SIMILARITY_KIND_FIRST_ORDER) {
         opts.similarity_relation = false;
@@ -32,7 +29,6 @@ void setEvalBiased(inout EvaluationOptions opts, uint similarity_kind, bool bias
 vec3 similarityMlmc(uint sample_count, uint unbiased_path_length, uint similarity_kind) {
     EvaluationOptions eval_options = getUserOptions();
     eval_options.evaluation_depth = unbiased_path_length;
-    eval_options.regular_tracking = true;
     setEvalBiased(eval_options, similarity_kind, true);
 
     vec3 color = vec3(0);
@@ -77,7 +73,7 @@ void updateSimilarityBiasedThroughput(int curr_vertex_idx, int last_vertex_idx,
         // the segment lies inside last_vertex's volume, so march it directly
         // instead of re-tracing rays against boundaries the path already found
         VolumeInstance volume_instance = getVolume(last_vertex.volume_idx);
-        biased_transmittance = estimateSegmentTransmittance(last_vertex.P, vertex.P, volume_instance, options.use_similarity_relation, options.use_first_order_similarity, options.assume_homogenous, options.regular_tracking, rng_state);
+        biased_transmittance = estimateSegmentTransmittance(last_vertex.P, vertex.P, volume_instance, options.use_similarity_relation, options.use_first_order_similarity, options.assume_homogenous, rng_state);
         biased_throughput *= biased_transmittance;
     }
 
@@ -165,7 +161,6 @@ vec3 similarityEvaluateCorrelatedPaths(EvaluationOptions options, uint correlati
 
 vec3 similarityDiffMlmc(uint sample_count, uint unbiased_path_length, uint correlation_mode, uint similarity_kind) {
     EvaluationOptions eval_options = getUserOptions();
-    eval_options.regular_tracking = true;
     eval_options.evaluation_depth = unbiased_path_length;
 
     if (correlation_mode != RESAMPLE_CORRELATION_MODE) {

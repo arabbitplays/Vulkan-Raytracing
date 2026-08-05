@@ -15,7 +15,6 @@ struct EvaluationOptions {
     bool use_similarity_relation;
     bool use_first_order_similarity;
     bool assume_homogenous;
-    bool regular_tracking;
     bool debug_path_len;
 };
 
@@ -27,7 +26,6 @@ EvaluationOptions getUserOptions() {
     eval_options.use_similarity_relation = options.similarity_relation;
     eval_options.use_first_order_similarity = options.use_first_order_similarity;
     eval_options.assume_homogenous = options.assume_homogenous;
-    eval_options.regular_tracking = options.regular_tracking;
     eval_options.debug_path_len = options.debug_depth;
     return eval_options;
 }

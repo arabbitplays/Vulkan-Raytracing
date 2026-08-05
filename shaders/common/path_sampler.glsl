@@ -13,6 +13,7 @@ layout(location = 0) rayPayloadEXT Payload payload;
 void initPayload(vec3 origin, vec3 direction) {
     payload.next_vertex.P = origin;
     payload.next_vertex.meta = packVertexMeta(0u, -1, INVALID_TYPE, false);
+    payload.next_segment = createNewSegment();
     payload.next_dir = direction;
     payload.depth = 0;
     payload.rr_beta = vec3(1.0);

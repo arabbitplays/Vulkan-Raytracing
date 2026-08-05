@@ -29,4 +29,5 @@ void main() {
     //}
     payload.rr_beta = vec3(0);
     payload.next_vertex = packPathVertex(createEnvironmentVertex());
+    payload.next_segment = createNewSegment();
 }
