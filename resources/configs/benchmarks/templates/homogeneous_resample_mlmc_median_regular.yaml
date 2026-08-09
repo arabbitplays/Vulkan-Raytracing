@@ -12,10 +12,12 @@ renderer:
 mlmc:
   mlmc_mode: "homo"
   mlmc_present_mode: "combined"
-  homo_density_statistic: "average"
+  homo_density_statistic: "median"
 metal_rough:
   normal_mapping: false
   next_event_estimation: true
   bsdf_importance_sampling: true
   russian_roulette: true
   adaptive_sampling: [[ADAPTIVE_SAMPLING]]
+  debug_diff_variance: [[DEBUG_DIFF_VARIANCE]]
+  regular_tracking: true

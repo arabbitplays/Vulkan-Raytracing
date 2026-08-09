@@ -19,3 +19,4 @@ metal_rough:
   bsdf_importance_sampling: true
   russian_roulette: true
   adaptive_sampling: [[ADAPTIVE_SAMPLING]]
+  debug_diff_variance: [[DEBUG_DIFF_VARIANCE]]

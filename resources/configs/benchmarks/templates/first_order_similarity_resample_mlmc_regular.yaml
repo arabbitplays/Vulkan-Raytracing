@@ -10,7 +10,7 @@ benchmark:
 renderer:
   recursion_depth: [[RECURSION_DEPTH]]
 mlmc:
-  mlmc_mode: "similarity same path"
+  mlmc_mode: "first order similarity"
   mlmc_present_mode: "combined"
 metal_rough:
   normal_mapping: false
@@ -18,5 +18,5 @@ metal_rough:
   bsdf_importance_sampling: true
   russian_roulette: true
   adaptive_sampling: [[ADAPTIVE_SAMPLING]]
-  regular_tracking: true
   debug_diff_variance: [[DEBUG_DIFF_VARIANCE]]
+  regular_tracking: true
