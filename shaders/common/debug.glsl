@@ -31,4 +31,26 @@ vec3 getAdaptiveSamplingDebugColor(vec3 mean_color, float second_moment, uint sa
     return fallback;
 }
 
+// Visualizes half_width / threshold from stop_sampling. Boundary (ratio == 1) is
+// yellow; ratio << 1 (deep converged) trends to blue; ratio >> 1 trends to red.
+// Log2-scaled so a factor-of-16 change spans the full ramp.
+vec3 getConvergenceRatioDebugColor(vec3 mean_color, float m2, uint sample_count,
+                                   uint min_samples, float rel_error, float abs_floor) {
+    if (sample_count < 2u) return vec3(0.1);
+    if (sample_count < min_samples) return vec3(0.3);
+
+    float n = float(sample_count);
+    float half_width = ADAPTIVE_SAMPLING_Z * sqrt(m2 / (n * (n - 1.0)));
+    float threshold = max(rel_error * abs(luminance(mean_color)), abs_floor);
+    float ratio = half_width / max(threshold, 1e-20);
+
+    float t = clamp(log2(max(ratio, 1e-8)) * 0.25 + 0.5, 0.0, 1.0);
+    if (t < 0.333) {
+        return mix(vec3(0.0, 0.0, 1.0), vec3(0.0, 1.0, 0.0), t / 0.333);
+    } else if (t < 0.667) {
+        return mix(vec3(0.0, 1.0, 0.0), vec3(1.0, 1.0, 0.0), (t - 0.333) / 0.334);
+    }
+    return mix(vec3(1.0, 1.0, 0.0), vec3(1.0, 0.0, 0.0), (t - 0.667) / 0.333);
+}
+
 #endif

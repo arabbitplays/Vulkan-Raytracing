@@ -23,6 +23,7 @@ layout(push_constant) uniform PushConstants {
     bool debug_variance;
     bool debug_diff_variance;
     bool debug_adaptive_sampling;
+    bool debug_convergence_ratio;
     float adaptive_error_bound;
     uint adaptive_min_samples;
 

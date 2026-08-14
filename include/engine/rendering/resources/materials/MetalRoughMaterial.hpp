@@ -49,8 +49,9 @@ namespace RtEngine {
 		bool adaptive_sampling = false;
 		bool debug_variance = false, debug_diff_variance = false;
 		bool debug_adaptive_sampling = false;
-		float adaptive_error_bound = 0.05f;
-		int32_t adaptive_min_samples = 16;
+		bool debug_convergence_ratio = false;
+		float adaptive_error_bound = 0.1f;
+		int32_t adaptive_min_samples = 32;
 
 		VkSampler sampler;
 	};

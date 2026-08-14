@@ -183,6 +183,14 @@ void main() {
                                                              abs_floor_dbg, color);
             imageStore(mlmc_image, ivec2(gl_LaunchIDEXT.xy), vec4(debug_color, 1.0));
         }
+        if (options.debug_convergence_ratio) {
+            float abs_floor_dbg = options.adaptive_error_bound * max(luminance(color), 1e-4);
+            vec3 debug_color = getConvergenceRatioDebugColor(diff, new_m2.y, pixel_diff_count,
+                                                             options.adaptive_min_samples,
+                                                             options.adaptive_error_bound,
+                                                             abs_floor_dbg);
+            imageStore(mlmc_image, ivec2(gl_LaunchIDEXT.xy), vec4(debug_color, 1.0));
+        }
     }
 
     if (STORE_RNG) {
