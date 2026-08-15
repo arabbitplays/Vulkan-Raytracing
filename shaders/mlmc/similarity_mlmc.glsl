@@ -36,127 +36,16 @@ vec3 similarityMlmc(uint sample_count, uint unbiased_path_length, uint similarit
         ViewRay view_ray = generateViewRay(vec2(gl_LaunchIDEXT.xy), vec2(gl_LaunchSizeEXT.xy), sceneData.inv_view, sceneData.inv_proj, payload.rng_state);
         initPayload(view_ray.origin, view_ray.direction);
         setSamplingBiased(payload.sampling_options, similarity_kind, true);
-        payload.sampling_options.regular_tracking = true;
+        if (!mlmcUsesResample()) {
+            payload.sampling_options.regular_tracking = true;
+        }
+        payload.eval_flags = EVAL_FLAG_BIASED;
 
         takePathSample(unbiased_path_length);
-        color += evaluatePath(eval_options, payload.rng_state);
+        color += evaluatePathBiased(eval_options, payload.rng_state);
     }
     color /= sample_count;
     return color;
-}
-
-void evaluateSimilarityDiffVertex(PathVertex vertex, out vec3 biased_contribution, out vec3 unbiased_contribution, EvaluationOptions options, uint similarity_kind, inout EvaluationContext context, inout uvec4 rng_state) {
-    uvec4 rng = rng_state;
-
-    setEvalBiased(options, similarity_kind, false);
-    unbiased_contribution = evaluateVertex(vertex, options, context, rng_state);
-
-    rng_state = rng;
-    setEvalBiased(options, similarity_kind, true);
-    biased_contribution = evaluateVertex(vertex, options, context, rng_state);
-}
-
-// for this, the phase of the last vertex needs to be evaluated here (since the next vertex was not clear there)
-// also the transmittance / visibility needs to be recalculated to match the similarity relation parameters
-void updateSimilarityBiasedThroughput(int curr_vertex_idx, int last_vertex_idx,
-        inout vec3 biased_throughput, inout vec3 biased_pdf, EvaluationOptions options, uint similarity_kind, inout uvec4 rng_state) {
-    // Force the biased flag on: this function computes the biased branch
-    // regardless of what the caller had set.
-    setEvalBiased(options, similarity_kind, true);
-
-    PathVertex vertex = getPathVertex(curr_vertex_idx);
-    PathVertex last_vertex = getPathVertex(last_vertex_idx);
-
-    vec3 biased_transmittance = vec3(1);;
-    if (vertex.type == VOLUME_TYPE // if this is a volume vertex
-            || (vertex.type == VOLUME_BOUNDARY_TYPE && last_vertex.type == VOLUME_TYPE)) { // or an exiting volume boundary vertex
-        // the segment lies inside last_vertex's volume, so march it directly
-        // instead of re-tracing rays against boundaries the path already found
-        VolumeInstance volume_instance = getVolume(last_vertex.volume_idx);
-        biased_transmittance = estimateSegmentTransmittance(last_vertex.P, vertex.P, volume_instance, options.use_similarity_relation, options.use_first_order_similarity, options.assume_homogenous, rng_state);
-        biased_throughput *= biased_transmittance;
-    }
-
-    // multiply the bsdf of the last evaluated vertex
-    vec3 biased_bsdf = path.segments[last_vertex_idx].bsdf;
-    if (last_vertex.type == VOLUME_TYPE) {
-        EvaluatedVolume last_volume = evaluateVertexVolume(last_vertex, options.use_similarity_relation, options.use_first_order_similarity, options.assume_homogenous);
-        float phase;
-        if (similarity_kind == SIMILARITY_KIND_FIRST_ORDER) {
-            phase = INV_4_PI;
-        } else {
-            vec3 wi = normalize(vertex.P - last_vertex.P);
-            phase = evaluateAlteredPhaseFunctionIdx(last_vertex.V, wi, last_volume.similarity_idx);
-        }
-        biased_bsdf = last_volume.scattering * phase;
-    }
-    biased_throughput *= biased_bsdf;
-
-    // add the conditional pdf for this vertex p(x_i | x_{i-1})
-    biased_pdf *= path.segments[curr_vertex_idx].dist_pdf;
-    biased_pdf *= path.segments[last_vertex_idx].dir_pdf;
-    biased_pdf *= path.segments[last_vertex_idx].rr_pdf;
-}
-
-bool shouldSkip(uint correlation_mode, int vertex_idx, int last_vertex_idx) {
-    if (vertex_idx == 0 || vertex_idx == path.len - 1 || getVertexType(path.vertices[vertex_idx]) != VOLUME_TYPE) {
-        return false;
-    }
-
-    if (correlation_mode == SKIP_DETERMINISTIC_CORRELATION_MODE) {
-        if (vertex_idx - last_vertex_idx == 1
-                && getVertexType(path.vertices[last_vertex_idx]) != VOLUME_BOUNDARY_TYPE
-                && getVertexType(path.vertices[vertex_idx + 1]) != VOLUME_BOUNDARY_TYPE) {
-            return true;
-        }
-    }
-
-    return false;
-}
-
-vec3 similarityEvaluateCorrelatedPaths(EvaluationOptions options, uint correlation_mode, uint similarity_kind, inout uvec4 rng_state) {
-    EvaluationContext context;
-    vec3 biased_throughput = vec3(1);
-    vec3 unbiased_throughput = vec3(1);
-    vec3 biased_contribution = vec3(0);
-    vec3 unbiased_contribution = vec3(0);
-    vec3 unbiased_path_pdf = vec3(1);
-    vec3 biased_path_pdf = vec3(1);
-    context.specular_bounce = false;
-
-    PathVertex last_vertex;
-    int last_vertex_idx = 0;
-
-    uint evaluation_depth = min(options.evaluation_depth, path.len);
-    for (int i = 0; i < evaluation_depth; i++) {
-        PathVertex vertex = getPathVertex(i);
-        SampledSegment seg = path.segments[i];
-        bool skip_vertex = shouldSkip(correlation_mode, i, last_vertex_idx);
-
-        if (i != 0 && !skip_vertex) { // skip the first one here, since the bsdf is applied later and the transmittance is 1 anyway
-            updateSimilarityBiasedThroughput(i, last_vertex_idx, biased_throughput, biased_path_pdf, options, similarity_kind, rng_state);
-        }
-
-        context.depth = i;
-        unbiased_throughput *= seg.transmittance;
-        unbiased_path_pdf *= seg.dist_pdf;
-
-        vec3 biased = vec3(0);
-        vec3 unbiased = vec3(0);
-        evaluateSimilarityDiffVertex(vertex, biased, unbiased, options, similarity_kind, context, rng_state);
-        unbiased_contribution += unbiased_throughput / unbiased_path_pdf * unbiased;
-        if (!skip_vertex) {
-            biased_contribution += biased_throughput / biased_path_pdf * biased;
-
-            last_vertex = vertex;
-            last_vertex_idx = i;
-        }
-
-        unbiased_throughput *= seg.bsdf;
-        unbiased_path_pdf *= seg.dir_pdf * seg.rr_pdf;
-    }
-
-    return unbiased_contribution - biased_contribution;
 }
 
 vec3 similarityDiffMlmc(uint sample_count, uint unbiased_path_length, uint correlation_mode, uint similarity_kind) {
@@ -170,8 +59,13 @@ vec3 similarityDiffMlmc(uint sample_count, uint unbiased_path_length, uint corre
             initPayload(view_ray.origin, view_ray.direction);
             setSamplingBiased(payload.sampling_options, similarity_kind, false);
             payload.sampling_options.regular_tracking = true;
+            payload.eval_flags = EVAL_FLAG_BIASED | EVAL_FLAG_UNBIASED;
             takePathSample(unbiased_path_length);
-            diff += similarityEvaluateCorrelatedPaths(eval_options, correlation_mode, similarity_kind, payload.rng_state);
+            // Streaming reduce handled the shouldSkip / redo logic inline for
+            // SKIP_DETERMINISTIC, and applied cross-branch re-derived pre/post
+            // beta from the closest hit for SAME_PATH -- both correlated diffs
+            // fall out of the same subtraction.
+            diff += path_state.unbiased_light - path_state.biased_light;
         }
         return diff / sample_count;
     }
@@ -183,26 +77,23 @@ vec3 similarityDiffMlmc(uint sample_count, uint unbiased_path_length, uint corre
         uvec4 sampling_rng = payload.rng_state;
         initPayload(view_ray.origin, view_ray.direction);
         setSamplingBiased(payload.sampling_options, similarity_kind, false);
+        payload.eval_flags = EVAL_FLAG_UNBIASED;
         takePathSample(unbiased_path_length);
-
-        uvec4 eval_rng = payload.rng_state;
         setEvalBiased(eval_options, similarity_kind, false);
         vec3 unbiased_color = evaluatePath(eval_options, payload.rng_state);
 
         payload.rng_state = sampling_rng;
         initPayload(view_ray.origin, view_ray.direction);
         setSamplingBiased(payload.sampling_options, similarity_kind, true);
+        payload.eval_flags = EVAL_FLAG_BIASED;
         takePathSample(unbiased_path_length);
-
-        payload.rng_state = eval_rng;
         setEvalBiased(eval_options, similarity_kind, true);
-        vec3 biased_color = evaluatePath(eval_options, payload.rng_state);
+        vec3 biased_color = evaluatePathBiased(eval_options, payload.rng_state);
 
         diff += unbiased_color - biased_color;
     }
     diff /= sample_count;
     return diff;
 }
-
 
 #endif

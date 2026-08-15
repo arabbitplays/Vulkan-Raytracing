@@ -30,4 +30,9 @@ void main() {
     payload.rr_beta = vec3(0);
     payload.next_vertex = packPathVertex(createEnvironmentVertex());
     payload.next_segment = createNewSegment();
+    // Environment vertex contributes no light; leave all VertexResult fields at
+    // their defaults (unity betas, zero contribution) so the streaming reduce
+    // in raygen simply ignores it.
+    payload.next_result = createNewVertexResult();
+    payload.next_result.type = ENVIRONMENT_TYPE;
 }

@@ -121,74 +121,91 @@ vec3 estimateSegmentTransmittance(vec3 from_P, vec3 to_P, VolumeInstance volume_
     return transmittance;
 }
 
-vec3 evaluateSurfaceVertex(PathVertex vertex, EvaluationOptions options, inout EvaluationContext context, inout uvec4 rng_state) {
-    EvaluatedMaterial material = evaluateVertexMaterial(vertex);
+// `material` is pre-fetched by the closest-hit while sampling the next segment.
+// Same material is reused across MLMC branches (material is branch-independent).
+vec3 evaluateSurfaceVertex(PathVertex vertex, EvaluatedMaterial material, EvaluationOptions options, inout EvaluationContext context, inout uvec4 rng_state) {
     vec3 light = vec3(0);
 
-    // no direct light sampling or handle light that goes directly to the camera
     bool consider_emission = !options.sample_light || context.specular_bounce || (context.depth == 0 && material.emission_power > 0);
-
     if (consider_emission && dot(vertex.N, vertex.V) > 0) {
         light += material.emission_color * material.emission_power;
     }
 
-    if (options.sample_light) {
-        mat3 TBN = getTBN(vertex.geom_N, vertex.T);
-        mat3 transpose_tbn = transpose(TBN);
-
-        uint emitter_count = max(1, sceneData.emitter_count);
-        LightSample light_sample = sampleEmittingPrimitive(vertex.P, emitter_count, rng_state);
-        vec3 L = light_sample.P - vertex.P;
-        float distance_to_light = length(L);
-        L = normalize(L);
-
-        vec3 wo = normalize(transpose_tbn * vertex.V);
-        vec3 wi = normalize(transpose_tbn * L);
-
-        vec3 transmittance = estimateTransmittance(vertex.P, L, distance_to_light, options.use_similarity_relation, options.use_first_order_similarity, options.assume_homogenous, rng_state);
-
-        if (SPEC_SAMPLE_BSDF) {
-            vec3 f = calcConductorBRDF(wo, wi, material.albedo, material.metallic, material.roughness) * max(dot(vertex.N, L), 0.0);
-            if (light_sample.light != vec3(0) && dot(f, f) > 0.0 && dot(transmittance, transmittance) > 0.0) {
-                light += transmittance * f * light_sample.light / light_sample.pdf;
-            }
-        } else {
-            vec3 f = computeBsdf(wo, wi, material.albedo, material.metallic, material.roughness, material.eta) * abs(dot(vertex.N, L));
-            if (light_sample.light != vec3(0) && dot(f, f) > 0.0 && dot(transmittance, transmittance) > 0.0) {
-                light += transmittance * f * light_sample.light / light_sample.pdf;
-            }
-        }
+    if (!options.sample_light) {
+        return light;
     }
 
+    uint emitter_count = max(1, sceneData.emitter_count);
+    LightSample light_sample = sampleEmittingPrimitive(vertex.P, emitter_count, rng_state);
+    if (light_sample.light == vec3(0)) {
+        return light;
+    }
+
+    vec3 L = light_sample.P - vertex.P;
+    float distance_to_light = length(L);
+    L /= distance_to_light;
+    float NdotL = dot(vertex.N, L);
+
+    mat3 TBN = getTBN(vertex.geom_N, vertex.T);
+    mat3 transpose_tbn = transpose(TBN);
+    vec3 wo = normalize(transpose_tbn * vertex.V);
+    vec3 wi = normalize(transpose_tbn * L);
+
+    vec3 f;
+    if (SPEC_SAMPLE_BSDF) {
+        f = calcConductorBRDF(wo, wi, material.albedo, material.metallic, material.roughness) * max(NdotL, 0.0);
+    } else {
+        f = computeBsdf(wo, wi, material.albedo, material.metallic, material.roughness, material.eta) * abs(NdotL);
+    }
+    if (dot(f, f) == 0.0) {
+        return light;
+    }
+
+    // Fire the shadow ray last — ratio tracking is the most expensive step, and
+    // the light/BSDF checks above skip it whenever the contribution would be 0.
+    vec3 transmittance = estimateTransmittance(vertex.P, L, distance_to_light, options.use_similarity_relation, options.use_first_order_similarity, options.assume_homogenous, rng_state);
+    if (dot(transmittance, transmittance) > 0.0) {
+        light += transmittance * f * light_sample.light / light_sample.pdf;
+    }
     return light;
 }
 
-vec3 evaluateVolumeVertex(PathVertex vertex, EvaluationOptions options, inout EvaluationContext context, inout uvec4 rng_state) {
-    if (options.sample_light) {
-        EvaluatedVolume volume = evaluateVertexVolume(vertex, options.use_similarity_relation, options.use_first_order_similarity, options.assume_homogenous);
-
-        uint emitter_count = max(1, sceneData.emitter_count);
-        LightSample light_sample = sampleEmittingPrimitive(vertex.P, emitter_count, rng_state);
-        vec3 L = light_sample.P - vertex.P;
-        float distance_to_light = length(L);
-        L = normalize(L);
-
-        vec3 transmittance = estimateTransmittance(vertex.P, L, distance_to_light, vertex.volume_idx, options.use_similarity_relation, options.use_first_order_similarity, options.assume_homogenous, rng_state);
-
-        float phase = 0;
-        if (options.use_first_order_similarity) {
-            phase = INV_4_PI;
-        } else if (options.use_similarity_relation) {
-            phase = evaluateAlteredPhaseFunctionIdx(vertex.V, L, volume.similarity_idx);
-        } else {
-            phase = henyeyGreenstein(vertex.V, L, volume.g);
-        }
-        if (light_sample.light != vec3(0) && phase > 0.0 && dot(transmittance, transmittance) > 0.0) {
-            return volume.scattering * transmittance * phase * light_sample.light / light_sample.pdf;
-        }
+// `volume` must have been evaluated under the same options as this call. The
+// closest-hit passes the volume it evaluated at the scatter position for the
+// sampled branch; the other MLMC branch re-evaluates via evaluateVertexVolume.
+vec3 evaluateVolumeVertex(PathVertex vertex, EvaluatedVolume volume, EvaluationOptions options, inout EvaluationContext context, inout uvec4 rng_state) {
+    if (!options.sample_light) {
+        return vec3(0);
     }
 
-    return vec3(0);
+    uint emitter_count = max(1, sceneData.emitter_count);
+    LightSample light_sample = sampleEmittingPrimitive(vertex.P, emitter_count, rng_state);
+    if (light_sample.light == vec3(0)) {
+        return vec3(0);
+    }
+
+    vec3 L = light_sample.P - vertex.P;
+    float distance_to_light = length(L);
+    L /= distance_to_light;
+
+    float phase;
+    if (options.use_first_order_similarity) {
+        phase = INV_4_PI;
+    } else if (options.use_similarity_relation) {
+        phase = evaluateAlteredPhaseFunctionIdx(vertex.V, L, volume.similarity_idx);
+    } else {
+        phase = henyeyGreenstein(vertex.V, L, volume.g);
+    }
+    if (phase <= 0.0) {
+        return vec3(0);
+    }
+
+    vec3 transmittance = estimateTransmittance(vertex.P, L, distance_to_light, vertex.volume_idx, options.use_similarity_relation, options.use_first_order_similarity, options.assume_homogenous, rng_state);
+    if (dot(transmittance, transmittance) == 0.0) {
+        return vec3(0);
+    }
+
+    return volume.scattering * transmittance * phase * light_sample.light / light_sample.pdf;
 }
 
 
