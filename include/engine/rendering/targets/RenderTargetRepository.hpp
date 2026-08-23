@@ -39,6 +39,9 @@ namespace RtEngine
         uint32_t getDiffSamplesPerFrame() const;
         void setSamplesPerFrame(uint32_t new_samples_per_frame, uint32_t new_diff_samples_per_frame);
 
+        uint32_t getBiasedSamplesPerDiffSample() const;
+        void setBiasedSamplesPerDiffSample(uint32_t new_biased_samples_per_diff_sample);
+
         void destroy();
 
         void recreate(VkExtent2D new_image_extent);
@@ -59,6 +62,7 @@ namespace RtEngine
         uint32_t accumulated_diff_frame_count = 0;
         uint32_t samples_per_frame = 4;
         uint32_t diff_samples_per_frame = 1;
+        uint32_t biased_samples_per_diff_sample = 0;
     };
 }
 

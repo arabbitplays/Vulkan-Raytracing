@@ -12,6 +12,7 @@ struct Volume {
     std::vector<float> densities;
     float max_density;
     float avg_density;
+    float median_density;
 };
 
 #endif //VULKAN_RAYTRACING_VOLUME_HPP

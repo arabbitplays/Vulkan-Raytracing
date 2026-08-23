@@ -19,3 +19,4 @@ metal_rough:
   russian_roulette: true
   adaptive_sampling: [[ADAPTIVE_SAMPLING]]
   regular_tracking: true
+  debug_diff_variance: [[DEBUG_DIFF_VARIANCE]]

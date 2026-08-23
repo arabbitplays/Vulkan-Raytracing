@@ -23,7 +23,7 @@ scene:
         - 1
         - 0.949999988
         - 0.709999979
-      emission_power: 1
+      emission_power: 2
     - name: diffuse_green
       albedo:
         - 0
@@ -114,19 +114,6 @@ scene:
         MeshRenderer:
           mesh: plane
           material_name: light
-          light:
-            Albedo:
-              - 0
-              - 0
-              - 0
-            Metal: 0.5
-            Roughness: 0.5
-            Eta: 1
-            Emission Color:
-              - 1
-              - 0.949999988
-              - 0.709999979
-            Emission Power: 4
       children:
         []
     - name: Cube1
@@ -149,13 +136,14 @@ scene:
           material_name: sphere1
           volume: "../resources/volumes/cloud.vdb"
           scattering:
-            - 0.8
-            - 0.8
-            - 0.8
+            - 1
+            - 1
+            - 1
           absorption:
-            - 0.2
-            - 0.6
-            - 0.2
-          g: 0.4
+            - 0.0002
+            - 0.0001
+            - 0.00005
+          g: 0.8
+          optical_depth: 20
       children:
         []

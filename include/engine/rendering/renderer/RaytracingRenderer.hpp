@@ -74,12 +74,13 @@ namespace RtEngine {
 		static constexpr uint32_t MAX_RECURSION_DEPTH = 256;
 
 		uint32_t recursion_depth = 5;
-		MlmcMethod mlmc_mode = PATH_LENGTH;
-		std::string mlmc_mode_str = "path length";
+		MlmcMethod mlmc_mode = PATH_LENGTH_PREFIX;
+		std::string mlmc_mode_str = "path length prefix";
 		MlmcPresentMode mlmc_present_mode = COMBINED;
 		std::string mlmc_present_mode_str = "combined";
 
 		uint32_t mlmc_biased_path_length = 2;
+		std::string homo_density_statistic_str = "average";
 
 		std::vector<int32_t> push_constants{};
 

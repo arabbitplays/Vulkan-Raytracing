@@ -1,0 +1,23 @@
+runner:
+  scene_name: [[SCENE_NAME]]
+benchmark:
+  name: "[[NAME]]"
+  expected_ref_samples: [[EXPECTED_SAMPLES]]
+  biased_samples: [[BIASED_SAMPLES]]
+  diff_samples: [[DIFF_SAMPLES]]
+  biased_samples_per_diff_sample: [[BIASED_PER_DIFF_SAMPLE]]
+  averaging_rounds: [[AVERAGING_ROUNDS]]
+renderer:
+  recursion_depth: [[RECURSION_DEPTH]]
+mlmc:
+  mlmc_mode: "homo same path"
+  mlmc_present_mode: "combined"
+  homo_density_statistic: "average"
+metal_rough:
+  normal_mapping: false
+  next_event_estimation: true
+  bsdf_importance_sampling: true
+  russian_roulette: true
+  adaptive_sampling: [[ADAPTIVE_SAMPLING]]
+  regular_tracking: true
+  debug_diff_variance: [[DEBUG_DIFF_VARIANCE]]

@@ -114,6 +114,14 @@ namespace RtEngine {
         diff_samples_per_frame = new_diff_samples_per_frame;
     }
 
+    uint32_t RenderTargetRepository::getBiasedSamplesPerDiffSample() const {
+        return biased_samples_per_diff_sample;
+    }
+
+    void RenderTargetRepository::setBiasedSamplesPerDiffSample(uint32_t new_biased_samples_per_diff_sample) {
+        biased_samples_per_diff_sample = new_biased_samples_per_diff_sample;
+    }
+
     void RenderTargetRepository::destroy() {
         for (const auto &render_target : render_targets) {
             render_target.second->destroy();

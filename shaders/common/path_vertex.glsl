@@ -163,4 +163,60 @@ vec3 getPostEvaluationBeta(SampledSegment segment) {
     return segment.bsdf / segment.dir_pdf / segment.rr_pdf;
 }
 
+// --- per-vertex evaluation result ------------------------------------------
+// Produced by the closest-hit shader for the vertex it just sampled. Carries
+// the pre/post throughput factors and the on-vertex NEE contribution for both
+// the biased and unbiased branches of an MLMC estimator, so the raygen stream
+// can accumulate whole-path throughput/light without a per-vertex array.
+//
+// Skip-deterministic mode needs a 1-vertex lookahead in raygen and, on skip,
+// re-derives the biased throughput across the gap. The extra fields below
+// (P, V, type, volume_idx, biased_bsdf/dir_pdf/rr_pdf) are what that redo
+// requires; unbiased factors and *_contribution are all it needs otherwise.
+struct VertexResult {
+    int type;
+    int volume_idx;
+    vec3 P;
+    vec3 V;
+
+    // Per-branch contribution and throughput factors. pre_beta is the segment
+    // entering this vertex; post_beta is the segment leaving it. The reduce
+    // does: light += beta * pre_beta * contribution; beta *= pre_beta * post_beta.
+    vec3 biased_pre_beta;
+    vec3 biased_post_beta;
+    vec3 biased_contribution;
+    vec3 unbiased_pre_beta;
+    vec3 unbiased_post_beta;
+    vec3 unbiased_contribution;
+
+    // Only used on SKIP_DETERMINISTIC redo: the biased-branch outgoing segment
+    // pieces at the last-kept vertex are needed to rebuild biased_post across
+    // a gap of skipped vertices, and dist_pdf is the sampled incoming density
+    // used as the biased density denominator (matches
+    // updateSimilarityBiasedThroughput's use of seg[curr].dist_pdf).
+    vec3 biased_bsdf;
+    float biased_dir_pdf;
+    float biased_rr_pdf;
+    vec3 dist_pdf;
+};
+
+VertexResult createNewVertexResult() {
+    VertexResult r;
+    r.type = INVALID_TYPE;
+    r.volume_idx = -1;
+    r.P = vec3(0);
+    r.V = vec3(0, 0, 1);
+    r.biased_pre_beta = vec3(1);
+    r.biased_post_beta = vec3(1);
+    r.biased_contribution = vec3(0);
+    r.unbiased_pre_beta = vec3(1);
+    r.unbiased_post_beta = vec3(1);
+    r.unbiased_contribution = vec3(0);
+    r.biased_bsdf = vec3(1);
+    r.biased_dir_pdf = 1.0;
+    r.biased_rr_pdf = 1.0;
+    r.dist_pdf = vec3(1);
+    return r;
+}
+
 #endif

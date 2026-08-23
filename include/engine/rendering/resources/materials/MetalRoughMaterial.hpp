@@ -44,13 +44,14 @@ namespace RtEngine {
 		bool pipeline_specialized = false;
 		VkDescriptorSetLayout scene_layout = VK_NULL_HANDLE;
 
-		bool normal_mapping = false, sample_lights = false, sample_bsdf = false, russian_roulette = false, similarity_relation = false, assume_homogenous = false, regular_tracking = false;
+		bool normal_mapping = false, sample_lights = false, sample_bsdf = false, russian_roulette = false, similarity_relation = false, use_first_order_similarity = false, assume_homogenous = false, regular_tracking = false;
 		bool debug_depth = false;
 		bool adaptive_sampling = false;
 		bool debug_variance = false, debug_diff_variance = false;
 		bool debug_adaptive_sampling = false;
-		float adaptive_error_bound = 0.05f;
-		int32_t adaptive_min_samples = 16;
+		bool debug_convergence_ratio = false;
+		float adaptive_error_bound = 0.1f;
+		int32_t adaptive_min_samples = 32;
 
 		VkSampler sampler;
 	};

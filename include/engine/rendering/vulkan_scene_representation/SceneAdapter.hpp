@@ -57,6 +57,8 @@ namespace RtEngine {
 		std::shared_ptr<Material> getMaterial() const;
 		VkDescriptorSet getSceneDescriptorSet(uint32_t frame_index) const;
 
+		std::shared_ptr<VolumeManager> getVolumeManager() const { return volume_manager; }
+
 		std::shared_ptr<VulkanContext> vulkan_context;
 		std::shared_ptr<TextureRepository> texture_repository;
 

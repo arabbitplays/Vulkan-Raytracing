@@ -14,6 +14,7 @@ layout(push_constant) uniform PushConstants {
     bool normal_mapping;
     bool sample_light;
     bool similarity_relation;
+    bool use_first_order_similarity;
     bool assume_homogenous;
     bool regular_tracking;
 
@@ -22,6 +23,7 @@ layout(push_constant) uniform PushConstants {
     bool debug_variance;
     bool debug_diff_variance;
     bool debug_adaptive_sampling;
+    bool debug_convergence_ratio;
     float adaptive_error_bound;
     uint adaptive_min_samples;
 
@@ -29,6 +31,7 @@ layout(push_constant) uniform PushConstants {
     uint accumulated_diff_frame_count;
     uint samples_per_pixel;
     uint diff_samples_per_pixel;
+    uint biased_samples_per_diff_sample;
 
     uint biased_path_length;
 } options;

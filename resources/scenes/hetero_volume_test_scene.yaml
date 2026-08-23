@@ -102,19 +102,6 @@ scene:
         MeshRenderer:
           mesh: plane
           material_name: light
-          light:
-            Albedo:
-              - 0
-              - 0
-              - 0
-            Metal: 0.5
-            Roughness: 0.5
-            Eta: 1
-            Emission Color:
-              - 1
-              - 0.949999988
-              - 0.709999979
-            Emission Power: 1
       children:
         []
     - name: Cube1
@@ -145,6 +132,7 @@ scene:
             - 1
             - 1
           g: 0.2
+          optical_depth: 0
       children:
         []
     - name: Room
@@ -181,19 +169,6 @@ scene:
             MeshRenderer:
               mesh: plane
               material_name: diffuse_grey
-              diffuse_grey:
-                Albedo:
-                  - 0.899999976
-                  - 0.899999976
-                  - 0.899999976
-                Metal: 0.100000001
-                Roughness: 1
-                Eta: 1
-                Emission Color:
-                  - 1
-                  - 1
-                  - 1
-                Emission Power: 0
           children:
             []
         - name: Ceil
@@ -214,19 +189,6 @@ scene:
             MeshRenderer:
               mesh: plane
               material_name: diffuse_grey
-              diffuse_grey:
-                Albedo:
-                  - 0.899999976
-                  - 0.899999976
-                  - 0.899999976
-                Metal: 0.100000001
-                Roughness: 1
-                Eta: 1
-                Emission Color:
-                  - 1
-                  - 1
-                  - 1
-                Emission Power: 0
           children:
             []
         - name: Left
@@ -247,19 +209,6 @@ scene:
             MeshRenderer:
               mesh: plane
               material_name: diffuse_red
-              diffuse_red:
-                Albedo:
-                  - 1
-                  - 0
-                  - 0
-                Metal: 0.100000001
-                Roughness: 1
-                Eta: 1
-                Emission Color:
-                  - 1
-                  - 1
-                  - 1
-                Emission Power: 0
           children:
             []
         - name: Right
@@ -280,19 +229,6 @@ scene:
             MeshRenderer:
               mesh: plane
               material_name: diffuse_green
-              diffuse_green:
-                Albedo:
-                  - 0
-                  - 1
-                  - 0
-                Metal: 0.100000001
-                Roughness: 1
-                Eta: 1
-                Emission Color:
-                  - 1
-                  - 1
-                  - 1
-                Emission Power: 0
           children:
             []
         - name: Back
@@ -313,18 +249,5 @@ scene:
             MeshRenderer:
               mesh: plane
               material_name: diffuse_blue
-              diffuse_blue:
-                Albedo:
-                  - 0
-                  - 0
-                  - 1
-                Metal: 0.100000001
-                Roughness: 1
-                Eta: 1
-                Emission Color:
-                  - 1
-                  - 1
-                  - 1
-                Emission Power: 0
           children:
             []

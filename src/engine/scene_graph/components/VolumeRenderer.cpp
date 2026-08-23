@@ -43,6 +43,7 @@ namespace RtEngine {
             update_needed |= config->addFloat("maj", &majorant, 0, 1);
             update_needed |= config->addVector("scattering", &scattering);
             update_needed |= config->addVector("absorption", &absorption);
+            update_needed |= config->addFloat("optical_depth", &optical_depth, 0.0f, 1000.0f);
 
             if (update_needed && mesh_asset) {
                 refreshVolumeAsset();
@@ -56,10 +57,10 @@ namespace RtEngine {
         assert(mesh_asset != nullptr);
         if (volume_name.empty()) {
             vol_asset = context->volume_repository->createHomogenousVolumeAsset(
-                absorption, scattering, g, mesh_asset);
+                absorption, scattering, g, optical_depth, mesh_asset);
         } else {
             vol_asset = context->volume_repository->createHeterogenousVolumeAsset(
-                volume_name, absorption, scattering, g, mesh_asset);
+                volume_name, absorption, scattering, g, optical_depth, mesh_asset);
         }
     }
 } // namespace RtEngine

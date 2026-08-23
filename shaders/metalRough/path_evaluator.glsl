@@ -2,43 +2,30 @@
 #define PATH_EVALUATOR_GLSL
 
 #include "evaluation_options.glsl"
-#include "vertex_evaluator.glsl"
 #include "../common/path.glsl"
-#include "../common/path_vertex.glsl"
 #include "../common/debug.glsl"
 
-vec3 evaluateVertex(PathVertex vertex, EvaluationOptions options, inout EvaluationContext context, inout uvec4 rng_state) {
-    if (vertex.type == SURFACE_TYPE) {
-        return evaluateSurfaceVertex(vertex, options, context, rng_state);
-    } else if (vertex.type == VOLUME_BOUNDARY_TYPE) {
-        return vec3(0);
-    } else if (vertex.type == VOLUME_TYPE) {
-        return evaluateVolumeVertex(vertex, options, context, rng_state);
-    } else if (vertex.type == ENVIRONMENT_TYPE) {
-        return vec3(0);
-    }
-    
-    return vec3(1, 0, 0);
-}
+// After the refactor, the per-vertex evaluation happens in the closest-hit
+// shader and is folded into path_state.unbiased_light / .biased_light while
+// takePathSample streams. The former per-array evaluate loop is gone; these
+// accessors just surface the running totals.
+//
+// eval_options.evaluation_depth is honoured implicitly: raygen passes the
+// desired depth to takePathSample so sampling stops there, and the streaming
+// reduce covers exactly the sampled vertices.
 
 vec3 evaluatePath(EvaluationOptions options, inout uvec4 rng_state) {
-    EvaluationContext context;
-    vec3 light = vec3(0);
-    vec3 beta = vec3(1);
-    context.specular_bounce = false;
-
     if (options.debug_path_len) {
-        return getDepthDebugColor(path.len);
+        return getDepthDebugColor(path_state.len);
     }
+    return path_state.unbiased_light;
+}
 
-    for (int i = 0; i < min(options.evaluation_depth, path.len); i++) {
-        context.depth = i;
-        beta *= getPreEvaluationBeta(path.segments[i]);
-        light += beta * evaluateVertex(getPathVertex(i), options, context, rng_state);
-        beta *= getPostEvaluationBeta(path.segments[i]);
+vec3 evaluatePathBiased(EvaluationOptions options, inout uvec4 rng_state) {
+    if (options.debug_path_len) {
+        return getDepthDebugColor(path_state.len);
     }
-
-    return light;
+    return path_state.biased_light;
 }
 
 #endif

@@ -35,6 +35,10 @@
 .idea/
 
 # Meson
-subprojects/*/
 !subprojects/*
+subprojects/*/
 src/**/meson.build
+
+resources/configs/benchmarks_to_run/
+resources/benchmarks/
+resources/error_maps/
